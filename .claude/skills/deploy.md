@@ -4,6 +4,12 @@ Ship a new version of `@nimling/nimpress` to GitHub Packages.
 
 When the user says "deploy" in this repo, execute these steps in order. Stop on the first failure and surface the error.
 
+## Prerequisites
+
+1. Local `.env` at the repo root with `NODE_AUTH_TOKEN=<personal access token with read:packages>`. The justfile loads it via `set dotenv-load` so `pnpm install` can resolve `@nimling/samna-auth-middleware`.
+
+2. GitHub Actions secret named `PACKAGES_TOKEN` set on this repo. The publish workflow consumes it as `NODE_AUTH_TOKEN`. A default `GITHUB_TOKEN` is not enough because the workflow needs read access to a package owned by a sibling repo.
+
 ## 1. Build the library
 
 ```

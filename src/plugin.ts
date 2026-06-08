@@ -402,7 +402,7 @@ function sortNodes(nodes: SidebarNode[]) {
   }
 }
 
-export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plugin {
+export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   const contentRoot = resolve(process.cwd(), options.contentDir)
   let pages = new Map<string, ProcessedPage>()
   let highlighter: Highlighter | null = null

@@ -4,3 +4,6 @@ dist
 *.log
 .cache
 .vite
+.env
+.env.local
+.env.*.local

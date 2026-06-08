@@ -6,16 +6,39 @@
 
 ## Getting Started
 
-Nimpress is consumed as an npm package from sibling repositories. During local development the consumer references it via `link:`. Releases are cut through the same publish pipeline used by `samna-vue-components`.
+Nimpress is published to GitHub Packages under `@nimling/nimpress`. Releases are cut through the same publish pipeline used by `samna-vue-components`.
 
 ### Add to a consumer
 
-```jsonc
-{
-  "dependencies": {
-    "@nimling/nimpress": "link:../nimpress"
-  }
-}
+The consumer needs two files at the repo root so the package manager can authenticate against `npm.pkg.github.com`.
+
+`.npmrc`:
+
+```
+@nimling:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+`.env` (gitignored, never committed):
+
+```
+NODE_AUTH_TOKEN=<a github personal access token with read:packages>
+```
+
+Install with either package manager:
+
+```bash
+# pnpm
+pnpm add @nimling/nimpress
+
+# npm
+npm install @nimling/nimpress
+```
+
+For local development on Nimpress itself, link the working tree from the consumer:
+
+```bash
+pnpm add @nimling/nimpress@link:../nimpress
 ```
 
 ### Wire the Vite plugin
@@ -23,12 +46,12 @@ Nimpress is consumed as an npm package from sibling repositories. During local d
 ```ts
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import nimpressMarkdown from '@nimling/nimpress/plugin'
+import nimpress from '@nimling/nimpress/plugin'
 
 export default defineConfig({
   plugins: [
     svelte(),
-    nimpressMarkdown({ contentDir: 'docs' })
+    nimpress({ contentDir: 'docs' })
   ]
 })
 ```
@@ -66,10 +89,11 @@ just dev
 |---------|-------------|
 | `just install` | Install dependencies with pnpm |
 | `just build` | Build the library bundle into `dist/` |
+| `just check` | Run svelte-check and tsc |
 | `just dev` | Run the consumer site that links this package |
-| `just bump` | Patch version bump and push tag |
-| `just bump:minor` | Minor version bump and push tag |
-| `just bump:major` | Major version bump and push tag |
+| `just deploy` | Patch version bump, tag, and trigger the publish workflow |
+| `just deploy-minor` | Minor version bump and publish |
+| `just deploy-major` | Major version bump and publish |
 
 ## Concepts
 
