@@ -1,0 +1,106 @@
+<script lang="ts">
+  import Schema from './Schema.svelte'
+  import type { FlatParameter } from './types'
+
+  let { param }: { param: FlatParameter } = $props()
+
+  const schema = $derived(param.schema as any)
+  const type = $derived(schema?.type ?? schema?.$ref?.split('/').pop() ?? 'any')
+  const hasNested = $derived(!!(schema?.properties || schema?.items))
+</script>
+
+<div class="np-param">
+  <div class="np-param-head">
+    <code class="np-param-name">{param.name}</code>
+    <span class="np-param-type">{type}</span>
+    <span class="np-param-in">{param.in}</span>
+    {#if param.required}<span class="np-param-required">required</span>{/if}
+  </div>
+  {#if param.description_html}
+    <div class="np-param-desc">{@html param.description_html}</div>
+  {:else if param.description}
+    <p class="np-param-desc">{param.description}</p>
+  {/if}
+  {#if hasNested}
+    <div class="np-param-nested">
+      <Schema schema={schema} />
+    </div>
+  {/if}
+</div>
+
+<style>
+  .np-param {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--np-divider);
+  }
+  .np-param:last-child { border-bottom: 0; }
+  .np-param-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .np-param-name {
+    font-family: var(--np-font-mono);
+    font-size: 14px;
+    color: var(--np-text-primary);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-weight: 600;
+  }
+  .np-param-type {
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    color: var(--np-text-muted);
+    padding: 2px 8px;
+    border-radius: var(--np-radius-pill);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+  }
+  .np-param-in {
+    font-size: 10px;
+    color: var(--np-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: var(--np-radius-sm);
+    background-color: var(--np-bg-surface);
+  }
+  .np-param-required {
+    font-size: 10px;
+    color: var(--np-danger);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: var(--np-radius-sm);
+    background-color: color-mix(in srgb, var(--np-danger) 12%, transparent);
+    font-weight: 600;
+  }
+  .np-param-desc {
+    color: var(--np-text-secondary);
+    font-size: 14px;
+    margin: 8px 0 0;
+    line-height: 1.55;
+  }
+  .np-param-desc :global(p) { margin: 0 0 8px; }
+  .np-param-desc :global(p:last-child) { margin-bottom: 0; }
+  .np-param-desc :global(code) {
+    font-family: var(--np-font-mono);
+    background-color: var(--np-bg-code-inline);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    padding: 1px 5px;
+    font-size: 12.5px;
+  }
+  .np-param-desc :global(a) {
+    color: var(--np-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .np-param-nested {
+    margin-top: 10px;
+    padding-left: 16px;
+    border-left: 1px solid var(--np-divider);
+  }
+</style>

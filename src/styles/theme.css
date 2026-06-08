@@ -1,0 +1,75 @@
+/*
+ * @nimling/nimpress/theme.css
+ *
+ * Theme override template for the markdown renderer.
+ *
+ * Two layers are available:
+ *   1. CSS custom properties on :root and html.dark (from tokens.css).
+ *      Override these to recolor or resize tokens consistently.
+ *   2. Class selectors below. Override these to change typography, spacing,
+ *      callout chrome, or table chrome on a per-element basis.
+ *
+ * Import this file directly in your consumer entry CSS to copy the defaults,
+ * then comment out any block you want the framework to keep owning.
+ *
+ *   @import 'tailwindcss';
+ *   @import '@nimling/nimpress/style.css';
+ *   @import '@nimling/nimpress/theme.css';
+ *
+ * Class inventory used by the markdown renderer:
+ *
+ *   Layout
+ *     .np-page         Wrapper around the page content
+ *     .np-prose        The rendered article body
+ *
+ *   Inline + block markdown
+ *     .np-prose h1..h6 Headings
+ *     .np-prose p      Paragraphs
+ *     .np-prose a      Links
+ *     .np-prose code   Inline code
+ *     .np-prose pre    Code blocks (before CodeBlock hydration)
+ *     .np-prose ul/ol  Lists
+ *     .np-prose li     List items
+ *     .np-prose blockquote
+ *     .np-prose table / thead / th / td
+ *     .np-prose img
+ *     .np-prose hr
+ *     .np-prose kbd
+ *     .np-prose details / summary
+ *     .header-anchor   The anchor link wrapping each heading text
+ *
+ *   Callouts (from :::tip / :::note / :::warning / :::info / :::check)
+ *     .np-callout
+ *     .np-callout-body
+ *     .np-callout-title
+ *     .np-callout-tip
+ *     .np-callout-note
+ *     .np-callout-warning
+ *     .np-callout-info
+ *     .np-callout-check
+ *
+ *   Cards directive (from :::cards / :::card)
+ *     .np-cards-grid
+ *
+ *   Mermaid host (rehydrated client-side)
+ *     .np-mermaid
+ *
+ *   Code block component
+ *     .np-code
+ *     .np-code-bar
+ *     .np-code-lang
+ *     .np-code-copy
+ *     .np-code-body
+ */
+
+/* Example overrides. Uncomment and adjust. */
+
+/*
+.np-prose h1 { font-size: 36px; }
+.np-prose h2 { border-top: 0; padding-top: 0; }
+.np-prose a  { text-decoration: none; }
+
+.np-callout-tip   { background-color: rgba(0, 200, 120, 0.08); border-color: #00C878; }
+
+.np-code-bar      { background-color: var(--np-bg-surface); }
+*/

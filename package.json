@@ -1,0 +1,94 @@
+{
+  "name": "@nimling/nimpress",
+  "version": "0.0.0",
+  "description": "Svelte docs framework with Anthropic styling, markdown pipeline, OpenAPI renderer, and samna_auth session login",
+  "author": "nimling",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nimling/nimpress.git"
+  },
+  "homepage": "https://github.com/nimling/nimpress#readme",
+  "bugs": {
+    "url": "https://github.com/nimling/nimpress/issues"
+  },
+  "type": "module",
+  "main": "./dist/nimpress.es.js",
+  "module": "./dist/nimpress.es.js",
+  "types": "./dist/index.d.ts",
+  "svelte": "./dist/nimpress.es.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/nimpress.es.js",
+      "import": "./dist/nimpress.es.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.es.js"
+    },
+    "./tailwind": {
+      "types": "./dist/tailwind.preset.d.ts",
+      "import": "./dist/tailwind.preset.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build:lib": "vite build --mode library",
+    "preview:lib": "vite preview --mode library",
+    "type-check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "bump": "../sbump/sbump.sh patch --package-file=package.json --push-version",
+    "bump:minor": "../sbump/sbump.sh minor --package-file=package.json --push-version",
+    "bump:major": "../sbump/sbump.sh major --package-file=package.json --push-version"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.43.0",
+    "@nimling/samna-auth-middleware": "^1.0.90",
+    "codemirror": "^6.0.2",
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-attrs": "^4.3.1",
+    "markdown-it-container": "^4.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "minisearch": "^7.1.2",
+    "path-to-regexp": "^8.0.0",
+    "shiki": "^1.24.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.1.0",
+    "@tailwindcss/vite": "^4.1.17",
+    "@tsconfig/svelte": "^5.0.4",
+    "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it-container": "^2.0.10",
+    "@types/markdown-it-footnote": "^3.0.4",
+    "@types/node": "^22.10.0",
+    "autoprefixer": "^10.4.21",
+    "mermaid": "^11.4.1",
+    "postcss": "^8.5.6",
+    "svelte": "^5.34.7",
+    "svelte-check": "^4.2.2",
+    "tailwindcss": "^4.1.17",
+    "typescript": "~5.9.3",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "packageManager": "pnpm@10.18.3",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  }
+}
