@@ -360,6 +360,7 @@
 .np-callout-check .np-callout-title::before { content: '✓'; }
 
 .np-details {
+  padding: 0;
   border: 1px solid var(--np-border);
   border-radius: var(--np-radius-md);
   background-color: var(--np-bg-surface);
@@ -392,23 +393,7 @@
   border-top: 1px solid var(--np-divider);
 }
 .np-details-body > * {
-  margin: 0 !important;
-}
-.np-details-body .np-code-mount,
-.np-details-body .np-code,
-.np-details-body .np-code-group {
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  width: 100% !important;
-  box-shadow: none !important;
-}
-.np-details-body .np-code-bar,
-.np-details-body .np-code-group-bar {
-  border-radius: 0 !important;
-  border-left: 0 !important;
-  border-right: 0 !important;
-  border-top: 0 !important;
+  margin: 0;
 }
 
 .np-code-group {
