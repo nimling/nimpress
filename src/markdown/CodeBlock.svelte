@@ -68,6 +68,9 @@
   }
   .np-code-body :global(pre code) {
     display: block;
-    padding: 12px 0;
+    padding: 16px 20px;
+    font-family: var(--np-font-mono);
+    font-size: 12.5px;
+    line-height: 1.65;
   }
 </style>

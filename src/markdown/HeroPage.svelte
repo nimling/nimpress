@@ -74,11 +74,9 @@
     width: calc(100% + 64px);
     max-width: none;
     margin: -32px -32px 0;
-    padding: 0 48px;
+    padding: 208px 48px 96px;
     box-sizing: border-box;
-    min-height: calc(100vh - var(--np-header-height));
-    display: flex;
-    align-items: center;
+    display: block;
   }
   .np-hero-banner {
     position: absolute;

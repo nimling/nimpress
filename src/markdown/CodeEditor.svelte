@@ -5,7 +5,40 @@
   import { keymap, lineNumbers, highlightActiveLine } from '@codemirror/view'
   import { defaultKeymap, history, indentWithTab } from '@codemirror/commands'
   import { json } from '@codemirror/lang-json'
+  import { javascript } from '@codemirror/lang-javascript'
+  import { python } from '@codemirror/lang-python'
+  import { StreamLanguage, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+  import { shell } from '@codemirror/legacy-modes/mode/shell'
+  import { go } from '@codemirror/legacy-modes/mode/go'
+  import { csharp } from '@codemirror/legacy-modes/mode/clike'
   import { oneDark } from '@codemirror/theme-one-dark'
+  import { tags as t } from '@lezer/highlight'
+
+  const npHighlight = HighlightStyle.define([
+    { tag: t.keyword, color: '#E89B7D', fontWeight: '600' },
+    { tag: [t.controlKeyword, t.moduleKeyword, t.definitionKeyword, t.operatorKeyword], color: '#E89B7D', fontWeight: '600' },
+    { tag: [t.atom, t.bool, t.null], color: '#D19A66' },
+    { tag: t.number, color: '#D19A66' },
+    { tag: [t.string, t.special(t.string)], color: '#98C379' },
+    { tag: t.regexp, color: '#98C379' },
+    { tag: [t.escape, t.character], color: '#56B6C2' },
+    { tag: t.comment, color: '#7F848E', fontStyle: 'italic' },
+    { tag: t.lineComment, color: '#7F848E', fontStyle: 'italic' },
+    { tag: t.blockComment, color: '#7F848E', fontStyle: 'italic' },
+    { tag: [t.function(t.variableName), t.function(t.propertyName)], color: '#61AFEF' },
+    { tag: [t.variableName, t.name], color: '#E5C07B' },
+    { tag: [t.propertyName, t.attributeName], color: '#E5C07B' },
+    { tag: [t.typeName, t.className, t.namespace], color: '#E5C07B', fontWeight: '600' },
+    { tag: [t.tagName, t.angleBracket], color: '#E06C75' },
+    { tag: [t.operator, t.derefOperator, t.compareOperator, t.arithmeticOperator, t.logicOperator, t.bitwiseOperator, t.updateOperator], color: '#56B6C2' },
+    { tag: [t.punctuation, t.separator, t.bracket, t.brace, t.paren, t.squareBracket], color: '#ABB2BF' },
+    { tag: t.meta, color: '#9D5A45' },
+    { tag: [t.url, t.link], color: '#61AFEF', textDecoration: 'underline' },
+    { tag: t.invalid, color: '#E06C75', textDecoration: 'underline wavy' },
+    { tag: [t.heading, t.strong], fontWeight: 'bold' },
+    { tag: t.emphasis, fontStyle: 'italic' },
+    { tag: t.strikethrough, textDecoration: 'line-through' }
+  ])
 
   let {
     value = $bindable(''),
@@ -13,14 +46,18 @@
     readonly = false,
     minHeight = 120,
     maxHeight = 360,
-    title = ''
+    title = '',
+    variant = 'default',
+    showLineNumbers = true
   }: {
     value?: string
-    language?: 'json' | 'plain'
+    language?: string
     readonly?: boolean
     minHeight?: number
     maxHeight?: number
     title?: string
+    variant?: 'default' | 'try'
+    showLineNumbers?: boolean
   } = $props()
 
   let host: HTMLDivElement
@@ -33,34 +70,68 @@
   const langCompartment = new Compartment()
 
   function buildTheme() {
+    const tryVariant = variant === 'try'
+    const bg = tryVariant
+      ? 'color-mix(in srgb, var(--np-brand) 6%, var(--np-bg-code-block))'
+      : 'var(--np-bg-code-block)'
+    const activeBg = tryVariant
+      ? 'color-mix(in srgb, var(--np-brand) 14%, transparent)'
+      : 'rgba(255,255,255,0.04)'
+    const gutterColor = tryVariant
+      ? 'color-mix(in srgb, var(--np-brand) 50%, var(--np-text-faint))'
+      : 'var(--np-text-faint)'
+    const selection = tryVariant
+      ? 'color-mix(in srgb, var(--np-brand) 32%, transparent)'
+      : 'rgba(204, 120, 92, 0.28)'
+    const caretColor = tryVariant ? 'var(--np-brand)' : 'var(--np-text-code-block)'
     return EditorView.theme({
       '&': {
-        backgroundColor: 'var(--np-bg-code-block)',
+        backgroundColor: bg,
         color: 'var(--np-text-code-block)',
         height: '100%'
       },
       '.cm-scroller': {
         fontFamily: 'var(--np-font-mono)',
         fontSize: '12.5px',
-        lineHeight: '1.6',
+        lineHeight: '1.65',
         minHeight: `${minHeight}px`,
-        maxHeight: `${maxHeight}px`
+        maxHeight: `${maxHeight}px`,
+        backgroundColor: bg
       },
-      '.cm-content': { padding: '12px 0' },
-      '.cm-gutters': {
-        backgroundColor: 'transparent',
-        color: 'var(--np-text-faint)',
-        border: 'none',
-        paddingRight: '8px'
+      '.cm-line': { backgroundColor: 'transparent' },
+      '.cm-content': showLineNumbers
+        ? { padding: '12px 0', caretColor }
+        : { padding: '12px 20px', caretColor },
+      '.cm-cursor': { borderLeftColor: caretColor, borderLeftWidth: '2px' },
+      '.cm-gutters': showLineNumbers
+        ? {
+            backgroundColor: tryVariant
+              ? 'color-mix(in srgb, var(--np-brand) 4%, transparent)'
+              : 'transparent',
+            color: gutterColor,
+            border: 'none',
+            paddingRight: '8px'
+          }
+        : { display: 'none' },
+      '.cm-activeLine': { backgroundColor: activeBg },
+      '.cm-activeLineGutter': { backgroundColor: activeBg },
+      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
+        backgroundColor: selection + ' !important'
       },
-      '.cm-activeLine': { backgroundColor: 'rgba(255,255,255,0.04)' },
-      '.cm-activeLineGutter': { backgroundColor: 'rgba(255,255,255,0.04)' },
       '&.cm-focused': { outline: 'none' }
     })
   }
 
   function langExt() {
-    return language === 'json' ? json() : []
+    const lang = (language || '').toLowerCase()
+    if (lang === 'json') return json()
+    if (lang === 'typescript' || lang === 'ts') return javascript({ typescript: true })
+    if (lang === 'javascript' || lang === 'js') return javascript()
+    if (lang === 'python' || lang === 'py') return python()
+    if (lang === 'go') return StreamLanguage.define(go)
+    if (lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'curl') return StreamLanguage.define(shell)
+    if (lang === 'dotnet' || lang === 'csharp' || lang === 'cs' || lang === 'c#') return StreamLanguage.define(csharp)
+    return []
   }
 
   onMount(() => {
@@ -73,7 +144,7 @@
         highlightActiveLine(),
         keymap.of([...defaultKeymap, indentWithTab]),
         langCompartment.of(langExt()),
-        themeCompartment.of([oneDark, buildTheme()]),
+        themeCompartment.of([oneDark, syntaxHighlighting(npHighlight), buildTheme()]),
         readOnlyCompartment.of(EditorState.readOnly.of(readonly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

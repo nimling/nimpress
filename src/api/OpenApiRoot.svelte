@@ -2,21 +2,39 @@
   import { onMount } from 'svelte'
   import Operation from './Operation.svelte'
   import Schema from './Schema.svelte'
+  import { configStore } from '../framework/configStore'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
+  import type { Frontmatter } from '../types'
 
   let {
     spec,
-    title
-  }: { spec: unknown; title?: string } = $props()
+    title,
+    frontmatter
+  }: { spec: unknown; title?: string; frontmatter?: Frontmatter } = $props()
+
+  const config = $derived($configStore)
+  const effectiveFooter = $derived(frontmatter?.footer ?? config.footer)
 
   const flat = $derived<FlattenedSpec | null>(isFlattenedSpec(spec) ? spec : null)
   const serverUrl = $derived(flat?.servers?.[0]?.url ?? '')
   const servers = $derived(flat?.servers ?? [])
   const securitySchemes = $derived(flat?.securitySchemes ?? {})
 
+  let mounted = $state<Set<string>>(new Set())
+  let observer: IntersectionObserver | null = null
+
+  function markMounted(id: string) {
+    if (!mounted.has(id)) {
+      const next = new Set(mounted)
+      next.add(id)
+      mounted = next
+    }
+  }
+
   function scrollToHash() {
     const hash = window.location.hash.slice(1)
     if (!hash) return
+    if (hash.startsWith('operation/')) markMounted(hash)
     requestAnimationFrame(() => {
       const el = document.getElementById(hash)
       if (el) {
@@ -27,11 +45,47 @@
     })
   }
 
+  function attachObserver(el: HTMLElement, opId: string) {
+    if (!observer) return
+    el.dataset.opid = opId
+    observer.observe(el)
+  }
+
   onMount(() => {
     scrollToHash()
     const onHash = () => scrollToHash()
     window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              const target = e.target as HTMLElement
+              const id = target.dataset.opid
+              if (id) {
+                markMounted(id)
+                observer?.unobserve(target)
+              }
+            }
+          }
+        },
+        { rootMargin: '1200px 0px' }
+      )
+      document.querySelectorAll<HTMLElement>('.np-op-lazy').forEach((el) => {
+        const id = el.dataset.opid
+        if (id) observer!.observe(el)
+      })
+    } else {
+      document.querySelectorAll<HTMLElement>('.np-op-lazy').forEach((el) => {
+        const id = el.dataset.opid
+        if (id) markMounted(id)
+      })
+    }
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      observer?.disconnect()
+      observer = null
+    }
   })
 
   $effect(() => {
@@ -80,7 +134,22 @@
         </header>
         <div class="np-tag-ops">
           {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
-            <Operation {op} {serverUrl} {servers} {securitySchemes} />
+            {@const opKey = `operation/${op.id}`}
+            {#if mounted.has(opKey)}
+              <Operation {op} {serverUrl} {servers} {securitySchemes} />
+            {:else}
+              <div
+                class="np-op-lazy"
+                data-opid={opKey}
+                id={opKey}
+              >
+                <div class="np-op-lazy-row">
+                  <span class={`np-op-lazy-method np-op-lazy-method-${op.method.toLowerCase()}`}>{op.method}</span>
+                  <code class="np-op-lazy-path">{op.path}</code>
+                </div>
+                <div class="np-op-lazy-summary">{op.summary}</div>
+              </div>
+            {/if}
           {/each}
         </div>
       </section>
@@ -101,6 +170,10 @@
           {/each}
         </div>
       </section>
+    {/if}
+
+    {#if effectiveFooter}
+      <footer class="np-page-footer">{effectiveFooter}</footer>
     {/if}
   </div>
 {:else}
@@ -254,5 +327,47 @@
   :global(.np-flash) {
     background-color: var(--np-brand-soft) !important;
     transition: background-color 1.2s ease;
+  }
+
+  .np-op-lazy {
+    margin-bottom: 16px;
+    padding: 20px 24px;
+    background-color: var(--np-bg-card);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-lg);
+    scroll-margin-top: calc(var(--np-header-height) + 16px);
+    min-height: 96px;
+  }
+  .np-op-lazy-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .np-op-lazy-method {
+    font-family: var(--np-font-mono);
+    font-weight: 700;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--np-radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #fff;
+    background-color: var(--np-text-muted);
+  }
+  .np-op-lazy-method-get { background-color: #2f6f3e; }
+  .np-op-lazy-method-post { background-color: #14587a; }
+  .np-op-lazy-method-put { background-color: #856120; }
+  .np-op-lazy-method-patch { background-color: #6d4393; }
+  .np-op-lazy-method-delete { background-color: #8a2c2c; }
+  .np-op-lazy-path {
+    font-family: var(--np-font-mono);
+    font-size: 14px;
+    color: var(--np-text-primary);
+    word-break: break-all;
+  }
+  .np-op-lazy-summary {
+    color: var(--np-text-secondary);
+    font-size: 14px;
+    margin-top: 8px;
   }
 </style>

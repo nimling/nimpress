@@ -50,6 +50,7 @@ export interface Frontmatter {
   noToc?: boolean
   collapsed?: boolean
   footer?: string
+  background?: string
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }
@@ -62,7 +63,9 @@ export interface Heading {
 
 export interface ChangelogEntry {
   version: string
+  slug: string
   title: string
+  description?: string
   html: string
   headings: Heading[]
   data?: Record<string, unknown>
@@ -174,6 +177,7 @@ export interface NimpressConfig {
   authEndpoint?: string
   clientSlug?: string
   site?: SiteMeta
+  footer?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
   pageLoader?: Record<string, () => Promise<{ default: unknown } | unknown>>

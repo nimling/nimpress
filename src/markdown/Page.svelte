@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte'
   import { mount, unmount } from 'svelte'
   import type { PageModule } from '../types'
+  import { configStore } from '../framework/configStore'
   import RightToc from '../layout/RightToc.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
@@ -13,6 +14,11 @@
 
   let container: HTMLElement
   let mounted: Array<{ destroy: () => void }> = []
+
+  const config = $derived($configStore)
+  const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
+  const background = $derived(page.frontmatter.background)
+  const renderBackground = $derived(!!background && page.type !== 'hero')
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -143,13 +149,16 @@
   })
 </script>
 
+{#if renderBackground}
+  <div class="np-page-background" style:background-image={`url('${background}')`}></div>
+{/if}
 <div class="np-page-shell">
   <div class="np-page">
     <article class="np-prose" bind:this={container}>
       {@html page.html}
     </article>
-    {#if page.frontmatter.footer}
-      <footer class="np-page-footer">{page.frontmatter.footer}</footer>
+    {#if effectiveFooter}
+      <footer class="np-page-footer">{effectiveFooter}</footer>
     {/if}
     <div class="np-page-tail"></div>
   </div>
@@ -216,5 +225,24 @@
   .np-page-tail {
     height: 25vh;
     min-height: 160px;
+  }
+  .np-page-background {
+    position: fixed;
+    top: var(--np-header-height, 0px);
+    left: 0;
+    right: 0;
+    height: min(520px, 80vh);
+    background-size: cover;
+    background-position: top center;
+    background-repeat: no-repeat;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+  }
+  .np-page-shell {
+    position: relative;
+    z-index: 1;
   }
 </style>

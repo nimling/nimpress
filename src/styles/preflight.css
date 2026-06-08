@@ -396,16 +396,35 @@
 }
 .np-details-body > :first-child { margin-top: 8px; }
 .np-details-body > :last-child { margin-bottom: 8px; }
-.np-details > .np-details-body > .np-code-mount {
-  margin: 0;
-}
+.np-details > .np-details-body > .np-code-mount,
+.np-details > .np-details-body > .np-code,
+.np-details > .np-details-body > .np-code-group,
 .np-details > .np-details-body .np-code,
 .np-details > .np-details-body .np-code-group {
-  margin: 0;
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  box-shadow: none !important;
+}
+.np-details > .np-details-body .np-code-group-bar {
+  border-radius: 0 !important;
+}
+.np-details > .np-details-body .np-code-bar,
+.np-details > .np-details-body .np-code-group-bar {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+}
+.np-details > .np-details-body > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+.np-details > .np-details-body > :first-child {
+  margin-top: 0 !important;
+}
+.np-details > .np-details-body > :last-child {
+  margin-bottom: 0 !important;
 }
 
 .np-code-group {
@@ -424,38 +443,101 @@
 }
 
 .np-prose dl {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 20px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 0;
+  margin: 28px 0;
   padding: 0;
+  border-radius: var(--np-radius-lg);
+  border: 1px solid var(--np-border);
+  overflow: hidden;
+  background-color: var(--np-bg-card);
+  box-shadow: 0 1px 0 0 color-mix(in srgb, var(--np-brand) 6%, transparent) inset;
 }
 .np-prose dt {
+  position: relative;
   font-family: var(--np-font-mono);
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--np-text-primary);
-  padding: 2px 0 2px 14px;
-  border-left: 3px solid var(--np-brand);
+  color: var(--np-brand);
+  padding: 16px 16px 16px 28px;
   margin: 0;
+  background-color: color-mix(in srgb, var(--np-brand) 6%, transparent);
+  border-top: 1px solid var(--np-divider);
+  border-right: 1px solid var(--np-divider);
+  letter-spacing: 0.01em;
+  word-break: break-word;
+  display: flex;
+  align-items: flex-start;
+  transition: background-color 0.15s ease;
+}
+.np-prose dt::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 21px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--np-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--np-brand) 18%, transparent);
+}
+.np-prose dl > dt:first-of-type,
+.np-prose dl > dt:first-of-type + dd {
+  border-top: 0;
 }
 .np-prose dd {
-  margin: 4px 0 0 17px;
+  margin: 0;
+  padding: 16px 22px;
   color: var(--np-text-secondary);
   font-size: 14.5px;
   line-height: 1.65;
+  border-top: 1px solid var(--np-divider);
+  background-color: transparent;
+  transition: background-color 0.15s ease;
 }
-.np-prose dd + dd {
-  margin-top: 6px;
+.np-prose dt:hover,
+.np-prose dt:hover + dd {
+  background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
 }
-.np-prose dd > p { margin: 0 0 8px; }
+.np-prose dd > p { margin: 0 0 6px; }
 .np-prose dd > p:last-child { margin-bottom: 0; }
+.np-prose dd code {
+  font-family: var(--np-font-mono);
+  background-color: var(--np-bg-code-inline);
+  padding: 1px 6px;
+  border-radius: var(--np-radius-sm);
+  border: 1px solid var(--np-border);
+  font-size: 12.5px;
+}
+@media (max-width: 720px) {
+  .np-prose dl {
+    grid-template-columns: 1fr;
+  }
+  .np-prose dt {
+    border-right: 0;
+    border-bottom: 1px solid var(--np-divider);
+    padding: 12px 14px 10px 28px;
+  }
+  .np-prose dt::before {
+    top: 17px;
+  }
+  .np-prose dd {
+    border-top: 0;
+    padding: 8px 14px 16px;
+  }
+}
 
 .np-features {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
   margin: 32px 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 .np-features[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .np-features[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }

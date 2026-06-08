@@ -46,6 +46,9 @@
     text-decoration: none;
     color: inherit;
     transition: border-color 0.15s ease, transform 0.15s ease;
+    height: 100%;
+    box-sizing: border-box;
+    align-items: flex-start;
   }
   a.np-feature-card:hover {
     border-color: var(--np-brand);
@@ -53,17 +56,19 @@
   }
   .np-feature-icon {
     flex: 0 0 auto;
-    width: 28px;
-    height: 28px;
+    width: 48px;
+    height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
   .np-feature-icon-text {
-    font-size: 24px;
+    font-size: 32px;
     line-height: 1;
   }
   .np-feature-icon-img {
+    width: 48px;
+    height: 48px;
     object-fit: contain;
   }
   .np-feature-content { min-width: 0; }

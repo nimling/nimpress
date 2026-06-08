@@ -85,9 +85,9 @@
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 32px;
+    column-gap: 16px;
     height: var(--np-header-height);
-    padding: 0 24px;
+    padding: 0 20px;
     border-bottom: 1px solid var(--np-border);
     background-color: var(--np-bg);
   }
@@ -108,12 +108,7 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    overflow: hidden;
-  }
-  .np-crumbs-slot :global(.np-crumbs) {
-    margin: 0;
-    font-size: 13px;
-    color: var(--np-text-muted);
+    width: 100%;
   }
 
   .np-actions {

@@ -23,13 +23,13 @@
 {#if trail.length > 1}
   <nav class="np-crumbs" aria-label="Breadcrumb">
     {#each trail as crumb, i (crumb.text + i)}
-      {#if crumb.link}
-        <a href={crumb.link}>{crumb.text}</a>
-      {:else}
-        <span>{crumb.text}</span>
+      {#if i > 0}
+        <span class="np-crumbs-sep" aria-hidden="true">/</span>
       {/if}
-      {#if i < trail.length - 1}
-        <span class="np-sep">/</span>
+      {#if crumb.link}
+        <a class="np-crumbs-item" href={crumb.link}>{crumb.text}</a>
+      {:else}
+        <span class="np-crumbs-item np-crumbs-current">{crumb.text}</span>
       {/if}
     {/each}
   </nav>
@@ -39,25 +39,35 @@
   .np-crumbs {
     display: flex;
     flex-wrap: nowrap;
+    align-items: center;
     gap: 8px;
+    margin: 0;
+    padding: 0;
     font-size: 13px;
     color: var(--np-text-muted);
-    margin-bottom: 12px;
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
     min-width: 0;
-    max-width: 100%;
-    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+    width: 100%;
   }
-  .np-crumbs::-webkit-scrollbar { display: none; height: 0; }
-  .np-crumbs > * { flex: 0 0 auto; }
-  a {
+  .np-crumbs-item {
     color: var(--np-text-muted);
     text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 0 1 auto;
   }
-  a:hover { color: var(--np-text-primary); }
-  span:not(.np-sep) { color: var(--np-text-primary); }
-  .np-sep { color: var(--np-text-faint); }
+  .np-crumbs-item:hover {
+    color: var(--np-text-primary);
+  }
+  .np-crumbs-current {
+    color: var(--np-text-primary);
+    font-weight: 500;
+    flex: 0 1 auto;
+  }
+  .np-crumbs-sep {
+    color: var(--np-text-faint);
+    flex: 0 0 auto;
+    user-select: none;
+  }
 </style>

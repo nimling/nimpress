@@ -7,12 +7,14 @@
     op,
     servers = [],
     securitySchemes = {},
-    tryState = $bindable()
+    tryState = $bindable(),
+    disabled = false
   }: {
     op: FlatOperation
     servers?: FlatServer[]
     securitySchemes?: Record<string, SecurityScheme>
     tryState: TryState
+    disabled?: boolean
   } = $props()
 
   const schemeNames = $derived(Object.keys(securitySchemes ?? {}))
@@ -88,14 +90,19 @@
   }
 </script>
 
-<div class="np-try">
+<div class="np-try" class:np-try-disabled={disabled}>
   <header class="np-try-head">
     <span class="np-try-title">Try it</span>
-    <button class="np-try-send" onclick={send} disabled={sending}>
+    <button class="np-try-send" onclick={send} disabled={sending || disabled}>
       {sending ? 'Sending…' : 'Send'}
     </button>
   </header>
 
+  {#if disabled}
+    <div class="np-try-collapsed-msg">
+      Expand endpoint definition to try out
+    </div>
+  {:else}
   <div class="np-try-body">
     {#if servers.length > 0}
       <label class="np-try-field">
@@ -143,18 +150,6 @@
       </div>
     {/if}
 
-    {#if queryParams.length > 0}
-      <div class="np-try-group">
-        <div class="np-try-group-label">Query</div>
-        {#each queryParams as p (p.name)}
-          <label class="np-try-field">
-            <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={tryState.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
-          </label>
-        {/each}
-      </div>
-    {/if}
-
     {#if headerParams.length > 0}
       <div class="np-try-group">
         <div class="np-try-group-label">Headers</div>
@@ -167,26 +162,45 @@
       </div>
     {/if}
 
-    {#if ['POST', 'PUT', 'PATCH'].includes(op.method)}
+    {#if queryParams.length > 0}
       <div class="np-try-group">
+        <div class="np-try-group-label">Query</div>
+        {#each queryParams as p (p.name)}
+          <label class="np-try-field">
+            <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
+            <input bind:value={tryState.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+          </label>
+        {/each}
+      </div>
+    {/if}
+
+    {#if ['POST', 'PUT', 'PATCH'].includes(op.method)}
+      <div class="np-try-group np-try-group-body">
         <div class="np-try-group-label">Body</div>
-        <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" />
+        <div class="np-try-body-editor">
+          <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" variant="try" />
+        </div>
       </div>
     {/if}
   </div>
+  {/if}
 
-  {#if responseStatus !== null || responseError}
+  {#if !disabled && (responseStatus !== null || responseError)}
     <div class="np-try-result">
-      <div class="np-try-group-label">Response</div>
+      <div class="np-try-result-head">
+        <span class="np-try-group-label">Response</span>
+        {#if !responseError && responseStatus !== null}
+          <span class="np-try-status" data-ok={responseStatus < 400}>
+            {responseStatus}
+          </span>
+        {/if}
+      </div>
       {#if responseError}
         <pre class="np-try-error">{responseError}</pre>
-      {:else}
-        <div class="np-try-status" data-ok={responseStatus !== null && responseStatus < 400}>
-          {responseStatus}
+      {:else if responseBody}
+        <div class="np-try-result-body">
+          <CodeEditor value={responseBody} language="json" readonly title="response" variant="try" showLineNumbers={false} />
         </div>
-        {#if responseBody}
-          <CodeEditor value={responseBody} language="json" readonly title="response" />
-        {/if}
       {/if}
     </div>
   {/if}
@@ -268,6 +282,15 @@
     outline: 0;
     box-sizing: border-box;
   }
+  .np-try-field select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 12px;
+    padding-right: 32px;
+  }
   .np-try-field input:focus,
   .np-try-field select:focus {
     border-color: var(--np-brand);
@@ -289,24 +312,52 @@
     color: var(--np-text-muted);
   }
   .np-try-result {
-    padding: 16px;
+    padding: 0;
     border-top: 1px solid var(--np-border);
     background-color: var(--np-bg-surface);
     min-width: 0;
   }
+  .np-try-result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .np-try-result-head .np-try-group-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: var(--np-text-muted);
+  }
   .np-try-status {
-    display: inline-block;
-    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
     border-radius: var(--np-radius-pill);
     font-weight: 700;
     font-family: var(--np-font-mono);
-    margin: 6px 0;
+    font-size: 12px;
+    margin: 0;
     background-color: color-mix(in srgb, var(--np-danger) 16%, transparent);
     color: var(--np-danger);
   }
   .np-try-status[data-ok='true'] {
     background-color: color-mix(in srgb, var(--np-check) 16%, transparent);
     color: var(--np-check);
+  }
+  .np-try-result-body {
+    width: 100%;
+  }
+  .np-try-result-body :global(.np-editor) {
+    border: 0;
+    border-radius: 0;
+    border-top: 1px solid var(--np-divider);
+    width: 100%;
+  }
+  .np-try-result-body :global(.np-editor-bar) {
+    display: none;
   }
   .np-try-error {
     background-color: var(--np-bg-code-block);
@@ -319,5 +370,36 @@
     line-height: 1.5;
     overflow-x: auto;
     max-height: 320px;
+  }
+
+  .np-try-group-body {
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: -16px;
+    border-top: 1px solid var(--np-border);
+    padding-top: 12px;
+  }
+  .np-try-group-body .np-try-group-label {
+    padding-left: 16px;
+  }
+  .np-try-body-editor :global(.np-editor) {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-top: 1px solid var(--np-border);
+    width: 100%;
+  }
+
+  .np-try-collapsed-msg {
+    padding: 24px 16px 32px;
+    text-align: center;
+    color: var(--np-text-muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+  .np-try-disabled .np-try-send {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

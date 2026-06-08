@@ -33,8 +33,8 @@
   }
 </script>
 
-<div class="np-account" bind:this={root}>
-  {#if v.authenticated}
+{#if v.authenticated}
+  <div class="np-account" bind:this={root}>
     <button class="np-avatar" onclick={() => (open = !open)} aria-label="Account">
       {initial}
     </button>
@@ -47,8 +47,8 @@
         <button onclick={logout}>Sign out</button>
       </div>
     {/if}
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
   .np-account { position: relative; }
