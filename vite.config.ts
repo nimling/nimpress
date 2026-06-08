@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => {
               'markdown-it-anchor',
               'markdown-it-attrs',
               'markdown-it-container',
+              'markdown-it-deflist',
               'markdown-it-footnote',
               'markdown-it-task-lists',
               'gray-matter',

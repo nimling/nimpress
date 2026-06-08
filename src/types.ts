@@ -1,4 +1,4 @@
-export type PageType = 'doc' | 'openapi'
+export type PageType = 'doc' | 'openapi' | 'changelog' | 'hero'
 
 export interface Frontmatter {
   title: string
@@ -15,12 +15,22 @@ export interface Frontmatter {
   lastUpdated?: boolean
   redirect?: string
   noToc?: boolean
+  footer?: string
+  data?: Record<string, unknown>
 }
 
 export interface Heading {
   level: number
   text: string
   slug: string
+}
+
+export interface ChangelogEntry {
+  version: string
+  title: string
+  html: string
+  headings: Heading[]
+  data?: Record<string, unknown>
 }
 
 export interface PageModule {
@@ -31,6 +41,7 @@ export interface PageModule {
   html: string
   headings: Heading[]
   openApiSpec?: unknown
+  changelogEntries?: ChangelogEntry[]
 }
 
 export interface SidebarNode {

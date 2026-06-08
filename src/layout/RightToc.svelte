@@ -41,9 +41,13 @@
   .np-toc {
     position: sticky;
     top: calc(var(--np-header-height) + 24px);
-    width: var(--np-toc-width);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     font-size: 13px;
     padding-left: 16px;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
   .np-toc-label {
     font-size: 11px;
@@ -53,8 +57,16 @@
     font-weight: 600;
     margin-bottom: 8px;
   }
-  ul { list-style: none; margin: 0; padding: 0; }
-  li { margin: 4px 0; }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  li {
+    margin: 4px 0;
+    min-width: 0;
+  }
   li.lvl3 a { padding-left: 12px; }
   li.lvl4 a { padding-left: 24px; }
   a {
@@ -62,6 +74,10 @@
     text-decoration: none;
     display: block;
     padding: 2px 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    line-height: 1.45;
   }
   a:hover { color: var(--np-text-primary); }
   a.active { color: var(--np-brand); font-weight: 500; }

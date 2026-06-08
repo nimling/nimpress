@@ -12,6 +12,8 @@ export { default as Breadcrumbs } from './layout/Breadcrumbs.svelte'
 export { default as App } from './layout/App.svelte'
 
 export { default as Page } from './markdown/Page.svelte'
+export { default as ChangelogPage } from './markdown/ChangelogPage.svelte'
+export { default as HeroPage } from './markdown/HeroPage.svelte'
 export { default as CodeBlock } from './markdown/CodeBlock.svelte'
 export { default as MermaidBlock } from './markdown/MermaidBlock.svelte'
 export { default as CalloutTip } from './markdown/CalloutTip.svelte'
@@ -41,6 +43,7 @@ export type {
   PageModule,
   PageMeta,
   Heading,
+  ChangelogEntry,
   SidebarNode,
   Manifest,
   NavRoute,

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 245 70">
+  <defs>
+    <g id="nimpress" font-family="Impact, 'Arial Black', sans-serif" transform="translate(12,0) skewX(-10)">
+      <text x="2" y="58" font-size="62">N</text>
+      <text x="38" y="56" font-size="42">I</text>
+      <text x="49" y="56" font-size="42">M</text>
+      <text x="79" y="55" font-size="42">P</text>
+      <text x="101" y="55" font-size="42">R</text>
+      <text x="124" y="54" font-size="42">E</text>
+      <text x="145" y="54" font-size="42">S</text>
+      <text x="167" y="53" font-size="42">S</text>
+    </g>
+  </defs>
+
+  <use href="#nimpress" fill="#1a0a05" stroke="#0a0503" stroke-width="1" stroke-linejoin="round" paint-order="stroke" transform="translate(8,10)"/>
+  <use href="#nimpress" fill="#2a1108" stroke="#0a0503" stroke-width="1" stroke-linejoin="round" paint-order="stroke" transform="translate(6,8)"/>
+  <use href="#nimpress" fill="#3c1a10" stroke="#0a0503" stroke-width="1" stroke-linejoin="round" paint-order="stroke" transform="translate(5,6)"/>
+  <use href="#nimpress" fill="#4a2114" stroke="#0a0503" stroke-width="1" stroke-linejoin="round" paint-order="stroke" transform="translate(3,4)"/>
+  <use href="#nimpress" fill="#5a2a18" stroke="#0a0503" stroke-width="1" stroke-linejoin="round" paint-order="stroke" transform="translate(2,2)"/>
+  <use href="#nimpress" fill="#CC785C" stroke="#1a0a05" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke"/>
+</svg>

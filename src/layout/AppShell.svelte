@@ -2,29 +2,49 @@
   import Header from './Header.svelte'
   import Sidebar from './Sidebar.svelte'
   import SearchModal from '../search/SearchModal.svelte'
+  import { resolvedRoute } from '../router'
   import type { Snippet } from 'svelte'
 
   let { children }: { children: Snippet } = $props()
 
   let searchOpen = $state(false)
+  let drawerOpen = $state(false)
 
   function onKey(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault()
       searchOpen = true
     }
-    if (e.key === 'Escape') searchOpen = false
+    if (e.key === 'Escape') {
+      searchOpen = false
+      drawerOpen = false
+    }
   }
+
+  $effect(() => {
+    $resolvedRoute
+    drawerOpen = false
+  })
 </script>
 
 <svelte:window onkeydown={onKey} />
 
-<div class="np-app">
-  <Header onOpenSearch={() => (searchOpen = true)} />
+<div class="np-app" class:np-drawer-open={drawerOpen}>
+  <Header
+    onOpenSearch={() => (searchOpen = true)}
+    onToggleDrawer={() => (drawerOpen = !drawerOpen)}
+  />
   <div class="np-body">
-    <aside class="np-aside">
+    <aside class="np-aside" class:open={drawerOpen}>
       <Sidebar />
     </aside>
+    {#if drawerOpen}
+      <button
+        class="np-drawer-backdrop"
+        aria-label="Close menu"
+        onclick={() => (drawerOpen = false)}
+      ></button>
+    {/if}
     <main class="np-main">
       {@render children()}
     </main>
@@ -56,9 +76,42 @@
   .np-main {
     min-height: calc(100vh - var(--np-header-height));
     padding: 32px;
+    min-width: 0;
+  }
+  .np-drawer-backdrop {
+    display: none;
   }
   @media (max-width: 1024px) {
-    .np-body { grid-template-columns: 1fr; }
-    .np-aside { display: none; }
+    .np-body {
+      grid-template-columns: 1fr;
+    }
+    .np-aside {
+      position: fixed;
+      top: var(--np-header-height);
+      left: 0;
+      bottom: 0;
+      width: min(320px, 85vw);
+      height: calc(100vh - var(--np-header-height));
+      z-index: 40;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+    .np-aside.open {
+      transform: translateX(0);
+    }
+    .np-drawer-backdrop {
+      display: block;
+      position: fixed;
+      top: var(--np-header-height);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.35);
+      z-index: 35;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+    }
   }
 </style>

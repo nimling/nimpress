@@ -102,6 +102,10 @@
     <article class="np-prose" bind:this={container}>
       {@html page.html}
     </article>
+    {#if page.frontmatter.footer}
+      <footer class="np-page-footer">{page.frontmatter.footer}</footer>
+    {/if}
+    <div class="np-page-tail"></div>
   </div>
   {#if !page.frontmatter.noToc}
     <div class="np-toc-rail">
@@ -152,5 +156,19 @@
 
   @media (max-width: 1279px) {
     .np-toc-rail { display: none; }
+  }
+
+  .np-page-footer {
+    margin-top: 96px;
+    padding: 32px 0 0;
+    border-top: 1px solid var(--np-divider);
+    text-align: center;
+    color: var(--np-text-faint);
+    font-size: 13px;
+    white-space: pre-line;
+  }
+  .np-page-tail {
+    height: 25vh;
+    min-height: 160px;
   }
 </style>

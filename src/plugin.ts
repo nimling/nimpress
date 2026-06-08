@@ -6,12 +6,14 @@ import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
 import attrs from 'markdown-it-attrs'
 import container from 'markdown-it-container'
+import deflist from 'markdown-it-deflist'
 import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
 import { z } from 'zod'
 import { createHighlighter, type Highlighter } from 'shiki'
 import { buildBanner, readConsumerPackage, type BannerOptions } from './banner'
 import type {
+  ChangelogEntry,
   Frontmatter,
   Heading,
   PageMeta,
@@ -28,7 +30,7 @@ const PAGE_COMPONENT_PREFIX = 'virtual:nimpress/page-component/'
 const frontmatterSchema = z.object({
   title: z.string(),
   slug: z.string().optional(),
-  type: z.union([z.literal('doc'), z.literal('openapi')]).optional(),
+  type: z.union([z.literal('doc'), z.literal('openapi'), z.literal('changelog'), z.literal('hero')]).optional(),
   path: z.string().optional(),
   spec: z.string().optional(),
   scope: z.string().optional(),
@@ -40,7 +42,8 @@ const frontmatterSchema = z.object({
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
-  noToc: z.boolean().optional()
+  noToc: z.boolean().optional(),
+  data: z.record(z.unknown()).optional()
 }).passthrough()
 
 export interface NimpressMarkdownOptions {
@@ -59,6 +62,19 @@ interface ProcessedPage {
   headings: Heading[]
   rawText: string
   openApiSpec?: unknown
+  changelogEntries?: ChangelogEntry[]
+}
+
+function compareVersions(a: string, b: string): number {
+  const pa = String(a ?? '').replace(/^v/i, '').split(/[.\-+]/)
+  const pb = String(b ?? '').replace(/^v/i, '').split(/[.\-+]/)
+  const len = Math.max(pa.length, pb.length)
+  for (let i = 0; i < len; i++) {
+    const ai = parseInt(pa[i] ?? '0', 10) || 0
+    const bi = parseInt(pb[i] ?? '0', 10) || 0
+    if (ai !== bi) return ai - bi
+  }
+  return 0
 }
 
 function slugFromPath(root: string, file: string): string {
@@ -135,6 +151,7 @@ function buildMarkdownIt(highlighter: Highlighter) {
     permalink: anchor.permalink.headerLink({ safariReaderFix: true })
   })
   md.use(attrs)
+  md.use(deflist)
   md.use(footnote)
   md.use(taskLists, { enabled: true })
 
@@ -539,6 +556,7 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
     const files = await walk(contentRoot)
     const result = new Map<string, ProcessedPage>()
     const pathToFile = new Map<string, string>()
+    const changelogGroups = new Map<string, ProcessedPage[]>()
 
     for (const file of files) {
       let p: ProcessedPage | null = null
@@ -550,6 +568,12 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
       }
       if (!p) continue
       if (isExcluded(p.slug)) continue
+      if (p.type === 'changelog') {
+        const list = changelogGroups.get(p.effectivePath) ?? []
+        list.push(p)
+        changelogGroups.set(p.effectivePath, list)
+        continue
+      }
       const seen = pathToFile.get(p.effectivePath)
       if (seen) {
         throw new Error(
@@ -559,6 +583,45 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
       pathToFile.set(p.effectivePath, p.filePath)
       result.set(p.slug, p)
     }
+
+    for (const [path, entries] of changelogGroups) {
+      if (pathToFile.has(path)) {
+        throw new Error(
+          `[nimpress] path ${path} is occupied by both a changelog entry and a regular page`
+        )
+      }
+      entries.sort((a, b) => {
+        const va = String((a.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
+        const vb = String((b.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
+        return compareVersions(vb, va)
+      })
+      const top = entries[0]
+      const mergedSlug = ('changelog' + path).replace(/\//g, '__').replace(/^_+|_+$/g, '') || 'changelog'
+      const merged: ProcessedPage = {
+        slug: mergedSlug,
+        filePath: top.filePath,
+        effectivePath: path,
+        type: 'changelog',
+        frontmatter: {
+          ...top.frontmatter,
+          path,
+          type: 'changelog'
+        },
+        html: '',
+        headings: [],
+        rawText: entries.map((e) => e.rawText).join('\n\n'),
+        changelogEntries: entries.map((e) => ({
+          version: String((e.frontmatter.data as Record<string, unknown> | undefined)?.version ?? ''),
+          title: e.frontmatter.title,
+          html: e.html,
+          headings: e.headings,
+          data: e.frontmatter.data
+        }))
+      }
+      pathToFile.set(path, merged.filePath)
+      result.set(merged.slug, merged)
+    }
+
     pages = result
   }
 
@@ -703,16 +766,21 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
       frontmatter: p.frontmatter,
       html: p.html,
       headings: p.headings,
-      openApiSpec: p.openApiSpec
+      openApiSpec: p.openApiSpec,
+      changelogEntries: p.changelogEntries
     }
     const json = JSON.stringify(payload).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage } from '@nimling/nimpress'
   const page = ${json}
 </script>
 
 {#if page.type === 'openapi' && page.openApiSpec}
   <OpenApiRoot spec={page.openApiSpec} title={page.frontmatter.title} />
+{:else if page.type === 'changelog'}
+  <ChangelogPage {page} />
+{:else if page.type === 'hero'}
+  <HeroPage {page} />
 {:else}
   <Page {page} />
 {/if}

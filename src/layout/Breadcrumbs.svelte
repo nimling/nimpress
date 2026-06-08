@@ -38,11 +38,21 @@
 <style>
   .np-crumbs {
     display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
     font-size: 13px;
     color: var(--np-text-muted);
     margin-bottom: 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    min-width: 0;
+    max-width: 100%;
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
   }
+  .np-crumbs::-webkit-scrollbar { display: none; height: 0; }
+  .np-crumbs > * { flex: 0 0 auto; }
   a {
     color: var(--np-text-muted);
     text-decoration: none;

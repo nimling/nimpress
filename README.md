@@ -1,10 +1,14 @@
-# nimpress
+<div align="center">
+  <img src="assets/logo.svg" alt="Nimpress" width="320" />
 
-Svelte 5 docs framework. Anthropic styling, content-driven routing, custom markdown pipeline, OpenAPI renderer with hash deep links, local search, and samna_auth session login.
+  <span><i>Svelte 5 docs framework with content driven routing, custom markdown pipeline, and a built in OpenAPI renderer.</i></span>
+</div>
 
-Status: unpublished. Consumed by sibling repos via `link:../nimpress`.
+## Getting Started
 
-## Install in a consumer
+Nimpress is consumed as an npm package from sibling repositories. During local development the consumer references it via `link:`. Releases are cut through the same publish pipeline used by `samna-vue-components`.
+
+### Add to a consumer
 
 ```jsonc
 {
@@ -14,16 +18,32 @@ Status: unpublished. Consumed by sibling repos via `link:../nimpress`.
 }
 ```
 
-## Use
+### Wire the Vite plugin
+
+```ts
+import { defineConfig } from 'vite'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import nimpressMarkdown from '@nimling/nimpress/plugin'
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    nimpressMarkdown({ contentDir: 'docs' })
+  ]
+})
+```
+
+### Mount the app
 
 ```ts
 import { createNimpressApp } from '@nimling/nimpress'
 import manifest from 'virtual:nimpress/manifest'
 import searchIndex from 'virtual:nimpress/search'
 import pages from 'virtual:nimpress/pages'
+import '@nimling/nimpress/style.css'
 
 createNimpressApp({
-  title: 'Samna Docs',
+  title: 'Docs',
   contentRoot: 'docs',
   authEndpoint: 'http://localhost:4202',
   clientSlug: 'docs',
@@ -33,54 +53,61 @@ createNimpressApp({
 }).mount(document.getElementById('app')!)
 ```
 
-In `vite.config.ts`:
+### Start developing
 
-```ts
-import nimpressMarkdown from '@nimling/nimpress/plugin'
-
-export default {
-  plugins: [
-    nimpressMarkdown({ contentDir: 'docs' })
-  ]
-}
+```bash
+just install
+just dev
 ```
 
-## Content model
+## Commands
 
-1. Each `.md` file under the content root becomes a page. The file location defines the default route and the default sidebar position. Sibling files sort alphabetically by filename. Sibling directories sort alphabetically by directory name. Frontmatter overrides both.
+| Command | Description |
+|---------|-------------|
+| `just install` | Install dependencies with pnpm |
+| `just build` | Build the library bundle into `dist/` |
+| `just dev` | Run the consumer site that links this package |
+| `just bump` | Patch version bump and push tag |
+| `just bump:minor` | Minor version bump and push tag |
+| `just bump:major` | Major version bump and push tag |
 
-2. Frontmatter fields:
+## Concepts
 
-2.1. `title: string` (required) is the page heading rendered as `<h1>`.
+Detailed guides live in [docs/](./docs/). Start there to learn the content model and renderers.
 
-2.2. `slug: string` is the short label rendered in the sidebar. Falls back to `title` when omitted.
+| Topic | Guide |
+|-------|-------|
+| Page types: `doc`, `openapi`, `changelog`, `hero` | [docs/page-types.md](./docs/page-types.md) |
+| Markdown support and extended syntax | [docs/markdown.md](./docs/markdown.md) |
+| Definition lists for compact term references | [docs/definition-lists.md](./docs/definition-lists.md) |
+| Mermaid diagrams | [docs/mermaid.md](./docs/mermaid.md) |
+| OpenAPI renderer | [docs/openapi.md](./docs/openapi.md) |
+| Changelog renderer | [docs/changelog.md](./docs/changelog.md) |
+| Hero landing pages | [docs/hero.md](./docs/hero.md) |
+| Relative links between pages | [docs/relative-links.md](./docs/relative-links.md) |
+| Frontmatter reference | [docs/frontmatter.md](./docs/frontmatter.md) |
+| Sidebar layout from the content tree | [docs/sidebar.md](./docs/sidebar.md) |
+| Theming and overriding styles | [docs/theming.md](./docs/theming.md) |
+| Auth, scope, and claim guards | [docs/auth.md](./docs/auth.md) |
+| Search index | [docs/search.md](./docs/search.md) |
 
-2.3. `type: 'doc' | 'index' | 'openapi'` selects how the page renders. Defaults to `index` for files named `index.md`, otherwise `doc`. `openapi` activates the OpenAPI renderer.
+## Structure
 
-2.4. `path: string` overrides the route. The default is derived from the file location.
-
-2.5. `spec: string` is required when `type: openapi`. Resolved relative to the `.md` file.
-
-2.6. `order: number` positions the page within its directory.
-
-2.7. `audience: 'public' | 'internal' | 'customer'` or an array of those, gates the page through samna_auth claims.
-
-2.8. `description`, `icon`, `hidden`, `redirect`, `noToc` behave as you'd expect.
-
-3. An `index.md` file becomes the landing page of its containing directory. Clicking the directory in the sidebar navigates to it. Its `slug` field labels the group; its `title` heads the page.
-
-4. An OpenAPI reference page is a regular `.md` with `type: openapi` and `spec: ./<dir>/spec.json`. The plugin reads the spec at build time and the runtime renders it with hash deep links: `#operation/<id>` and `#schema/<name>`.
-
-## Build pipeline
-
-Mirrors `samna-vue-components`. Tag `v*` to publish via `.github/workflows/publish.yml`. Versioning through `../sbump/sbump.sh`.
-
-## Scope
-
-1. Svelte 5 components for layout, markdown rendering, OpenAPI rendering, search, login
-
-2. Vite plugin entry at `@nimling/nimpress/plugin` that walks markdown content, parses frontmatter with zod, renders to html with markdown-it and shiki, emits typed modules per page, and assembles the manifest and MiniSearch corpus from the directory tree
-
-3. Tailwind preset entry at `@nimling/nimpress/tailwind` carrying the Anthropic palette
-
-4. Session auth via `@nimling/samna-auth-edge`
+```
+nimpress/
+├── assets/                 Logo and brand artwork
+├── docs/                   Concept guides linked from the README
+├── src/
+│   ├── index.ts            Public Svelte exports
+│   ├── plugin.ts           Vite plugin (separate entry)
+│   ├── framework/          App bootstrap, router, stores
+│   ├── layout/             Shell, header, sidebar, breadcrumbs, right TOC
+│   ├── markdown/           Page, ChangelogPage, HeroPage, callouts, code blocks
+│   ├── api/                OpenAPI renderer
+│   ├── search/             MiniSearch wrapper and modal
+│   ├── auth/               Session login guard
+│   └── styles/             Tokens and preflight
+├── tailwind.preset.ts      Design tokens exported for consumers
+├── vite.config.ts          Library mode build with two entry points
+└── justfile                Task runner
+```

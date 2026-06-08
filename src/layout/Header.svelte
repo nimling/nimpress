@@ -5,7 +5,13 @@
   import AccountMenu from '../auth/AccountMenu.svelte'
   import Breadcrumbs from './Breadcrumbs.svelte'
 
-  let { onOpenSearch }: { onOpenSearch: () => void } = $props()
+  let {
+    onOpenSearch,
+    onToggleDrawer
+  }: {
+    onOpenSearch: () => void
+    onToggleDrawer?: () => void
+  } = $props()
 
   const config = $derived($configStore)
   const isDark = $derived($theme === 'dark')
@@ -21,6 +27,17 @@
 </script>
 
 <header class="np-header">
+  <button
+    class="np-menu-btn"
+    aria-label="Toggle menu"
+    onclick={() => onToggleDrawer?.()}
+  >
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  </button>
   <a class="np-brand" href="/">
     {#if config.logo}
       <img src={config.logo} alt={config.title} />
@@ -61,9 +78,9 @@
   .np-header {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: 50;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto 1fr auto;
     align-items: center;
     gap: 24px;
     height: var(--np-header-height);
@@ -140,5 +157,37 @@
   .np-icon-btn:hover {
     background-color: var(--np-bg-surface);
     color: var(--np-text-primary);
+  }
+  .np-menu-btn {
+    display: none;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-secondary);
+    cursor: pointer;
+    padding: 0;
+  }
+  .np-menu-btn:hover {
+    color: var(--np-text-primary);
+    border-color: var(--np-border-strong);
+  }
+  @media (max-width: 1024px) {
+    .np-menu-btn { display: inline-flex; }
+    .np-header {
+      gap: 12px;
+      padding: 0 12px;
+    }
+    .np-search-trigger {
+      min-width: 0;
+      width: 36px;
+      padding: 0;
+      justify-content: center;
+    }
+    .np-search-label,
+    .np-search-trigger kbd { display: none; }
   }
 </style>
