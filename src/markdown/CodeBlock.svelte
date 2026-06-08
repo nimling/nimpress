@@ -62,7 +62,12 @@
   .np-code-body :global(pre) {
     margin: 0;
     border-radius: 0;
-    padding: 16px;
+    padding: 0;
     background: transparent;
+    overflow-x: auto;
+  }
+  .np-code-body :global(pre code) {
+    display: block;
+    padding: 12px 0;
   }
 </style>

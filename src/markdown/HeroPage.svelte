@@ -71,11 +71,14 @@
 <style>
   .np-hero {
     position: relative;
-    width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 64px 32px 80px;
+    width: calc(100% + 64px);
+    max-width: none;
+    margin: -32px -32px 0;
+    padding: 0 48px;
     box-sizing: border-box;
+    min-height: calc(100vh - var(--np-header-height));
+    display: flex;
+    align-items: center;
   }
   .np-hero-banner {
     position: absolute;
@@ -85,13 +88,16 @@
     background-repeat: no-repeat;
     opacity: 0.18;
     pointer-events: none;
-    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
     z-index: 0;
   }
   .np-hero-inner {
     position: relative;
     z-index: 1;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 48px;
@@ -101,9 +107,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   @media (min-width: 960px) {
-    .np-hero {
-      padding: 112px 56px 112px;
-    }
+    .np-hero { padding: 0 80px; }
     .np-hero-side .np-hero-inner {
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
       gap: 64px;
@@ -187,6 +191,6 @@
   }
 
   .np-hero-body {
-    margin-top: 24px;
+    margin-top: 48px;
   }
 </style>

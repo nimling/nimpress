@@ -53,7 +53,10 @@
 
   <div class="np-actions">
     <button class="np-search-trigger" onclick={onOpenSearch}>
-      <span class="np-search-icon">⌕</span>
+      <svg class="np-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
       <span class="np-search-label">Search</span>
       <kbd>⌘K</kbd>
     </button>
@@ -80,9 +83,9 @@
     top: 0;
     z-index: 50;
     display: grid;
-    grid-template-columns: auto auto 1fr auto;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 24px;
+    gap: 32px;
     height: var(--np-header-height);
     padding: 0 24px;
     border-bottom: 1px solid var(--np-border);
@@ -91,14 +94,15 @@
   .np-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     color: var(--np-text-primary);
     font-weight: 600;
     text-decoration: none;
   }
   .np-brand img {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
   }
   .np-crumbs-slot {
     display: flex;
@@ -114,32 +118,47 @@
 
   .np-actions {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
+    justify-self: end;
   }
   .np-search-trigger {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 12px;
+    gap: 10px;
+    height: 38px;
+    padding: 0 12px 0 14px;
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-md);
     background-color: var(--np-bg-surface);
     color: var(--np-text-muted);
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
-    min-width: 240px;
+    min-width: 260px;
+    line-height: 1;
   }
   .np-search-trigger:hover { border-color: var(--np-border-strong); }
-  .np-search-label { flex: 1; text-align: left; }
+  .np-search-icon {
+    flex: 0 0 auto;
+    color: var(--np-text-secondary);
+  }
+  .np-search-label {
+    flex: 1;
+    text-align: left;
+    color: var(--np-text-muted);
+  }
   .np-search-trigger kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-sm);
-    padding: 1px 6px;
-    font-size: 11px;
+    font-size: 12.5px;
+    font-family: var(--np-font-mono);
     color: var(--np-text-secondary);
     background-color: var(--np-bg);
+    line-height: 1;
   }
   .np-icon-btn {
     width: 32px;

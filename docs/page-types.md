@@ -62,15 +62,15 @@ data:
 [GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
 :::
 
-:::features
+::::features
 :::feature {"icon":"⚡","title":"Fast","link":"/guide"}
 Vite plugin, shiki at build time.
 :::
 
-:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+:::feature {"icon":"/icons/themable.svg","title":"Themable","link":"/docs/theming"}
 Tokens overridable in your own CSS.
 :::
-:::
+::::
 ```
 
 See [hero.md](./hero.md) for the band field reference.

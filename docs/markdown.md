@@ -104,27 +104,31 @@ Directive payload fields:
 
 A responsive grid of feature cards. Each card is a `:::feature` directive whose opening line carries a JSON object with title, icon, and an optional link. The body of the directive is markdown.
 
+The outer container uses **four colons** (`::::features`) so the inner three colon `:::feature` close markers do not collide with the outer close.
+
 ````md
-:::features {"columns":3}
+::::features {"columns":3}
 :::feature {"icon":"⚡","title":"Fast","link":"/guide"}
 Vite plugin, shiki at build time.
 :::
 
-:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+:::feature {"icon":"/icons/themable.svg","title":"Themable","link":"/docs/theming"}
 Tokens overridable in your own CSS.
 :::
 
 :::feature {"icon":"🔌","title":"OpenAPI built in","link":"/docs/openapi"}
 Render any 3.1 spec with hash deep links.
 :::
-:::
+::::
 ````
 
 Directive payload fields:
 
-1. `columns` on `:::features` pins the grid to that column count. Omit for auto fit.
+1. `columns` on `::::features` pins the grid to that column count. Omit for auto fit.
 
 2. Each `:::feature` accepts `title`, `icon`, and `link`. The body is markdown rendered inside the card.
+
+3. `icon` accepts either an ASCII or emoji character (`⚡`, `📚`, `→`) **or** a path to an image asset (`/icons/fast.svg`, `./art/themable.png`, `https://...`). The renderer detects the form automatically.
 
 ## Code fences
 

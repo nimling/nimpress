@@ -10,11 +10,24 @@
     link?: string
     bodyHtml?: string
   } = $props()
+
+  const isImage = $derived(
+    !!icon &&
+      (/^(https?:)?\/\//.test(icon) ||
+        icon.startsWith('/') ||
+        icon.startsWith('./') ||
+        icon.startsWith('../') ||
+        /\.(svg|png|jpe?g|webp|gif|avif)(\?.*)?$/i.test(icon))
+  )
 </script>
 
 <svelte:element this={link ? 'a' : 'div'} class="np-feature-card" href={link || undefined}>
   {#if icon}
-    <span class="np-feature-icon">{icon}</span>
+    {#if isImage}
+      <img class="np-feature-icon np-feature-icon-img" src={icon} alt="" />
+    {:else}
+      <span class="np-feature-icon np-feature-icon-text">{icon}</span>
+    {/if}
   {/if}
   <div class="np-feature-content">
     {#if title}<h3>{title}</h3>{/if}
@@ -39,9 +52,19 @@
     transform: translateY(-2px);
   }
   .np-feature-icon {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .np-feature-icon-text {
     font-size: 24px;
     line-height: 1;
-    flex: 0 0 auto;
+  }
+  .np-feature-icon-img {
+    object-fit: contain;
   }
   .np-feature-content { min-width: 0; }
   .np-feature-content h3 {

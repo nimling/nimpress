@@ -54,15 +54,15 @@ The hero page renders the markdown body below the band. Authors compose action b
 [GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
 :::
 
-:::features
+::::features
 :::feature {"icon":"⚡","title":"Fast","link":"/guide"}
 Vite plugin, shiki at build time.
 :::
 
-:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+:::feature {"icon":"/icons/themable.svg","title":"Themable","link":"/docs/theming"}
 Tokens overridable in your own CSS.
 :::
-:::
+::::
 ````
 
 ## Where to use
