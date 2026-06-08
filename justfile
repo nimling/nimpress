@@ -24,3 +24,9 @@ publish:
 
 deploy:
     ../sbump/sbump.sh patch --json package.json@.version --push-version --auto --workflow
+
+deploy-minor:
+    ../sbump/sbump.sh minor --json package.json@.version --push-version --auto --workflow
+
+deploy-major:
+    ../sbump/sbump.sh major --json package.json@.version --push-version --auto --workflow
