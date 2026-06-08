@@ -33,3 +33,7 @@ Group collapse state persists in `localStorage` through the `sidebar` store. Aut
 ## OpenAPI tag entries
 
 Any `type: openapi` page adds one child entry per spec tag. Each tag link is `<page path>#tag/<tag name>`. Operations under each tag stay accessible via search and via direct hash links such as `#operation/<id>`.
+
+## Changelog version entries
+
+Any `type: changelog` collection page adds one child entry per release. Each entry's text is `v<version>` and the link is `<page path>#v<version>`. Clicking the sidebar entry navigates to the collection page and expands that release, scrolling it into view via the same hash routing the right rail TOC uses.

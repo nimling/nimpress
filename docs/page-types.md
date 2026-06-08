@@ -28,19 +28,20 @@ See [openapi.md](./openapi.md) for the rendered structure.
 
 ## `changelog`
 
-Many markdown files with the same `path` collapse into one long page. Each file becomes a collapsible entry headed by its `data.version`. Entries are ordered newest first by version, parsed semver style.
+Many markdown files sharing one `title` and living in the same folder collapse into one long page. Each file becomes one entry headed by its `data.version` pill and `data.title`. Entries are ordered newest first by version, parsed semver style.
 
 ```yaml
 ---
-title: 1.2.0 cookie refresh
+title: Changelog
 type: changelog
-path: /docs/changelog
 data:
-  version: 1.2.0
+  version: 1.4.2
+  title: Booking calendars, code actions, full user management
+  description: One short sentence summary of this release.
 ---
 ```
 
-See [changelog.md](./changelog.md) for the rendered structure and version sort rules.
+See [changelog.md](./changelog.md) for the rendered structure, grouping rules, and version sort.
 
 ## `hero`
 
@@ -77,4 +78,4 @@ See [hero.md](./hero.md) for the band field reference.
 
 ## Notes
 
-Pages with type `changelog` may share a `path` with each other. Pages with any other type that share a `path` raise a build error so duplicate routes never reach the runtime.
+Pages with type `changelog` are grouped by `(parent folder, title)` and collapse into one collection page. Pages of any other type that share a route raise a build error so duplicate routes never reach the runtime.

@@ -35,7 +35,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 1. `type: openapi` requires `spec: ./path/to/spec.json` relative to the markdown file.
 
-2. `type: changelog` requires `data.version: '1.2.3'`. Multiple files share the same `path`. The plugin groups them.
+2. `type: changelog` requires `data.version: '1.2.3'`, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. No `path` field. See [changelog-entries.md](./changelog-entries.md).
 
 3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids do NOT live in `data`. Compose them as `:::actions` and `:::features` in the markdown body. See `docs/hero.md` and `docs/markdown.md`.
 
@@ -75,7 +75,7 @@ Defaults flow from `frontmatter.description` and the site level `site` config in
 
 1. Never invent fields the schema does not declare. Add them to the schema and the type definitions first, in the same change.
 
-2. Never set `path` to a value that conflicts with another page's `path`. The build raises an error. The only exception is multiple `type: changelog` pages sharing one `path`.
+2. Never set `path` to a value that conflicts with another page's `path`. The build raises an error. `type: changelog` entries derive their route from the folder, never set `path` on them.
 
 3. Never put action buttons or feature grids inside `data`. They live in the markdown body via `:::actions` and `:::features`.
 

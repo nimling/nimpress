@@ -641,7 +641,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       for (const [key, value] of Object.entries(defaults)) {
         const k = key as keyof Frontmatter
         if (fm[k] === undefined || fm[k] === null || fm[k] === '') {
-          ;(fm as Record<string, unknown>)[k] = value
+          ;(fm as unknown as Record<string, unknown>)[k] = value
         }
       }
     }
@@ -828,6 +828,13 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
             slug: `${t.page!.slug}__tag__${tag.name}`
           }))
           node.items = [...tagNodes, ...items]
+        } else if (t.page.type === 'changelog' && t.page.changelogEntries?.length) {
+          const versionNodes: SidebarNode[] = t.page.changelogEntries.map((e) => ({
+            text: e.version ? `v${e.version}` : (e.title || 'unreleased'),
+            link: `${t.page!.effectivePath}#${e.slug}`,
+            slug: `${t.page!.slug}__${e.slug}`
+          }))
+          node.items = items.length ? [...versionNodes, ...items] : versionNodes
         } else if (items.length) {
           node.items = items
         }

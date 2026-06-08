@@ -5,7 +5,7 @@
 
   let {
     op,
-    tryState,
+    tryState = $bindable(),
     securitySchemes = {}
   }: {
     op: FlatOperation

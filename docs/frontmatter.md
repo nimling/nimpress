@@ -41,7 +41,7 @@ SEO and social card metadata written to `<head>` at build time and re applied on
 
 Arbitrary object handed to the renderer the page selected.
 
-1. `type: changelog` reads `data.version`.
+1. `type: changelog` reads `data.version` for sort order, `data.title` for the per release headline, and `data.description` for the per release summary line. The top level `title` is the shared collection title and the grouping key.
 
 2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [markdown.md](./markdown.md), not in `data`.
 
@@ -55,7 +55,7 @@ A frontmatter `path` overrides this entirely.
 
 ## Duplicate paths
 
-Two pages sharing the same effective `path` raise a build error. The exception is two `changelog` pages, which collapse into one rendered page. See [changelog.md](./changelog.md).
+Two pages sharing the same effective `path` raise a build error. `type: changelog` entries do not declare `path` at all; they are grouped by `(parent folder, title)` and collapse into one rendered page mounted at the folder's path. See [changelog.md](./changelog.md).
 
 ## Outside contentDir
 
