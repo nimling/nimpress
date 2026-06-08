@@ -44,6 +44,7 @@
 
     const groups = container.querySelectorAll<HTMLElement>('.np-code-group')
     for (const group of Array.from(groups)) {
+      if (group.parentElement?.classList.contains('np-code-mount')) continue
       const pres = Array.from(group.querySelectorAll<HTMLElement>('pre'))
       if (pres.length === 0) continue
       const tabs = pres.map((pre) => ({
