@@ -29,7 +29,7 @@
     },
     "./tailwind": {
       "types": "./dist/tailwind.preset.d.ts",
-      "import": "./dist/tailwind.preset.js"
+      "import": "./dist/tailwind.preset.es.js"
     },
     "./style.css": "./dist/style.css"
   },
