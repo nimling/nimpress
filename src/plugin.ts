@@ -25,7 +25,42 @@ import type {
 const VIRTUAL_MANIFEST = 'virtual:nimpress/manifest'
 const VIRTUAL_SEARCH = 'virtual:nimpress/search'
 const VIRTUAL_PAGES = 'virtual:nimpress/pages'
+const VIRTUAL_BODIES = 'virtual:nimpress/bodies'
 const PAGE_COMPONENT_PREFIX = 'virtual:nimpress/page-component/'
+const PAGE_BODY_PREFIX = 'virtual:nimpress/page-body/'
+
+const openGraphSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  type: z.string().optional(),
+  image: z.string().optional(),
+  imageAlt: z.string().optional(),
+  url: z.string().optional(),
+  siteName: z.string().optional(),
+  locale: z.string().optional()
+}).passthrough()
+
+const twitterSchema = z.object({
+  card: z.string().optional(),
+  site: z.string().optional(),
+  creator: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  image: z.string().optional(),
+  imageAlt: z.string().optional()
+}).passthrough()
+
+const metaTagsSchema = z.object({
+  description: z.string().optional(),
+  canonical: z.string().optional(),
+  robots: z.string().optional(),
+  keywords: z.union([z.string(), z.array(z.string())]).optional(),
+  author: z.string().optional(),
+  themeColor: z.string().optional(),
+  og: openGraphSchema.optional(),
+  twitter: twitterSchema.optional(),
+  jsonLd: z.unknown().optional()
+}).passthrough()
 
 const frontmatterSchema = z.object({
   title: z.string(),
@@ -43,6 +78,8 @@ const frontmatterSchema = z.object({
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
   noToc: z.boolean().optional(),
+  footer: z.string().optional(),
+  meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
 
@@ -79,6 +116,11 @@ function compareVersions(a: string, b: string): number {
 
 function slugFromPath(root: string, file: string): string {
   const rel = relative(root, file).split(sep).join('/')
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error(
+      `[nimpress] content file is outside contentDir.\n  contentDir: ${root}\n  file: ${file}\nCheck the working directory you run vite from and the contentDir option.`
+    )
+  }
   return rel.replace(/\.md$/, '').replace(/\/index$/, '').replace(/^index$/, '')
 }
 
@@ -121,12 +163,17 @@ function slugify(text: string): string {
     .replace(/\s+/g, '-')
 }
 
-function buildMarkdownIt(highlighter: Highlighter) {
+type ContainerOpts = {
+  render: (tokens: { nesting: number; info: string }[], idx: number) => string
+  validate?: (params: string) => boolean
+}
+
+function buildMarkdownIt(highlighter: Highlighter): MarkdownIt {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: false,
-    highlight(code, lang) {
+    highlight(code: string, lang: string): string {
       const aliases: Record<string, string> = {
         curl: 'bash',
         sh: 'bash',
@@ -155,10 +202,14 @@ function buildMarkdownIt(highlighter: Highlighter) {
   md.use(footnote)
   md.use(taskLists, { enabled: true })
 
+  const useContainer = (name: string, opts: ContainerOpts) => {
+    ;(md.use as (...args: unknown[]) => MarkdownIt)(container, name, opts)
+  }
+
   const calloutTypes = ['tip', 'note', 'warning', 'info', 'check']
   for (const type of calloutTypes) {
-    md.use(container, type, {
-      render(tokens: { nesting: number; info: string }[], idx: number) {
+    useContainer(type, {
+      render(tokens, idx) {
         if (tokens[idx].nesting === 1) {
           const title = tokens[idx].info.trim().slice(type.length).trim() || type
           return `<div class="np-callout np-callout-${type}"><div class="np-callout-body"><div class="np-callout-title">${md.utils.escapeHtml(title)}</div>`
@@ -168,19 +219,19 @@ function buildMarkdownIt(highlighter: Highlighter) {
     })
   }
 
-  md.use(container, 'cards', {
-    render(tokens: { nesting: number }[], idx: number) {
+  useContainer('cards', {
+    render(tokens, idx) {
       return tokens[idx].nesting === 1
         ? '<div class="np-cards-grid">'
         : '</div>'
     }
   })
 
-  md.use(container, 'details', {
-    validate(params: string) {
+  useContainer('details', {
+    validate(params) {
       return /^details\b/.test(params.trim())
     },
-    render(tokens: { nesting: number; info: string }[], idx: number) {
+    render(tokens, idx) {
       if (tokens[idx].nesting === 1) {
         const m = tokens[idx].info.trim().match(/^details\s*(.*)$/)
         const title = (m && m[1]) || 'Details'
@@ -190,15 +241,73 @@ function buildMarkdownIt(highlighter: Highlighter) {
     }
   })
 
-  md.use(container, 'code-group', {
-    render(tokens: { nesting: number }[], idx: number) {
+  useContainer('code-group', {
+    render(tokens, idx) {
       return tokens[idx].nesting === 1
         ? '<div class="np-code-group">'
         : '</div>'
     }
   })
 
+  useContainer('actions', {
+    render(tokens, idx) {
+      if (tokens[idx].nesting === 1) {
+        const json = tokens[idx].info.trim().slice('actions'.length).trim()
+        const data = json ? safeParseJson(json, tokens[idx].info) : {}
+        const align = typeof data?.align === 'string' ? data.align : 'start'
+        return `<div class="np-actions" data-align="${md.utils.escapeHtml(align)}">`
+      }
+      return '</div>'
+    }
+  })
+
+  useContainer('features', {
+    render(tokens, idx) {
+      if (tokens[idx].nesting === 1) {
+        const json = tokens[idx].info.trim().slice('features'.length).trim()
+        const data = json ? safeParseJson(json, tokens[idx].info) : {}
+        const cols = typeof data?.columns === 'number' ? data.columns : 0
+        const colsAttr = cols > 0 ? ` data-columns="${cols}"` : ''
+        return `<div class="np-features"${colsAttr}>`
+      }
+      return '</div>'
+    }
+  })
+
+  useContainer('feature', {
+    render(tokens, idx) {
+      if (tokens[idx].nesting === 1) {
+        const json = tokens[idx].info.trim().slice('feature'.length).trim()
+        const data = json ? safeParseJson(json, tokens[idx].info) : {}
+        const payload = encodeAttr(JSON.stringify(data))
+        return `<div class="np-feature" data-config="${payload}"><div class="np-feature-body">`
+      }
+      return '</div></div>'
+    }
+  })
+
   return md
+}
+
+function safeParseJson(raw: string, full: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+    return {}
+  } catch {
+    console.warn(`[nimpress] invalid JSON in directive: ${full}`)
+    return {}
+  }
+}
+
+function encodeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 function rewriteMermaid(source: string): string {
@@ -712,7 +821,8 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
         description: p.frontmatter.description,
         order: p.frontmatter.order,
         hidden: p.frontmatter.hidden,
-        redirect: p.frontmatter.redirect
+        redirect: p.frontmatter.redirect,
+        meta: p.frontmatter.meta
       }
       pageMap[slug] = meta
       byPath[p.effectivePath] = slug
@@ -756,33 +866,62 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
     return `export const pages = {\n${entries.join(',\n')}\n}\nexport default pages\n`
   }
 
-  function buildPageComponent(slug: string): string | null {
+  function buildBodiesEntry(): string {
+    const entries: string[] = []
+    for (const slug of pages.keys()) {
+      const id = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
+      entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
+    }
+    return `export const bodies = {\n${entries.join(',\n')}\n}\nexport default bodies\n`
+  }
+
+  function buildPageBody(slug: string): string | null {
     const p = pages.get(slug)
     if (!p) return null
     const payload = {
-      slug: p.slug,
-      path: p.effectivePath,
-      type: p.type,
-      frontmatter: p.frontmatter,
       html: p.html,
       headings: p.headings,
       openApiSpec: p.openApiSpec,
       changelogEntries: p.changelogEntries
     }
-    const json = JSON.stringify(payload).replace(/<\/script>/g, '<\\/script>')
+    return `export default ${JSON.stringify(payload)}\n`
+  }
+
+  function buildPageComponent(slug: string): string | null {
+    const p = pages.get(slug)
+    if (!p) return null
+    const shell = {
+      slug: p.slug,
+      path: p.effectivePath,
+      type: p.type,
+      frontmatter: p.frontmatter
+    }
+    const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
+    const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage } from '@nimling/nimpress'
-  const page = ${json}
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, setPageMeta } from '@nimling/nimpress'
+  import type { PageBody } from '@nimling/nimpress'
+  const shell = ${json}
+  setPageMeta(shell)
+  const bodyPromise: Promise<{ default: PageBody }> = import(${JSON.stringify(bodyId)})
 </script>
 
-{#if page.type === 'openapi' && page.openApiSpec}
-  <OpenApiRoot spec={page.openApiSpec} title={page.frontmatter.title} />
-{:else if page.type === 'changelog'}
-  <ChangelogPage {page} />
-{:else if page.type === 'hero'}
-  <HeroPage {page} />
+{#if shell.type === 'hero'}
+  <HeroPage page={shell} {bodyPromise} />
 {:else}
-  <Page {page} />
+  {#await bodyPromise}
+    <div class="np-page-loading" aria-busy="true"></div>
+  {:then mod}
+    {#if shell.type === 'openapi' && mod.default.openApiSpec}
+      <OpenApiRoot spec={mod.default.openApiSpec} title={shell.frontmatter.title} />
+    {:else if shell.type === 'changelog'}
+      <ChangelogPage page={{ ...shell, ...mod.default }} />
+    {:else}
+      <Page page={{ ...shell, ...mod.default }} />
+    {/if}
+  {:catch err}
+    <div class="np-page-error">Failed to load page body: {String(err)}</div>
+  {/await}
 {/if}
 `
   }
@@ -826,18 +965,22 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
         ctx.server.config.logger.error(String(err))
         return
       }
-      const mod = ctx.server.moduleGraph.getModuleById('\0' + VIRTUAL_MANIFEST)
-      const mod2 = ctx.server.moduleGraph.getModuleById('\0' + VIRTUAL_SEARCH)
-      const mod3 = ctx.server.moduleGraph.getModuleById('\0' + VIRTUAL_PAGES)
-      const out = [mod, mod2, mod3].filter(Boolean) as never[]
-      return out
+      const ids = [VIRTUAL_MANIFEST, VIRTUAL_SEARCH, VIRTUAL_PAGES, VIRTUAL_BODIES]
+      const mods = ids
+        .map((id) => ctx.server.moduleGraph.getModuleById('\0' + id))
+        .filter(Boolean) as never[]
+      return mods
     },
 
     resolveId(id) {
       if (id === VIRTUAL_MANIFEST) return '\0' + VIRTUAL_MANIFEST
       if (id === VIRTUAL_SEARCH) return '\0' + VIRTUAL_SEARCH
       if (id === VIRTUAL_PAGES) return '\0' + VIRTUAL_PAGES
+      if (id === VIRTUAL_BODIES) return '\0' + VIRTUAL_BODIES
       if (id.startsWith(PAGE_COMPONENT_PREFIX) && id.endsWith('.svelte')) {
+        return id
+      }
+      if (id.startsWith(PAGE_BODY_PREFIX) && id.endsWith('.js')) {
         return id
       }
       return null
@@ -853,9 +996,16 @@ export default function nimpressMarkdown(options: NimpressMarkdownOptions): Plug
       if (id === '\0' + VIRTUAL_PAGES) {
         return buildPagesEntry()
       }
+      if (id === '\0' + VIRTUAL_BODIES) {
+        return buildBodiesEntry()
+      }
       if (id.startsWith(PAGE_COMPONENT_PREFIX) && id.endsWith('.svelte')) {
         const safe = id.slice(PAGE_COMPONENT_PREFIX.length, -'.svelte'.length)
         return buildPageComponent(fromUrlSlug(safe))
+      }
+      if (id.startsWith(PAGE_BODY_PREFIX) && id.endsWith('.js')) {
+        const safe = id.slice(PAGE_BODY_PREFIX.length, -'.js'.length)
+        return buildPageBody(fromUrlSlug(safe))
       }
       return null
     }

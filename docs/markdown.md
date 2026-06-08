@@ -1,6 +1,6 @@
 # Markdown
 
-Built on `markdown-it` with a focused set of plugins. CommonMark plus the extensions listed below.
+Built on `markdown-it` with a focused set of plugins. CommonMark plus the extensions below.
 
 ## Headings and anchors
 
@@ -73,7 +73,7 @@ value = 1
 
 ## Cards
 
-A grid of cards. Each card is a fenced block with `{href icon}` attributes.
+A grid of cards.
 
 ```md
 :::cards
@@ -82,11 +82,55 @@ A grid of cards. Each card is a fenced block with `{href icon}` attributes.
 :::
 ```
 
+## Action buttons
+
+A row of primary, secondary, or ghost buttons. Each item is a markdown link followed by a JSON object that configures it.
+
+````md
+:::actions {"align":"start"}
+[Get started](/guide){"variant":"primary"}
+[GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
+[Learn more](/docs/theming){"variant":"ghost"}
+:::
+````
+
+Directive payload fields:
+
+1. `align` on the outer `:::actions` directive sets row alignment: `start`, `center`, `end`.
+
+2. `variant` on each link sets button style: `primary`, `secondary`, `ghost`.
+
+## Feature grid
+
+A responsive grid of feature cards. Each card is a `:::feature` directive whose opening line carries a JSON object with title, icon, and an optional link. The body of the directive is markdown.
+
+````md
+:::features {"columns":3}
+:::feature {"icon":"⚡","title":"Fast","link":"/guide"}
+Vite plugin, shiki at build time.
+:::
+
+:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+Tokens overridable in your own CSS.
+:::
+
+:::feature {"icon":"🔌","title":"OpenAPI built in","link":"/docs/openapi"}
+Render any 3.1 spec with hash deep links.
+:::
+:::
+````
+
+Directive payload fields:
+
+1. `columns` on `:::features` pins the grid to that column count. Omit for auto fit.
+
+2. Each `:::feature` accepts `title`, `icon`, and `link`. The body is markdown rendered inside the card.
+
 ## Code fences
 
 Syntax highlighting is rendered at build time with `shiki` using the `github-dark` theme. The language label appears in the block header.
 
-Aliases: `curl` and `sh`/`zsh`/`console` render as `bash`, `hurl` renders as `http`.
+Aliases: `curl` and `sh`/`zsh`/`console` render as `bash`. `hurl` renders as `http`.
 
 ## Mermaid
 

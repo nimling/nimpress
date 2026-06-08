@@ -25,5 +25,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"],
-  "exclude": ["src/plugin.ts", "src/plugin/**/*", "src/**/*.node.ts"]
+  "exclude": ["src/plugin.ts", "src/plugin/**/*", "src/banner.ts", "src/**/*.node.ts"]
 }

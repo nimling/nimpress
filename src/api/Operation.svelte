@@ -111,8 +111,8 @@
       <aside class="np-op-right">
         <div class="np-op-right-sticky">
           <div class="np-op-right-card">
-            <TryPanel {op} {servers} {securitySchemes} bind:state={tryState} />
-            <CodeExamples {op} {securitySchemes} state={tryState} />
+            <TryPanel {op} {servers} {securitySchemes} bind:tryState />
+            <CodeExamples {op} serverUrl={tryState.serverUrl} />
           </div>
         </div>
       </aside>

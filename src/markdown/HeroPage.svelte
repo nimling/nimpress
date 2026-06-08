@@ -1,21 +1,14 @@
 <script lang="ts">
-  import type { PageModule } from '../types'
+  import type { PageBody, PageShell } from '../types'
   import Page from './Page.svelte'
 
-  let { page }: { page: PageModule } = $props()
-
-  interface HeroAction {
-    text: string
-    link: string
-    variant?: 'primary' | 'secondary' | 'ghost'
-  }
-
-  interface HeroFeature {
-    title: string
-    details?: string
-    icon?: string
-    link?: string
-  }
+  let {
+    page,
+    bodyPromise
+  }: {
+    page: PageShell
+    bodyPromise: Promise<{ default: PageBody }>
+  } = $props()
 
   type Align = 'start' | 'end' | 'center'
 
@@ -29,9 +22,6 @@
   const align = $derived<Align>(
     data.align === 'end' || data.align === 'center' ? (data.align as Align) : 'start'
   )
-  const actions = $derived<HeroAction[]>(Array.isArray(data.actions) ? (data.actions as HeroAction[]) : [])
-  const features = $derived<HeroFeature[]>(Array.isArray(data.features) ? (data.features as HeroFeature[]) : [])
-  const hasBody = $derived(!!page.html && page.html.trim() !== '')
   const sideBySide = $derived(!!image)
 </script>
 
@@ -59,13 +49,6 @@
       {#if lead}
         <p class="np-hero-lead">{lead}</p>
       {/if}
-      {#if actions.length}
-        <div class="np-hero-actions">
-          {#each actions as a, i (a.link || `act-${i}`)}
-            <a href={a.link} class={`np-hero-btn np-hero-btn-${a.variant ?? 'primary'}`}>{a.text}</a>
-          {/each}
-        </div>
-      {/if}
     </div>
     {#if image}
       <div class="np-hero-art">
@@ -73,35 +56,17 @@
       </div>
     {/if}
   </div>
-
-  {#if features.length}
-    <div class="np-hero-features">
-      {#each features as f, i (f.title || `f-${i}`)}
-        <svelte:element
-          this={f.link ? 'a' : 'div'}
-          class="np-hero-feature"
-          href={f.link}
-        >
-          {#if f.icon}<span class="np-hero-feature-icon">{f.icon}</span>{/if}
-          <div class="np-hero-feature-body">
-            <h3>{f.title}</h3>
-            {#if f.details}<p>{f.details}</p>{/if}
-          </div>
-        </svelte:element>
-      {/each}
-    </div>
-  {/if}
 </section>
 
-{#if hasBody}
-  <div class="np-hero-body">
-    <Page {page} />
-  </div>
-{:else if page.frontmatter.footer}
-  <footer class="np-hero-footer">{page.frontmatter.footer}</footer>
-{/if}
-
-<div class="np-hero-tail"></div>
+<div class="np-hero-body">
+  {#await bodyPromise}
+    <div class="np-page-loading" aria-busy="true"></div>
+  {:then mod}
+    <Page page={{ ...page, ...mod.default }} />
+  {:catch err}
+    <div class="np-page-error">Failed to load page body: {String(err)}</div>
+  {/await}
+</div>
 
 <style>
   .np-hero {
@@ -152,24 +117,15 @@
     }
   }
 
-  .np-hero-align-start .np-hero-copy {
-    text-align: left;
-    align-items: flex-start;
-  }
-  .np-hero-align-end .np-hero-copy {
-    text-align: left;
-    align-items: flex-start;
-  }
-  .np-hero-align-center {
-    text-align: center;
-  }
+  .np-hero-align-start .np-hero-copy { text-align: left; align-items: flex-start; }
+  .np-hero-align-end .np-hero-copy { text-align: left; align-items: flex-start; }
+  .np-hero-align-center { text-align: center; }
   .np-hero-align-center .np-hero-copy {
     align-items: center;
     text-align: center;
     margin: 0 auto;
     max-width: 760px;
   }
-  .np-hero-align-center .np-hero-actions { justify-content: center; }
   .np-hero-align-center .np-hero-lead { margin-left: auto; margin-right: auto; }
 
   .np-hero-copy {
@@ -191,7 +147,6 @@
     font-weight: 700;
     margin: 0 0 16px;
   }
-
   .np-hero-title {
     font-size: 56px;
     line-height: 1.05;
@@ -217,42 +172,6 @@
     margin: 0 0 32px;
     max-width: 60ch;
   }
-  .np-hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 24px;
-  }
-  .np-hero-btn {
-    display: inline-flex;
-    align-items: center;
-    height: 44px;
-    padding: 0 22px;
-    border-radius: var(--np-radius-md);
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    border: 1px solid transparent;
-  }
-  .np-hero-btn-primary {
-    background-color: var(--np-brand);
-    color: #fff;
-  }
-  .np-hero-btn-primary:hover {
-    background-color: var(--np-brand-hover, var(--np-brand));
-    filter: brightness(1.05);
-  }
-  .np-hero-btn-secondary {
-    background-color: var(--np-bg-surface);
-    color: var(--np-text-primary);
-    border-color: var(--np-border);
-  }
-  .np-hero-btn-secondary:hover { border-color: var(--np-border-strong); }
-  .np-hero-btn-ghost {
-    background: transparent;
-    color: var(--np-text-secondary);
-  }
-  .np-hero-btn-ghost:hover { color: var(--np-text-primary); }
 
   .np-hero-art {
     display: flex;
@@ -267,63 +186,7 @@
     border-radius: var(--np-radius-lg);
   }
 
-  .np-hero-features {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-top: 72px;
-  }
-  .np-hero-feature {
-    display: flex;
-    gap: 16px;
-    padding: 22px;
-    border-radius: var(--np-radius-lg);
-    background-color: var(--np-bg-card);
-    border: 1px solid var(--np-border);
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.15s ease, transform 0.15s ease;
-  }
-  a.np-hero-feature:hover {
-    border-color: var(--np-brand);
-    transform: translateY(-2px);
-  }
-  .np-hero-feature-icon {
-    font-size: 24px;
-    line-height: 1;
-    flex: 0 0 auto;
-  }
-  .np-hero-feature-body { min-width: 0; }
-  .np-hero-feature-body h3 {
-    margin: 0 0 6px;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--np-text-primary);
-  }
-  .np-hero-feature-body p {
-    margin: 0;
-    color: var(--np-text-secondary);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-
   .np-hero-body {
-    margin-top: 80px;
-  }
-  .np-hero-footer {
-    margin: 96px auto 0;
-    max-width: 720px;
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    padding: 32px 24px 0;
-    border-top: 1px solid var(--np-divider);
-    white-space: pre-line;
-  }
-  .np-hero-tail {
-    height: 25vh;
-    min-height: 160px;
+    margin-top: 24px;
   }
 </style>

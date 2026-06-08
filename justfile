@@ -23,4 +23,4 @@ publish:
     pnpm publish --no-git-checks
 
 deploy:
-    ../sbump/sbump.sh patch --json package.json@.version --push-version --auto
+    ../sbump/sbump.sh patch --json package.json@.version --push-version --auto --workflow

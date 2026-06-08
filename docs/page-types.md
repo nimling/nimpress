@@ -44,32 +44,36 @@ See [changelog.md](./changelog.md) for the rendered structure and version sort r
 
 ## `hero`
 
-Oversized landing page with a tagline, action buttons, and a feature grid. Frontmatter `data` carries the hero content. The markdown body below the hero renders through the standard `doc` shell if present.
+Oversized landing page with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top. The markdown body renders below the band through the standard prose shell. Action buttons and feature grids live in the markdown body, not in `data`. See [markdown.md](./markdown.md#action-buttons) and [markdown.md](./markdown.md#feature-grid) for the directives.
 
 ```yaml
 ---
 title: Welcome to the docs
 type: hero
 data:
+  eyebrow: Documentation
   tagline: Build great docs with Svelte
-  actions:
-    - text: Get started
-      link: /guide
-      variant: primary
-    - text: GitHub
-      link: https://github.com/nimling/nimpress
-      variant: secondary
-  features:
-    - title: Fast
-      icon: ⚡
-      details: Vite plugin, shiki at build time
-    - title: Themable
-      icon: 🎨
-      details: Tokens overridable in your own CSS
+  image: /hero.svg
+  align: start
 ---
+
+:::actions
+[Get started](/guide){"variant":"primary"}
+[GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
+:::
+
+:::features
+:::feature {"icon":"⚡","title":"Fast","link":"/guide"}
+Vite plugin, shiki at build time.
+:::
+
+:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+Tokens overridable in your own CSS.
+:::
+:::
 ```
 
-See [hero.md](./hero.md) for the full schema.
+See [hero.md](./hero.md) for the band field reference.
 
 ## Notes
 

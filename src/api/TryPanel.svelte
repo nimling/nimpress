@@ -7,12 +7,12 @@
     op,
     servers = [],
     securitySchemes = {},
-    state = $bindable()
+    tryState = $bindable()
   }: {
     op: FlatOperation
     servers?: FlatServer[]
     securitySchemes?: Record<string, SecurityScheme>
-    state: TryState
+    tryState: TryState
   } = $props()
 
   const schemeNames = $derived(Object.keys(securitySchemes ?? {}))
@@ -29,8 +29,8 @@
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return
       const obj = JSON.parse(raw) as Record<string, string>
-      if (state.selectedScheme && obj[state.selectedScheme]) {
-        state.authValue = obj[state.selectedScheme]
+      if (tryState.selectedScheme && obj[tryState.selectedScheme]) {
+        tryState.authValue = obj[tryState.selectedScheme]
       }
     } catch {}
   }
@@ -39,19 +39,19 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       const obj = raw ? (JSON.parse(raw) as Record<string, string>) : {}
-      if (state.selectedScheme) obj[state.selectedScheme] = state.authValue
+      if (tryState.selectedScheme) obj[tryState.selectedScheme] = tryState.authValue
       localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
     } catch {}
   }
 
   $effect(() => {
-    state.selectedScheme
+    tryState.selectedScheme
     loadAuth()
   })
 
   $effect(() => {
-    state.authValue
-    if (state.selectedScheme) saveAuth()
+    tryState.authValue
+    if (tryState.selectedScheme) saveAuth()
   })
 
   const pathParams = $derived(op.parameters.filter((p) => p.in === 'path'))
@@ -64,13 +64,13 @@
     responseBody = ''
     responseError = null
     try {
-      const url = buildUrl(op, state)
+      const url = buildUrl(op, tryState)
       const init: RequestInit = {
         method: op.method,
-        headers: buildHeaders(op, state, securitySchemes)
+        headers: buildHeaders(op, tryState, securitySchemes)
       }
-      if (state.bodyValue && ['POST', 'PUT', 'PATCH'].includes(op.method)) {
-        init.body = state.bodyValue
+      if (tryState.bodyValue && ['POST', 'PUT', 'PATCH'].includes(op.method)) {
+        init.body = tryState.bodyValue
       }
       const res = await fetch(url, init)
       responseStatus = res.status
@@ -100,7 +100,7 @@
     {#if servers.length > 0}
       <label class="np-try-field">
         <span>Server</span>
-        <select bind:value={state.serverUrl}>
+        <select bind:value={tryState.serverUrl}>
           {#each servers as s, i (s.url || `srv-${i}`)}
             <option value={s.url}>{s.url}</option>
           {/each}
@@ -111,7 +111,7 @@
     {#if schemeNames.length > 0}
       <label class="np-try-field">
         <span>Auth</span>
-        <select bind:value={state.selectedScheme}>
+        <select bind:value={tryState.selectedScheme}>
           <option value="">None</option>
           {#each schemeNames as name (name)}
             <option value={name}>{name} ({securitySchemes[name].type ?? 'auth'})</option>
@@ -119,13 +119,13 @@
         </select>
       </label>
 
-      {#if state.selectedScheme}
+      {#if tryState.selectedScheme}
         <label class="np-try-field">
-          <span>{securitySchemes[state.selectedScheme].scheme === 'bearer' ? 'Token' : 'Value'}</span>
+          <span>{securitySchemes[tryState.selectedScheme].scheme === 'bearer' ? 'Token' : 'Value'}</span>
           <input
             type="password"
-            bind:value={state.authValue}
-            placeholder={securitySchemes[state.selectedScheme].bearerFormat ?? 'enter value'}
+            bind:value={tryState.authValue}
+            placeholder={securitySchemes[tryState.selectedScheme].bearerFormat ?? 'enter value'}
           />
         </label>
       {/if}
@@ -137,7 +137,7 @@
         {#each pathParams as p (p.name)}
           <label class="np-try-field">
             <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={state.pathValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+            <input bind:value={tryState.pathValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
           </label>
         {/each}
       </div>
@@ -149,7 +149,7 @@
         {#each queryParams as p (p.name)}
           <label class="np-try-field">
             <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={state.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+            <input bind:value={tryState.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
           </label>
         {/each}
       </div>
@@ -161,7 +161,7 @@
         {#each headerParams as p (p.name)}
           <label class="np-try-field">
             <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={state.headerValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+            <input bind:value={tryState.headerValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
           </label>
         {/each}
       </div>
@@ -170,7 +170,7 @@
     {#if ['POST', 'PUT', 'PATCH'].includes(op.method)}
       <div class="np-try-group">
         <div class="np-try-group-label">Body</div>
-        <CodeEditor bind:value={state.bodyValue} language="json" title="body" />
+        <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" />
       </div>
     {/if}
   </div>

@@ -6,6 +6,8 @@
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
+  import Actions from './Actions.svelte'
+  import Feature from './Feature.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -64,6 +66,50 @@
       const instance = mount(CodeBlock, {
         target: host,
         props: { html: pre.outerHTML, lang, raw: code }
+      })
+      mounted.push({ destroy: () => unmount(instance) })
+    }
+
+    const actionGroups = container.querySelectorAll<HTMLElement>('.np-actions:not(.np-actions-mounted)')
+    for (const group of Array.from(actionGroups)) {
+      const align = (group.getAttribute('data-align') as 'start' | 'center' | 'end' | null) ?? 'start'
+      const anchors = Array.from(group.querySelectorAll<HTMLAnchorElement>('a'))
+      if (!anchors.length) continue
+      const items = anchors.map((a) => ({
+        text: a.textContent?.trim() ?? '',
+        link: a.getAttribute('href') ?? '',
+        variant: (a.classList.contains('np-action-secondary')
+          ? 'secondary'
+          : a.classList.contains('np-action-ghost')
+          ? 'ghost'
+          : 'primary') as 'primary' | 'secondary' | 'ghost'
+      }))
+      const host = document.createElement('div')
+      host.className = 'np-actions-mounted'
+      group.replaceWith(host)
+      const instance = mount(Actions, { target: host, props: { items, align } })
+      mounted.push({ destroy: () => unmount(instance) })
+    }
+
+    const features = container.querySelectorAll<HTMLElement>('.np-feature[data-config]:not(.np-feature-mounted)')
+    for (const el of Array.from(features)) {
+      let config: { title?: string; icon?: string; link?: string } = {}
+      try {
+        config = JSON.parse(el.getAttribute('data-config') ?? '{}')
+      } catch {}
+      const body = el.querySelector<HTMLElement>('.np-feature-body')
+      const bodyHtml = body?.innerHTML ?? ''
+      const host = document.createElement('div')
+      host.className = 'np-feature-mounted'
+      el.replaceWith(host)
+      const instance = mount(Feature, {
+        target: host,
+        props: {
+          title: config.title ?? '',
+          icon: config.icon ?? '',
+          link: config.link ?? '',
+          bodyHtml
+        }
       })
       mounted.push({ destroy: () => unmount(instance) })
     }

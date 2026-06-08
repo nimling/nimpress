@@ -3,6 +3,7 @@ export { configStore } from './framework/configStore'
 export { viewer, refreshViewer } from './framework/stores/viewer'
 export { theme, toggleTheme, applyInitialTheme } from './framework/stores/theme'
 export { sidebarState, toggleGroup } from './framework/stores/sidebar'
+export { setPageMeta, applyPageMeta } from './framework/pageMeta'
 
 export { default as AppShell } from './layout/AppShell.svelte'
 export { default as Header } from './layout/Header.svelte'
@@ -14,6 +15,9 @@ export { default as App } from './layout/App.svelte'
 export { default as Page } from './markdown/Page.svelte'
 export { default as ChangelogPage } from './markdown/ChangelogPage.svelte'
 export { default as HeroPage } from './markdown/HeroPage.svelte'
+export { default as Actions } from './markdown/Actions.svelte'
+export { default as FeatureGrid } from './markdown/FeatureGrid.svelte'
+export { default as Feature } from './markdown/Feature.svelte'
 export { default as CodeBlock } from './markdown/CodeBlock.svelte'
 export { default as MermaidBlock } from './markdown/MermaidBlock.svelte'
 export { default as CalloutTip } from './markdown/CalloutTip.svelte'
@@ -41,10 +45,16 @@ export type {
   PageType,
   Frontmatter,
   PageModule,
+  PageShell,
+  PageBody,
   PageMeta,
+  PageMetaTags,
+  OpenGraphMeta,
+  TwitterMeta,
   Heading,
   ChangelogEntry,
   SidebarNode,
+  SiteMeta,
   Manifest,
   NavRoute,
   NimpressConfig,

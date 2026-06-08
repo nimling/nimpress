@@ -78,12 +78,14 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Topic | Guide |
 |-------|-------|
 | Page types: `doc`, `openapi`, `changelog`, `hero` | [docs/page-types.md](./docs/page-types.md) |
-| Markdown support and extended syntax | [docs/markdown.md](./docs/markdown.md) |
+| Markdown support, callouts, actions, features | [docs/markdown.md](./docs/markdown.md) |
 | Definition lists for compact term references | [docs/definition-lists.md](./docs/definition-lists.md) |
 | Mermaid diagrams | [docs/mermaid.md](./docs/mermaid.md) |
 | OpenAPI renderer | [docs/openapi.md](./docs/openapi.md) |
 | Changelog renderer | [docs/changelog.md](./docs/changelog.md) |
 | Hero landing pages | [docs/hero.md](./docs/hero.md) |
+| SEO and social cards | [docs/seo.md](./docs/seo.md) |
+| Build pipeline, shell and body split | [docs/build-pipeline.md](./docs/build-pipeline.md) |
 | Relative links between pages | [docs/relative-links.md](./docs/relative-links.md) |
 | Frontmatter reference | [docs/frontmatter.md](./docs/frontmatter.md) |
 | Sidebar layout from the content tree | [docs/sidebar.md](./docs/sidebar.md) |

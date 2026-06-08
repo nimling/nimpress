@@ -1,5 +1,38 @@
 export type PageType = 'doc' | 'openapi' | 'changelog' | 'hero'
 
+export interface OpenGraphMeta {
+  title?: string
+  description?: string
+  type?: string
+  image?: string
+  imageAlt?: string
+  url?: string
+  siteName?: string
+  locale?: string
+}
+
+export interface TwitterMeta {
+  card?: 'summary' | 'summary_large_image' | 'app' | 'player'
+  site?: string
+  creator?: string
+  title?: string
+  description?: string
+  image?: string
+  imageAlt?: string
+}
+
+export interface PageMetaTags {
+  description?: string
+  canonical?: string
+  robots?: string
+  keywords?: string | string[]
+  author?: string
+  themeColor?: string
+  og?: OpenGraphMeta
+  twitter?: TwitterMeta
+  jsonLd?: unknown
+}
+
 export interface Frontmatter {
   title: string
   slug?: string
@@ -15,7 +48,9 @@ export interface Frontmatter {
   lastUpdated?: boolean
   redirect?: string
   noToc?: boolean
+  collapsed?: boolean
   footer?: string
+  meta?: PageMetaTags
   data?: Record<string, unknown>
 }
 
@@ -33,16 +68,21 @@ export interface ChangelogEntry {
   data?: Record<string, unknown>
 }
 
-export interface PageModule {
+export interface PageShell {
   slug: string
   path: string
   type: PageType
   frontmatter: Frontmatter
+}
+
+export interface PageBody {
   html: string
   headings: Heading[]
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
 }
+
+export interface PageModule extends PageShell, PageBody {}
 
 export interface SidebarNode {
   text: string
@@ -60,6 +100,16 @@ export interface Manifest {
   pages: Record<string, PageMeta>
   byPath: Record<string, string>
   sidebar: SidebarNode[]
+  site?: SiteMeta
+}
+
+export interface SiteMeta {
+  title: string
+  url?: string
+  description?: string
+  ogImage?: string
+  twitterSite?: string
+  locale?: string
 }
 
 export interface PageMeta {
@@ -73,6 +123,7 @@ export interface PageMeta {
   order?: number
   hidden?: boolean
   redirect?: string
+  meta?: PageMetaTags
 }
 
 export interface SearchEntry {
@@ -122,9 +173,11 @@ export interface NimpressConfig {
   navRoutes?: NavRoute[]
   authEndpoint?: string
   clientSlug?: string
+  site?: SiteMeta
   manifest?: Manifest
   searchIndex?: SearchEntry[]
-  pageLoader?: Record<string, () => Promise<{ default: PageModule } | PageModule>>
+  pageLoader?: Record<string, () => Promise<{ default: unknown } | unknown>>
+  bodyLoader?: Record<string, () => Promise<PageBody>>
   accessChecker?: AccessChecker
 }
 

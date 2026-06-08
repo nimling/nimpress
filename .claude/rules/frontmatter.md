@@ -29,7 +29,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A normal documentation page | omit or `doc` |
 | A reference page rendered from an OpenAPI 3.1 spec | `openapi` |
 | A page combining several release notes into one collapsible list | `changelog` |
-| A landing page with a tagline, action buttons, and feature grid | `hero` |
+| A landing page with an oversized hero band on top | `hero` |
 
 ## Type specific fields
 
@@ -37,7 +37,31 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 2. `type: changelog` requires `data.version: '1.2.3'`. Multiple files share the same `path`. The plugin groups them.
 
-3. `type: hero` reads `data.tagline`, `data.lead`, `data.image`, `data.actions`, `data.features`. See `docs/hero.md`.
+3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids do NOT live in `data`. Compose them as `:::actions` and `:::features` in the markdown body. See `docs/hero.md` and `docs/markdown.md`.
+
+## SEO and social cards
+
+`meta` carries the per page metadata written to `<head>` at build time:
+
+```yaml
+meta:
+  description: One sentence for search.
+  canonical: https://developer.samna.io/path
+  robots: index,follow
+  keywords: [topic-a, topic-b]
+  og:
+    image: /og/page.png
+    type: article
+  twitter:
+    card: summary_large_image
+    site: '@samnaio'
+  jsonLd:
+    '@context': https://schema.org
+    '@type': TechArticle
+    headline: My page
+```
+
+Defaults flow from `frontmatter.description` and the site level `site` config in `createNimpressApp`. Full reference in `docs/seo.md`.
 
 ## Auth
 
@@ -53,6 +77,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 2. Never set `path` to a value that conflicts with another page's `path`. The build raises an error. The only exception is multiple `type: changelog` pages sharing one `path`.
 
-3. Never write multi line strings or nested objects in frontmatter beyond `data`. If a renderer needs more, lift it into `data` as a structured object.
+3. Never put action buttons or feature grids inside `data`. They live in the markdown body via `:::actions` and `:::features`.
 
-4. Never write Boolean values as quoted strings (`'true'`). Use unquoted booleans (`true`, `false`).
+4. Never write multi line strings or arbitrary nested objects in frontmatter beyond `data` and `meta`. If a renderer needs more, lift it into `data` as a structured object.
+
+5. Never write Boolean values as quoted strings (`'true'`). Use unquoted booleans (`true`, `false`).

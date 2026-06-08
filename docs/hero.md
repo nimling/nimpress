@@ -1,6 +1,6 @@
 # Hero pages
 
-Oversized landing pages with a tagline, action buttons, and a feature grid. Use for the home page, section landing pages, and any page that introduces a top level area.
+Oversized landing pages with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top of the page. Everything below it is the markdown body, rendered through the standard prose shell. Action buttons and feature grids live inside that body using the directives in [markdown.md](./markdown.md).
 
 ## Frontmatter
 
@@ -8,61 +8,62 @@ Oversized landing pages with a tagline, action buttons, and a feature grid. Use 
 ---
 title: Welcome
 type: hero
+description: One sentence description for search and social cards.
 data:
   eyebrow: Documentation
   logo: /logos/docs-mark.svg
   banner: /banners/grid.svg
-  tagline: Build great docs with Svelte
+  tagline: Build great docs with Svelte.
   lead: Optional longer paragraph below the tagline.
   image: /hero-illustration.svg
   align: start
-  actions:
-    - text: Get started
-      link: /guide
-      variant: primary
-    - text: GitHub
-      link: https://github.com/nimling/nimpress
-      variant: secondary
-  features:
-    - title: Fast
-      icon: ⚡
-      details: Vite plugin, shiki at build time.
-    - title: Themable
-      icon: 🎨
-      details: Tokens overridable in your own CSS.
-      link: /docs/theming
-    - title: OpenAPI built in
-      icon: 🔌
-      details: Render any 3.1 spec with hash deep links.
-      link: /docs/openapi
+meta:
+  og:
+    image: /og/welcome.png
+  twitter:
+    card: summary_large_image
 ---
 
-Markdown body here renders below the hero, in the standard prose shell.
+Markdown body here. Use `:::actions` and `:::features` from the markdown extensions
+to render buttons and a feature grid below the hero band.
 ```
 
-## Fields
+## Hero band fields
 
 1. `eyebrow` is the short uppercase label above the title.
 
 2. `logo` is a small mark rendered above the eyebrow. URL to an SVG or PNG.
 
-3. `banner` is a background image rendered behind the hero with a soft fade to the page background.
+3. `banner` is a background image rendered behind the hero band with a soft fade to the page background.
 
 4. `tagline` is the short subtitle under the title.
 
-5. `lead` is an optional longer paragraph below the tagline.
+5. `lead` is the optional longer paragraph under the tagline.
 
-6. `image` is an optional illustration shown beside the copy. Without `image` the hero centers automatically.
+6. `image` is the illustration beside the copy. Without `image` the band centers automatically.
 
 7. `align` controls which side the copy sits on when `image` is set. Values are `start` (copy left, image right, default), `end` (copy right, image left), and `center` (copy centered, image stacks below).
 
-8. `actions` is a list of buttons. Each entry takes `text`, `link`, and an optional `variant` of `primary`, `secondary`, or `ghost`.
+## Body
 
-9. `features` is a grid of cards. Each entry takes `title`, optional `icon`, optional `details`, and an optional `link` that makes the whole card clickable.
+The hero page renders the markdown body below the band. Authors compose action buttons and feature grids using directives from [markdown.md](./markdown.md):
 
-## Layout
+````md
+:::actions
+[Get started](/guide){"variant":"primary"}
+[GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
+:::
 
-The hero is centered with a max width of 1280px. Below 960px viewport width the copy stacks above the image. Above 960px the copy and image sit side by side. Features wrap into auto fit columns with a 240px minimum. The banner fades to the page background near the bottom of the hero so the feature grid reads as a separate band.
+:::features
+:::feature {"icon":"⚡","title":"Fast","link":"/guide"}
+Vite plugin, shiki at build time.
+:::
+
+:::feature {"icon":"🎨","title":"Themable","link":"/docs/theming"}
+Tokens overridable in your own CSS.
+:::
+:::
+````
 
 ## Where to use
 

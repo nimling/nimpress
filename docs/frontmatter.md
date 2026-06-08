@@ -22,17 +22,30 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `redirect` | string | Send the visitor to another path on load |
 | `noToc` | boolean | Hide the right rail table of contents |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
+| `meta` | object | SEO and social card metadata, see [seo.md](./seo.md) |
 | `data` | object | Renderer specific payload, see below |
+
+## `meta`
+
+SEO and social card metadata written to `<head>` at build time and re applied on every navigation. Full reference in [seo.md](./seo.md). Top level keys:
+
+1. `description`, `canonical`, `robots`, `keywords`, `author`, `themeColor` for standard HTML head tags.
+
+2. `og` for OpenGraph: `title`, `description`, `type`, `image`, `imageAlt`, `url`, `siteName`, `locale`.
+
+3. `twitter` for Twitter Card: `card`, `site`, `creator`, `title`, `description`, `image`, `imageAlt`.
+
+4. `jsonLd` for structured data, written as `<script type="application/ld+json">`.
 
 ## `data`
 
 Arbitrary object handed to the renderer the page selected.
 
-`type: changelog` reads `data.version`.
+1. `type: changelog` reads `data.version`.
 
-`type: hero` reads `data.tagline`, `data.lead`, `data.image`, `data.actions`, `data.features`.
+2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [markdown.md](./markdown.md), not in `data`.
 
-A custom renderer reads whatever it needs.
+3. Custom renderers read whatever they need.
 
 ## Path derivation
 
@@ -43,3 +56,7 @@ A frontmatter `path` overrides this entirely.
 ## Duplicate paths
 
 Two pages sharing the same effective `path` raise a build error. The exception is two `changelog` pages, which collapse into one rendered page. See [changelog.md](./changelog.md).
+
+## Outside contentDir
+
+The plugin throws a build error if a content file resolves outside `contentDir`. This usually means the working directory you run Vite from is not the docs root, or the linked `dist/` is stale. Rebuild nimpress and restart the dev server.
