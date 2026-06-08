@@ -392,23 +392,23 @@
   border-top: 1px solid var(--np-divider);
 }
 .np-details-body > * {
-  margin: 0;
+  margin: 0 !important;
 }
 .np-details-body .np-code-mount,
 .np-details-body .np-code,
 .np-details-body .np-code-group {
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  width: 100%;
-  box-shadow: none;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+  box-shadow: none !important;
 }
 .np-details-body .np-code-bar,
 .np-details-body .np-code-group-bar {
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
+  border-radius: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
 }
 
 .np-code-group {
