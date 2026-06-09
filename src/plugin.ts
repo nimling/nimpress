@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, copyFile } from 'node:fs/promises'
 import { resolve, relative, join, sep, dirname, isAbsolute } from 'node:path'
 import matter from 'gray-matter'
 import MarkdownIt from 'markdown-it'
@@ -415,6 +415,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   const contentRoot = resolve(process.cwd(), options.contentDir)
   let pages = new Map<string, ProcessedPage>()
   let highlighter: Highlighter | null = null
+  let resolvedOutDir = resolve(process.cwd(), 'dist')
+  let isBuildCommand = false
 
   async function ensureHighlighter() {
     if (highlighter) return highlighter
@@ -845,7 +847,14 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         text: prettyDirName(t.segment),
         slug: t.fullPath.replace(/^\//, '')
       }
-      if (items.length) node.items = items
+      if (items.length) {
+        node.items = items
+        let minOrder = Number.MAX_SAFE_INTEGER
+        for (const it of items) {
+          if (it.order !== undefined && it.order < minOrder) minOrder = it.order
+        }
+        if (minOrder !== Number.MAX_SAFE_INTEGER) node.order = minOrder
+      }
       return node
     }
 
@@ -978,8 +987,20 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   return {
     name: '@nimling/nimpress:markdown',
 
+    configResolved(config) {
+      isBuildCommand = config.command === 'build'
+      resolvedOutDir = resolve(config.root, config.build.outDir)
+    },
+
     async buildStart() {
       await processAll()
+    },
+
+    async closeBundle() {
+      if (!isBuildCommand) return
+      const src = join(resolvedOutDir, 'index.html')
+      const dest = join(resolvedOutDir, '404.html')
+      await copyFile(src, dest)
     },
 
     configureServer(server) {

@@ -1,16 +1,14 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
-  import { resolvedRoute, navigate } from '../router'
+  import { resolvedRoute, navigate, erroneousRoute } from '../router'
   import { onMount } from 'svelte'
   import HomePage from './HomePage.svelte'
-  import NotFoundPage from './NotFoundPage.svelte'
   import { viewerCanReach, waitForViewer, redirectToLogin } from '../framework/router'
 
   const config = $derived($configStore)
   const route = $derived($resolvedRoute)
 
   let PageComponent = $state<any>(null)
-  let notFound = $state(false)
   let blockedPath = $state<string | null>(null)
   let loadToken = 0
 
@@ -29,21 +27,41 @@
     return null
   }
 
+  function nearestParentPath(path: string): string | null {
+    const byPath = config.manifest?.byPath
+    if (!byPath) return null
+    const segments = path.split('/').filter(Boolean)
+    for (let i = segments.length - 1; i > 0; i--) {
+      const candidate = '/' + segments.slice(0, i).join('/')
+      if (byPath[candidate]) return candidate
+    }
+    return null
+  }
+
+  function handleUnresolved(path: string) {
+    const parent = nearestParentPath(path)
+    if (parent) {
+      navigate(parent, { replace: true })
+      return
+    }
+    erroneousRoute.set({ error: 'not_found', path })
+  }
+
   async function load(path: string) {
     const token = ++loadToken
     PageComponent = null
-    notFound = false
     blockedPath = null
+    erroneousRoute.set(null)
 
     const slug = resolveSlug(path)
     if (slug === null && (path === '/' || path === '')) return
     if (slug === null) {
-      notFound = true
+      handleUnresolved(path)
       return
     }
     const meta = config.manifest?.pages[slug]
     if (!meta) {
-      notFound = true
+      handleUnresolved(path)
       return
     }
     if (meta.redirect) {
@@ -61,7 +79,7 @@
 
     const loader = config.pageLoader?.[slug]
     if (!loader) {
-      notFound = true
+      handleUnresolved(path)
       return
     }
     const resolved = await loader() as { default: any }
@@ -80,8 +98,6 @@
 
 {#if PageComponent}
   <PageComponent />
-{:else if notFound}
-  <NotFoundPage />
 {:else if blockedPath}
   <div class="np-block">
     <p>Sign-in required for {blockedPath}.</p>

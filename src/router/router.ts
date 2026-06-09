@@ -459,7 +459,12 @@ export function createErrorHandler(
           })
         })
       } else if (typeof fallback === 'string') {
-        set({ component: null, props: null, name: '__redirect', loading: false, hasRemaining: false })
+        set({ component: null, props: null, name: '__redirect', loading: true, hasRemaining: false })
+        if (typeof window !== 'undefined' && window.location.pathname !== fallback) {
+          history.replaceState(null, '', fallback)
+          setResolvedRoute(fallback)
+        }
+        errorStore.set(null)
       } else if ('component' in fallback) {
         fallback.component().then((module: any) => {
           set({

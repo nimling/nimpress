@@ -13,7 +13,7 @@
 </script>
 
 <AppShell>
-  <Router {routes} fallback={() => import('./NotFoundPage.svelte')}>
+  <Router {routes} fallback="/">
     <div class="np-loading">
       <span class="np-spinner"></span>
     </div>
