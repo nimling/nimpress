@@ -91,7 +91,7 @@
       <input
         bind:this={input}
         bind:value={query}
-        placeholder="Search pages, headings, content…"
+        placeholder="Search pages, tags, headings… use 'api/' to scope to a folder"
         class="np-search-input"
         autocomplete="off"
         spellcheck="false"
@@ -104,6 +104,13 @@
         <li class:active={i === activeIndex}>
           <button onclick={() => go(r.slug as string)} onmouseenter={() => (activeIndex = i)}>
             <div class="np-result-title">{r.title}</div>
+            {#if Array.isArray(r.tags) && r.tags.length}
+              <div class="np-result-tags">
+                {#each r.tags as t (t)}
+                  <span class="np-result-tag">{t}</span>
+                {/each}
+              </div>
+            {/if}
             <div class="np-result-slug">/{r.slug}</div>
           </button>
         </li>
@@ -220,6 +227,22 @@
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
     margin-top: 2px;
+  }
+  .np-result-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .np-result-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--np-brand);
+    background-color: color-mix(in srgb, var(--np-brand) 14%, transparent);
+    padding: 1px 8px;
+    border-radius: var(--np-radius-pill);
   }
   .np-empty, .np-hint {
     padding: 16px;

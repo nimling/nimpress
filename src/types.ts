@@ -51,6 +51,7 @@ export interface Frontmatter {
   collapsed?: boolean
   footer?: string
   background?: string
+  tags?: string | string[]
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }
@@ -139,6 +140,7 @@ export interface SearchEntry {
   scope?: string
   claim?: string
   headings: string[]
+  tags: string[]
 }
 
 export interface Viewer {

@@ -80,6 +80,7 @@ const frontmatterSchema = z.object({
   noToc: z.boolean().optional(),
   footer: z.string().optional(),
   background: z.string().optional(),
+  tags: z.union([z.string(), z.array(z.string())]).optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -915,8 +916,20 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         body: p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' '),
         scope: p.frontmatter.scope,
         claim: p.frontmatter.claim,
-        headings: p.headings.map((h) => h.text)
+        headings: p.headings.map((h) => h.text),
+        tags: normalizeTags(p.frontmatter.tags)
       })
+    }
+    return out
+  }
+
+  function normalizeTags(raw: string | string[] | undefined): string[] {
+    if (!raw) return []
+    const parts = Array.isArray(raw) ? raw : String(raw).split(',')
+    const out: string[] = []
+    for (const part of parts) {
+      const trimmed = String(part).trim()
+      if (trimmed) out.push(trimmed)
     }
     return out
   }
