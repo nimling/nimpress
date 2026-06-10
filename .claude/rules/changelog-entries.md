@@ -94,9 +94,15 @@ The body carries the real detail of the release. The renderer applies its own sc
 
 2. Group user visible changes under headings: themes, not severity. One section per shipped capability. Use the heading level that reflects nesting depth.
 
-3. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
+3. Heading text is a short friendly readable label. Never an identifier, method, path, query parameter, or backticked token. Examples to write: `Creator hydration`, `Booking calendars`, `Conflict clarity`. Examples to avoid: `` `with=creator` on every endpoint ``, `POST /api/calendar`, `inherit on POST endpoints removed`.
 
-4. Link to the relevant PR or issue when the change references work outside the docs.
+4. Under each heading, write one prose paragraph that frames the change in human terms. Move every identifier, route, query parameter, status code, schema name, and token into that prose (or the code blocks beneath it), inside backticks. Identifiers belong in the body, not in the heading.
+
+5. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item, with identifiers wrapped in backticks.
+
+6. Use fenced code blocks for HTTP exchanges, YAML, JSON, and request or response bodies. Inline `code` spans carry the identifiers inside prose.
+
+7. Link to the relevant PR or issue when the change references work outside the docs.
 
 ## What to include
 

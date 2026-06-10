@@ -219,12 +219,14 @@
             aria-expanded={open}
             onclick={() => toggle(e, i)}
           >
-            <span class="np-changelog-version">v{e.version || 'unreleased'}</span>
             <span class="np-changelog-entry-heading">
+              <span class="np-changelog-meta">
+                <span class="np-changelog-version">v{e.version || 'unreleased'}</span>
+                {#if e.releaseDate}
+                  <time class="np-changelog-entry-date" datetime={e.releaseDate}>{formatReleaseDate(e.releaseDate)}</time>
+                {/if}
+              </span>
               <span class="np-changelog-entry-title">{e.title || 'unreleased'}</span>
-              {#if e.releaseDate}
-                <time class="np-changelog-entry-date" datetime={e.releaseDate}>{formatReleaseDate(e.releaseDate)}</time>
-              {/if}
             </span>
             <span class="np-changelog-chev" class:open aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -351,38 +353,41 @@
   .np-changelog-header:focus-visible .np-changelog-chev {
     color: var(--np-text-primary);
   }
-  .np-changelog-version {
-    flex: 0 0 auto;
-    font-family: var(--np-font-mono);
-    font-size: 13px;
-    color: var(--np-brand);
-    padding: 2px 10px;
-    background-color: color-mix(in srgb, var(--np-brand) 14%, transparent);
-    border-radius: var(--np-radius-pill);
-    font-weight: 600;
-    line-height: 1.4;
-  }
   .np-changelog-entry-heading {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     min-width: 0;
   }
-  .np-changelog-entry-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--np-text-primary);
-    letter-spacing: -0.01em;
-    line-height: 1.4;
+  .np-changelog-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
     min-width: 0;
+  }
+  .np-changelog-version {
+    font-family: var(--np-font-mono);
+    font-size: 30px;
+    color: var(--np-brand);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
   }
   .np-changelog-entry-date {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+  .np-changelog-entry-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--np-text-primary);
+    letter-spacing: -0.015em;
     line-height: 1.2;
+    min-width: 0;
   }
   .np-changelog-chev {
     flex: 0 0 auto;
@@ -404,36 +409,52 @@
     line-height: 1.6;
   }
   .np-changelog-body :global(h1) {
-    font-size: 18px;
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 700;
+    margin: 28px 0 10px;
+    color: var(--np-text-primary);
+    border-top: 0;
+    padding-top: 0;
+    letter-spacing: -0.01em;
+  }
+  .np-changelog-body :global(h1::before) { display: none; }
+  .np-changelog-body :global(h2) {
+    font-size: 19px;
+    line-height: 1.3;
+    font-weight: 700;
     margin: 24px 0 8px;
     color: var(--np-text-primary);
     border-top: 0;
     padding-top: 0;
     letter-spacing: -0.005em;
   }
-  .np-changelog-body :global(h1::before) { display: none; }
-  .np-changelog-body :global(h2) {
-    font-size: 16px;
-    margin: 20px 0 6px;
-    color: var(--np-text-primary);
-    border-top: 0;
-    padding-top: 0;
-    letter-spacing: 0;
-  }
   .np-changelog-body :global(h2::before) { display: none; }
   .np-changelog-body :global(h3) {
-    font-size: 14.5px;
-    margin: 16px 0 4px;
+    font-size: 16.5px;
+    line-height: 1.35;
+    font-weight: 600;
+    margin: 20px 0 6px;
     color: var(--np-text-primary);
     border-left: 0;
     padding-left: 0;
     margin-left: 0;
   }
-  .np-changelog-body :global(h4),
+  .np-changelog-body :global(h4) {
+    font-size: 14.5px;
+    line-height: 1.4;
+    font-weight: 600;
+    margin: 16px 0 4px;
+    color: var(--np-text-primary);
+  }
   .np-changelog-body :global(h5),
   .np-changelog-body :global(h6) {
-    font-size: 13.5px;
-    margin: 12px 0 4px;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 14px 0 4px;
+    color: var(--np-text-secondary);
   }
   .np-changelog-body :global(p),
   .np-changelog-body :global(li) {

@@ -37,6 +37,10 @@
       e.preventDefault()
       searchOpen = true
     }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+      e.preventDefault()
+      toggleSidebar()
+    }
     if (e.key === 'Escape') {
       searchOpen = false
       drawerOpen = false

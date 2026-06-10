@@ -246,13 +246,39 @@
     return `${day}.${month}.${year}`
   }
 
-  function onCardEnter(entry: RoadmapEntry, side: 'left' | 'right') {
+  function onCardEnter(entry: RoadmapEntry, side: 'left' | 'right', ev: Event) {
     hoverHref = entry.href
     hoverSide = side === 'left' ? 'right' : 'left'
+    const el = ev.currentTarget as HTMLElement | null
+    if (el) positionAside(el, side)
   }
 
   function onCardLeave() {
     hoverHref = null
+  }
+
+  let asideTop = $state(0)
+  let asideLeft = $state(0)
+
+  function positionAside(cardEl: HTMLElement, cardSide: 'left' | 'right') {
+    const rect = cardEl.getBoundingClientRect()
+    const margin = 16
+    const asideWidth = Math.min(380, window.innerWidth * 0.32)
+    const asideHeightEstimate = 320
+    let left: number
+    if (cardSide === 'left') {
+      left = rect.right + margin
+      if (left + asideWidth + margin > window.innerWidth) left = rect.left - asideWidth - margin
+    } else {
+      left = rect.left - asideWidth - margin
+      if (left < margin) left = rect.right + margin
+    }
+    left = Math.max(margin, Math.min(window.innerWidth - asideWidth - margin, left))
+    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--np-header-height')) || 0
+    let top = rect.top
+    top = Math.max(headerH + margin, Math.min(window.innerHeight - asideHeightEstimate - margin, top))
+    asideTop = top
+    asideLeft = left
   }
 
   function gotoEntry(entry: RoadmapEntry, e: MouseEvent) {
@@ -297,20 +323,30 @@
 
   let travelFrame = 0
   function travel() {
-    if (!arranged.length || trackHeight <= 0) return
+    if (!arranged.length || trackHeight <= 0 || !track) return
     cancelAnimationFrame(travelFrame)
     const target = (todayPos / arranged.length) * trackHeight
-    const start = trackHeight
-    const duration = 2400
-    const t0 = performance.now()
-    const step = (t: number) => {
-      const p = Math.min(1, (t - t0) / duration)
-      const eased = 1 - Math.pow(1 - p, 3)
-      rocketTop = start - (start - target) * eased
-      if (p < 1) travelFrame = requestAnimationFrame(step)
-    }
-    rocketTop = start
-    travelFrame = requestAnimationFrame(step)
+    const startRocket = trackHeight
+    const duration = 4200
+    const trackTop = track.offsetTop
+    rocketTop = startRocket
+    const initialScrollY = Math.max(0, trackTop + startRocket - window.innerHeight * 0.55)
+    window.scrollTo({ top: initialScrollY, behavior: 'smooth' })
+    setTimeout(() => {
+      const t0 = performance.now()
+      const step = (t: number) => {
+        const p = Math.min(1, (t - t0) / duration)
+        const eased = 1 - Math.pow(1 - p, 3)
+        rocketTop = startRocket - (startRocket - target) * eased
+        const rocketPageY = trackTop + rocketTop
+        const desired = window.innerHeight * 0.55
+        const currentRocketScreenY = rocketPageY - window.scrollY
+        const delta = currentRocketScreenY - desired
+        if (Math.abs(delta) > 1) window.scrollTo(0, Math.max(0, window.scrollY + delta))
+        if (p < 1) travelFrame = requestAnimationFrame(step)
+      }
+      travelFrame = requestAnimationFrame(step)
+    }, 600)
   }
 
   async function hydrate() {
@@ -501,9 +537,9 @@
               class="np-roadmap-card"
               href={a.entry.href}
               onclick={(e) => gotoEntry(a.entry, e)}
-              onmouseenter={() => onCardEnter(a.entry, a.side)}
+              onmouseenter={(e) => onCardEnter(a.entry, a.side, e)}
               onmouseleave={onCardLeave}
-              onfocus={() => onCardEnter(a.entry, a.side)}
+              onfocus={(e) => onCardEnter(a.entry, a.side, e)}
               onblur={onCardLeave}
             >
               <RoadmapBlob seed={a.entry.slug + ':' + idx} />
@@ -535,12 +571,27 @@
     {#if effectiveFooter}
       <footer class="np-page-footer">{effectiveFooter}</footer>
     {/if}
-    <div class="np-page-tail"></div>
+    <div class="np-roadmap-planet" aria-hidden="true">
+      <svg viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <radialGradient id="np-planet-glow" cx="50%" cy="20%" r="70%">
+            <stop offset="0%" stop-color="var(--np-brand)" stop-opacity="1" />
+            <stop offset="65%" stop-color="var(--np-brand)" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="var(--np-brand)" stop-opacity="0.15" />
+          </radialGradient>
+        </defs>
+        <circle cx="800" cy="980" r="820" fill="url(#np-planet-glow)" />
+        <circle cx="800" cy="980" r="820" fill="none" stroke="var(--np-brand)" stroke-width="2" opacity="0.7" />
+        <ellipse cx="560" cy="360" rx="80" ry="22" fill="var(--np-brand)" opacity="0.35" />
+        <ellipse cx="1040" cy="420" rx="120" ry="28" fill="var(--np-brand)" opacity="0.3" />
+        <ellipse cx="720" cy="490" rx="60" ry="16" fill="var(--np-brand)" opacity="0.4" />
+      </svg>
+    </div>
   </div>
 </div>
 
 {#if activeHover}
-  <aside class="np-roadmap-aside np-roadmap-aside-{hoverSide}">
+  <aside class="np-roadmap-aside" style:top={`${asideTop}px`} style:left={`${asideLeft}px`}>
     <header class="np-roadmap-aside-head">
       <span class="np-roadmap-card-kind">{kindLabel(activeHover.kind)}</span>
       <h2>{activeHover.title}</h2>
@@ -891,7 +942,6 @@
 
   .np-roadmap-aside {
     position: fixed;
-    top: calc(var(--np-header-height) + 24px);
     width: min(380px, 32vw);
     max-height: calc(100vh - var(--np-header-height) - 48px);
     overflow-y: auto;
@@ -902,8 +952,6 @@
     padding: 20px 22px;
     z-index: 40;
   }
-  .np-roadmap-aside-left { left: 24px; }
-  .np-roadmap-aside-right { right: 24px; }
   .np-roadmap-aside-head h2 {
     margin: 8px 0 4px;
     font-size: 20px;
@@ -977,9 +1025,20 @@
     font-size: 13px;
     white-space: pre-line;
   }
-  .np-page-tail {
-    height: 25vh;
-    min-height: 160px;
+  .np-roadmap-planet {
+    position: relative;
+    margin: 0 -32px;
+    padding: 0;
+    width: calc(100% + 64px);
+    height: 50vh;
+    min-height: 320px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .np-roadmap-planet svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .np-page-background {
     position: fixed;
