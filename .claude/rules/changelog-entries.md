@@ -66,11 +66,11 @@ Newest first. Parsed as dot delimited numeric segments. `1.10.0` ranks above `1.
 
 ## Entry body
 
-1. Never write an H1 in the body. The entry header carries the title row, and a body H1 collides with the page H1. Start the body at H2.
+1. Never write an H1 or H2 in the body. The entry header carries the title row, and any higher heading collides with the page chrome. Start the body at H3. H3 is the maximum heading size.
 
-2. Lead with one short paragraph or a single H2 summary section. The reader should know whether they care without expanding the entry.
+2. Lead with one short paragraph or a single H3 summary section. The reader should know whether they care without expanding the entry.
 
-3. Group user visible changes under H2 headings: themes, not severity. One section per shipped capability.
+3. Group user visible changes under H3 headings: themes, not severity. One section per shipped capability.
 
 4. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
 
