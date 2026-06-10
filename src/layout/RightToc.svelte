@@ -125,21 +125,21 @@
     .np-toc-strip {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-end;
       position: relative;
-      width: 28px;
-      padding: 16px 0;
+      width: 100%;
+      padding: 16px 4px 16px 0;
       margin-left: auto;
+      box-sizing: border-box;
     }
     .np-toc-strip-line {
       display: block;
       position: absolute;
       top: 0;
       bottom: 0;
-      left: 50%;
+      right: 12px;
       width: 0;
       border-left: 2px dotted var(--np-border);
-      transform: translateX(-50%);
     }
     .np-toc-strip-dots {
       list-style: none;

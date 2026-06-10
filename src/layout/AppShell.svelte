@@ -106,8 +106,11 @@
   }
   .np-main {
     min-height: calc(100vh - var(--np-header-height));
-    padding: 32px;
+    padding: 32px 8px 32px 32px;
     min-width: 0;
+  }
+  @media (min-width: 1280px) {
+    .np-main { padding: 32px; }
   }
   .np-drawer-backdrop {
     display: none;

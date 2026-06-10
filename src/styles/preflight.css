@@ -2,7 +2,7 @@
   color: var(--np-text-primary);
   font-size: 16px;
   line-height: 1.7;
-  max-width: var(--np-content-max);
+  max-width: none;
 }
 
 .np-prose > :first-child { margin-top: 0; }
