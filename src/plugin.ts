@@ -1094,12 +1094,16 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const out: SearchEntry[] = []
     for (const [slug, p] of pages) {
       if (p.frontmatter.hidden) continue
+      const baseBody = p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' ')
+      const specBody = p.type === 'openapi' ? extractOpenApiText(p.openApiSpec) : ''
+      const roadmapBody = p.type === 'roadmap' ? extractRoadmapText(p.roadmapEntries ?? []) : ''
+      const body = [baseBody, specBody, roadmapBody].filter(Boolean).join(' \n ')
       out.push({
         slug,
         path: p.effectivePath,
         title: p.frontmatter.title,
         description: p.frontmatter.description,
-        body: p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' '),
+        body,
         scope: p.frontmatter.scope,
         claim: p.frontmatter.claim,
         headings: p.headings.map((h) => h.text),
@@ -1107,6 +1111,89 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       })
     }
     return out
+  }
+
+  function stripHtml(html: string | undefined): string {
+    if (!html) return ''
+    return html.replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/gi, ' ')
+  }
+
+  function extractOpenApiText(spec: unknown): string {
+    if (!spec || typeof spec !== 'object') return ''
+    const flat = spec as {
+      title?: string
+      description?: string
+      tags?: { name?: string; description?: string; operations?: unknown[] }[]
+      schemas?: Record<string, { description?: string; properties?: Record<string, { description?: string }> }>
+      servers?: { url?: string; description?: string }[]
+      securitySchemes?: Record<string, { description?: string; type?: string; scheme?: string }>
+    }
+    const parts: string[] = []
+    if (flat.title) parts.push(flat.title)
+    if (flat.description) parts.push(flat.description)
+    for (const s of flat.servers ?? []) {
+      if (s.url) parts.push(s.url)
+      if (s.description) parts.push(s.description)
+    }
+    for (const [name, scheme] of Object.entries(flat.securitySchemes ?? {})) {
+      parts.push(name)
+      if (scheme?.type) parts.push(scheme.type)
+      if (scheme?.scheme) parts.push(scheme.scheme)
+      if (scheme?.description) parts.push(scheme.description)
+    }
+    for (const tag of flat.tags ?? []) {
+      if (tag.name) parts.push(tag.name)
+      if (tag.description) parts.push(tag.description)
+      for (const op of tag.operations ?? []) {
+        const o = op as {
+          id?: string
+          operationName?: string
+          method?: string
+          path?: string
+          summary?: string
+          description?: string
+          description_html?: string
+          parameters?: { name?: string; in?: string; description?: string }[]
+        }
+        if (o.id) parts.push(o.id)
+        if (o.operationName) parts.push(o.operationName)
+        if (o.method) parts.push(o.method.toLowerCase(), o.method.toUpperCase())
+        if (o.path) parts.push(o.path)
+        if (o.summary) parts.push(o.summary)
+        if (o.description) parts.push(o.description)
+        else if (o.description_html) parts.push(stripHtml(o.description_html))
+        for (const p of o.parameters ?? []) {
+          if (p?.name) parts.push(p.name)
+          if (p?.in) parts.push(p.in)
+          if (p?.description) parts.push(p.description)
+        }
+      }
+    }
+    for (const [name, schema] of Object.entries(flat.schemas ?? {})) {
+      parts.push(name)
+      if (schema?.description) parts.push(schema.description)
+      for (const [prop, ps] of Object.entries(schema?.properties ?? {})) {
+        parts.push(prop)
+        if (ps?.description) parts.push(ps.description)
+      }
+    }
+    return parts.join(' \n ')
+  }
+
+  function extractRoadmapText(entries: RoadmapEntry[]): string {
+    const parts: string[] = []
+    for (const e of entries) {
+      parts.push(e.id, e.kind, e.title)
+      if (e.description) parts.push(e.description)
+      if (e.targetDate) parts.push(e.targetDate)
+      if (e.html) parts.push(stripHtml(e.html))
+      for (const ref of e.changelog) {
+        parts.push(ref.version, ref.title)
+        if (ref.description) parts.push(ref.description)
+        if (ref.releaseDate) parts.push(ref.releaseDate)
+      }
+    }
+    return parts.join(' \n ')
   }
 
   function normalizeTags(raw: string | string[] | undefined): string[] {
