@@ -3,8 +3,9 @@
     seed,
     width = 320,
     height = 220,
-    points = 10,
-    wobble = 0.1,
+    points = 12,
+    wobble = 0.18,
+    margin = 0.18,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)'
   }: {
@@ -13,6 +14,7 @@
     height?: number
     points?: number
     wobble?: number
+    margin?: number
     fill?: string
     stroke?: string
   } = $props()
@@ -31,19 +33,18 @@
     }
   }
 
-  const path = $derived(buildPath(seed, points, wobble, width, height))
+  const path = $derived(buildPath(seed, points, wobble, margin, width, height))
 
-  function buildPath(s: string, n: number, w: number, W: number, H: number): string {
+  function buildPath(s: string, n: number, w: number, m: number, W: number, H: number): string {
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
-    const baseShrink = 1 - w
-    const rx = (W / 2) * baseShrink
-    const ry = (H / 2) * baseShrink
+    const rx = (W / 2) * (Math.SQRT2 / 2 + m)
+    const ry = (H / 2) * (Math.SQRT2 / 2 + m)
     const pts: { x: number; y: number }[] = []
     for (let i = 0; i < n; i++) {
       const a = (Math.PI * 2 * i) / n
-      const k = 1 + (rand() - 0.5) * 2 * w
+      const k = 1 + rand() * w
       pts.push({ x: cx + Math.cos(a) * rx * k, y: cy + Math.sin(a) * ry * k })
     }
     let d = ''
@@ -63,7 +64,7 @@
   }
 </script>
 
-<svg class="np-blob" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+<svg class="np-blob" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" overflow="visible" aria-hidden="true">
   <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
 </svg>
 
@@ -74,5 +75,6 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    overflow: visible;
   }
 </style>

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import Operation from './Operation.svelte'
   import Schema from './Schema.svelte'
+  import TryDialog from './TryDialog.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
@@ -160,7 +161,7 @@
           {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
             {@const opKey = `operation/${op.id}`}
             {#if mounted.has(opKey)}
-              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} />
+              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} specVersion={flat.version} />
             {:else}
               <div
                 class="np-op-lazy"
@@ -208,6 +209,12 @@
     {/if}
   </div>
 
+  <TryDialog
+    operations={flat.tags.flatMap((t) => t.operations)}
+    securitySchemes={flat.securitySchemes}
+    servers={flat.servers ?? []}
+    specVersion={flat.version}
+  />
   <BackToTop />
 {:else}
   <p>OpenAPI spec missing</p>

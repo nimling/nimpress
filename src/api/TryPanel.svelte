@@ -1,21 +1,56 @@
 <script lang="ts">
   import CodeEditor from '../markdown/CodeEditor.svelte'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
-  import { buildUrl, buildHeaders, type TryState } from './tryState'
+  import { buildUrl, buildHeaders, createTryState, type TryState } from './tryState'
 
   let {
     op,
     servers = [],
     securitySchemes = {},
     tryState = $bindable(),
-    disabled = false
+    disabled = false,
+    onOpenDialog,
+    onClear,
+    onShare
   }: {
     op: FlatOperation
     servers?: FlatServer[]
     securitySchemes?: Record<string, SecurityScheme>
     tryState: TryState
     disabled?: boolean
+    onOpenDialog?: (opId: string) => void
+    onClear?: (opId: string) => void
+    onShare?: (opId: string) => Promise<'ok' | 'fail'> | 'ok' | 'fail'
   } = $props()
+
+  let shareLabel = $state('Share')
+  async function localShare() {
+    if (onShare) {
+      const r = await onShare(op.id)
+      shareLabel = r === 'ok' ? 'Copied' : 'Copy failed'
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        shareLabel = 'Copied'
+      } catch {
+        shareLabel = 'Copy failed'
+      }
+    }
+    setTimeout(() => (shareLabel = 'Share'), 1600)
+  }
+  function localClear() {
+    if (onClear) onClear(op.id)
+    else {
+      const fresh = createTryState(op, tryState.serverUrl, securitySchemes)
+      tryState = fresh
+    }
+  }
+  function openDialog() {
+    if (onOpenDialog) onOpenDialog(op.id)
+    else if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId: op.id } }))
+    }
+  }
 
   const schemeNames = $derived(Object.keys(securitySchemes ?? {}))
 
@@ -138,14 +173,24 @@
 <div class="np-try" class:np-try-disabled={disabled} bind:this={panelEl}>
   <header class="np-try-head">
     <span class="np-try-title">Try it</span>
-    <button class="np-try-send" onclick={send} disabled={sending || disabled}>
-      {sending ? 'Sending…' : 'Send'}
-    </button>
+    <div class="np-try-actions">
+      <button class="np-try-meta" type="button" onclick={localShare} disabled={disabled} title="Copy a shareable link to this state">
+        {shareLabel}
+      </button>
+      <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
+        Clear
+      </button>
+      <button class="np-try-send" onclick={send} disabled={sending || disabled}>
+        {sending ? 'Sending…' : 'Send'}
+      </button>
+    </div>
   </header>
 
   {#if disabled}
     <div class="np-try-collapsed-msg">
-      Expand endpoint definition to try out
+      <button class="np-try-open-dialog" type="button" onclick={openDialog}>
+        Open Try out as dialog
+      </button>
     </div>
   {:else}
   <div class="np-try-body">
@@ -326,6 +371,39 @@
   }
   .np-try-send:hover { background-color: var(--np-brand-hover); }
   .np-try-send:disabled { opacity: 0.6; cursor: wait; }
+  .np-try-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .np-try-meta {
+    background-color: transparent;
+    color: var(--np-text-secondary);
+    border: 1px solid var(--np-border);
+    padding: 5px 12px;
+    border-radius: var(--np-radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .np-try-meta:hover {
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-primary);
+    border-color: var(--np-text-muted);
+  }
+  .np-try-meta:disabled { opacity: 0.4; cursor: not-allowed; }
+  .np-try-open-dialog {
+    background-color: var(--np-brand);
+    color: var(--np-text-on-brand);
+    border: 0;
+    padding: 10px 16px;
+    border-radius: var(--np-radius-md);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .np-try-open-dialog:hover { background-color: var(--np-brand-hover); }
   .np-try-body {
     padding: 16px;
     display: flex;

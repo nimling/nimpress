@@ -14,13 +14,15 @@
     serverUrl = '',
     servers = [],
     securitySchemes = {},
-    collapsedDefault = false
+    collapsedDefault = false,
+    specVersion = ''
   }: {
     op: FlatOperation
     serverUrl?: string
     servers?: FlatServer[]
     securitySchemes?: Record<string, SecurityScheme>
     collapsedDefault?: boolean
+    specVersion?: string
   } = $props()
 
   const id = $derived(`operation/${op.id}`)
@@ -35,7 +37,71 @@
     const dev = list.find((s) => typeof s?.url === 'string' && s.url.includes('.dev.'))
     return dev?.url ?? list[0]?.url ?? serverUrl
   })()
-  let tryState = $state(createTryState(op, initialServer, securitySchemes))
+
+  const cacheKey = $derived(`nimpress-try-cache-v1-${specVersion || 'unknown'}`)
+  function readCached(): import('./tryState').TryState | null {
+    if (typeof localStorage === 'undefined') return null
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      if (!raw) return null
+      const obj = JSON.parse(raw)
+      if (!obj || typeof obj !== 'object') return null
+      return obj[op.id] ?? null
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+      return null
+    }
+  }
+  function writeCached(state: import('./tryState').TryState) {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      const obj = raw ? JSON.parse(raw) : {}
+      obj[op.id] = state
+      localStorage.setItem(cacheKey, JSON.stringify(obj))
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+    }
+  }
+  function clearCached() {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      if (!raw) return
+      const obj = JSON.parse(raw)
+      if (obj && typeof obj === 'object') {
+        delete obj[op.id]
+        if (Object.keys(obj).length === 0) localStorage.removeItem(cacheKey)
+        else localStorage.setItem(cacheKey, JSON.stringify(obj))
+      }
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+    }
+  }
+  const cached = readCached()
+  const baseState = createTryState(op, initialServer, securitySchemes)
+  let tryState = $state(cached ? { ...baseState, ...cached } : baseState)
+  $effect(() => {
+    writeCached(tryState)
+  })
+  function handleClear() {
+    tryState = createTryState(op, initialServer, securitySchemes)
+    clearCached()
+  }
+  async function handleShare(): Promise<'ok' | 'fail'> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return 'fail'
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('try', op.id)
+      const json = JSON.stringify(tryState)
+      const enc = btoa(unescape(encodeURIComponent(json)))
+      url.searchParams.set('state', enc)
+      await navigator.clipboard.writeText(url.toString())
+      return 'ok'
+    } catch {
+      return 'fail'
+    }
+  }
 
   let respTab = $state<Record<string, string>>({})
   let reqBodyTab = $state<string>('')
@@ -176,16 +242,29 @@
             <p class="np-op-desc">{op.description}</p>
           {/if}
         </div>
-        <button
-          class="np-op-toggle"
-          aria-label={expanded ? 'Collapse' : 'Expand'}
-          aria-expanded={expanded}
-          onclick={() => (expanded = !expanded)}
-        >
-          <svg class="np-op-toggle-chev" class:open={expanded} viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="9 6 15 12 9 18" />
-          </svg>
-        </button>
+        <div class="np-op-head-actions">
+          <button
+            class="np-op-try-btn"
+            type="button"
+            onclick={() => window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId: op.id } }))}
+            title="Open the Try out dialog for this endpoint"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
+            </svg>
+            <span>Try out</span>
+          </button>
+          <button
+            class="np-op-toggle"
+            aria-label={expanded ? 'Collapse' : 'Expand'}
+            aria-expanded={expanded}
+            onclick={() => (expanded = !expanded)}
+          >
+            <svg class="np-op-toggle-chev" class:open={expanded} viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {#if expanded && op.parameters.length}
@@ -340,7 +419,16 @@
       <div class="np-op-right-sticky">
         <div class="np-op-right-card">
           {#if mountRight}
-            <TryPanel {op} {servers} {securitySchemes} bind:tryState disabled={!expanded} />
+            <TryPanel
+              {op}
+              {servers}
+              {securitySchemes}
+              bind:tryState
+              disabled={!expanded}
+              onOpenDialog={(opId) => window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId } }))}
+              onClear={() => handleClear()}
+              onShare={() => handleShare()}
+            />
             {#if expanded}
               <CodeExamples {op} {securitySchemes} bind:tryState />
             {/if}
@@ -371,6 +459,35 @@
     flex: 1;
     min-width: 0;
   }
+  .np-op-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    align-self: stretch;
+  }
+  .np-op-try-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--np-radius-pill);
+    border: 1px solid color-mix(in srgb, var(--np-brand) 50%, transparent);
+    background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
+    color: var(--np-brand);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .np-op-try-btn:hover {
+    background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
+    border-color: var(--np-brand);
+    transform: translateY(-1px);
+  }
+  .np-op-try-btn svg { display: block; }
   .np-op-toggle {
     flex: 0 0 auto;
     align-self: stretch;
