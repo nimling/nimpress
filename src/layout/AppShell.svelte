@@ -89,7 +89,7 @@
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .np-collapsed .np-body {
-    grid-template-columns: var(--np-sidebar-collapsed-width, 64px) minmax(0, 1fr);
+    grid-template-columns: var(--np-sidebar-collapsed-width, 0px) minmax(0, 1fr);
   }
   .np-aside {
     position: sticky;
@@ -98,6 +98,11 @@
     overflow-y: auto;
     border-right: 1px solid var(--np-border);
     background-color: var(--np-bg-sidebar);
+    transition: border-right-color 0.2s ease;
+  }
+  .np-collapsed .np-aside {
+    overflow: hidden;
+    border-right-color: transparent;
   }
   .np-main {
     min-height: calc(100vh - var(--np-header-height));
