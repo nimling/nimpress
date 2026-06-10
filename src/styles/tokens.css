@@ -53,7 +53,7 @@
   --np-header-height: 64px;
   --np-sidebar-width: 288px;
   --np-toc-width: 224px;
-  --np-content-max: 768px;
+  --np-content-max: 1024px;
 }
 
 html.dark {

@@ -278,7 +278,6 @@
     color: var(--np-text-secondary);
   }
   .np-page :global(.np-prose) {
-    max-width: none;
     width: 100%;
   }
 

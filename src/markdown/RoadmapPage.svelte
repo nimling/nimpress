@@ -32,7 +32,7 @@
   const dateBounds = $derived(computeBounds(arranged))
   const todayPos = $derived(positionFor(now, dateBounds, arranged))
   const changelogMarkers = $derived(collectChangelogMarkers(arranged, dateBounds))
-  const spinePath = $derived(buildSpinePath(arranged.length, trackHeight, trackWidth))
+  const spinePath = $derived(buildSpinePath(arranged, trackHeight, trackWidth))
   const activeHover = $derived(arranged.find((a) => a.entry.href === hoverHref)?.entry ?? null)
 
   interface Arranged {
@@ -125,34 +125,92 @@
     return ((row + 0.5) / total) * h
   }
 
-  function spineSegments(rows: number): number {
-    return Math.max(6, rows * 2)
+  function segmentCycles(list: Arranged[]): number[] {
+    const N = list.length
+    if (N < 2) return []
+    const dates = list.map((a) => (a.entry.targetDate ? new Date(a.entry.targetDate).getTime() : 0))
+    const gaps: number[] = []
+    for (let i = 0; i < N - 1; i++) gaps.push(Math.abs(dates[i] - dates[i + 1]) || 1)
+    const total = gaps.reduce((s, g) => s + g, 0) || 1
+    const avg = total / gaps.length
+    return gaps.map((g) => Math.max(0.5, Math.min(3.5, (g / avg) * 0.9 + 0.3)))
   }
 
-  function buildSpinePath(rows: number, h: number, w: number): string {
-    if (rows < 1 || h <= 0 || w <= 0) return ''
+  function spinePhaseAt(y: number, list: Arranged[], h: number): { phase: number; t: number; segIdx: number } {
+    const N = list.length
+    if (N === 0 || h <= 0) return { phase: 0, t: 0, segIdx: -1 }
+    const cycles = segmentCycles(list)
+    let phase = 0
+    const firstRowY = rowYPx(0, N, h)
+    if (y <= firstRowY) {
+      const t = firstRowY > 0 ? y / firstRowY : 0
+      return { phase: phase + 0.5 * 2 * Math.PI * t, t, segIdx: -1 }
+    }
+    phase += 0.5 * 2 * Math.PI
+    for (let i = 0; i < N - 1; i++) {
+      const yStart = rowYPx(i, N, h)
+      const yEnd = rowYPx(i + 1, N, h)
+      if (y <= yEnd) {
+        const t = (y - yStart) / Math.max(1e-9, yEnd - yStart)
+        return { phase: phase + cycles[i] * 2 * Math.PI * t, t, segIdx: i }
+      }
+      phase += cycles[i] * 2 * Math.PI
+    }
+    const lastRowY = rowYPx(N - 1, N, h)
+    const t = (y - lastRowY) / Math.max(1e-9, h - lastRowY)
+    return { phase: phase + 0.5 * 2 * Math.PI * t, t, segIdx: N - 1 }
+  }
+
+  function buildSpinePath(list: Arranged[], h: number, w: number): string {
+    const N = list.length
+    if (N === 0 || h <= 0 || w <= 0) return ''
     const cx = w / 2
     const amp = spineAmp(w)
-    const segments = spineSegments(rows)
+    const cycles = segmentCycles(list)
     let d = `M ${cx.toFixed(2)} 0 `
-    for (let i = 1; i <= segments; i++) {
-      const y = (h * i) / segments
-      const prevY = (h * (i - 1)) / segments
-      const midY = (y + prevY) / 2
-      const offsetA = Math.sin((i - 1) * 0.9) * amp
-      const offsetB = Math.sin(i * 0.9) * amp
-      d += `C ${(cx + offsetA).toFixed(2)} ${midY.toFixed(2)}, ${(cx + offsetB).toFixed(2)} ${midY.toFixed(2)}, ${(cx + Math.sin(i * 0.9) * amp).toFixed(2)} ${y.toFixed(2)} `
+    let phase = 0
+    const firstRowY = rowYPx(0, N, h)
+    const preSamples = 16
+    for (let j = 1; j <= preSamples; j++) {
+      const t = j / preSamples
+      const y = firstRowY * t
+      const lp = phase + 0.5 * 2 * Math.PI * t
+      const x = cx + Math.sin(lp) * amp
+      d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
+    }
+    phase += 0.5 * 2 * Math.PI
+    for (let i = 0; i < N - 1; i++) {
+      const yStart = rowYPx(i, N, h)
+      const yEnd = rowYPx(i + 1, N, h)
+      const segC = cycles[i]
+      const samples = Math.max(16, Math.ceil(segC * 18))
+      for (let j = 1; j <= samples; j++) {
+        const t = j / samples
+        const y = yStart + (yEnd - yStart) * t
+        const lp = phase + segC * 2 * Math.PI * t
+        const x = cx + Math.sin(lp) * amp
+        d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
+      }
+      phase += segC * 2 * Math.PI
+    }
+    const lastRowY = rowYPx(N - 1, N, h)
+    const postSamples = 16
+    for (let j = 1; j <= postSamples; j++) {
+      const t = j / postSamples
+      const y = lastRowY + (h - lastRowY) * t
+      const lp = phase + 0.5 * 2 * Math.PI * t
+      const x = cx + Math.sin(lp) * amp
+      d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
     }
     return d
   }
 
-  function spineXAt(y: number, h: number, w: number, rows: number): number {
-    if (h <= 0 || w <= 0) return w / 2
+  function spineXAt(y: number, list: Arranged[], h: number, w: number): number {
+    if (h <= 0 || w <= 0 || list.length === 0) return w / 2
     const cx = w / 2
     const amp = spineAmp(w)
-    const segments = spineSegments(rows)
-    const i = (y / h) * segments
-    return cx + Math.sin(i * 0.9) * amp
+    const { phase } = spinePhaseAt(y, list, h)
+    return cx + Math.sin(phase) * amp
   }
 
   function collectChangelogMarkers(
@@ -224,8 +282,35 @@
   function markerSide(row: number, list: Arranged[], w: number): 'left' | 'right' {
     if (list.length === 0 || trackHeight <= 0) return 'right'
     const y = (row / list.length) * trackHeight
-    const x = spineXAt(y, trackHeight, w, list.length)
+    const x = spineXAt(y, list, trackHeight, w)
     return x >= w / 2 ? 'left' : 'right'
+  }
+
+  function oppositeOfNearest(targetRow: number, list: Arranged[]): 'left' | 'right' {
+    if (list.length === 0) return 'left'
+    let best = list[0]
+    for (const a of list) {
+      if (Math.abs(a.row - targetRow) < Math.abs(best.row - targetRow)) best = a
+    }
+    return best.side === 'left' ? 'right' : 'left'
+  }
+
+  let travelFrame = 0
+  function travel() {
+    if (!arranged.length || trackHeight <= 0) return
+    cancelAnimationFrame(travelFrame)
+    const target = (todayPos / arranged.length) * trackHeight
+    const start = trackHeight
+    const duration = 2400
+    const t0 = performance.now()
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / duration)
+      const eased = 1 - Math.pow(1 - p, 3)
+      rocketTop = start - (start - target) * eased
+      if (p < 1) travelFrame = requestAnimationFrame(step)
+    }
+    rocketTop = start
+    travelFrame = requestAnimationFrame(step)
   }
 
   async function hydrate() {
@@ -322,6 +407,12 @@
           <div class="np-roadmap-hero-body np-prose">{@html page.html}</div>
         {/if}
       </div>
+      <button class="np-roadmap-travel" type="button" onclick={travel}>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
+        </svg>
+        <span>Travel</span>
+      </button>
     </section>
 
     <div class="np-roadmap-track" bind:this={track}>
@@ -335,7 +426,7 @@
         <path d={spinePath} class="np-roadmap-spine-trail" clip-path="url(#np-roadmap-trail-clip)" />
         {#each arranged as a (a.entry.href)}
           {@const rowY = rowYPx(a.row, arranged.length, trackHeight)}
-          {@const sX = spineXAt(rowY, trackHeight, trackWidth, arranged.length)}
+          {@const sX = spineXAt(rowY, arranged, trackHeight, trackWidth)}
           {@const eX = cardEdgeX(a.side, trackWidth)}
           <line
             class="np-roadmap-row-connector"
@@ -350,7 +441,7 @@
 
       {#each changelogMarkers as marker (marker.href + marker.date)}
         {@const top = (marker.row / Math.max(1, arranged.length)) * trackHeight}
-        {@const x = spineXAt(top, trackHeight, trackWidth, arranged.length)}
+        {@const x = spineXAt(top, arranged, trackHeight, trackWidth)}
         {@const side = markerSide(marker.row, arranged, trackWidth)}
         <a
           class="np-roadmap-marker np-roadmap-marker-{side}"
@@ -368,7 +459,7 @@
       {#if arranged.length > 0}
         {@const todayTop = (todayPos / Math.max(1, arranged.length)) * trackHeight}
         {@const todayX = spineXAt(todayTop, trackHeight, trackWidth, arranged.length)}
-        {@const todaySide = markerSide(todayPos, arranged, trackWidth)}
+        {@const todaySide = oppositeOfNearest(todayPos, arranged)}
         <div
           class="np-roadmap-today np-roadmap-today-{todaySide}"
           style:top={`${todayTop}px`}
@@ -376,7 +467,7 @@
           aria-hidden="true"
         >
           <span class="np-roadmap-today-line"></span>
-          <span class="np-roadmap-today-label">Today · {formatDate(now)}</span>
+          <span class="np-roadmap-today-label">{formatDate(now)}</span>
         </div>
         <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} style:left={`${todayX}px`} aria-hidden="true">
           <svg viewBox="0 0 32 48" width="32" height="48">
@@ -502,7 +593,11 @@
     position: relative;
     width: 100%;
     margin: 0 auto;
-    padding: 120px 0 56px;
+    padding: 40px 0 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
   }
   .np-roadmap-hero-copy {
     display: flex;
@@ -511,7 +606,36 @@
     text-align: left;
     max-width: 760px;
     min-width: 0;
+    flex: 1;
   }
+  .np-roadmap-travel {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--np-radius-pill);
+    border: 1px solid color-mix(in srgb, var(--np-brand) 50%, transparent);
+    background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
+    color: var(--np-brand);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    margin-top: 8px;
+  }
+  .np-roadmap-travel:hover {
+    background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
+    border-color: var(--np-brand);
+    transform: translateY(-1px);
+  }
+  .np-roadmap-travel:focus-visible {
+    outline: 2px solid var(--np-brand);
+    outline-offset: 3px;
+  }
+  .np-roadmap-travel svg { display: block; }
   .np-roadmap-eyebrow {
     text-transform: uppercase;
     letter-spacing: 0.18em;
@@ -566,10 +690,10 @@
   }
   .np-roadmap-spine-path {
     fill: none;
-    stroke: var(--np-border);
+    stroke: var(--np-text-muted);
     stroke-width: 2;
     stroke-dasharray: 6 8;
-    opacity: 0.6;
+    opacity: 0.9;
   }
   .np-roadmap-spine-trail {
     fill: none;
@@ -597,24 +721,24 @@
   .np-roadmap-row-right > a { grid-column: 3; justify-self: start; }
 
   .np-roadmap-row-connector {
-    stroke: var(--np-border);
-    stroke-width: 1.2;
-    stroke-dasharray: 2 4;
+    stroke: var(--np-text-muted);
+    stroke-width: 1.4;
+    stroke-dasharray: 2 5;
     stroke-linecap: round;
-    opacity: 0.7;
+    opacity: 0.95;
   }
   .np-roadmap-row-dot {
     fill: var(--np-bg);
-    stroke: var(--np-border);
-    stroke-width: 1.5;
+    stroke: var(--np-text-muted);
+    stroke-width: 2;
   }
 
   .np-roadmap-card {
     position: relative;
     display: block;
     width: 100%;
-    max-width: 320px;
-    padding: 32px 40px;
+    max-width: 420px;
+    padding: 44px 52px;
     text-decoration: none;
     color: var(--np-text-primary);
     cursor: pointer;
