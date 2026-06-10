@@ -9,6 +9,28 @@
 
   let searchOpen = $state(false)
   let drawerOpen = $state(false)
+  let collapsed = $state(loadCollapsed())
+
+  function loadCollapsed(): boolean {
+    if (typeof localStorage === 'undefined') return false
+    return localStorage.getItem('np-sidebar-collapsed') === 'true'
+  }
+
+  function persistCollapsed(value: boolean) {
+    try {
+      localStorage.setItem('np-sidebar-collapsed', String(value))
+    } catch {}
+  }
+
+  function toggleSidebar() {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+    if (isMobile) {
+      drawerOpen = !drawerOpen
+      return
+    }
+    collapsed = !collapsed
+    persistCollapsed(collapsed)
+  }
 
   function onKey(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -29,14 +51,14 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="np-app" class:np-drawer-open={drawerOpen}>
+<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed}>
   <Header
     onOpenSearch={() => (searchOpen = true)}
-    onToggleDrawer={() => (drawerOpen = !drawerOpen)}
+    onToggleDrawer={toggleSidebar}
   />
   <div class="np-body">
     <aside class="np-aside" class:open={drawerOpen}>
-      <Sidebar />
+      <Sidebar {collapsed} />
     </aside>
     {#if drawerOpen}
       <button
@@ -64,6 +86,10 @@
     display: grid;
     grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
     align-items: start;
+    transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .np-collapsed .np-body {
+    grid-template-columns: var(--np-sidebar-collapsed-width, 64px) minmax(0, 1fr);
   }
   .np-aside {
     position: sticky;

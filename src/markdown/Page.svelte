@@ -33,6 +33,8 @@
     const d = new Date(raw)
     return Number.isNaN(d.getTime()) ? null : d
   })
+  const tocHeadings = $derived((page.headings ?? []).filter((h) => h.level <= 3))
+  const showRail = $derived(!page.frontmatter.noToc && tocHeadings.length > 0)
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -172,7 +174,7 @@
 {#if renderBackground}
   <div class="np-page-background" style:background-image={`url('${background}')`}></div>
 {/if}
-<div class="np-page-shell">
+<div class="np-page-shell" class:has-rail={showRail}>
   <div class="np-page">
     {#if issueKind}
       <header class="np-issue-head">
@@ -196,9 +198,9 @@
     {/if}
     <div class="np-page-tail"></div>
   </div>
-  {#if !page.frontmatter.noToc}
+  {#if !page.frontmatter.noToc && tocHeadings.length > 0}
     <div class="np-toc-rail">
-      <RightToc headings={page.headings.filter((h) => h.level <= 3)} />
+      <RightToc headings={tocHeadings} />
     </div>
   {/if}
 </div>
@@ -206,25 +208,22 @@
 <style>
   .np-page-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1024px);
-    justify-content: center;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     width: 100%;
     align-items: stretch;
   }
 
-  @media (min-width: 1280px) {
-    .np-page-shell {
-      grid-template-columns: minmax(0, 1024px) 240px;
-      gap: 48px;
-    }
+  .np-page-shell.has-rail {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    gap: 12px;
   }
 
-  .np-toc-rail :global(.np-toc) {
-    position: sticky;
-    top: calc(var(--np-header-height) + 24px);
-    max-height: calc(100vh - var(--np-header-height) - 32px);
-    overflow-y: auto;
+  @media (min-width: 1280px) {
+    .np-page-shell.has-rail {
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 48px;
+    }
   }
 
   .np-page {

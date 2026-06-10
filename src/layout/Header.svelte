@@ -173,7 +173,7 @@
     color: var(--np-text-primary);
   }
   .np-menu-btn {
-    display: none;
+    display: inline-flex;
     width: 36px;
     height: 36px;
     align-items: center;
@@ -190,7 +190,6 @@
     border-color: var(--np-border-strong);
   }
   @media (max-width: 1024px) {
-    .np-menu-btn { display: inline-flex; }
     .np-header {
       gap: 12px;
       padding: 0 12px;

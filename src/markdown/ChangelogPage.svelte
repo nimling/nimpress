@@ -205,7 +205,7 @@
 {#if renderBackground}
   <div class="np-page-background" style:background-image={`url('${background}')`}></div>
 {/if}
-<div class="np-page-shell">
+<div class="np-page-shell" class:has-rail={!page.frontmatter.noToc && tocHeadings.length > 0}>
   <div class="np-page">
     <article class="np-prose np-changelog" bind:this={container}>
       <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
@@ -270,9 +270,12 @@
     position: relative;
     z-index: 1;
   }
-
+  .np-page-shell.has-rail {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    gap: 12px;
+  }
   @media (min-width: 1280px) {
-    .np-page-shell {
+    .np-page-shell.has-rail {
       grid-template-columns: minmax(0, 1fr) 240px;
       gap: 48px;
     }
