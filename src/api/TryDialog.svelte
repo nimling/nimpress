@@ -26,6 +26,8 @@
   let selectedOpId = $state<string>('')
   let tryStates = $state<Record<string, TryState>>({})
   let suppressUrlUpdate = false
+  let dropdownOpen = $state(false)
+  let dropdownEl: HTMLDivElement | null = null
 
   const selectedOp = $derived(operations.find((o) => o.id === selectedOpId) ?? null)
   const initialServer = $derived(
@@ -133,6 +135,7 @@
 
   function close() {
     open = false
+    dropdownOpen = false
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href)
       url.searchParams.delete('try')
@@ -141,11 +144,11 @@
     }
   }
 
-  function onPickOp(ev: Event) {
-    const target = ev.currentTarget as HTMLSelectElement
-    selectedOpId = target.value
-    ensureState(selectedOpId)
-    updateUrl(selectedOpId, tryStates[selectedOpId] ?? null)
+  function pickOp(opId: string) {
+    selectedOpId = opId
+    ensureState(opId)
+    dropdownOpen = false
+    updateUrl(opId, tryStates[opId] ?? null)
   }
 
   let shareLabel = $state('Share')
@@ -186,18 +189,29 @@
     suppressUrlUpdate = false
   }
 
+  function send() {
+    if (!selectedOpId || typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent('nimpress:try-send', { detail: { opId: selectedOpId } }))
+  }
+
   function onBackdrop(ev: MouseEvent) {
     if (ev.target === ev.currentTarget) close()
   }
 
+  function onDocClick(ev: MouseEvent) {
+    if (!dropdownOpen || !dropdownEl) return
+    if (!dropdownEl.contains(ev.target as Node)) dropdownOpen = false
+  }
+
   function onKey(ev: KeyboardEvent) {
     if (!open) return
-    if (ev.key === 'Escape') close()
+    if (ev.key === 'Escape') {
+      if (dropdownOpen) { dropdownOpen = false; return }
+      close()
+    }
     if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
       ev.preventDefault()
-      if (typeof window !== 'undefined' && selectedOpId) {
-        window.dispatchEvent(new CustomEvent('nimpress:try-send', { detail: { opId: selectedOpId } }))
-      }
+      send()
     }
   }
 
@@ -240,11 +254,13 @@
     window.addEventListener('nimpress:try-open', onTryOpen as EventListener)
     window.addEventListener('popstate', onPop)
     window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', onDocClick)
     syncFromUrl()
     return () => {
       window.removeEventListener('nimpress:try-open', onTryOpen as EventListener)
       window.removeEventListener('popstate', onPop)
       window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', onDocClick)
     }
   })
 </script>
@@ -252,26 +268,63 @@
 {#if open && selectedOp}
   <div class="np-try-backdrop" role="dialog" aria-modal="true" onclick={onBackdrop}>
     <div class="np-try-dialog">
-      <header class="np-try-dialog-head">
-        <div class="np-try-target">
-          <MethodBadge method={selectedOp.method} size="md" />
-        </div>
-        <div class="np-try-picker">
-          <select aria-label="Endpoint" value={selectedOpId} onchange={onPickOp}>
-            {#each operations as o (o.id)}
-              <option value={o.id}>{o.method} {o.path} — {o.summary}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="np-try-dialog-controls">
-          <button class="np-try-close" type="button" onclick={close} aria-label="Close">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
+      <header class="np-try-dialog-head np-try-dialog-head-actions">
+        <span class="np-try-dialog-title">Try it</span>
+        <div class="np-try-dialog-actions">
+          <button class="np-try-meta" type="button" onclick={share}>{shareLabel}</button>
+          <button class="np-try-meta" type="button" onclick={clearCurrent}>Clear</button>
+          <code class="np-try-shortcut" title="Send via Cmd or Ctrl plus Enter">⌘⏎</code>
         </div>
       </header>
+      <div class="np-try-dialog-picker-row">
+        <div class="np-try-picker" bind:this={dropdownEl}>
+          <button
+            class="np-try-picker-trigger"
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={dropdownOpen}
+            onclick={() => (dropdownOpen = !dropdownOpen)}
+          >
+            <MethodBadge method={selectedOp.method} size="md" />
+            <span class="np-try-picker-path">{selectedOp.path}</span>
+            <span class="np-try-picker-summary">{selectedOp.summary}</span>
+            <span class="np-try-picker-chev" class:open={dropdownOpen} aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </button>
+          {#if dropdownOpen}
+            <ul class="np-try-picker-list" role="listbox">
+              {#each operations as o (o.id)}
+                <li>
+                  <button
+                    class="np-try-picker-option"
+                    class:selected={o.id === selectedOpId}
+                    type="button"
+                    role="option"
+                    aria-selected={o.id === selectedOpId}
+                    onclick={() => pickOp(o.id)}
+                  >
+                    <MethodBadge method={o.method} size="sm" />
+                    <span class="np-try-picker-opt-path">{o.path}</span>
+                    <span class="np-try-picker-opt-summary">{o.summary}</span>
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+        <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()}`} type="button" onclick={send}>
+          {selectedOp.method.toUpperCase()}
+        </button>
+        <button class="np-try-close" type="button" onclick={close} aria-label="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </svg>
+        </button>
+      </div>
       <div class="np-try-dialog-grid">
         <div class="np-try-dialog-cell np-try-dialog-cell-inputs">
           {#if tryStates[selectedOpId]}
@@ -281,6 +334,7 @@
               {securitySchemes}
               bind:tryState={tryStates[selectedOpId]}
               hideBody={true}
+              hideHeader={true}
             />
           {/if}
         </div>
@@ -318,10 +372,11 @@
     -webkit-backdrop-filter: blur(4px);
     z-index: 80;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 24px;
     box-sizing: border-box;
+    overflow-y: auto;
   }
   .np-try-dialog {
     background-color: var(--np-bg-card);
@@ -329,61 +384,35 @@
     border-radius: var(--np-radius-lg);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
     width: min(1280px, 100%);
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
-    overflow-x: hidden;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
   .np-try-dialog-head {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 16px;
-    align-items: center;
-    padding: 14px 22px;
-    border-bottom: 1px solid var(--np-divider);
-    background-color: var(--np-bg-surface);
     position: sticky;
     top: 0;
     z-index: 5;
+    background-color: var(--np-bg-surface);
+    border-bottom: 1px solid var(--np-divider);
+    padding: 14px 22px;
   }
-  .np-try-picker { position: relative; }
-  .np-try-picker select {
-    width: 100%;
-    padding: 10px 44px 10px 18px;
-    background-color: var(--np-bg);
-    color: var(--np-text-primary);
-    border: 1px solid var(--np-border);
-    border-radius: var(--np-radius-md);
-    font-size: 13px;
-    font-family: inherit;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    cursor: pointer;
-  }
-  .np-try-picker::after {
-    content: '';
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    width: 10px;
-    height: 10px;
-    border-right: 2px solid var(--np-text-muted);
-    border-bottom: 2px solid var(--np-text-muted);
-    transform: translateY(-70%) rotate(45deg);
-    pointer-events: none;
-  }
-  .np-try-target {
+  .np-try-dialog-head-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 0;
+    justify-content: space-between;
+    gap: 16px;
   }
-  .np-try-dialog-controls {
+  .np-try-dialog-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--np-text-secondary);
+  }
+  .np-try-dialog-actions {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
   .np-try-meta {
     background-color: transparent;
@@ -401,15 +430,33 @@
     color: var(--np-text-primary);
     border-color: var(--np-text-muted);
   }
-  .np-try-path {
+  .np-try-shortcut {
     font-family: var(--np-font-mono);
-    font-size: 12.5px;
-    color: var(--np-text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 320px;
+    font-size: 12px;
+    color: var(--np-text-muted);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    padding: 3px 8px;
+    background-color: var(--np-bg);
+    letter-spacing: 0.04em;
   }
+  .np-try-send {
+    background-color: var(--np-brand);
+    color: var(--np-text-on-brand);
+    border: 0;
+    padding: 8px 18px;
+    border-radius: var(--np-radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .np-try-send:hover { filter: brightness(1.08); }
+  .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
+  .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
+  .np-try-send-put { background-color: var(--np-method-put, #b07309); }
+  .np-try-send-patch { background-color: var(--np-method-patch, #8a52ce); }
+  .np-try-send-delete { background-color: var(--np-method-delete, #d44a4a); }
   .np-try-close {
     background: transparent;
     border: 1px solid var(--np-border);
@@ -423,9 +470,118 @@
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
   .np-try-close:hover {
-    background-color: var(--np-bg-surface);
+    background-color: var(--np-bg);
     border-color: var(--np-text-muted);
   }
+
+  .np-try-dialog-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--np-divider);
+    background-color: var(--np-bg-surface);
+  }
+  .np-try-picker {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .np-try-picker-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 44px 10px 14px;
+    background-color: var(--np-bg);
+    color: var(--np-text-primary);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-md);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    min-width: 0;
+  }
+  .np-try-picker-trigger:hover { border-color: var(--np-text-muted); }
+  .np-try-picker-path {
+    font-family: var(--np-font-mono);
+    color: var(--np-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .np-try-picker-summary {
+    color: var(--np-text-muted);
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .np-try-picker-chev {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--np-text-muted);
+    pointer-events: none;
+    transition: transform 0.15s ease;
+  }
+  .np-try-picker-chev.open {
+    transform: translateY(-50%) rotate(180deg);
+  }
+  .np-try-picker-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    max-height: 360px;
+    overflow-y: auto;
+    background-color: var(--np-bg-card);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    z-index: 10;
+  }
+  .np-try-picker-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background-color: transparent;
+    border: 0;
+    border-radius: var(--np-radius-sm);
+    cursor: pointer;
+    text-align: left;
+    color: var(--np-text-primary);
+    font-family: inherit;
+    font-size: 12.5px;
+    min-width: 0;
+  }
+  .np-try-picker-option:hover {
+    background-color: var(--np-bg-surface);
+  }
+  .np-try-picker-option.selected {
+    background-color: color-mix(in srgb, var(--np-brand) 16%, transparent);
+  }
+  .np-try-picker-opt-path {
+    font-family: var(--np-font-mono);
+    white-space: nowrap;
+  }
+  .np-try-picker-opt-summary {
+    color: var(--np-text-muted);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .np-try-dialog-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -444,6 +600,7 @@
     grid-row: 1;
     border-right: 1px solid var(--np-divider);
     overflow-y: auto;
+    overflow-x: auto;
   }
   .np-try-dialog-cell-body {
     grid-column: 2;
@@ -496,24 +653,23 @@
   .np-try-dialog-cell > :global(:last-child) {
     border-bottom: 0;
   }
+
   @media (max-width: 900px) {
     .np-try-backdrop { padding: 0; }
     .np-try-dialog {
       width: 100%;
-      max-height: 100vh;
       border-radius: 0;
       border: 0;
     }
-    .np-try-dialog-head {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-    .np-try-target { display: none; }
     .np-try-dialog-grid {
       grid-template-columns: minmax(0, 1fr);
     }
-    .np-try-dialog-cell-try {
-      border-right: 0;
-      border-bottom: 1px solid var(--np-divider);
+    .np-try-dialog-cell-body {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .np-try-dialog-cell-footer {
+      grid-row: 3;
     }
   }
 </style>

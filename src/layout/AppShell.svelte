@@ -103,6 +103,7 @@
     height: calc(100vh - var(--np-header-height));
     overflow: hidden;
     background-color: transparent;
+    z-index: 30;
   }
   .np-aside :global(.np-sidebar) {
     position: absolute;
@@ -116,6 +117,8 @@
     box-sizing: border-box;
   }
   .np-main {
+    position: relative;
+    z-index: 0;
     min-height: calc(100vh - var(--np-header-height));
     padding: 32px 8px 32px 32px;
     min-width: 0;

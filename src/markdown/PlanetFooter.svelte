@@ -1,8 +1,8 @@
 <script lang="ts">
   let {
     footer = '',
-    height = '80vh',
-    minHeight = '520px'
+    height = '70vh',
+    minHeight = '480px'
   }: {
     footer?: string
     height?: string
@@ -11,7 +11,7 @@
 </script>
 
 <div class="np-planet-footer" style:--np-planet-height={height} style:--np-planet-min-height={minHeight}>
-  <svg class="np-planet-svg" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+  <svg class="np-planet-svg" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMin meet" aria-hidden="true">
     <defs>
       <radialGradient id="np-earth-atmosphere" cx="50%" cy="100%" r="64%">
         <stop offset="76%" stop-color="var(--np-brand)" stop-opacity="0" />
@@ -34,8 +34,8 @@
       </radialGradient>
       <linearGradient id="np-planet-bottom-fade" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="var(--np-bg)" stop-opacity="0" />
-        <stop offset="45%" stop-color="var(--np-bg)" stop-opacity="0.45" />
-        <stop offset="80%" stop-color="var(--np-bg)" stop-opacity="0.95" />
+        <stop offset="45%" stop-color="var(--np-bg)" stop-opacity="0.5" />
+        <stop offset="80%" stop-color="var(--np-bg)" stop-opacity="1" />
         <stop offset="100%" stop-color="var(--np-bg)" stop-opacity="1" />
       </linearGradient>
       <clipPath id="np-earth-clip">
@@ -68,8 +68,8 @@
     <circle cx="800" cy="1320" r="960" fill="url(#np-earth-night)" />
 
     <rect x="0" y="0" width="1600" height="1200" fill="url(#np-planet-bottom-fade)" />
-    <rect x="0" y="1150" width="1600" height="60" fill="var(--np-bg)" />
   </svg>
+  <div class="np-planet-bottom-bg"></div>
   {#if footer}
     <p class="np-planet-text">{footer}</p>
   {/if}
@@ -86,7 +86,7 @@
     min-height: var(--np-planet-min-height);
     overflow: hidden;
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
   .np-planet-svg {
     position: absolute;
@@ -95,17 +95,27 @@
     height: 100%;
     display: block;
   }
+  .np-planet-bottom-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 35%;
+    background: linear-gradient(to bottom, transparent 0%, var(--np-bg) 70%, var(--np-bg) 100%);
+    pointer-events: none;
+  }
   .np-planet-text {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 28px;
+    bottom: 32px;
     margin: 0;
     text-align: center;
-    color: var(--np-text-faint);
+    color: var(--np-text-secondary);
     font-size: 13px;
     line-height: 1.5;
     white-space: pre-line;
     pointer-events: auto;
+    z-index: 1;
   }
 </style>

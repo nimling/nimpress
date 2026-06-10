@@ -3,7 +3,10 @@
   import MethodBadge from './MethodBadge.svelte'
   import ParamRow from './ParamRow.svelte'
   import Schema from './Schema.svelte'
+  import TryPanel from './TryPanel.svelte'
+  import CodeExamples from './CodeExamples.svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
+  import { createTryState } from './tryState'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
 
   let {
@@ -28,6 +31,70 @@
   const responses = $derived(op.responses as Record<string, any> | undefined)
 
   let expanded = $state(!collapsedDefault)
+
+  const initialServer = (() => {
+    const list = servers ?? []
+    const dev = list.find((s) => typeof s?.url === 'string' && s.url.includes('.dev.'))
+    return dev?.url ?? list[0]?.url ?? serverUrl
+  })()
+  const cacheKey = $derived(`nimpress-try-cache-v1-${specVersion || 'unknown'}`)
+  function readCached() {
+    if (typeof localStorage === 'undefined') return null
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      if (!raw) return null
+      const obj = JSON.parse(raw)
+      return obj?.[op.id] ?? null
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+      return null
+    }
+  }
+  function writeCached(state: import('./tryState').TryState) {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      const obj = raw ? JSON.parse(raw) : {}
+      obj[op.id] = state
+      localStorage.setItem(cacheKey, JSON.stringify(obj))
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+    }
+  }
+  function clearCached() {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const raw = localStorage.getItem(cacheKey)
+      if (!raw) return
+      const obj = JSON.parse(raw)
+      if (obj && typeof obj === 'object') {
+        delete obj[op.id]
+        if (Object.keys(obj).length === 0) localStorage.removeItem(cacheKey)
+        else localStorage.setItem(cacheKey, JSON.stringify(obj))
+      }
+    } catch {
+      try { localStorage.removeItem(cacheKey) } catch {}
+    }
+  }
+  const baseState = createTryState(op, initialServer, securitySchemes)
+  const cached = readCached()
+  let tryState = $state(cached ? { ...baseState, ...cached } : baseState)
+  $effect(() => { writeCached(tryState) })
+  function handleClear() {
+    tryState = createTryState(op, initialServer, securitySchemes)
+    clearCached()
+  }
+  async function handleShare(): Promise<'ok' | 'fail'> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return 'fail'
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('try', op.id)
+      const json = JSON.stringify(tryState)
+      url.searchParams.set('state', btoa(unescape(encodeURIComponent(json))))
+      await navigator.clipboard.writeText(url.toString())
+      return 'ok'
+    } catch { return 'fail' }
+  }
 
   function openTryDialog() {
     if (typeof window === 'undefined') return
@@ -143,7 +210,8 @@
   })
 </script>
 
-<section id={id} class="np-op-card" class:np-op-collapsed={!expanded}>
+<section id={id} class="np-op-shell" class:np-op-collapsed={!expanded}>
+  <div class="np-op-card">
   <div class="np-op-top">
       <header class="np-op-head">
         <div class="np-op-head-body">
@@ -331,13 +399,81 @@
         </div>
       {/if}
   </div>
+  </div>
+
+  <aside class="np-op-inline">
+    <div class="np-op-inline-sticky">
+      <div class="np-op-inline-card">
+        <TryPanel
+          {op}
+          {servers}
+          {securitySchemes}
+          bind:tryState
+          disabled={!expanded}
+          onOpenDialog={openTryDialog}
+          onClear={() => handleClear()}
+          onShare={() => handleShare()}
+        />
+        {#if expanded}
+          <CodeExamples {op} {securitySchemes} bind:tryState />
+        {/if}
+      </div>
+    </div>
+  </aside>
 </section>
 
 <style>
-  .np-op-card {
+  .np-op-shell {
     scroll-margin-top: calc(var(--np-header-height) + 16px);
     margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
   }
+  .np-op-card {
+    min-width: 0;
+  }
+  .np-op-inline {
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .np-op-shell {
+      grid-template-columns: minmax(0, 1fr) 380px;
+    }
+    .np-op-inline {
+      display: block;
+      min-width: 0;
+      align-self: stretch;
+    }
+    .np-op-try-side {
+      display: none;
+    }
+  }
+  .np-op-inline-sticky {
+    position: sticky;
+    top: calc(var(--np-header-height) + 16px);
+    display: flex;
+    flex-direction: column;
+    align-self: flex-start;
+  }
+  .np-op-inline-card {
+    background-color: var(--np-bg-card);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .np-op-inline-card :global(.np-examples),
+  .np-op-inline-card :global(.np-try) {
+    margin: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .np-op-inline-card > :global(:first-child) { border-top: 0; }
+  .np-op-inline-card > :global(:not(:last-child)) { border-bottom: 1px solid var(--np-divider); }
   .np-op-head {
     padding: 20px 24px;
     background-color: var(--np-bg-card);
