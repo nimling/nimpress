@@ -583,7 +583,7 @@
   }
   .np-page {
     width: 100%;
-    max-width: 1100px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 0 32px;
     box-sizing: border-box;
@@ -678,7 +678,7 @@
     position: relative;
     padding: 32px 0 80px;
     margin: 0 auto;
-    max-width: 980px;
+    max-width: 1100px;
     min-height: 600px;
   }
   .np-roadmap-spine-svg {

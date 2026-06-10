@@ -400,12 +400,58 @@
 
   .np-changelog-body {
     padding: 16px 0 8px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .np-changelog-body :global(h1) {
+    font-size: 18px;
+    margin: 24px 0 8px;
+    color: var(--np-text-primary);
+    border-top: 0;
+    padding-top: 0;
+    letter-spacing: -0.005em;
+  }
+  .np-changelog-body :global(h1::before) { display: none; }
+  .np-changelog-body :global(h2) {
+    font-size: 16px;
+    margin: 20px 0 6px;
+    color: var(--np-text-primary);
+    border-top: 0;
+    padding-top: 0;
+    letter-spacing: 0;
+  }
+  .np-changelog-body :global(h2::before) { display: none; }
+  .np-changelog-body :global(h3) {
+    font-size: 14.5px;
+    margin: 16px 0 4px;
+    color: var(--np-text-primary);
+    border-left: 0;
+    padding-left: 0;
+    margin-left: 0;
+  }
+  .np-changelog-body :global(h4),
+  .np-changelog-body :global(h5),
+  .np-changelog-body :global(h6) {
+    font-size: 13.5px;
+    margin: 12px 0 4px;
+  }
+  .np-changelog-body :global(p),
+  .np-changelog-body :global(li) {
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .np-changelog-body :global(ul),
+  .np-changelog-body :global(ol) {
+    margin: 8px 0;
+  }
+  .np-changelog-body :global(code) {
+    font-size: 12.5px;
   }
   .np-changelog-description {
     margin: 0 0 16px;
     color: var(--np-text-secondary);
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 13.5px;
+    line-height: 1.55;
   }
 
   .np-changelog-empty {

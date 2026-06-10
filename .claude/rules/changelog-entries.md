@@ -21,8 +21,8 @@ type: changelog
 data:
   version: 1.4.2
   release_date: 2026-06-08
-  title: Booking calendars, code actions, full user management
-  description: One sentence summary shown under the version header.
+  title: Booking calendars
+  description: Booking calendars become a first class resource.
 ---
 ```
 
@@ -34,9 +34,9 @@ data:
 
 4. `data.release_date` is required. An RFC 3339 timestamp. Date only (`2026-06-08`) is accepted and interpreted as midnight UTC. Full timestamps (`2026-06-08T09:00:00Z`) are accepted. The renderer formats it as `DD.MM.YYYY` next to the entry title. Invalid values fail the build.
 
-5. `data.title` is the per release headline shown next to the version pill in the entry header.
+5. `data.title` is the per release name. Keep it to a short, friendly one phrase label. No comma lists, no laundry list of changes. Example: `Booking calendars`, `Organization settings`, `Conflict clarity`. The full rundown goes in the markdown body.
 
-6. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
+6. `data.description` is the brief outline shown under the header when the entry is expanded. One short sentence that frames the release for a reader scanning the changelog. Plain text only, markdown is not rendered. Skip identifier lists, skip backticks, save details for the body.
 
 ## Linking to a roadmap issue
 
@@ -88,15 +88,15 @@ Newest first. Parsed as dot delimited numeric segments. `1.10.0` ranks above `1.
 
 ## Entry body
 
-1. Never write an H1 or H2 in the body. The entry header carries the title row, and any higher heading collides with the page chrome. Start the body at H3. H3 is the maximum heading size.
+The body carries the real detail of the release. The renderer applies its own scaled down styling for headings inside an entry, so H1 through H6 are all allowed and read as compact section markers, not page chrome.
 
-2. Lead with one short paragraph or a single H3 summary section. The reader should know whether they care without expanding the entry.
+1. Lead with one short paragraph that names the shipped capability.
 
-3. Group user visible changes under H3 headings: themes, not severity. One section per shipped capability.
+2. Group user visible changes under headings: themes, not severity. One section per shipped capability. Use the heading level that reflects nesting depth.
 
-4. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
+3. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
 
-5. Link to the relevant PR or issue when the change references work outside the docs.
+4. Link to the relevant PR or issue when the change references work outside the docs.
 
 ## What to include
 
