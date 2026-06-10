@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export interface BannerOptions {
   title?: string
@@ -9,6 +10,7 @@ export interface BannerOptions {
   localUrl?: string
   networkUrl?: string
   duration?: number
+  nimpressVersion?: string
 }
 
 const RESET = '\x1b[0m'
@@ -48,6 +50,25 @@ function box(lines: string[]): string[] {
   return out
 }
 
+function readNimpressVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const candidates = [
+      resolve(here, 'package.json'),
+      resolve(here, '..', 'package.json'),
+      resolve(here, '..', '..', 'package.json')
+    ]
+    for (const p of candidates) {
+      try {
+        const raw = readFileSync(p, 'utf-8')
+        const json = JSON.parse(raw)
+        if (json?.name === '@nimling/nimpress' && typeof json.version === 'string') return json.version
+      } catch {}
+    }
+  } catch {}
+  return ''
+}
+
 export function buildBanner(opts: BannerOptions = {}): string {
   const title = opts.title ?? 'Nimpress'
   const tagline = opts.tagline ?? 'Docs framework on Svelte'
@@ -56,20 +77,27 @@ export function buildBanner(opts: BannerOptions = {}): string {
   const local = opts.localUrl ?? 'http://localhost:5173/'
   const network = opts.networkUrl ?? 'use --host to expose'
   const duration = typeof opts.duration === 'number' ? `ready in ${opts.duration} ms` : 'ready'
+  const nimpressVersion = opts.nimpressVersion ?? readNimpressVersion()
 
   const lines: string[] = []
   lines.push('')
   for (const row of ART) lines.push(CORAL + row + RESET)
   lines.push('')
 
-  const summary = box([
+  const rows: string[] = [
     `${BOLD}${title}${RESET}${GREY}  ·  ${company}${RESET}`,
     `${GREY}${tagline}${RESET}`,
-    `${SOFT}Version${RESET} ${version}    ${SOFT}${duration}${RESET}`,
-    `${SOFT}➜${RESET} Local    ${BOLD}${local}${RESET}`,
-    `${SOFT}➜${RESET} Network  ${DIM}${network}${RESET}`
-  ])
-  for (const row of summary) lines.push('                       ' + row)
+    `${SOFT}Version${RESET} ${version}    ${SOFT}${duration}${RESET}`
+  ]
+  if (nimpressVersion) rows.push(`${SOFT}Nimpress${RESET} ${nimpressVersion}`)
+  rows.push(`${SOFT}➜${RESET} Local    ${BOLD}${local}${RESET}`)
+  rows.push(`${SOFT}➜${RESET} Network  ${DIM}${network}${RESET}`)
+
+  const summary = box(rows)
+  const artWidth = ART[0].length
+  const boxWidth = BOX_WIDTH + 4
+  const boxIndent = ' '.repeat(Math.max(0, Math.floor((artWidth - boxWidth) / 2)))
+  for (const row of summary) lines.push(boxIndent + row)
   lines.push('')
   return lines.join('\n')
 }

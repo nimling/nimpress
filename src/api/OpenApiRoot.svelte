@@ -208,7 +208,7 @@
     aria-label="Back to top"
     title="Back to top"
   >
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <polyline points="6 14 12 8 18 14" />
     </svg>
   </button>
@@ -266,31 +266,32 @@
 
   .np-api-top {
     position: fixed;
-    left: 24px;
-    bottom: 24px;
-    width: 44px;
-    height: 44px;
+    left: calc(var(--np-sidebar-width) + 20px);
+    bottom: 20px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background-color: var(--np-brand);
-    color: var(--np-text-on-brand);
-    border: 0;
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-muted);
+    border: 1px solid var(--np-border);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
-    transform: translate(-160px, 160px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    transform: translate(-140px, 140px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.18s ease;
-    z-index: 50;
+    transition: opacity 0.18s ease, color 0.15s ease, border-color 0.15s ease;
+    z-index: 5;
   }
   .np-api-top:hover {
-    background-color: var(--np-brand-hover);
+    color: var(--np-text-primary);
+    border-color: var(--np-brand);
   }
   .np-api-top:focus-visible {
-    outline: 2px solid var(--np-text-primary);
-    outline-offset: 3px;
+    outline: 2px solid var(--np-brand);
+    outline-offset: 2px;
   }
   .np-api-top.show {
     opacity: 1;
@@ -298,9 +299,12 @@
     animation: np-api-top-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
   @keyframes np-api-top-in {
-    0% { transform: translate(-160px, 160px); }
-    70% { transform: translate(10px, -10px); }
+    0% { transform: translate(-140px, 140px); }
+    70% { transform: translate(8px, -8px); }
     100% { transform: translate(0, 0); }
+  }
+  @media (max-width: 1024px) {
+    .np-api-top { left: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .np-api-top.show {
