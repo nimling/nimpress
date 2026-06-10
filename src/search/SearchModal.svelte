@@ -7,7 +7,8 @@
 
   let { onClose }: { onClose: () => void } = $props()
 
-  let query = $state('')
+  let chips = $state<string[]>([])
+  let text = $state('')
   let input: HTMLInputElement
   let listEl: HTMLUListElement
   let activeIndex = $state(0)
@@ -17,14 +18,47 @@
     return entries.length ? buildIndex(entries) : null
   })
 
+  const combinedQuery = $derived(
+    [...chips.map((c) => `${c}/`), text.trim()].filter(Boolean).join(' ')
+  )
+
   const results = $derived(
-    index ? searchIndex(query, $viewer, index) : []
+    index ? searchIndex(combinedQuery, $viewer, index) : []
   )
 
   $effect(() => {
-    query
+    combinedQuery
     activeIndex = 0
   })
+
+  function tryExtractChips(raw: string): string {
+    if (!raw.includes(' ')) return raw
+    const parts = raw.split(' ')
+    const tail = parts.pop() ?? ''
+    const added: string[] = []
+    for (const part of parts) {
+      const m = part.match(/^([a-z0-9._\-\/]+)\/$/i)
+      if (m) {
+        const cleaned = m[1].toLowerCase().replace(/^\/+|\/+$/g, '')
+        if (cleaned && !chips.includes(cleaned)) added.push(cleaned)
+      } else if (part.trim()) {
+        added.push('')
+        return raw
+      }
+    }
+    if (added.length === 0) return raw
+    chips = [...chips, ...added.filter(Boolean)]
+    return tail
+  }
+
+  function onTextInput() {
+    text = tryExtractChips(text)
+  }
+
+  function removeChip(i: number) {
+    chips = chips.filter((_, idx) => idx !== i)
+    input?.focus()
+  }
 
   function go(slug: string) {
     onClose()
@@ -68,6 +102,23 @@
     }
   }
 
+  function onInputKey(e: KeyboardEvent) {
+    if (e.key === 'Backspace' && text === '' && chips.length > 0) {
+      e.preventDefault()
+      chips = chips.slice(0, -1)
+      return
+    }
+    if (e.key === ' ' && text.match(/[a-z0-9._\-\/]+\/$/i)) {
+      e.preventDefault()
+      const m = text.match(/^(.*?)([a-z0-9._\-\/]+)\/$/i)
+      if (m) {
+        const cleaned = m[2].toLowerCase().replace(/^\/+|\/+$/g, '')
+        if (cleaned && !chips.includes(cleaned)) chips = [...chips, cleaned]
+        text = m[1]
+      }
+    }
+  }
+
   onMount(() => {
     input?.focus()
   })
@@ -88,14 +139,24 @@
   >
     <div class="np-search-head">
       <span class="np-search-icon" aria-hidden="true">⌕</span>
-      <input
-        bind:this={input}
-        bind:value={query}
-        placeholder="Search pages, tags, headings… use 'api/' to scope to a folder"
-        class="np-search-input"
-        autocomplete="off"
-        spellcheck="false"
-      />
+      <div class="np-search-tokens">
+        {#each chips as chip, i (chip)}
+          <span class="np-search-chip">
+            {chip}/
+            <button type="button" class="np-search-chip-x" onclick={() => removeChip(i)} aria-label={`Remove ${chip} filter`}>×</button>
+          </span>
+        {/each}
+        <input
+          bind:this={input}
+          bind:value={text}
+          oninput={onTextInput}
+          onkeydown={onInputKey}
+          placeholder={chips.length ? 'Search inside scope…' : "Search pages, tags, headings… use 'api/' to scope to a folder"}
+          class="np-search-input"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
       <button class="np-search-close" onclick={onClose} aria-label="Close">Esc</button>
     </div>
 
@@ -115,10 +176,10 @@
           </button>
         </li>
       {/each}
-      {#if query && results.length === 0}
+      {#if combinedQuery && results.length === 0}
         <li class="np-empty">No matches</li>
       {/if}
-      {#if !query}
+      {#if !combinedQuery}
         <li class="np-hint">Start typing to search</li>
       {/if}
     </ul>
@@ -175,8 +236,41 @@
     font-size: 18px;
     color: var(--np-text-muted);
   }
-  .np-search-input {
+  .np-search-tokens {
     flex: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  .np-search-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: color-mix(in srgb, var(--np-brand) 16%, transparent);
+    color: var(--np-brand);
+    border: 1px solid color-mix(in srgb, var(--np-brand) 35%, transparent);
+    border-radius: var(--np-radius-pill);
+    padding: 2px 8px 2px 10px;
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .np-search-chip-x {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0.7;
+  }
+  .np-search-chip-x:hover { opacity: 1; }
+  .np-search-input {
+    flex: 1 1 120px;
+    min-width: 60px;
     border: 0;
     padding: 4px 0;
     font-size: 15px;
