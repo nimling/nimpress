@@ -13,12 +13,14 @@
     op,
     serverUrl = '',
     servers = [],
-    securitySchemes = {}
+    securitySchemes = {},
+    collapsedDefault = false
   }: {
     op: FlatOperation
     serverUrl?: string
     servers?: FlatServer[]
     securitySchemes?: Record<string, SecurityScheme>
+    collapsedDefault?: boolean
   } = $props()
 
   const id = $derived(`operation/${op.id}`)
@@ -26,7 +28,7 @@
   const reqSchema = $derived(reqBody?.content?.['application/json']?.schema)
   const responses = $derived(op.responses as Record<string, any> | undefined)
 
-  let expanded = $state(true)
+  let expanded = $state(!collapsedDefault)
   let mountRight = $state(false)
   const initialServer = (() => {
     const list = servers ?? []
@@ -133,8 +135,11 @@
   }
 
   onMount(() => {
-    const onCollapseAll = () => (expanded = false)
-    window.addEventListener('np-api-collapse-all', onCollapseAll)
+    const onToggleAll = (e: Event) => {
+      const detail = (e as CustomEvent<{ collapsed?: boolean }>).detail
+      expanded = !(detail?.collapsed ?? true)
+    }
+    window.addEventListener('np-api-toggle-all', onToggleAll)
     const ric =
       typeof (window as any).requestIdleCallback === 'function'
         ? (window as any).requestIdleCallback
@@ -142,14 +147,14 @@
     if (ric) {
       const handle = ric(() => (mountRight = true), { timeout: 600 })
       return () => {
-        window.removeEventListener('np-api-collapse-all', onCollapseAll)
+        window.removeEventListener('np-api-toggle-all', onToggleAll)
         const cic = (window as any).cancelIdleCallback
         if (typeof cic === 'function') cic(handle)
       }
     }
     const t = setTimeout(() => (mountRight = true), 60)
     return () => {
-      window.removeEventListener('np-api-collapse-all', onCollapseAll)
+      window.removeEventListener('np-api-toggle-all', onToggleAll)
       clearTimeout(t)
     }
   })

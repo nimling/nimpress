@@ -52,8 +52,11 @@
     observer.observe(el)
   }
 
-  function collapseAll() {
-    window.dispatchEvent(new CustomEvent('np-api-collapse-all'))
+  let allCollapsed = $state(false)
+
+  function toggleAll() {
+    allCollapsed = !allCollapsed
+    window.dispatchEvent(new CustomEvent('np-api-toggle-all', { detail: { collapsed: allCollapsed } }))
   }
 
   onMount(() => {
@@ -105,11 +108,15 @@
       <div class="np-api-title-row">
         <h1>{title ?? flat.title}</h1>
         {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
-        <button type="button" class="np-api-collapse-all" onclick={collapseAll} title="Collapse every endpoint card">
+        <button type="button" class="np-api-collapse-all" onclick={toggleAll} title={allCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="18 15 12 9 6 15" />
+            {#if allCollapsed}
+              <polyline points="6 9 12 15 18 9" />
+            {:else}
+              <polyline points="18 15 12 9 6 15" />
+            {/if}
           </svg>
-          <span>Collapse all</span>
+          <span>{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
         </button>
       </div>
       {#if servers.length}
@@ -147,7 +154,7 @@
           {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
             {@const opKey = `operation/${op.id}`}
             {#if mounted.has(opKey)}
-              <Operation {op} {serverUrl} {servers} {securitySchemes} />
+              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} />
             {:else}
               <div
                 class="np-op-lazy"
