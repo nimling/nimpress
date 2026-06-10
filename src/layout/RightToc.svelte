@@ -125,11 +125,10 @@
     .np-toc-strip {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
       position: relative;
       width: 100%;
-      padding: 16px 4px 16px 0;
-      margin-left: auto;
+      padding: 16px 0;
       box-sizing: border-box;
     }
     .np-toc-strip-line {
@@ -137,9 +136,10 @@
       position: absolute;
       top: 0;
       bottom: 0;
-      right: 8px;
+      left: 50%;
       width: 0;
       border-left: 2px dotted var(--np-border);
+      transform: translateX(-50%);
     }
     .np-toc-strip-dots {
       list-style: none;
@@ -154,8 +154,8 @@
     .np-toc-strip-dots li.lvl3 a { transform: translateX(0); }
     .np-toc-strip-dots a {
       display: inline-flex;
-      width: 18px;
-      height: 18px;
+      width: 10px;
+      height: 10px;
       align-items: center;
       justify-content: center;
       text-decoration: none;
