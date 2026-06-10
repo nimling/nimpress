@@ -87,9 +87,10 @@
     grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
     align-items: start;
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: grid-template-columns;
   }
   .np-collapsed .np-body {
-    grid-template-columns: var(--np-sidebar-collapsed-width, 0px) minmax(0, 1fr);
+    grid-template-columns: 0px minmax(0, 1fr);
   }
   .np-aside {
     position: sticky;
@@ -101,7 +102,6 @@
     transition: border-right-color 0.2s ease;
   }
   .np-collapsed .np-aside {
-    overflow: hidden;
     border-right-color: transparent;
   }
   .np-main {

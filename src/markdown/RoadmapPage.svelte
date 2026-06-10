@@ -42,7 +42,7 @@
   }
 
   function arrangeEntries(list: RoadmapEntry[]): Arranged[] {
-    const sorted = [...list].sort((a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
+    const sorted = [...list].sort((a, b) => (b.targetDate ?? '').localeCompare(a.targetDate ?? ''))
     const byHref = new Map(sorted.map((e) => [e.href, e]))
     const result: Arranged[] = []
     const placedHrefs = new Set<string>()
@@ -106,14 +106,22 @@
     const span = bounds.end - bounds.start
     if (span <= 0) return total / 2
     const ratio = Math.max(0, Math.min(1, (t - bounds.start) / span))
-    return ratio * total
+    return (1 - ratio) * total
+  }
+
+  function spineAmp(w: number): number {
+    return Math.min(80, w * 0.08)
+  }
+
+  function spineSegments(rows: number): number {
+    return Math.max(6, rows * 2)
   }
 
   function buildSpinePath(rows: number, h: number, w: number): string {
     if (rows < 1 || h <= 0 || w <= 0) return ''
     const cx = w / 2
-    const amp = Math.min(80, w * 0.08)
-    const segments = Math.max(6, rows * 2)
+    const amp = spineAmp(w)
+    const segments = spineSegments(rows)
     let d = `M ${cx.toFixed(2)} 0 `
     for (let i = 1; i <= segments; i++) {
       const y = (h * i) / segments
@@ -124,6 +132,15 @@
       d += `C ${(cx + offsetA).toFixed(2)} ${midY.toFixed(2)}, ${(cx + offsetB).toFixed(2)} ${midY.toFixed(2)}, ${(cx + Math.sin(i * 0.9) * amp).toFixed(2)} ${y.toFixed(2)} `
     }
     return d
+  }
+
+  function spineXAt(y: number, h: number, w: number, rows: number): number {
+    if (h <= 0 || w <= 0) return w / 2
+    const cx = w / 2
+    const amp = spineAmp(w)
+    const segments = spineSegments(rows)
+    const i = (y / h) * segments
+    return cx + Math.sin(i * 0.9) * amp
   }
 
   function collectChangelogMarkers(
@@ -190,6 +207,13 @@
     }
     const ratio = todayPos / arranged.length
     rocketTop = Math.max(0, Math.min(trackHeight, ratio * trackHeight))
+  }
+
+  function markerSide(row: number, list: Arranged[], w: number): 'left' | 'right' {
+    if (list.length === 0 || trackHeight <= 0) return 'right'
+    const y = (row / list.length) * trackHeight
+    const x = spineXAt(y, trackHeight, w, list.length)
+    return x >= w / 2 ? 'left' : 'right'
   }
 
   async function hydrate() {
@@ -275,29 +299,38 @@
 {/if}
 <div class="np-page-shell">
   <div class="np-page">
-    {#if page.html}
-      <article class="np-prose np-roadmap-intro" bind:this={container}>
+    <article class="np-prose np-roadmap-intro" bind:this={container}>
+      <span class="np-roadmap-eyebrow">Roadmap</span>
+      {#if page.html}
         {@html page.html}
-      </article>
-    {:else}
-      <article class="np-prose np-roadmap-intro" bind:this={container}>
+      {:else}
         <h1>{page.frontmatter.title}</h1>
         {#if page.frontmatter.description}
           <p>{page.frontmatter.description}</p>
         {/if}
-      </article>
-    {/if}
+      {/if}
+      <span class="np-roadmap-accent" aria-hidden="true"></span>
+    </article>
 
     <div class="np-roadmap-track" bind:this={track}>
       <svg class="np-roadmap-spine-svg" viewBox={`0 0 ${trackWidth} ${trackHeight}`} preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <clipPath id="np-roadmap-trail-clip" clipPathUnits="userSpaceOnUse">
+            <rect x="0" y={rocketTop} width={trackWidth} height={Math.max(0, trackHeight - rocketTop)} />
+          </clipPath>
+        </defs>
         <path d={spinePath} class="np-roadmap-spine-path" />
+        <path d={spinePath} class="np-roadmap-spine-trail" clip-path="url(#np-roadmap-trail-clip)" />
       </svg>
 
       {#each changelogMarkers as marker (marker.href + marker.date)}
         {@const top = (marker.row / Math.max(1, arranged.length)) * trackHeight}
+        {@const x = spineXAt(top, trackHeight, trackWidth, arranged.length)}
+        {@const side = markerSide(marker.row, arranged, trackWidth)}
         <a
-          class="np-roadmap-marker"
+          class="np-roadmap-marker np-roadmap-marker-{side}"
           style:top={`${top}px`}
+          style:left={`${x}px`}
           href={marker.href}
           title={`Changelog v${marker.version} on ${formatDate(marker.date)}`}
           aria-label={`Changelog v${marker.version} ${formatDate(marker.date)}`}
@@ -309,11 +342,18 @@
 
       {#if arranged.length > 0}
         {@const todayTop = (todayPos / Math.max(1, arranged.length)) * trackHeight}
-        <div class="np-roadmap-today" style:top={`${todayTop}px`} aria-hidden="true">
+        {@const todayX = spineXAt(todayTop, trackHeight, trackWidth, arranged.length)}
+        {@const todaySide = markerSide(todayPos, arranged, trackWidth)}
+        <div
+          class="np-roadmap-today np-roadmap-today-{todaySide}"
+          style:top={`${todayTop}px`}
+          style:left={`${todayX}px`}
+          aria-hidden="true"
+        >
           <span class="np-roadmap-today-line"></span>
           <span class="np-roadmap-today-label">Today · {formatDate(now)}</span>
         </div>
-        <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} aria-hidden="true">
+        <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} style:left={`${todayX}px`} aria-hidden="true">
           <svg viewBox="0 0 32 48" width="32" height="48">
             <defs>
               <linearGradient id="np-rocket-body" x1="0" y1="0" x2="0" y2="1">
@@ -362,9 +402,11 @@
                 {#if a.entry.description}
                   <span class="np-roadmap-card-desc">{a.entry.description}</span>
                 {/if}
-                <span class="np-roadmap-card-status" data-status={a.entry.status}>
-                  {a.entry.status === 'shipped' ? 'Shipped' : a.entry.status === 'in_progress' ? 'In progress' : 'Planned'}
-                </span>
+                {#if a.entry.status === 'shipped' || a.entry.status === 'in_progress'}
+                  <span class="np-roadmap-card-status" data-status={a.entry.status}>
+                    {a.entry.status === 'shipped' ? 'Shipped' : 'In progress'}
+                  </span>
+                {/if}
               </div>
             </a>
           </div>
@@ -431,20 +473,51 @@
     box-sizing: border-box;
   }
   .np-roadmap-intro {
-    max-width: 800px;
-    margin: 0 auto 32px;
+    position: relative;
+    max-width: 760px;
+    margin: 0 auto 56px;
+    padding: 56px 32px 40px;
     text-align: center;
+    border-radius: var(--np-radius-lg);
+    background:
+      radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--np-brand) 10%, transparent), transparent 70%),
+      color-mix(in srgb, var(--np-bg-surface) 40%, transparent);
+    overflow: hidden;
+  }
+  .np-roadmap-eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--np-brand);
+    padding: 4px 12px;
+    border: 1px solid color-mix(in srgb, var(--np-brand) 35%, transparent);
+    border-radius: var(--np-radius-pill);
+    margin-bottom: 18px;
+    background-color: color-mix(in srgb, var(--np-brand) 8%, transparent);
   }
   .np-roadmap-intro :global(h1) {
-    font-size: 48px;
+    font-size: 40px;
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin: 0 0 16px;
+    margin: 0 0 14px;
+    line-height: 1.15;
   }
   .np-roadmap-intro :global(p) {
-    font-size: 18px;
+    font-size: 17px;
     line-height: 1.6;
     color: var(--np-text-secondary);
+    margin: 0 auto;
+    max-width: 600px;
+  }
+  .np-roadmap-accent {
+    display: block;
+    width: 56px;
+    height: 3px;
+    margin: 22px auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--np-brand), color-mix(in srgb, var(--np-brand) 45%, transparent));
   }
 
   .np-roadmap-track {
@@ -467,6 +540,14 @@
     stroke-width: 2;
     stroke-dasharray: 6 8;
     opacity: 0.6;
+  }
+  .np-roadmap-spine-trail {
+    fill: none;
+    stroke: var(--np-brand);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    opacity: 0.85;
+    transition: clip-path 0.3s ease;
   }
 
   .np-roadmap-rows {
@@ -563,82 +644,84 @@
 
   .np-roadmap-today {
     position: absolute;
-    left: 0;
-    right: 0;
+    transform: translate(-50%, -50%);
     height: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
     pointer-events: none;
     z-index: 3;
+    white-space: nowrap;
   }
   .np-roadmap-today-line {
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
     height: 0;
-    border-top: 2px dotted color-mix(in srgb, var(--np-brand) 45%, transparent);
-    opacity: 0.8;
+    border-top: 2px solid var(--np-brand);
+    opacity: 0.85;
   }
   .np-roadmap-today-label {
-    position: relative;
-    z-index: 1;
-    background-color: var(--np-bg);
-    padding: 4px 14px;
-    border-radius: var(--np-radius-pill);
-    border: 1px solid var(--np-brand);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--np-brand);
+    font-family: var(--np-font-mono);
     font-size: 11px;
     font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
   }
+  .np-roadmap-today-left .np-roadmap-today-label { right: calc(50% + 40px); }
+  .np-roadmap-today-right .np-roadmap-today-label { left: calc(50% + 40px); }
 
   .np-roadmap-rocket {
     position: absolute;
-    left: 50%;
     transform: translate(-50%, -50%);
     z-index: 4;
-    transition: top 0.25s ease;
+    transition: top 0.25s ease, left 0.25s ease;
     filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--np-brand) 35%, transparent));
   }
 
   .np-roadmap-marker {
     position: absolute;
-    left: 0;
-    right: 0;
+    transform: translate(-50%, -50%);
     height: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
     pointer-events: auto;
     text-decoration: none;
     z-index: 2;
+    white-space: nowrap;
   }
   .np-roadmap-marker-line {
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
     height: 0;
-    border-top: 1px dotted var(--np-text-faint);
-    opacity: 0.5;
+    border-top: 1px dashed var(--np-border);
+    opacity: 0.9;
+    transition: border-color 0.15s ease, opacity 0.15s ease;
   }
   .np-roadmap-marker-label {
-    position: relative;
-    z-index: 1;
-    background-color: var(--np-bg);
-    padding: 2px 10px;
-    border-radius: var(--np-radius-pill);
-    border: 1px solid var(--np-border);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
     font-size: 10px;
     letter-spacing: 0.04em;
-    transition: color 0.15s ease, border-color 0.15s ease;
+    transition: color 0.15s ease;
   }
+  .np-roadmap-marker-left .np-roadmap-marker-label { right: calc(50% + 28px); }
+  .np-roadmap-marker-right .np-roadmap-marker-label { left: calc(50% + 28px); }
   .np-roadmap-marker:hover .np-roadmap-marker-label {
     color: var(--np-brand);
+  }
+  .np-roadmap-marker:hover .np-roadmap-marker-line {
     border-color: var(--np-brand);
+    opacity: 1;
   }
 
   .np-roadmap-aside {
@@ -697,6 +780,8 @@
   .np-roadmap-aside-ref-date { color: var(--np-text-muted); font-family: var(--np-font-mono); font-size: 11px; }
 
   @media (max-width: 900px) {
+    .np-roadmap-intro { padding: 40px 22px 32px; margin-bottom: 36px; }
+    .np-roadmap-intro :global(h1) { font-size: 32px; }
     .np-roadmap-track { padding: 16px 0 60px; }
     .np-roadmap-row {
       grid-template-columns: 36px 1fr;
