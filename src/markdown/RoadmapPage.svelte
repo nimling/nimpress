@@ -658,8 +658,8 @@
     transform: translateX(-50%);
     width: 56px;
     height: 0;
-    border-top: 2px solid var(--np-brand);
-    opacity: 0.85;
+    border-top: 2px solid var(--np-border);
+    opacity: 0.9;
   }
   .np-roadmap-today-label {
     position: absolute;

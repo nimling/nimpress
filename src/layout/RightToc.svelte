@@ -137,7 +137,7 @@
       position: absolute;
       top: 0;
       bottom: 0;
-      right: 12px;
+      right: 8px;
       width: 0;
       border-left: 2px dotted var(--np-border);
     }

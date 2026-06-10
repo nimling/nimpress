@@ -96,17 +96,27 @@
     position: sticky;
     top: var(--np-header-height);
     height: calc(100vh - var(--np-header-height));
-    overflow-y: auto;
-    border-right: 1px solid var(--np-border);
-    background-color: var(--np-bg-sidebar);
-    transition: border-right-color 0.2s ease;
+    overflow: hidden;
+    background-color: transparent;
   }
-  .np-collapsed .np-aside {
+  .np-aside :global(.np-sidebar) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--np-sidebar-width);
+    overflow-y: auto;
+    background-color: var(--np-bg-sidebar);
+    border-right: 1px solid var(--np-border);
+    transition: border-right-color 0.2s ease;
+    box-sizing: border-box;
+  }
+  .np-collapsed .np-aside :global(.np-sidebar) {
     border-right-color: transparent;
   }
   .np-main {
     min-height: calc(100vh - var(--np-header-height));
-    padding: 32px 8px 32px 32px;
+    padding: 32px 0 32px 32px;
     min-width: 0;
   }
   @media (min-width: 1280px) {

@@ -3,8 +3,8 @@
     seed,
     width = 320,
     height = 220,
-    points = 14,
-    wobble = 0.28,
+    points = 10,
+    wobble = 0.1,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)'
   }: {
