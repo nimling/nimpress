@@ -458,7 +458,7 @@
 
       {#if arranged.length > 0}
         {@const todayTop = (todayPos / Math.max(1, arranged.length)) * trackHeight}
-        {@const todayX = spineXAt(todayTop, trackHeight, trackWidth, arranged.length)}
+        {@const todayX = spineXAt(todayTop, arranged, trackHeight, trackWidth)}
         {@const todaySide = oppositeOfNearest(todayPos, arranged)}
         <div
           class="np-roadmap-today np-roadmap-today-{todaySide}"
