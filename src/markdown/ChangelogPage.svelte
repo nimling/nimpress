@@ -40,8 +40,7 @@
   function isOpen(e: ChangelogEntry, i: number): boolean {
     const k = keyOf(e, i)
     if (k in openMap) return openMap[k]
-    if (e.slug && e.slug === hashSlug) return true
-    return i === 0
+    return true
   }
 
   function toggle(e: ChangelogEntry, i: number) {
@@ -164,6 +163,16 @@
     }
   }
 
+  let showTopBtn = $state(false)
+
+  function onScroll() {
+    showTopBtn = window.scrollY > 600
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   onMount(() => {
     hashSlug = readHash()
     void hydrate()
@@ -183,8 +192,11 @@
       })
     }
     window.addEventListener('hashchange', onHash)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => {
       window.removeEventListener('hashchange', onHash)
+      window.removeEventListener('scroll', onScroll)
       for (const m of mounted) m.destroy()
     }
   })
@@ -251,6 +263,19 @@
     </div>
   {/if}
 </div>
+
+<button
+  type="button"
+  class="np-changelog-top"
+  class:show={showTopBtn}
+  onclick={scrollToTop}
+  aria-label="Back to top"
+  title="Back to top"
+>
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <polyline points="6 14 12 8 18 14" />
+  </svg>
+</button>
 
 <style>
   .np-page-shell {
@@ -431,5 +456,50 @@
     z-index: 0;
     mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+  }
+
+  .np-changelog-top {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--np-brand);
+    color: var(--np-text-on-brand);
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
+    transform: translate(-160px, 160px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+    z-index: 50;
+  }
+  .np-changelog-top:hover {
+    background-color: var(--np-brand-hover);
+  }
+  .np-changelog-top:focus-visible {
+    outline: 2px solid var(--np-text-primary);
+    outline-offset: 3px;
+  }
+  .np-changelog-top.show {
+    opacity: 1;
+    pointer-events: auto;
+    animation: np-changelog-top-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes np-changelog-top-in {
+    0% { transform: translate(-160px, 160px); }
+    70% { transform: translate(10px, -10px); }
+    100% { transform: translate(0, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .np-changelog-top.show {
+      animation: none;
+      transform: translate(0, 0);
+    }
   }
 </style>
