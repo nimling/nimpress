@@ -456,8 +456,8 @@
 {#if renderBackground}
   <div class="np-page-background" style:background-image={`url('${background}')`}></div>
 {/if}
-<div class="np-page-shell">
-  <div class="np-page">
+<div class="np-page-shell np-roadmap-shell">
+  <div class="np-page np-roadmap-page">
     <section class="np-roadmap-hero">
       <div class="np-roadmap-hero-copy" bind:this={container}>
         <p class="np-roadmap-eyebrow">Roadmap</p>
@@ -639,11 +639,17 @@
 <BackToTop />
 
 <style>
+  :global(.np-main):has(.np-roadmap-page) {
+    padding: 0;
+  }
   .np-page-shell {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     justify-content: center;
     width: 100%;
+  }
+  .np-roadmap-page {
+    padding: 32px 32px 0;
   }
   .np-page {
     width: 100%;
