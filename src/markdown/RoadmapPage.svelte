@@ -27,6 +27,7 @@
   let trackHeight = $state(0)
   let trackWidth = $state(0)
   let rocketTop = $state(0)
+  let flying = $state(false)
   let now = $state(new Date().toISOString())
 
   const arranged = $derived(arrangeEntries(entries))
@@ -356,6 +357,7 @@
     const duration = 4200
     const trackTop = track.offsetTop
     rocketTop = startRocket
+    flying = true
     const initialScrollY = Math.max(0, trackTop + startRocket - window.innerHeight * 0.55)
     window.scrollTo({ top: initialScrollY, behavior: 'smooth' })
     setTimeout(() => {
@@ -369,7 +371,11 @@
         const currentRocketScreenY = rocketPageY - window.scrollY
         const delta = currentRocketScreenY - desired
         if (Math.abs(delta) > 1) window.scrollTo(0, Math.max(0, window.scrollY + delta))
-        if (p < 1) travelFrame = requestAnimationFrame(step)
+        if (p < 1) {
+          travelFrame = requestAnimationFrame(step)
+        } else {
+          flying = false
+        }
       }
       travelFrame = requestAnimationFrame(step)
     }, 600)
@@ -533,7 +539,7 @@
         </div>
         {@const rocketX = spineXAt(rocketTop, arranged, trackHeight, trackWidth)}
         {@const rocketAngle = spineTangentAt(rocketTop, arranged, trackHeight, trackWidth)}
-        <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} style:left={`${rocketX}px`} style:transform={`translate(-50%, -50%) rotate(${(rocketAngle * 180) / Math.PI}deg)`} aria-hidden="true">
+        <div class="np-roadmap-rocket" class:flying style:top={`${rocketTop}px`} style:left={`${rocketX}px`} style:transform={`translate(-50%, -50%) rotate(${(rocketAngle * 180) / Math.PI}deg)`} aria-hidden="true">
           <svg viewBox="0 0 32 48" width="32" height="48">
             <defs>
               <linearGradient id="np-rocket-body" x1="0" y1="0" x2="0" y2="1">
@@ -649,13 +655,16 @@
     width: 100%;
   }
   .np-roadmap-page {
+    padding: 0;
+  }
+  .np-roadmap-hero {
     padding: 32px 32px 0;
   }
   .np-page {
     width: 100%;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 32px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -919,8 +928,11 @@
     transform-origin: 50% 50%;
     z-index: 4;
     will-change: transform, top, left;
-    transition: top 0.25s ease, left 0.25s ease, transform 0.25s ease;
+    transition: top 0.4s ease, left 0.4s ease, transform 0.4s ease;
     filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--np-brand) 35%, transparent));
+  }
+  .np-roadmap-rocket.flying {
+    transition: none;
   }
 
   .np-roadmap-marker {

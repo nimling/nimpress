@@ -144,8 +144,7 @@
 </script>
 
 <section id={id} class="np-op-card" class:np-op-collapsed={!expanded}>
-  <div class="np-op-grid">
-    <div class="np-op-left">
+  <div class="np-op-top">
       <header class="np-op-head">
         <div class="np-op-head-body">
           <div class="np-op-title-row">
@@ -171,6 +170,20 @@
         </button>
       </header>
 
+      <button
+        class="np-op-try-side"
+        type="button"
+        onclick={openTryDialog}
+        title="Open the Try out dialog for this endpoint"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
+        </svg>
+        <span>Try out</span>
+      </button>
+  </div>
+
+  <div class="np-op-body">
       {#if expanded && op.parameters.length}
         {@const paramGroups = [
           { key: 'path', label: 'Path parameters', items: op.parameters.filter((p) => p.in === 'path') },
@@ -317,19 +330,6 @@
           </div>
         </div>
       {/if}
-    </div>
-
-    <button
-      class="np-op-try-side"
-      type="button"
-      onclick={openTryDialog}
-      title="Open the Try out dialog for this endpoint"
-    >
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
-      </svg>
-      <span>Try out</span>
-    </button>
   </div>
 </section>
 
@@ -352,14 +352,14 @@
     min-width: 0;
   }
   .np-op-try-side {
-    grid-column: 2;
+    flex: 0 0 auto;
     align-self: stretch;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 18px 12px;
+    padding: 12px 12px;
     margin-left: 12px;
     border: 1px solid color-mix(in srgb, var(--np-brand) 50%, transparent);
     background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
@@ -451,17 +451,24 @@
     border: 1px solid var(--np-border);
     font-size: 12.5px;
   }
-  .np-op-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0;
+  .np-op-top {
+    display: flex;
     align-items: stretch;
+    gap: 0;
   }
-  .np-op-left {
+  .np-op-top > .np-op-head {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .np-op-body {
     display: flex;
     flex-direction: column;
     gap: 16px;
     min-width: 0;
+    margin-top: 16px;
+  }
+  .np-op-body:empty {
+    display: none;
   }
 
   .np-section {
@@ -590,18 +597,16 @@
   .np-resp-view > :global(*) { width: 100%; }
 
   @media (max-width: 720px) {
+    .np-op-top {
+      flex-direction: column;
+    }
     .np-op-try-side {
       writing-mode: horizontal-tb;
       flex-direction: row;
       padding: 10px 16px;
       margin-left: 0;
       margin-top: 12px;
-    }
-    .np-op-grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .np-op-try-side {
-      grid-column: 1;
+      align-self: stretch;
     }
   }
 </style>
