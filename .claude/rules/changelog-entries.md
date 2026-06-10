@@ -20,6 +20,7 @@ title: Changelog
 type: changelog
 data:
   version: 1.4.2
+  release_date: 2026-06-08
   title: Booking calendars, code actions, full user management
   description: One sentence summary shown under the version header.
 ---
@@ -31,9 +32,11 @@ data:
 
 3. `data.version` is required. Newest version sorts first. Parsed as dot delimited numeric segments. Optional leading `v` is allowed.
 
-4. `data.title` is the per release headline shown next to the version pill in the entry header.
+4. `data.release_date` is required. An RFC 3339 timestamp. Date only (`2026-06-08`) is accepted and interpreted as midnight UTC. Full timestamps (`2026-06-08T09:00:00Z`) are accepted. The renderer formats it as `DD.MM.YYYY` next to the entry title. Invalid values fail the build.
 
-5. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
+5. `data.title` is the per release headline shown next to the version pill in the entry header.
+
+6. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
 
 ## Never set these on a changelog entry
 
@@ -63,13 +66,15 @@ Newest first. Parsed as dot delimited numeric segments. `1.10.0` ranks above `1.
 
 ## Entry body
 
-1. Lead with one short paragraph or a single H2 summary section. The reader should know whether they care without expanding the entry.
+1. Never write an H1 in the body. The entry header carries the title row, and a body H1 collides with the page H1. Start the body at H2.
 
-2. Group user visible changes under H2 headings: themes, not severity. One section per shipped capability.
+2. Lead with one short paragraph or a single H2 summary section. The reader should know whether they care without expanding the entry.
 
-3. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
+3. Group user visible changes under H2 headings: themes, not severity. One section per shipped capability.
 
-4. Link to the relevant PR or issue when the change references work outside the docs.
+4. Inside each section, use a bulleted or short prose list. One change per item, one sentence per item.
+
+5. Link to the relevant PR or issue when the change references work outside the docs.
 
 ## What to include
 

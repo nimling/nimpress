@@ -66,6 +66,7 @@ export interface ChangelogEntry {
   slug: string
   title: string
   description?: string
+  releaseDate?: string
   html: string
   headings: Heading[]
   data?: Record<string, unknown>

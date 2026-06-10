@@ -27,6 +27,16 @@
     return e.slug || e.version || `entry-${i}`
   }
 
+  function formatReleaseDate(iso: string | undefined): string {
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const year = d.getUTCFullYear()
+    return `${day}.${month}.${year}`
+  }
+
   function isOpen(e: ChangelogEntry, i: number): boolean {
     const k = keyOf(e, i)
     if (k in openMap) return openMap[k]
@@ -204,7 +214,12 @@
             onclick={() => toggle(e, i)}
           >
             <span class="np-changelog-version">v{e.version || 'unreleased'}</span>
-            <span class="np-changelog-entry-title">{e.title || 'unreleased'}</span>
+            <span class="np-changelog-entry-heading">
+              <span class="np-changelog-entry-title">{e.title || 'unreleased'}</span>
+              {#if e.releaseDate}
+                <time class="np-changelog-entry-date" datetime={e.releaseDate}>{formatReleaseDate(e.releaseDate)}</time>
+              {/if}
+            </span>
             <span class="np-changelog-chev" class:open aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 6l6 6-6 6" />
@@ -338,14 +353,27 @@
     font-weight: 600;
     line-height: 1.4;
   }
-  .np-changelog-entry-title {
+  .np-changelog-entry-heading {
     flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .np-changelog-entry-title {
     font-size: 18px;
     font-weight: 700;
     color: var(--np-text-primary);
     letter-spacing: -0.01em;
     line-height: 1.4;
     min-width: 0;
+  }
+  .np-changelog-entry-date {
+    font-size: 12px;
+    color: var(--np-text-muted);
+    font-family: var(--np-font-mono);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
   }
   .np-changelog-chev {
     flex: 0 0 auto;

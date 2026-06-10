@@ -741,11 +741,24 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         const version = String(data?.version ?? '')
         const entryTitle = String(data?.title ?? '')
         const entryDescription = data?.description !== undefined ? String(data.description) : undefined
+        const rawDate = data?.release_date
+        let releaseDate: string | undefined
+        if (rawDate !== undefined && rawDate !== null && String(rawDate).trim() !== '') {
+          const iso = rawDate instanceof Date ? rawDate.toISOString() : String(rawDate)
+          const parsed = new Date(iso)
+          if (Number.isNaN(parsed.getTime())) {
+            throw new Error(
+              `[nimpress] changelog entry ${e.filePath} has an invalid data.release_date (${iso}). Use an RFC 3339 timestamp like 2026-06-10 or 2026-06-10T09:00:00Z.`
+            )
+          }
+          releaseDate = parsed.toISOString()
+        }
         return {
           version,
           slug: version ? `v${version}` : 'unreleased',
           title: entryTitle,
           description: entryDescription,
+          releaseDate,
           html: e.html,
           headings: e.headings,
           data: e.frontmatter.data
