@@ -133,6 +133,8 @@
   }
 
   onMount(() => {
+    const onCollapseAll = () => (expanded = false)
+    window.addEventListener('np-api-collapse-all', onCollapseAll)
     const ric =
       typeof (window as any).requestIdleCallback === 'function'
         ? (window as any).requestIdleCallback
@@ -140,12 +142,16 @@
     if (ric) {
       const handle = ric(() => (mountRight = true), { timeout: 600 })
       return () => {
+        window.removeEventListener('np-api-collapse-all', onCollapseAll)
         const cic = (window as any).cancelIdleCallback
         if (typeof cic === 'function') cic(handle)
       }
     }
     const t = setTimeout(() => (mountRight = true), 60)
-    return () => clearTimeout(t)
+    return () => {
+      window.removeEventListener('np-api-collapse-all', onCollapseAll)
+      clearTimeout(t)
+    }
   })
 </script>
 

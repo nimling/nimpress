@@ -51,10 +51,26 @@
     observer.observe(el)
   }
 
+  let showTopBtn = $state(false)
+
+  function onScroll() {
+    showTopBtn = window.scrollY > 600
+  }
+
+  function collapseAll() {
+    window.dispatchEvent(new CustomEvent('np-api-collapse-all'))
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   onMount(() => {
     scrollToHash()
     const onHash = () => scrollToHash()
     window.addEventListener('hashchange', onHash)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     if (typeof IntersectionObserver !== 'undefined') {
       observer = new IntersectionObserver(
         (entries) => {
@@ -83,6 +99,7 @@
     }
     return () => {
       window.removeEventListener('hashchange', onHash)
+      window.removeEventListener('scroll', onScroll)
       observer?.disconnect()
       observer = null
     }
@@ -100,6 +117,12 @@
       <div class="np-api-title-row">
         <h1>{title ?? flat.title}</h1>
         {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
+        <button type="button" class="np-api-collapse-all" onclick={collapseAll} title="Collapse every endpoint card">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+          <span>Collapse all</span>
+        </button>
       </div>
       {#if servers.length}
         <table class="np-api-servers-table">
@@ -176,6 +199,19 @@
       <footer class="np-page-footer">{effectiveFooter}</footer>
     {/if}
   </div>
+
+  <button
+    type="button"
+    class="np-api-top"
+    class:show={showTopBtn}
+    onclick={scrollToTop}
+    aria-label="Back to top"
+    title="Back to top"
+  >
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="6 14 12 8 18 14" />
+    </svg>
+  </button>
 {:else}
   <p>OpenAPI spec missing</p>
 {/if}
@@ -200,6 +236,77 @@
     align-items: baseline;
     gap: 12px;
     margin-bottom: 12px;
+  }
+  .np-api-collapse-all {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--np-text-secondary);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-pill);
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .np-api-collapse-all:hover {
+    color: var(--np-text-primary);
+    border-color: var(--np-brand);
+  }
+  .np-api-collapse-all:focus-visible {
+    outline: 2px solid var(--np-brand);
+    outline-offset: 2px;
+  }
+
+  .np-api-top {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--np-brand);
+    color: var(--np-text-on-brand);
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.25);
+    transform: translate(-160px, 160px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+    z-index: 50;
+  }
+  .np-api-top:hover {
+    background-color: var(--np-brand-hover);
+  }
+  .np-api-top:focus-visible {
+    outline: 2px solid var(--np-text-primary);
+    outline-offset: 3px;
+  }
+  .np-api-top.show {
+    opacity: 1;
+    pointer-events: auto;
+    animation: np-api-top-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes np-api-top-in {
+    0% { transform: translate(-160px, 160px); }
+    70% { transform: translate(10px, -10px); }
+    100% { transform: translate(0, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .np-api-top.show {
+      animation: none;
+      transform: translate(0, 0);
+    }
   }
   h1 {
     font-size: 34px;
