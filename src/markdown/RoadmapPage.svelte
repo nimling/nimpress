@@ -1067,21 +1067,6 @@
     font-size: 13px;
     white-space: pre-line;
   }
-  .np-roadmap-planet {
-    position: relative;
-    margin: 0 -32px;
-    padding: 0;
-    width: calc(100% + 64px);
-    height: 50vh;
-    min-height: 320px;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .np-roadmap-planet svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
   .np-page-background {
     position: fixed;
     top: var(--np-header-height, 0px);

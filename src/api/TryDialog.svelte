@@ -273,7 +273,6 @@
         <div class="np-try-dialog-actions">
           <button class="np-try-meta" type="button" onclick={share}>{shareLabel}</button>
           <button class="np-try-meta" type="button" onclick={clearCurrent}>Clear</button>
-          <code class="np-try-shortcut" title="Send via Cmd or Ctrl plus Enter">⌘⏎</code>
         </div>
       </header>
       <div class="np-try-dialog-picker-row">
@@ -315,8 +314,9 @@
             </ul>
           {/if}
         </div>
-        <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()}`} type="button" onclick={send}>
-          {selectedOp.method.toUpperCase()}
+        <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()}`} type="button" onclick={send} title="Send via Cmd or Ctrl plus Enter">
+          <span class="np-try-send-label">{selectedOp.method.toUpperCase()}</span>
+          <span class="np-try-send-shortcut" aria-hidden="true">⌘⏎</span>
         </button>
         <button class="np-try-close" type="button" onclick={close} aria-label="Close">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -444,14 +444,27 @@
     background-color: var(--np-brand);
     color: var(--np-text-on-brand);
     border: 0;
-    padding: 8px 18px;
+    padding: 6px 8px 6px 14px;
     border-radius: var(--np-radius-md);
     font-weight: 700;
     cursor: pointer;
     font-size: 13px;
     letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
   }
   .np-try-send:hover { filter: brightness(1.08); }
+  .np-try-send-shortcut {
+    font-family: var(--np-font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: var(--np-radius-sm);
+    background-color: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.92);
+  }
   .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
   .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
   .np-try-send-put { background-color: var(--np-method-put, #b07309); }

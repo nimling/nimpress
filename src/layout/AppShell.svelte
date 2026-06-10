@@ -85,7 +85,6 @@
     min-height: 100vh;
     background-color: var(--np-bg);
     color: var(--np-text-primary);
-    overflow-x: clip;
   }
   .np-body {
     display: grid;

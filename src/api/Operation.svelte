@@ -436,19 +436,6 @@
   .np-op-inline {
     display: none;
   }
-  @media (min-width: 1280px) {
-    .np-op-shell {
-      grid-template-columns: minmax(0, 1fr) 380px;
-    }
-    .np-op-inline {
-      display: block;
-      min-width: 0;
-      align-self: stretch;
-    }
-    .np-op-try-side {
-      display: none;
-    }
-  }
   .np-op-inline-sticky {
     position: sticky;
     top: calc(var(--np-header-height) + 16px);
@@ -743,6 +730,20 @@
       margin-left: 0;
       margin-top: 12px;
       align-self: stretch;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .np-op-shell {
+      grid-template-columns: minmax(0, 1fr) 380px;
+    }
+    .np-op-inline {
+      display: block;
+      min-width: 0;
+      align-self: stretch;
+    }
+    .np-op-try-side {
+      display: none;
     }
   }
 </style>

@@ -194,9 +194,9 @@
       <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
         Clear
       </button>
-      <code class="np-try-shortcut" title="Send via Cmd or Ctrl plus Enter">⌘⏎</code>
-      <button class={`np-try-send np-try-send-${op.method.toLowerCase()}`} onclick={send} disabled={sending || disabled}>
-        {sending ? 'Sending…' : op.method.toUpperCase()}
+      <button class={`np-try-send np-try-send-${op.method.toLowerCase()}`} onclick={send} disabled={sending || disabled} title="Send via Cmd or Ctrl plus Enter">
+        <span class="np-try-send-label">{sending ? 'Sending…' : op.method.toUpperCase()}</span>
+        <span class="np-try-send-shortcut" aria-hidden="true">⌘⏎</span>
       </button>
     </div>
   </header>
@@ -378,14 +378,27 @@
     background-color: var(--np-brand);
     color: var(--np-text-on-brand);
     border: 0;
-    padding: 6px 16px;
+    padding: 4px 6px 4px 14px;
     border-radius: var(--np-radius-md);
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
   .np-try-send:hover { background-color: var(--np-brand-hover); }
   .np-try-send:disabled { opacity: 0.6; cursor: wait; }
+  .np-try-send-shortcut {
+    font-family: var(--np-font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 7px;
+    border-radius: var(--np-radius-sm);
+    background-color: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.92);
+  }
   .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
   .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
   .np-try-send-put { background-color: var(--np-method-put, #b07309); }

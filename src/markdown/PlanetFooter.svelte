@@ -84,7 +84,6 @@
     box-sizing: border-box;
     height: var(--np-planet-height);
     min-height: var(--np-planet-min-height);
-    overflow: hidden;
     pointer-events: none;
     z-index: 0;
   }
