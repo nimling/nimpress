@@ -215,13 +215,12 @@
   }
 
   .np-page-shell.has-rail {
-    grid-template-columns: minmax(0, 1fr) 8px;
+    grid-template-columns: minmax(0, 1fr) min-content;
     gap: 8px;
   }
 
   @media (min-width: 1280px) {
     .np-page-shell.has-rail {
-      grid-template-columns: minmax(0, 1fr) 240px;
       gap: 48px;
     }
   }

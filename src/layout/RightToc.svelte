@@ -65,15 +65,12 @@
   .np-toc-wrap {
     position: sticky;
     top: calc(var(--np-header-height) + 24px);
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
     font-size: 13px;
   }
   .np-toc {
-    padding-left: 16px;
     box-sizing: border-box;
-    overflow-x: hidden;
+    width: 240px;
+    max-width: 240px;
   }
   .np-toc-label {
     font-size: 11px;
@@ -127,7 +124,7 @@
       flex-direction: column;
       align-items: center;
       position: relative;
-      width: 100%;
+      width: 10px;
       padding: 16px 0;
       box-sizing: border-box;
     }
@@ -182,7 +179,7 @@
       display: block;
       position: absolute;
       top: 0;
-      right: 32px;
+      right: 20px;
       width: 240px;
       padding: 12px 14px;
       background-color: var(--np-bg-card);
@@ -193,7 +190,7 @@
       transform: translateX(8px);
       pointer-events: none;
       transition: opacity 0.18s ease, transform 0.18s ease;
-      z-index: 5;
+      z-index: 50;
     }
     .np-toc-strip:hover .np-toc-overlay,
     .np-toc-strip:focus-within .np-toc-overlay {

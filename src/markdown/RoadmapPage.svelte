@@ -110,7 +110,19 @@
   }
 
   function spineAmp(w: number): number {
-    return Math.min(80, w * 0.08)
+    return Math.min(50, w * 0.05)
+  }
+
+  const spineGutter = 200
+
+  function cardEdgeX(side: 'left' | 'right', w: number): number {
+    const cx = w / 2
+    return side === 'left' ? cx - spineGutter / 2 : cx + spineGutter / 2
+  }
+
+  function rowYPx(row: number, total: number, h: number): number {
+    if (total <= 0) return 0
+    return ((row + 0.5) / total) * h
   }
 
   function spineSegments(rows: number): number {
@@ -321,6 +333,19 @@
         </defs>
         <path d={spinePath} class="np-roadmap-spine-path" />
         <path d={spinePath} class="np-roadmap-spine-trail" clip-path="url(#np-roadmap-trail-clip)" />
+        {#each arranged as a (a.entry.href)}
+          {@const rowY = rowYPx(a.row, arranged.length, trackHeight)}
+          {@const sX = spineXAt(rowY, trackHeight, trackWidth, arranged.length)}
+          {@const eX = cardEdgeX(a.side, trackWidth)}
+          <line
+            class="np-roadmap-row-connector"
+            x1={sX}
+            y1={rowY}
+            x2={eX}
+            y2={rowY}
+          />
+          <circle class="np-roadmap-row-dot" cx={sX} cy={rowY} r="4" />
+        {/each}
       </svg>
 
       {#each changelogMarkers as marker (marker.href + marker.date)}
@@ -564,18 +589,31 @@
   .np-roadmap-row {
     position: relative;
     display: grid;
-    grid-template-columns: 1fr 24px 1fr;
+    grid-template-columns: minmax(0, 1fr) 200px minmax(0, 1fr);
     align-items: center;
-    gap: 16px;
+    gap: 0;
   }
   .np-roadmap-row-left > a { grid-column: 1; justify-self: end; }
   .np-roadmap-row-right > a { grid-column: 3; justify-self: start; }
+
+  .np-roadmap-row-connector {
+    stroke: var(--np-border);
+    stroke-width: 1.2;
+    stroke-dasharray: 2 4;
+    stroke-linecap: round;
+    opacity: 0.7;
+  }
+  .np-roadmap-row-dot {
+    fill: var(--np-bg);
+    stroke: var(--np-border);
+    stroke-width: 1.5;
+  }
 
   .np-roadmap-card {
     position: relative;
     display: block;
     width: 100%;
-    max-width: 360px;
+    max-width: 320px;
     padding: 32px 40px;
     text-decoration: none;
     color: var(--np-text-primary);
