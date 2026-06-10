@@ -1124,11 +1124,44 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       title?: string
       description?: string
       tags?: { name?: string; description?: string; operations?: unknown[] }[]
-      schemas?: Record<string, { description?: string; properties?: Record<string, { description?: string }> }>
+      schemas?: Record<string, unknown>
       servers?: { url?: string; description?: string }[]
-      securitySchemes?: Record<string, { description?: string; type?: string; scheme?: string }>
+      securitySchemes?: Record<string, unknown>
     }
     const parts: string[] = []
+    const seen = new WeakSet<object>()
+    const MAX_DEPTH = 12
+
+    const harvest = (value: unknown, depth: number) => {
+      if (value === null || value === undefined) return
+      if (depth > MAX_DEPTH) return
+      const t = typeof value
+      if (t === 'string') {
+        const s = (value as string).trim()
+        if (s) parts.push(s)
+        return
+      }
+      if (t === 'number' || t === 'boolean') {
+        parts.push(String(value))
+        return
+      }
+      if (t !== 'object') return
+      if (seen.has(value as object)) return
+      seen.add(value as object)
+      if (Array.isArray(value)) {
+        for (const item of value) harvest(item, depth + 1)
+        return
+      }
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        if (key === 'description_html' || key === 'summary_html' || key === 'requestBodyHtml') {
+          if (typeof child === 'string') parts.push(stripHtml(child))
+          continue
+        }
+        parts.push(key)
+        harvest(child, depth + 1)
+      }
+    }
+
     if (flat.title) parts.push(flat.title)
     if (flat.description) parts.push(flat.description)
     for (const s of flat.servers ?? []) {
@@ -1137,45 +1170,20 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     }
     for (const [name, scheme] of Object.entries(flat.securitySchemes ?? {})) {
       parts.push(name)
-      if (scheme?.type) parts.push(scheme.type)
-      if (scheme?.scheme) parts.push(scheme.scheme)
-      if (scheme?.description) parts.push(scheme.description)
+      harvest(scheme, 0)
     }
     for (const tag of flat.tags ?? []) {
       if (tag.name) parts.push(tag.name)
       if (tag.description) parts.push(tag.description)
       for (const op of tag.operations ?? []) {
-        const o = op as {
-          id?: string
-          operationName?: string
-          method?: string
-          path?: string
-          summary?: string
-          description?: string
-          description_html?: string
-          parameters?: { name?: string; in?: string; description?: string }[]
-        }
-        if (o.id) parts.push(o.id)
-        if (o.operationName) parts.push(o.operationName)
+        const o = op as { method?: string }
         if (o.method) parts.push(o.method.toLowerCase(), o.method.toUpperCase())
-        if (o.path) parts.push(o.path)
-        if (o.summary) parts.push(o.summary)
-        if (o.description) parts.push(o.description)
-        else if (o.description_html) parts.push(stripHtml(o.description_html))
-        for (const p of o.parameters ?? []) {
-          if (p?.name) parts.push(p.name)
-          if (p?.in) parts.push(p.in)
-          if (p?.description) parts.push(p.description)
-        }
+        harvest(op, 0)
       }
     }
     for (const [name, schema] of Object.entries(flat.schemas ?? {})) {
       parts.push(name)
-      if (schema?.description) parts.push(schema.description)
-      for (const [prop, ps] of Object.entries(schema?.properties ?? {})) {
-        parts.push(prop)
-        if (ps?.description) parts.push(ps.description)
-      }
+      harvest(schema, 0)
     }
     return parts.join(' \n ')
   }
