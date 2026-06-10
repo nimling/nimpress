@@ -214,6 +214,19 @@
     return cx + Math.sin(phase) * amp
   }
 
+  function spineTangentAt(y: number, list: Arranged[], h: number, w: number): number {
+    if (h <= 0 || w <= 0 || list.length === 0) return 0
+    const eps = Math.max(1, h / 200)
+    const y1 = Math.max(0, y - eps)
+    const y2 = Math.min(h, y + eps)
+    const x1 = spineXAt(y1, list, h, w)
+    const x2 = spineXAt(y2, list, h, w)
+    const dx = x2 - x1
+    const dy = y2 - y1
+    if (dy === 0) return 0
+    return Math.atan2(dx, dy)
+  }
+
   function collectChangelogMarkers(
     list: Arranged[],
     bounds: { start: number; end: number }
@@ -506,7 +519,9 @@
           <span class="np-roadmap-today-line"></span>
           <span class="np-roadmap-today-label">{formatDate(now)}</span>
         </div>
-        <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} style:left={`${todayX}px`} aria-hidden="true">
+        {@const rocketX = spineXAt(rocketTop, arranged, trackHeight, trackWidth)}
+        {@const rocketAngle = spineTangentAt(rocketTop, arranged, trackHeight, trackWidth)}
+        <div class="np-roadmap-rocket" style:top={`${rocketTop}px`} style:left={`${rocketX}px`} style:transform={`translate(-50%, -50%) rotate(${(rocketAngle * 180) / Math.PI}deg)`} aria-hidden="true">
           <svg viewBox="0 0 32 48" width="32" height="48">
             <defs>
               <linearGradient id="np-rocket-body" x1="0" y1="0" x2="0" y2="1">
@@ -876,9 +891,10 @@
 
   .np-roadmap-rocket {
     position: absolute;
-    transform: translate(-50%, -50%);
+    transform-origin: 50% 50%;
     z-index: 4;
-    transition: top 0.25s ease, left 0.25s ease;
+    will-change: transform, top, left;
+    transition: top 0.25s ease, left 0.25s ease, transform 0.25s ease;
     filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--np-brand) 35%, transparent));
   }
 

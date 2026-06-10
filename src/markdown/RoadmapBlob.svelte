@@ -39,8 +39,8 @@
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
-    const rx = (W / 2) * (Math.SQRT2 / 2 + m)
-    const ry = (H / 2) * (Math.SQRT2 / 2 + m)
+    const rx = (W / 2) * (Math.SQRT2 + m)
+    const ry = (H / 2) * (Math.SQRT2 + m)
     const pts: { x: number; y: number }[] = []
     for (let i = 0; i < n; i++) {
       const a = (Math.PI * 2 * i) / n
