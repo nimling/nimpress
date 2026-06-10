@@ -579,7 +579,7 @@
               onfocus={(e) => onCardEnter(a.entry, a.side, e)}
               onblur={onCardLeave}
             >
-              <RoadmapBlob seed={a.entry.slug + ':' + idx} width={320} height={320} />
+              <RoadmapBlob seed={a.entry.slug + ':' + idx} />
               <div class="np-roadmap-card-inner">
                 <header class="np-roadmap-card-head">
                   <span class="np-roadmap-card-kind">{kindLabel(a.entry.kind)}</span>
@@ -814,11 +814,10 @@
 
   .np-roadmap-card {
     position: relative;
-    display: block;
+    display: inline-block;
     width: calc(320px * var(--np-card-scale, 1));
-    height: calc(320px * var(--np-card-scale, 1));
-    flex-shrink: 0;
-    padding: calc(40px * var(--np-card-scale, 1)) calc(40px * var(--np-card-scale, 1));
+    max-width: calc(320px * var(--np-card-scale, 1));
+    padding: calc(40px * var(--np-card-scale, 1));
     box-sizing: border-box;
     text-decoration: none;
     color: var(--np-text-primary);
@@ -826,8 +825,8 @@
     transition: transform 0.18s ease, filter 0.18s ease;
   }
   .np-roadmap-card-inner {
-    height: 100%;
-    overflow: hidden;
+    position: relative;
+    z-index: 1;
   }
   .np-roadmap-card:hover { transform: translateY(-2px); filter: brightness(1.04); }
   .np-roadmap-card:focus-visible { outline: 2px solid var(--np-brand); outline-offset: 4px; border-radius: var(--np-radius-lg); }

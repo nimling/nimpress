@@ -1,23 +1,25 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+
   let {
     seed,
-    width = 320,
-    height = 220,
     points = 14,
     wobble = 0.06,
-    margin = 0.02,
+    margin = 0.06,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)'
   }: {
     seed: string
-    width?: number
-    height?: number
     points?: number
     wobble?: number
     margin?: number
     fill?: string
     stroke?: string
   } = $props()
+
+  let host: HTMLDivElement
+  let measuredW = $state(320)
+  let measuredH = $state(320)
 
   function seededRandom(input: string) {
     let h = 2166136261
@@ -33,9 +35,10 @@
     }
   }
 
-  const path = $derived(buildPath(seed, points, wobble, margin, width, height))
+  const path = $derived(buildPath(seed, points, wobble, margin, measuredW, measuredH))
 
   function buildPath(s: string, n: number, w: number, m: number, W: number, H: number): string {
+    if (W <= 0 || H <= 0) return ''
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
@@ -62,19 +65,53 @@
     }
     return d + 'Z'
   }
+
+  onMount(() => {
+    if (!host || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const rect = entry.contentRect
+        if (rect.width > 0 && rect.height > 0) {
+          measuredW = rect.width
+          measuredH = rect.height
+        }
+      }
+    })
+    const parent = host.parentElement
+    if (parent) ro.observe(parent)
+    return () => ro.disconnect()
+  })
 </script>
 
-<svg class="np-blob" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" overflow="visible" aria-hidden="true">
-  <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
-</svg>
+<div class="np-blob-host" bind:this={host}>
+  <svg
+    class="np-blob"
+    viewBox={`0 0 ${measuredW} ${measuredH}`}
+    width={measuredW}
+    height={measuredH}
+    overflow="visible"
+    aria-hidden="true"
+  >
+    <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
+  </svg>
+</div>
 
 <style>
-  .np-blob {
+  .np-blob-host {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
     overflow: visible;
+    z-index: 0;
+  }
+  .np-blob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+    pointer-events: none;
   }
 </style>

@@ -198,14 +198,32 @@
     return 'plain'
   }
 
+  let mountInline = $state(false)
+
   onMount(() => {
     const onToggleAll = (e: Event) => {
       const detail = (e as CustomEvent<{ collapsed?: boolean }>).detail
       expanded = !(detail?.collapsed ?? true)
     }
     window.addEventListener('np-api-toggle-all', onToggleAll)
+    const ric =
+      typeof (window as any).requestIdleCallback === 'function'
+        ? (window as any).requestIdleCallback
+        : null
+    let handle: number | null = null
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null
+    if (ric) {
+      handle = ric(() => { mountInline = true }, { timeout: 600 })
+    } else {
+      timeoutHandle = setTimeout(() => { mountInline = true }, 80)
+    }
     return () => {
       window.removeEventListener('np-api-toggle-all', onToggleAll)
+      if (handle !== null) {
+        const cic = (window as any).cancelIdleCallback
+        if (typeof cic === 'function') cic(handle)
+      }
+      if (timeoutHandle !== null) clearTimeout(timeoutHandle)
     }
   })
 </script>
@@ -404,18 +422,22 @@
   <aside class="np-op-inline">
     <div class="np-op-inline-sticky">
       <div class="np-op-inline-card">
-        <TryPanel
-          {op}
-          {servers}
-          {securitySchemes}
-          bind:tryState
-          disabled={!expanded}
-          onOpenDialog={openTryDialog}
-          onClear={() => handleClear()}
-          onShare={() => handleShare()}
-        />
-        {#if expanded}
-          <CodeExamples {op} {securitySchemes} bind:tryState />
+        {#if mountInline}
+          <TryPanel
+            {op}
+            {servers}
+            {securitySchemes}
+            bind:tryState
+            disabled={!expanded}
+            onOpenDialog={openTryDialog}
+            onClear={() => handleClear()}
+            onShare={() => handleShare()}
+          />
+          {#if expanded}
+            <CodeExamples {op} {securitySchemes} bind:tryState />
+          {/if}
+        {:else}
+          <div class="np-op-inline-skeleton" aria-hidden="true"></div>
         {/if}
       </div>
     </div>
@@ -461,6 +483,22 @@
   }
   .np-op-inline-card > :global(:first-child) { border-top: 0; }
   .np-op-inline-card > :global(:not(:last-child)) { border-bottom: 1px solid var(--np-divider); }
+  .np-op-inline-skeleton {
+    min-height: 220px;
+    background:
+      linear-gradient(
+        110deg,
+        rgba(255, 255, 255, 0.02) 8%,
+        rgba(255, 255, 255, 0.05) 18%,
+        rgba(255, 255, 255, 0.02) 33%
+      );
+    background-size: 200% 100%;
+    animation: np-op-shimmer 1.6s linear infinite;
+  }
+  @keyframes np-op-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
   .np-op-head {
     padding: 20px 24px;
     background-color: var(--np-bg-card);
@@ -733,7 +771,7 @@
     }
   }
 
-  @media (min-width: 1280px) {
+  @media (min-width: 1600px) {
     .np-op-shell {
       grid-template-columns: minmax(0, 1fr) 380px;
     }

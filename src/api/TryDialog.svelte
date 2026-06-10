@@ -245,6 +245,16 @@
     suppressUrlUpdate = false
   }
 
+  function portal(node: HTMLElement) {
+    if (typeof document === 'undefined') return
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode === document.body) document.body.removeChild(node)
+      }
+    }
+  }
+
   onMount(() => {
     const onTryOpen = (e: Event) => {
       const detail = (e as CustomEvent<{ opId?: string }>).detail
@@ -266,13 +276,19 @@
 </script>
 
 {#if open && selectedOp}
-  <div class="np-try-backdrop" role="dialog" aria-modal="true" onclick={onBackdrop}>
+  <div use:portal class="np-try-backdrop" role="dialog" aria-modal="true" onclick={onBackdrop}>
     <div class="np-try-dialog">
       <header class="np-try-dialog-head np-try-dialog-head-actions">
         <span class="np-try-dialog-title">Try it</span>
         <div class="np-try-dialog-actions">
           <button class="np-try-meta" type="button" onclick={share}>{shareLabel}</button>
           <button class="np-try-meta" type="button" onclick={clearCurrent}>Clear</button>
+          <button class="np-try-close" type="button" onclick={close} aria-label="Close">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+          </button>
         </div>
       </header>
       <div class="np-try-dialog-picker-row">
@@ -317,12 +333,6 @@
         <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()}`} type="button" onclick={send} title="Send via Cmd or Ctrl plus Enter">
           <span class="np-try-send-label">{selectedOp.method.toUpperCase()}</span>
           <span class="np-try-send-shortcut" aria-hidden="true">⌘⏎</span>
-        </button>
-        <button class="np-try-close" type="button" onclick={close} aria-label="Close">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="6" y1="6" x2="18" y2="18" />
-            <line x1="18" y1="6" x2="6" y2="18" />
-          </svg>
         </button>
       </div>
       <div class="np-try-dialog-grid">
@@ -370,20 +380,21 @@
     background-color: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 80;
+    z-index: 1000;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     padding: 24px;
     box-sizing: border-box;
-    overflow-y: auto;
   }
   .np-try-dialog {
+    position: relative;
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-lg);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
     width: min(1280px, 100%);
+    max-height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -444,7 +455,7 @@
     background-color: var(--np-brand);
     color: var(--np-text-on-brand);
     border: 0;
-    padding: 6px 8px 6px 14px;
+    padding: 10px 14px;
     border-radius: var(--np-radius-md);
     font-weight: 700;
     cursor: pointer;
@@ -453,17 +464,19 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    line-height: 1;
   }
   .np-try-send:hover { filter: brightness(1.08); }
   .np-try-send-shortcut {
     font-family: var(--np-font-mono);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 3px 8px;
-    border-radius: var(--np-radius-sm);
-    background-color: rgba(0, 0, 0, 0.22);
-    color: rgba(255, 255, 255, 0.92);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.32);
+    color: rgba(255, 255, 255, 0.96);
+    line-height: 1;
   }
   .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
   .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
@@ -598,9 +611,11 @@
   .np-try-dialog-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(360px, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 0;
     min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
   }
   .np-try-dialog-cell {
     min-height: 0;
@@ -618,7 +633,6 @@
   .np-try-dialog-cell-body {
     grid-column: 2;
     grid-row: 1;
-    min-height: 360px;
     overflow: hidden;
   }
   .np-try-dialog-cell-footer {
