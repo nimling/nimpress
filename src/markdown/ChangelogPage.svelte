@@ -3,6 +3,7 @@
   import type { PageModule, ChangelogEntry } from '../types'
   import { configStore } from '../framework/configStore'
   import RightToc from '../layout/RightToc.svelte'
+  import BackToTop from '../layout/BackToTop.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
@@ -163,16 +164,6 @@
     }
   }
 
-  let showTopBtn = $state(false)
-
-  function onScroll() {
-    showTopBtn = window.scrollY > 600
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   onMount(() => {
     hashSlug = readHash()
     void hydrate()
@@ -192,11 +183,8 @@
       })
     }
     window.addEventListener('hashchange', onHash)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
     return () => {
       window.removeEventListener('hashchange', onHash)
-      window.removeEventListener('scroll', onScroll)
       for (const m of mounted) m.destroy()
     }
   })
@@ -264,18 +252,7 @@
   {/if}
 </div>
 
-<button
-  type="button"
-  class="np-changelog-top"
-  class:show={showTopBtn}
-  onclick={scrollToTop}
-  aria-label="Back to top"
-  title="Back to top"
->
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <polyline points="6 14 12 8 18 14" />
-  </svg>
-</button>
+<BackToTop />
 
 <style>
   .np-page-shell {
@@ -458,52 +435,4 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
   }
 
-  .np-changelog-top {
-    position: fixed;
-    left: calc(var(--np-sidebar-width) + 20px);
-    bottom: 20px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--np-bg-surface);
-    color: var(--np-text-muted);
-    border: 1px solid var(--np-border);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-    transform: translate(-140px, 140px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.18s ease, color 0.15s ease, border-color 0.15s ease;
-    z-index: 5;
-  }
-  .np-changelog-top:hover {
-    color: var(--np-text-primary);
-    border-color: var(--np-brand);
-  }
-  .np-changelog-top:focus-visible {
-    outline: 2px solid var(--np-brand);
-    outline-offset: 2px;
-  }
-  .np-changelog-top.show {
-    opacity: 1;
-    pointer-events: auto;
-    animation: np-changelog-top-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-  @keyframes np-changelog-top-in {
-    0% { transform: translate(-140px, 140px); }
-    70% { transform: translate(8px, -8px); }
-    100% { transform: translate(0, 0); }
-  }
-  @media (max-width: 1024px) {
-    .np-changelog-top { left: 16px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .np-changelog-top.show {
-      animation: none;
-      transform: translate(0, 0);
-    }
-  }
 </style>

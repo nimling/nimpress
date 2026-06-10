@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import Operation from './Operation.svelte'
   import Schema from './Schema.svelte'
+  import BackToTop from '../layout/BackToTop.svelte'
   import { configStore } from '../framework/configStore'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
   import type { Frontmatter } from '../types'
@@ -51,26 +52,14 @@
     observer.observe(el)
   }
 
-  let showTopBtn = $state(false)
-
-  function onScroll() {
-    showTopBtn = window.scrollY > 600
-  }
-
   function collapseAll() {
     window.dispatchEvent(new CustomEvent('np-api-collapse-all'))
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   onMount(() => {
     scrollToHash()
     const onHash = () => scrollToHash()
     window.addEventListener('hashchange', onHash)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
     if (typeof IntersectionObserver !== 'undefined') {
       observer = new IntersectionObserver(
         (entries) => {
@@ -99,7 +88,6 @@
     }
     return () => {
       window.removeEventListener('hashchange', onHash)
-      window.removeEventListener('scroll', onScroll)
       observer?.disconnect()
       observer = null
     }
@@ -200,18 +188,7 @@
     {/if}
   </div>
 
-  <button
-    type="button"
-    class="np-api-top"
-    class:show={showTopBtn}
-    onclick={scrollToTop}
-    aria-label="Back to top"
-    title="Back to top"
-  >
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <polyline points="6 14 12 8 18 14" />
-    </svg>
-  </button>
+  <BackToTop />
 {:else}
   <p>OpenAPI spec missing</p>
 {/if}
@@ -264,54 +241,6 @@
     outline-offset: 2px;
   }
 
-  .np-api-top {
-    position: fixed;
-    left: calc(var(--np-sidebar-width) + 20px);
-    bottom: 20px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--np-bg-surface);
-    color: var(--np-text-muted);
-    border: 1px solid var(--np-border);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-    transform: translate(-140px, 140px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.18s ease, color 0.15s ease, border-color 0.15s ease;
-    z-index: 5;
-  }
-  .np-api-top:hover {
-    color: var(--np-text-primary);
-    border-color: var(--np-brand);
-  }
-  .np-api-top:focus-visible {
-    outline: 2px solid var(--np-brand);
-    outline-offset: 2px;
-  }
-  .np-api-top.show {
-    opacity: 1;
-    pointer-events: auto;
-    animation: np-api-top-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-  @keyframes np-api-top-in {
-    0% { transform: translate(-140px, 140px); }
-    70% { transform: translate(8px, -8px); }
-    100% { transform: translate(0, 0); }
-  }
-  @media (max-width: 1024px) {
-    .np-api-top { left: 16px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .np-api-top.show {
-      animation: none;
-      transform: translate(0, 0);
-    }
-  }
   h1 {
     font-size: 34px;
     line-height: 1.2;
