@@ -5,7 +5,7 @@
   import { setupHashSpy } from '../framework/hashSpy'
   import { navigate } from '../router'
   import BackToTop from '../layout/BackToTop.svelte'
-  import RoadmapBlob from './RoadmapBlob.svelte'
+  import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
@@ -21,85 +21,986 @@
 
   let container: HTMLElement
   let track: HTMLElement
+  let spinePathEl: SVGPathElement | null = $state(null)
   let hoverHref = $state<string | null>(null)
-  let hoverSide = $state<'left' | 'right'>('right')
   let mounts: Array<{ destroy: () => void }> = []
   let trackHeight = $state(0)
-  let trackWidth = $state(0)
-  let rocketTop = $state(0)
+  let trackWidth = $state(1100)
+  let totalLength = $state(0)
+  let rocketProgress = $state(0)
   let flying = $state(false)
   let now = $state(new Date().toISOString())
+  let asideTop = $state(0)
+  let asideLeft = $state(0)
+  let measuredSizes = $state<Record<string, [number, number]>>({})
 
-  const arranged = $derived(arrangeEntries(entries))
-  const dateBounds = $derived(computeBounds(arranged))
-  const todayPos = $derived(positionFor(now, dateBounds, arranged))
-  const changelogMarkers = $derived(collectChangelogMarkers(arranged, dateBounds))
-  const spinePath = $derived(buildSpinePath(arranged, trackHeight, trackWidth))
-  const activeHover = $derived(arranged.find((a) => a.entry.href === hoverHref)?.entry ?? null)
-
-  interface Arranged {
-    entry: RoadmapEntry
-    side: 'left' | 'right'
-    row: number
-    depth: number
+  function recordMeasure(href: string, visW: number, visH: number) {
+    const cur = measuredSizes[href]
+    if (cur && Math.abs(cur[0] - visW) < 1 && Math.abs(cur[1] - visH) < 1) return
+    measuredSizes = { ...measuredSizes, [href]: [visW, visH] }
   }
 
-  function arrangeEntries(list: RoadmapEntry[]): Arranged[] {
-    const sorted = [...list].sort((a, b) => (b.targetDate ?? '').localeCompare(a.targetDate ?? ''))
-    const byHref = new Map(sorted.map((e) => [e.href, e]))
-    const result: Arranged[] = []
-    const placedHrefs = new Set<string>()
-    let row = 0
-    let alternate: 'left' | 'right' = 'left'
-    const childrenOf = new Map<string, RoadmapEntry[]>()
-    for (const e of sorted) {
+  const TRACK_PAD_TOP = 32
+  const NODE_W_BASE = 320
+  const NODE_H_BASE = 200
+  const DEPTH_SCALE = 0.55
+  const SUBTREE_GAP = 32
+  const SIBLING_GAP = 26
+  const CELL_PAD = 18
+  const CELL_MAX = 520
+  const SPINE_BOTTOM_BUFFER = 40
+
+  interface TreeNode {
+    entry: RoadmapEntry
+    depth: number
+    children: TreeNode[]
+  }
+
+  interface NodeBox {
+    entry: RoadmapEntry
+    depth: number
+    x: number
+    y: number
+    w: number
+    h: number
+    anchorX?: number
+    anchorY?: number
+    anchorSide?: 'left' | 'right'
+    date?: number
+  }
+
+  interface CellLayout {
+    boxes: NodeBox[]
+    w: number
+    h: number
+  }
+
+  interface RowLayout {
+    rootEntry: RoadmapEntry
+    side: 'left' | 'right'
+    boxes: NodeBox[]
+    top: number
+    cellSide: number
+    issueCellX: number
+    pathCellX: number
+    pathCenterX: number
+    rowMid: number
+    gapAfter: number
+    spineAnchorX: number
+    spineAnchorY: number
+  }
+
+  const TRACK_PAD_X = 24
+
+  interface ClusterEdge {
+    d: string
+    kind: 'parent-child' | 'branch' | 'child-branch'
+  }
+
+  function nodeScaleAt(depth: number): number {
+    return Math.pow(DEPTH_SCALE, depth)
+  }
+
+  function nodeWAt(depth: number): number {
+    return Math.round(NODE_W_BASE * nodeScaleAt(depth))
+  }
+
+  function nodeHAt(depth: number): number {
+    return Math.round(NODE_H_BASE * nodeScaleAt(depth))
+  }
+
+  function buildTree(list: RoadmapEntry[]): TreeNode[] {
+    const byHref = new Map(list.map((e) => [e.href, e]))
+    const childMap = new Map<string, RoadmapEntry[]>()
+    for (const e of list) {
       if (e.parent && byHref.has(e.parent)) {
-        const list = childrenOf.get(e.parent) ?? []
-        list.push(e)
-        childrenOf.set(e.parent, list)
+        const arr = childMap.get(e.parent) ?? []
+        arr.push(e)
+        childMap.set(e.parent, arr)
       }
     }
-    function depthOf(href: string, seen: Set<string> = new Set()): number {
-      const e = byHref.get(href)
-      if (!e || !e.parent || seen.has(href) || !byHref.has(e.parent)) return 0
-      seen.add(href)
-      return 1 + depthOf(e.parent, seen)
-    }
-    function placeSubtree(href: string, side: 'left' | 'right') {
-      const e = byHref.get(href)
-      if (!e || placedHrefs.has(href)) return
-      result.push({ entry: e, side, row, depth: depthOf(href) })
-      placedHrefs.add(href)
-      row += 1
-      const kids = (childrenOf.get(href) ?? [])
+    function build(entry: RoadmapEntry, depth: number, seen: Set<string>): TreeNode {
+      if (seen.has(entry.href)) return { entry, depth, children: [] }
+      const nextSeen = new Set(seen).add(entry.href)
+      const kids = (childMap.get(entry.href) ?? [])
         .slice()
         .sort((a, b) => (b.targetDate ?? '').localeCompare(a.targetDate ?? ''))
-      let nextSide: 'left' | 'right' = side === 'left' ? 'right' : 'left'
-      for (const child of kids) {
-        if (placedHrefs.has(child.href)) continue
-        placeSubtree(child.href, nextSide)
-        nextSide = nextSide === 'left' ? 'right' : 'left'
+        .map((k) => build(k, depth + 1, nextSeen))
+      return { entry, depth, children: kids }
+    }
+    const roots: TreeNode[] = []
+    for (const e of list) {
+      if (!e.parent || !byHref.has(e.parent)) {
+        roots.push(build(e, 0, new Set()))
       }
     }
-    for (const e of sorted) {
-      if (placedHrefs.has(e.href)) continue
-      if (e.parent && byHref.has(e.parent)) continue
-      placeSubtree(e.href, alternate)
-      alternate = alternate === 'left' ? 'right' : 'left'
+    roots.sort((a, b) => (b.entry.targetDate ?? '').localeCompare(a.entry.targetDate ?? ''))
+    return roots
+  }
+
+  function scaleBoxes(boxes: NodeBox[], s: number): NodeBox[] {
+    return boxes.map((b) => ({
+      entry: b.entry,
+      depth: b.depth,
+      x: b.x * s,
+      y: b.y * s,
+      w: b.w * s,
+      h: b.h * s
+    }))
+  }
+
+  function layoutSubtree(node: TreeNode): CellLayout {
+    const w = nodeWAt(node.depth)
+    const h = nodeHAt(node.depth)
+
+    if (node.children.length === 0) {
+      return { boxes: [{ entry: node.entry, depth: node.depth, x: 0, y: 0, w, h }], w, h }
     }
-    for (const e of sorted) {
-      if (placedHrefs.has(e.href)) continue
-      result.push({ entry: e, side: alternate, row, depth: depthOf(e.href) })
-      placedHrefs.add(e.href)
-      row += 1
-      alternate = alternate === 'left' ? 'right' : 'left'
+
+    const childLayouts = node.children.map((c) => layoutSubtree(c))
+    const childrenW = childLayouts.reduce((s, c) => s + c.w, 0) + SIBLING_GAP * (childLayouts.length - 1)
+    const childrenH = Math.max(...childLayouts.map((c) => c.h))
+
+    const naturalW = Math.max(w, childrenW)
+    const parentOffsetX = (naturalW - w) / 2
+    const childrenStartX = (naturalW - childrenW) / 2
+
+    const boxes: NodeBox[] = []
+    boxes.push({ entry: node.entry, depth: node.depth, x: parentOffsetX, y: 0, w, h })
+
+    let curX = childrenStartX
+    for (const cl of childLayouts) {
+      for (const b of cl.boxes) {
+        boxes.push({
+          entry: b.entry,
+          depth: b.depth,
+          x: b.x + curX,
+          y: b.y + h + SUBTREE_GAP,
+          w: b.w,
+          h: b.h
+        })
+      }
+      curX += cl.w + SIBLING_GAP
+    }
+
+    return { boxes, w: naturalW, h: h + SUBTREE_GAP + childrenH }
+  }
+
+  function fitChildrenToBudget(layout: CellLayout, availW: number, availH: number): CellLayout {
+    if (layout.boxes.length < 2) return layout
+    const root = layout.boxes[0]
+    const descendants = layout.boxes.slice(1)
+    const minX = Math.min(...descendants.map((b) => b.x))
+    const maxX = Math.max(...descendants.map((b) => b.x + b.w))
+    const minY = Math.min(...descendants.map((b) => b.y))
+    const maxY = Math.max(...descendants.map((b) => b.y + b.h))
+    const descW = maxX - minX
+    const descH = maxY - minY
+    const descAvailH = Math.max(0, availH - root.h - SUBTREE_GAP)
+    const sW = descW > availW ? availW / descW : 1
+    const sH = descH > descAvailH ? descAvailH / descH : 1
+    const s = Math.min(sW, sH)
+
+    const newDescW = descW * s
+    const newDescH = descH * s
+    const newTotalW = Math.max(root.w, newDescW)
+    const newRootX = (newTotalW - root.w) / 2
+    const newDescStartX = (newTotalW - newDescW) / 2
+    const newDescStartY = root.h + SUBTREE_GAP
+
+    const newRoot: NodeBox = { ...root, x: newRootX, y: 0 }
+    const scaledDescendants = descendants.map((b) => ({
+      entry: b.entry,
+      depth: b.depth,
+      x: newDescStartX + (b.x - minX) * s,
+      y: newDescStartY + (b.y - minY) * s,
+      w: b.w * s,
+      h: b.h * s
+    }))
+
+    return {
+      boxes: [newRoot, ...scaledDescendants],
+      w: newTotalW,
+      h: root.h + SUBTREE_GAP + newDescH
+    }
+  }
+
+  function cellSideFor(roots: TreeNode[], availW: number): number {
+    let maxSide = NODE_W_BASE
+    for (const r of roots) {
+      const f = layoutSubtree(r)
+      const target = Math.min(availW, Math.max(f.w, f.h))
+      maxSide = Math.max(maxSide, target)
+    }
+    return Math.ceil(maxSide + CELL_PAD * 2)
+  }
+
+  const tree = $derived(buildTree(entries))
+  const effectiveTrackW = $derived(trackWidth || 1100)
+  const availSubtreeW = $derived(Math.max(360, effectiveTrackW * 0.62))
+  const cellSide = $derived(Math.min(effectiveTrackW * 0.66, cellSideFor(tree, availSubtreeW)))
+  const layout = $derived(layoutTrack(tree, effectiveTrackW, cellSide, availSubtreeW))
+  const edgeList = $derived(buildParentEdges(layout.rows, entries))
+  const spinePath = $derived(buildSpinePath(layout.rows, effectiveTrackW, Math.max(trackHeight, layout.totalH + 64), cellSide))
+  const spineConnectors = $derived(buildSpineConnectors(layout.rows, effectiveTrackW))
+  const clusterEdges = $derived(
+    buildClusterEdges(layout.rows, effectiveTrackW, (date) => {
+      if (!date || totalLength === 0 || !spinePathEl) return null
+      const pt = pointAt(progressForDate(date))
+      return { x: pt.x, y: pt.y }
+    })
+  )
+  const dateBounds = $derived(computeBounds(entries))
+  const changelogMarkers = $derived(collectChangelogMarkers(tree))
+  const activeHover = $derived(findActiveHover(tree, hoverHref))
+  const rocketPoint = $derived(pointAt(rocketProgress))
+  const todayPoint = $derived(pointAt(progressForDate(now)))
+
+  const MIN_GAP = 20
+  const AVG_GAP = 56
+
+  interface ParentEdge {
+    id: string
+    d: string
+  }
+
+  function buildParentEdges(rows: RowLayout[], allEntries: RoadmapEntry[]): ParentEdge[] {
+    const byHref = new Map<string, NodeBox>()
+    for (const r of rows) for (const b of r.boxes) byHref.set(b.entry.href, b)
+    const result: ParentEdge[] = []
+    for (const e of allEntries) {
+      if (!e.parent) continue
+      const child = byHref.get(e.href)
+      const parent = byHref.get(e.parent)
+      if (!child || !parent) continue
+      const cx = child.x + child.w / 2
+      const cy = child.y + child.h / 2
+      const px = parent.x + parent.w / 2
+      const py = parent.y + parent.h / 2
+      const dx = cx - px
+      const dy = cy - py
+      const dist = Math.hypot(dx, dy) || 1
+      const nx = dx / dist
+      const ny = dy / dist
+      const ringP = Math.min(
+        Math.abs(nx) > 0.001 ? parent.w / 2 / Math.abs(nx) : Infinity,
+        Math.abs(ny) > 0.001 ? parent.h / 2 / Math.abs(ny) : Infinity
+      )
+      const ringC = Math.min(
+        Math.abs(nx) > 0.001 ? child.w / 2 / Math.abs(nx) : Infinity,
+        Math.abs(ny) > 0.001 ? child.h / 2 / Math.abs(ny) : Infinity
+      )
+      const sx = px + nx * ringP
+      const sy = py + ny * ringP
+      const ex = cx - nx * ringC
+      const ey = cy - ny * ringC
+      const mx = (sx + ex) / 2
+      const my = (sy + ey) / 2
+      const curve = dist * 0.18
+      const cpx = mx - ny * curve
+      const cpy = my + nx * curve
+      const d = `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${cpx.toFixed(1)} ${cpy.toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`
+      result.push({ id: `${e.parent}->${e.href}`, d })
     }
     return result
   }
 
-  function computeBounds(list: Arranged[]): { start: number; end: number } {
+  function layoutTrack(roots: TreeNode[], w: number, _side: number, _availW: number): { rows: RowLayout[]; totalH: number } {
+    const cx = w / 2
+    if (roots.length === 0) return { rows: [], totalH: 0 }
+
+    const sortedRoots = [...roots].sort((a, b) =>
+      (a.entry.targetDate ?? '').localeCompare(b.entry.targetDate ?? '')
+    )
+    const N = sortedRoots.length
+    const rootTimes = sortedRoots.map((r) =>
+      r.entry.targetDate ? new Date(r.entry.targetDate).getTime() : 0
+    )
+
+    const FIRST_X = 100
+    const MIN_VERT_GAP = 200
+    const TIME_PX_PER_DAY = 0.5
+    const TOP_PAD = 80
+    const BOTTOM_PAD = 80
+    const PATH_CLEARANCE = 20
+    const COLUMN_GAP = 16
+    const PARENT_TO_CHILD_GAP = 18
+    const MIN_SIB_GAP = 16
+    const Y_PER_DAY_CHILD = 0.35
+    const CLUSTER_EDGE_GAP = 40
+
+    interface RelBox {
+      entry: RoadmapEntry
+      depth: number
+      x: number
+      y: number
+      w: number
+      h: number
+      date: number
+    }
+
+    function preplaceSubtree(root: TreeNode, rootDate: number, sideDir: 1 | -1): {
+      boxes: RelBox[]
+      aboveExtent: number
+      belowExtent: number
+    } {
+      const FAN_ARC = Math.PI / 2
+      const SUB_FAN_ARC = Math.PI / 3
+
+      interface Node {
+        entry: RoadmapEntry
+        depth: number
+        parent: Node | null
+        date: number
+        w: number
+        h: number
+        baseW: number
+        baseH: number
+        cx: number
+        cy: number
+        vx: number
+        vy: number
+        fixed: boolean
+      }
+
+      const nodes: Node[] = []
+      const byDepth = new Map<number, Node[]>()
+
+      function build(treeNode: TreeNode, parent: Node | null, depth: number) {
+        const scale = Math.pow(DEPTH_SCALE, depth)
+        const baseW = depth === 0 ? NODE_W_BASE : Math.round(NODE_W_BASE * scale)
+        const baseH = depth === 0 ? NODE_H_BASE : Math.round(NODE_H_BASE * scale)
+        const measured = measuredSizes[treeNode.entry.href]
+        const w = measured ? measured[0] : baseW
+        const h = measured ? measured[1] : baseH
+        const date = depth === 0
+          ? rootDate
+          : (treeNode.entry.targetDate ? new Date(treeNode.entry.targetDate).getTime() : 0)
+        const node: Node = {
+          entry: treeNode.entry,
+          depth,
+          parent,
+          date,
+          w,
+          h,
+          baseW,
+          baseH,
+          cx: 0,
+          cy: 0,
+          vx: 0,
+          vy: 0,
+          fixed: depth === 0
+        }
+        nodes.push(node)
+        if (!byDepth.has(depth)) byDepth.set(depth, [])
+        byDepth.get(depth)!.push(node)
+
+        const kids = treeNode.children.map((c) => ({
+          node: c,
+          date: c.entry.targetDate ? new Date(c.entry.targetDate).getTime() : 0
+        }))
+        const later = kids.filter((k) => k.date > date).sort((a, b) => a.date - b.date)
+        const earlier = kids.filter((k) => k.date <= date).sort((a, b) => b.date - a.date)
+
+        for (const k of earlier) build(k.node, node, depth + 1)
+        for (const k of later) build(k.node, node, depth + 1)
+      }
+      build(root, null, 0)
+
+      const rootNode = nodes[0]
+      rootNode.cx = 0
+      rootNode.cy = 0
+      rootNode.fixed = true
+
+      if (nodes.length === 1) {
+        return {
+          boxes: [{
+            entry: root.entry, depth: 0,
+            x: -NODE_W_BASE / 2, y: -NODE_H_BASE / 2,
+            w: NODE_W_BASE, h: NODE_H_BASE,
+            date: rootDate
+          }],
+          aboveExtent: NODE_H_BASE / 2,
+          belowExtent: NODE_H_BASE / 2
+        }
+      }
+
+      function ringRadius(pw: number, ph: number, angle: number): number {
+        const ca = Math.abs(Math.cos(angle))
+        const sa = Math.abs(Math.sin(angle))
+        if (sa < 0.001) return pw / 2
+        if (ca < 0.001) return ph / 2
+        return Math.min(pw / 2 / ca, ph / 2 / sa)
+      }
+
+      function idealRadiusAt(p: Node, c: Node, angle: number): number {
+        const ca = Math.abs(Math.cos(angle))
+        const sa = Math.abs(Math.sin(angle))
+        const parentReach = ringRadius(p.w * HALO_INFLATE, p.h * HALO_INFLATE, angle)
+        const childSupport = ca * c.w * HALO_INFLATE / 2 + sa * c.h * HALO_INFLATE / 2
+        return parentReach + childSupport + 14
+      }
+
+      function idealRadius(p: Node, c: Node): number {
+        return Math.hypot(p.w / 2 + c.w / 2 + 8, p.h / 2 + c.h / 2 + 8) * 0.85
+      }
+
+      function seedChildren(parent: Node, kids: Node[]) {
+        const earlier = kids.filter((k) => k.date <= parent.date).sort((a, b) => b.date - a.date)
+        const later = kids.filter((k) => k.date > parent.date).sort((a, b) => a.date - b.date)
+
+        let outX = 0
+        let outY = 1
+        if (parent.parent) {
+          const dx = parent.cx - parent.parent.cx
+          const dy = parent.cy - parent.parent.cy
+          const d = Math.hypot(dx, dy) || 1
+          outX = dx / d
+          outY = dy / d
+        } else {
+          outY = 1
+          outX = -sideDir * 0.5
+          const m = Math.hypot(outX, outY)
+          outX /= m
+          outY /= m
+        }
+        const outAngle = Math.atan2(outY, outX)
+
+        function placeFan(list: Node[], sign: 1 | -1, span: number, isRoot: boolean) {
+          let center: number
+          if (isRoot) {
+            center = sign === 1 ? Math.PI / 2 - sideDir * (Math.PI / 8) : -Math.PI / 2 - sideDir * (Math.PI / 8)
+          } else {
+            const perpA = outAngle + Math.PI / 2
+            const perpB = outAngle - Math.PI / 2
+            if (sign === 1) {
+              center = Math.sin(perpA) > Math.sin(perpB) ? perpA : perpB
+            } else {
+              center = Math.sin(perpA) < Math.sin(perpB) ? perpA : perpB
+            }
+          }
+          for (let i = 0; i < list.length; i++) {
+            const t = list.length === 1 ? 0 : i / (list.length - 1) - 0.5
+            const angle = center + t * span
+            const r = idealRadiusAt(parent, list[i], angle)
+            list[i].cx = parent.cx + r * Math.cos(angle)
+            list[i].cy = parent.cy + r * Math.sin(angle)
+          }
+        }
+
+        const isRoot = parent.depth === 0
+        const span = isRoot ? FAN_ARC : SUB_FAN_ARC
+        placeFan(earlier, 1, span, isRoot)
+        placeFan(later, -1, span, isRoot)
+      }
+
+      const PARENT_SPRING_K = 0.28
+      const REPULSE_PAD = 4
+      const REPULSE_K = 0.95
+      const DAMPING = 0.78
+      const ITER_PER_LAYER = 200
+      const HALO_INFLATE = 1.18
+
+      const maxDepth = Math.max(...nodes.map((n) => n.depth))
+
+      function settleLayer(layer: Node[], placedSoFar: Node[]) {
+        for (const n of layer) { n.vx = 0; n.vy = 0 }
+
+        for (let iter = 0; iter < ITER_PER_LAYER; iter++) {
+          const fx = new Map<Node, number>()
+          const fy = new Map<Node, number>()
+          for (const n of layer) { fx.set(n, 0); fy.set(n, 0) }
+
+          for (const n of layer) {
+            const p = n.parent!
+            const dx = n.cx - p.cx
+            const dy = n.cy - p.cy
+            const dist = Math.hypot(dx, dy) || 0.001
+            const angle = Math.atan2(dy, dx)
+            const ideal = idealRadiusAt(p, n, angle)
+            const delta = dist - ideal
+            fx.set(n, fx.get(n)! - (dx / dist) * delta * PARENT_SPRING_K)
+            fy.set(n, fy.get(n)! - (dy / dist) * delta * PARENT_SPRING_K)
+          }
+
+          for (const n of layer) {
+            for (const other of placedSoFar) {
+              if (other === n) continue
+              const dx = n.cx - other.cx
+              const dy = n.cy - other.cy
+              const ax = n.w * HALO_INFLATE / 2 + other.w * HALO_INFLATE / 2 + REPULSE_PAD
+              const ay = n.h * HALO_INFLATE / 2 + other.h * HALO_INFLATE / 2 + REPULSE_PAD
+              const ox = ax - Math.abs(dx)
+              const oy = ay - Math.abs(dy)
+              if (ox > 0 && oy > 0) {
+                if (ox < oy) {
+                  const push = ox * REPULSE_K
+                  const sgn = Math.abs(dx) < 0.5 ? (Math.random() > 0.5 ? -1 : 1) : (dx >= 0 ? 1 : -1)
+                  fx.set(n, fx.get(n)! + sgn * push)
+                } else {
+                  const push = oy * REPULSE_K
+                  const sgn = Math.abs(dy) < 0.5 ? (Math.random() > 0.5 ? -1 : 1) : (dy >= 0 ? 1 : -1)
+                  fy.set(n, fy.get(n)! + sgn * push)
+                }
+              }
+            }
+            for (const m of layer) {
+              if (m === n) continue
+              const dx = n.cx - m.cx
+              const dy = n.cy - m.cy
+              const ax = n.w * HALO_INFLATE / 2 + m.w * HALO_INFLATE / 2 + REPULSE_PAD
+              const ay = n.h * HALO_INFLATE / 2 + m.h * HALO_INFLATE / 2 + REPULSE_PAD
+              const ox = ax - Math.abs(dx)
+              const oy = ay - Math.abs(dy)
+              if (ox > 0 && oy > 0) {
+                if (ox < oy) {
+                  const push = ox * REPULSE_K * 0.5
+                  const sgn = dx >= 0 ? 1 : -1
+                  fx.set(n, fx.get(n)! + sgn * push)
+                } else {
+                  const push = oy * REPULSE_K * 0.5
+                  const sgn = dy >= 0 ? 1 : -1
+                  fy.set(n, fy.get(n)! + sgn * push)
+                }
+              }
+            }
+          }
+
+          for (const n of layer) {
+            n.vx = (n.vx + (fx.get(n) ?? 0)) * DAMPING
+            n.vy = (n.vy + (fy.get(n) ?? 0)) * DAMPING
+            const maxStep = 12
+            if (n.vx > maxStep) n.vx = maxStep
+            if (n.vx < -maxStep) n.vx = -maxStep
+            if (n.vy > maxStep) n.vy = maxStep
+            if (n.vy < -maxStep) n.vy = -maxStep
+            n.cx += n.vx
+            n.cy += n.vy
+          }
+        }
+      }
+
+      const placed: Node[] = [rootNode]
+      for (let d = 1; d <= maxDepth; d++) {
+        const layer = byDepth.get(d) ?? []
+        const byParent = new Map<Node, Node[]>()
+        for (const n of layer) {
+          const p = n.parent!
+          if (!byParent.has(p)) byParent.set(p, [])
+          byParent.get(p)!.push(n)
+        }
+        for (const [p, kids] of byParent) {
+          seedChildren(p, kids)
+        }
+        settleLayer(layer, placed)
+        for (const n of layer) {
+          n.fixed = true
+          placed.push(n)
+        }
+      }
+
+      for (let pass = 0; pass < 80; pass++) {
+        let moved = false
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const a = nodes[i]
+            const b = nodes[j]
+            const dx = a.cx - b.cx
+            const dy = a.cy - b.cy
+            const ax = a.w * HALO_INFLATE / 2 + b.w * HALO_INFLATE / 2 + REPULSE_PAD
+            const ay = a.h * HALO_INFLATE / 2 + b.h * HALO_INFLATE / 2 + REPULSE_PAD
+            const ox = ax - Math.abs(dx)
+            const oy = ay - Math.abs(dy)
+            if (ox > 0.5 && oy > 0.5) {
+              moved = true
+              const aRoot = a === rootNode
+              const bRoot = b === rootNode
+              const factor = aRoot || bRoot ? 1.0 : 0.5
+              if (ox < oy) {
+                const sgn = Math.abs(dx) < 0.5 ? (i < j ? -1 : 1) : (dx >= 0 ? 1 : -1)
+                if (!aRoot) a.cx += sgn * ox * factor
+                if (!bRoot) b.cx -= sgn * ox * factor
+              } else {
+                const sgn = Math.abs(dy) < 0.5 ? (i < j ? -1 : 1) : (dy >= 0 ? 1 : -1)
+                if (!aRoot) a.cy += sgn * oy * factor
+                if (!bRoot) b.cy -= sgn * oy * factor
+              }
+            }
+          }
+        }
+        if (!moved) break
+      }
+
+      const boxes: RelBox[] = nodes.map((n) => ({
+        entry: n.entry,
+        depth: n.depth,
+        x: n.cx - n.baseW / 2,
+        y: n.cy - n.baseH / 2,
+        w: n.baseW,
+        h: n.baseH,
+        date: n.date
+      }))
+
+      let aboveExtent = NODE_H_BASE / 2
+      let belowExtent = NODE_H_BASE / 2
+      for (const b of boxes) {
+        if (-b.y > aboveExtent) aboveExtent = -b.y
+        if (b.y + b.h > belowExtent) belowExtent = b.y + b.h
+      }
+      return { boxes, aboveExtent, belowExtent }
+    }
+
+    const sides: ('left' | 'right')[] = sortedRoots.map((_, i) => (i % 2 === 0 ? 'left' : 'right'))
+    const xs = sides.map((s) => (s === 'left' ? FIRST_X : w - FIRST_X - NODE_W_BASE))
+
+    const preplaced = sortedRoots.map((root, i) =>
+      preplaceSubtree(root, rootTimes[i], sides[i] === 'left' ? 1 : -1)
+    )
+
+    const gaps: number[] = []
+    for (let i = 1; i < N; i++) {
+      const dt = Math.abs(rootTimes[i] - rootTimes[i - 1])
+      const days = dt / 86400000
+      const timeGap = days * TIME_PX_PER_DAY
+      const aboveOfPrev = preplaced[i - 1].aboveExtent - NODE_H_BASE / 2
+      const belowOfThis = preplaced[i].belowExtent - NODE_H_BASE / 2
+      const clusterGap = aboveOfPrev + belowOfThis + CLUSTER_EDGE_GAP
+      gaps.push(Math.max(MIN_VERT_GAP, timeGap, clusterGap))
+    }
+
+    const totalIssueHeight = N * NODE_H_BASE
+    const totalGapHeight = gaps.reduce((s, g) => s + g, 0)
+    const topAboveExtra = preplaced[N - 1].aboveExtent - NODE_H_BASE / 2
+    const bottomBelowExtra = preplaced[0].belowExtent - NODE_H_BASE / 2
+    const totalH = TOP_PAD + topAboveExtra + totalIssueHeight + totalGapHeight + bottomBelowExtra + BOTTOM_PAD
+
+    const rootMidY: number[] = []
+    rootMidY[0] = totalH - BOTTOM_PAD - bottomBelowExtra - NODE_H_BASE / 2
+    for (let i = 1; i < N; i++) {
+      rootMidY[i] = rootMidY[i - 1] - gaps[i - 1] - NODE_H_BASE
+    }
+
+    const rows: RowLayout[] = []
+    for (let i = 0; i < N; i++) {
+      const side = sides[i]
+      const x = xs[i]
+      const rootCenterX = x + NODE_W_BASE / 2
+      const cy = rootMidY[i]
+      const rootAnchorX = side === 'left' ? x + NODE_W_BASE + PATH_CLEARANCE : x - PATH_CLEARANCE
+
+      const boxes: NodeBox[] = []
+      for (const rb of preplaced[i].boxes) {
+        const absCenterX = rb.x + rb.w / 2 + rootCenterX
+        let absX = absCenterX - rb.w / 2
+        absX = Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X - rb.w, absX))
+        const absY = rb.y + cy
+        boxes.push({
+          entry: rb.entry,
+          depth: rb.depth,
+          x: absX,
+          y: absY,
+          w: rb.w,
+          h: rb.h,
+          anchorSide: side,
+          anchorX: side === 'left' ? absX + rb.w + PATH_CLEARANCE : absX - PATH_CLEARANCE,
+          anchorY: absY + rb.h / 2,
+          date: rb.date
+        })
+      }
+
+      rows.push({
+        rootEntry: sortedRoots[i].entry,
+        side,
+        boxes,
+        top: cy - NODE_H_BASE / 2,
+        cellSide: NODE_H_BASE,
+        issueCellX: x,
+        pathCellX: 0,
+        pathCenterX: cx,
+        rowMid: cy,
+        gapAfter: 0,
+        spineAnchorX: rootAnchorX,
+        spineAnchorY: cy
+      })
+    }
+
+    return { rows, totalH }
+  }
+
+  function generateSwirlsBetween(
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    targetLength: number,
+    xMin: number,
+    xMax: number
+  ): { x: number; y: number }[] {
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const straightLen = Math.hypot(dx, dy)
+    const extra = targetLength - straightLen
+    if (extra <= 40 || straightLen < 1) return []
+
+    const clampX = (x: number) => Math.max(xMin, Math.min(xMax, x))
+
+    const swirlCount = Math.max(1, Math.min(10, Math.floor(extra / 90)))
+
+    const perpX = -dy / straightLen
+    const perpY = dx / straightLen
+    const alleyHalf = (xMax - xMin) / 2
+    const reach = Math.min(alleyHalf * 0.9, Math.max(80, extra * 0.16))
+
+    const waypoints: { x: number; y: number }[] = []
+    for (let i = 1; i <= swirlCount; i++) {
+      const t = i / (swirlCount + 1)
+      const baseX = start.x + dx * t
+      const baseY = start.y + dy * t
+      const sign = i % 2 === 1 ? 1 : -1
+      const wx = clampX(baseX + sign * reach * perpX)
+      const wy = baseY + sign * reach * perpY
+      waypoints.push({ x: wx, y: wy })
+    }
+    return waypoints
+  }
+
+  interface SpineAnchor {
+    box: NodeBox
+    x: number
+    y: number
+    side: 1 | -1
+    date: number
+  }
+
+  function computeSpineAnchors(rows: RowLayout[], w: number): SpineAnchor[] {
+    const boxes: NodeBox[] = []
+    for (const r of rows) for (const b of r.boxes) {
+      if (b.depth === 0) boxes.push(b)
+    }
+    boxes.sort((a, b) => (a.date ?? 0) - (b.date ?? 0))
+    const cx = w / 2
+    const BLOB_VISIBLE_FACTOR = 1.5
+    return boxes.map((b) => {
+      const center = b.x + b.w / 2
+      const side: 1 | -1 = center <= cx ? 1 : -1
+      const haloHalfW = b.w * (BLOB_VISIBLE_FACTOR - 1) / 2
+      const ax = side === 1 ? b.x + b.w + haloHalfW + 12 : b.x - haloHalfW - 12
+      const ay = b.y + b.h / 2
+      return { box: b, x: ax, y: ay, side, date: b.date ?? 0 }
+    })
+  }
+
+  function generateSwirlBetween(
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    targetLen: number,
+    clusterCx: number,
+    clusterCy: number
+  ): { x: number; y: number }[] {
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const straight = Math.hypot(dx, dy) || 1
+    const extra = targetLen - straight
+    if (extra <= 50) return []
+    const count = Math.max(1, Math.min(8, Math.floor(extra / 100)))
+    const reach = Math.min(140, Math.max(40, extra * 0.18))
+    const perpX = -dy / straight
+    const perpY = dx / straight
+    const midX = (start.x + end.x) / 2
+    const midY = (start.y + end.y) / 2
+    const toClusterX = clusterCx - midX
+    const toClusterY = clusterCy - midY
+    const dot = toClusterX * perpX + toClusterY * perpY
+    const clearSign = dot > 0 ? -1 : 1
+    const pts: { x: number; y: number }[] = []
+    for (let i = 1; i <= count; i++) {
+      const t = i / (count + 1)
+      const bx = start.x + dx * t
+      const by = start.y + dy * t
+      const lobe = Math.sin(Math.PI * t)
+      const r = reach * (0.5 + 0.5 * lobe)
+      pts.push({ x: bx + clearSign * r * perpX, y: by + clearSign * r * perpY })
+    }
+    return pts
+  }
+
+  function computeSpineX(boxes: NodeBox[]): number {
+    const BLOB_VISIBLE_FACTOR = 1.5
+    let maxRight = 0
+    for (const b of boxes) {
+      const haloRight = b.w * (BLOB_VISIBLE_FACTOR - 1) / 2
+      const right = b.x + b.w + haloRight
+      if (right > maxRight) maxRight = right
+    }
+    return maxRight + 30
+  }
+
+  function buildSpinePath(rows: RowLayout[], w: number, trackH: number, _side: number): string {
+    if (!rows.length || w <= 0 || trackH <= 0) return ''
+    const anchors = computeSpineAnchors(rows, w)
+    if (anchors.length === 0) return ''
+
+    const allBoxes: NodeBox[] = []
+    for (const r of rows) for (const b of r.boxes) allBoxes.push(b)
+    let cxSum = 0
+    let cySum = 0
+    for (const b of allBoxes) {
+      cxSum += b.x + b.w / 2
+      cySum += b.y + b.h / 2
+    }
+    const clusterCx = allBoxes.length > 0 ? cxSum / allBoxes.length : w / 2
+    const clusterCy = allBoxes.length > 0 ? cySum / allBoxes.length : 0
+
+    const oldest = anchors[0]
+    const newest = anchors[anchors.length - 1]
+
+    const planetX = w / 2
+    const planetY = trackH
+
+    const pts: { x: number; y: number }[] = []
+    pts.push({ x: planetX, y: planetY })
+
+    const span = planetY - oldest.y
+    const approachY = oldest.y + Math.min(span * 0.45, Math.max(80, span * 0.3))
+    pts.push({ x: oldest.x, y: approachY })
+    pts.push({ x: oldest.x, y: oldest.y })
+
+    const TIME_PX_PER_DAY = 5
+    for (let i = 0; i < anchors.length - 1; i++) {
+      const a = anchors[i]
+      const b = anchors[i + 1]
+      const days = Math.abs(b.date - a.date) / 86400000
+      const straight = Math.hypot(b.x - a.x, b.y - a.y)
+      const target = Math.max(straight + 40, days * TIME_PX_PER_DAY)
+      const swirls = generateSwirlBetween({ x: a.x, y: a.y }, { x: b.x, y: b.y }, target, clusterCx, clusterCy)
+      for (const s of swirls) pts.push(s)
+      pts.push({ x: b.x, y: b.y })
+    }
+
+    pts.push({ x: newest.x, y: newest.y - 80 })
+
+    return pointsToCentripetalCatmullRomPath(pts)
+  }
+
+  function buildSpineConnectors(rows: RowLayout[], w: number): { id: string; d: string }[] {
+    const anchors = computeSpineAnchors(rows, w)
+    if (anchors.length === 0) return []
+    const BLOB_VISIBLE_FACTOR = 1.5
+
+    return anchors.map((a) => {
+      const box = a.box
+      const haloHalfW = box.w * (BLOB_VISIBLE_FACTOR - 1) / 2
+      const startX = a.side === 1 ? box.x + box.w + haloHalfW : box.x - haloHalfW
+      const startY = box.y + box.h / 2
+      const d = `M ${startX.toFixed(1)} ${startY.toFixed(1)} L ${a.x.toFixed(1)} ${a.y.toFixed(1)}`
+      return { id: box.entry.href + ':conn', d }
+    })
+  }
+
+  function pointsToCentripetalCatmullRomPath(pts: { x: number; y: number }[]): string {
+    if (pts.length < 2) return ''
+    const dedup: { x: number; y: number }[] = []
+    for (const p of pts) {
+      const last = dedup[dedup.length - 1]
+      if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 0.5) dedup.push(p)
+    }
+    if (dedup.length < 2) return `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
+    let d = `M ${dedup[0].x.toFixed(2)} ${dedup[0].y.toFixed(2)} `
+    const n = dedup.length
+    const alpha = 0.5
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = dedup[Math.max(0, i - 1)]
+      const p1 = dedup[i]
+      const p2 = dedup[i + 1]
+      const p3 = dedup[Math.min(n - 1, i + 2)]
+      const d01 = Math.pow(Math.hypot(p1.x - p0.x, p1.y - p0.y), alpha)
+      const d12 = Math.pow(Math.hypot(p2.x - p1.x, p2.y - p1.y), alpha)
+      const d23 = Math.pow(Math.hypot(p3.x - p2.x, p3.y - p2.y), alpha)
+      const denom1 = d01 + d12
+      const denom2 = d12 + d23
+      const t1x = denom1 > 0 ? (p2.x - p0.x) * d12 / denom1 : p2.x - p1.x
+      const t1y = denom1 > 0 ? (p2.y - p0.y) * d12 / denom1 : p2.y - p1.y
+      const t2x = denom2 > 0 ? (p3.x - p1.x) * d12 / denom2 : p2.x - p1.x
+      const t2y = denom2 > 0 ? (p3.y - p1.y) * d12 / denom2 : p2.y - p1.y
+      const cp1x = p1.x + t1x / 3
+      const cp1y = p1.y + t1y / 3
+      const cp2x = p2.x - t2x / 3
+      const cp2y = p2.y - t2y / 3
+      d += `C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)} `
+    }
+    return d
+  }
+
+  function buildClusterEdges(
+    rows: RowLayout[],
+    w: number,
+    getSpinePoint: (date: string | undefined) => { x: number; y: number } | null
+  ): ClusterEdge[] {
+    if (!rows.length || w <= 0) return []
+    const edges: ClusterEdge[] = []
+
+    const globalBoxesByHref = new Map<string, NodeBox>()
+    for (const r of rows) for (const b of r.boxes) globalBoxesByHref.set(b.entry.href, b)
+
+    for (const r of rows) {
+      for (const box of r.boxes) {
+        if (box.entry.parent) {
+          const parent = globalBoxesByHref.get(box.entry.parent)
+          if (parent) {
+            const px = parent.x + parent.w / 2
+            const py = parent.y + parent.h
+            const cxx = box.x + box.w / 2
+            const cyy = box.y
+            const midY = (py + cyy) / 2
+            edges.push({
+              d: `M ${px.toFixed(2)} ${py.toFixed(2)} C ${px.toFixed(2)} ${midY.toFixed(2)}, ${cxx.toFixed(2)} ${midY.toFixed(2)}, ${cxx.toFixed(2)} ${cyy.toFixed(2)}`,
+              kind: 'parent-child'
+            })
+          }
+        }
+
+        if (typeof box.anchorX === 'number' && typeof box.anchorY === 'number' && box.anchorSide) {
+          const boxCy = box.y + box.h / 2
+          const edgeX = box.anchorSide === 'left' ? box.x + box.w : box.x
+          edges.push({
+            d: `M ${edgeX.toFixed(2)} ${boxCy.toFixed(2)} L ${box.anchorX.toFixed(2)} ${box.anchorY.toFixed(2)}`,
+            kind: box.depth === 0 ? 'branch' : 'child-branch'
+          })
+        }
+      }
+    }
+
+    return edges
+  }
+
+  function progressForDate(iso: string): number {
+    const t = new Date(iso).getTime()
+    if (!Number.isFinite(t) || entries.length === 0) return 0
+    const span = dateBounds.end - dateBounds.start
+    if (span <= 0) return 0.5
+    return Math.max(0, Math.min(1, (t - dateBounds.start) / span))
+  }
+
+  function pointAt(progress: number): { x: number; y: number; angle: number } {
+    if (!spinePathEl || totalLength === 0) return { x: (trackWidth || 1100) / 2, y: 0, angle: 0 }
+    const rows = layout.rows
+    let tailLen = 0
+    let headLen = 0
+    if (rows.length > 0) {
+      const oldestMid = rows[0].rowMid
+      const planetApexY = Math.max(oldestMid + 80, trackHeight - SPINE_BOTTOM_BUFFER)
+      tailLen = planetApexY - oldestMid + 80
+      headLen = 120
+    }
+    const timelineLen = Math.max(1, totalLength - headLen - tailLen)
+    const clampedP = Math.max(0, Math.min(1, progress))
+    const len = tailLen + clampedP * timelineLen
+    const p = spinePathEl.getPointAtLength(len)
+    const p2 = spinePathEl.getPointAtLength(Math.min(totalLength, len + 1))
+    return { x: p.x, y: p.y, angle: Math.atan2(p2.y - p.y, p2.x - p.x) }
+  }
+
+  function computeBounds(list: RoadmapEntry[]): { start: number; end: number } {
     const times = list
-      .map((a) => a.entry.targetDate)
+      .map((e) => e.targetDate)
       .filter((d): d is string => !!d)
       .map((d) => new Date(d).getTime())
       .filter((t) => Number.isFinite(t))
@@ -113,146 +1014,31 @@
     return { start, end }
   }
 
-  function positionFor(iso: string, bounds: { start: number; end: number }, list: Arranged[]): number {
-    const t = new Date(iso).getTime()
-    if (!Number.isFinite(t) || list.length === 0) return 0
-    const total = list.length
-    const span = bounds.end - bounds.start
-    if (span <= 0) return total / 2
-    const ratio = Math.max(0, Math.min(1, (t - bounds.start) / span))
-    return (1 - ratio) * total
-  }
-
-  function spineAmp(w: number): number {
-    return Math.min(50, w * 0.05)
-  }
-
-  const spineGutter = 200
-
-  function cardEdgeX(side: 'left' | 'right', w: number): number {
-    const cx = w / 2
-    return side === 'left' ? cx - spineGutter / 2 : cx + spineGutter / 2
-  }
-
-  function rowYPx(row: number, total: number, h: number): number {
-    if (total <= 0) return 0
-    return ((row + 0.5) / total) * h
-  }
-
-  function segmentCycles(list: Arranged[]): number[] {
-    const N = list.length
-    if (N < 2) return []
-    const dates = list.map((a) => (a.entry.targetDate ? new Date(a.entry.targetDate).getTime() : 0))
-    const gaps: number[] = []
-    for (let i = 0; i < N - 1; i++) gaps.push(Math.abs(dates[i] - dates[i + 1]) || 1)
-    const total = gaps.reduce((s, g) => s + g, 0) || 1
-    const avg = total / gaps.length
-    return gaps.map((g) => Math.max(0.5, Math.min(3.5, (g / avg) * 0.9 + 0.3)))
-  }
-
-  function spinePhaseAt(y: number, list: Arranged[], h: number): { phase: number; t: number; segIdx: number } {
-    const N = list.length
-    if (N === 0 || h <= 0) return { phase: 0, t: 0, segIdx: -1 }
-    const cycles = segmentCycles(list)
-    let phase = 0
-    const firstRowY = rowYPx(0, N, h)
-    if (y <= firstRowY) {
-      const t = firstRowY > 0 ? y / firstRowY : 0
-      return { phase: phase + 0.5 * 2 * Math.PI * t, t, segIdx: -1 }
+  function flattenTree(roots: TreeNode[]): TreeNode[] {
+    const out: TreeNode[] = []
+    function walk(n: TreeNode) {
+      out.push(n)
+      n.children.forEach(walk)
     }
-    phase += 0.5 * 2 * Math.PI
-    for (let i = 0; i < N - 1; i++) {
-      const yStart = rowYPx(i, N, h)
-      const yEnd = rowYPx(i + 1, N, h)
-      if (y <= yEnd) {
-        const t = (y - yStart) / Math.max(1e-9, yEnd - yStart)
-        return { phase: phase + cycles[i] * 2 * Math.PI * t, t, segIdx: i }
-      }
-      phase += cycles[i] * 2 * Math.PI
-    }
-    const lastRowY = rowYPx(N - 1, N, h)
-    const t = (y - lastRowY) / Math.max(1e-9, h - lastRowY)
-    return { phase: phase + 0.5 * 2 * Math.PI * t, t, segIdx: N - 1 }
+    roots.forEach(walk)
+    return out
   }
 
-  function buildSpinePath(list: Arranged[], h: number, w: number): string {
-    const N = list.length
-    if (N === 0 || h <= 0 || w <= 0) return ''
-    const cx = w / 2
-    const amp = spineAmp(w)
-    const cycles = segmentCycles(list)
-    let d = `M ${cx.toFixed(2)} 0 `
-    let phase = 0
-    const firstRowY = rowYPx(0, N, h)
-    const preSamples = 16
-    for (let j = 1; j <= preSamples; j++) {
-      const t = j / preSamples
-      const y = firstRowY * t
-      const lp = phase + 0.5 * 2 * Math.PI * t
-      const x = cx + Math.sin(lp) * amp
-      d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
-    }
-    phase += 0.5 * 2 * Math.PI
-    for (let i = 0; i < N - 1; i++) {
-      const yStart = rowYPx(i, N, h)
-      const yEnd = rowYPx(i + 1, N, h)
-      const segC = cycles[i]
-      const samples = Math.max(16, Math.ceil(segC * 18))
-      for (let j = 1; j <= samples; j++) {
-        const t = j / samples
-        const y = yStart + (yEnd - yStart) * t
-        const lp = phase + segC * 2 * Math.PI * t
-        const x = cx + Math.sin(lp) * amp
-        d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
-      }
-      phase += segC * 2 * Math.PI
-    }
-    const lastRowY = rowYPx(N - 1, N, h)
-    const postSamples = 16
-    for (let j = 1; j <= postSamples; j++) {
-      const t = j / postSamples
-      const y = lastRowY + (h - lastRowY) * t
-      const lp = phase + 0.5 * 2 * Math.PI * t
-      const x = cx + Math.sin(lp) * amp
-      d += `L ${x.toFixed(2)} ${y.toFixed(2)} `
-    }
-    return d
+  function findActiveHover(roots: TreeNode[], href: string | null): RoadmapEntry | null {
+    if (!href) return null
+    for (const n of flattenTree(roots)) if (n.entry.href === href) return n.entry
+    return null
   }
 
-  function spineXAt(y: number, list: Arranged[], h: number, w: number): number {
-    if (h <= 0 || w <= 0 || list.length === 0) return w / 2
-    const cx = w / 2
-    const amp = spineAmp(w)
-    const { phase } = spinePhaseAt(y, list, h)
-    return cx + Math.sin(phase) * amp
-  }
-
-  function spineTangentAt(y: number, list: Arranged[], h: number, w: number): number {
-    if (h <= 0 || w <= 0 || list.length === 0) return 0
-    const eps = Math.max(1, h / 200)
-    const y1 = Math.max(0, y - eps)
-    const y2 = Math.min(h, y + eps)
-    const x1 = spineXAt(y1, list, h, w)
-    const x2 = spineXAt(y2, list, h, w)
-    const dx = x2 - x1
-    const dy = y2 - y1
-    if (dy === 0) return 0
-    return Math.atan2(dx, dy)
-  }
-
-  function collectChangelogMarkers(
-    list: Arranged[],
-    bounds: { start: number; end: number }
-  ): { date: string; version: string; href: string; row: number }[] {
-    const out: { date: string; version: string; href: string; row: number }[] = []
-    for (const a of list) {
-      for (const ref of a.entry.changelog) {
+  function collectChangelogMarkers(roots: TreeNode[]): { date: string; version: string; href: string }[] {
+    const out: { date: string; version: string; href: string }[] = []
+    for (const n of flattenTree(roots)) {
+      for (const ref of n.entry.changelog) {
         if (!ref.releaseDate) continue
         out.push({
           date: ref.releaseDate,
           version: ref.version,
-          href: `${ref.path}#${ref.slug}`,
-          row: positionFor(ref.releaseDate, bounds, list)
+          href: `${ref.path}#${ref.slug}`
         })
       }
     }
@@ -273,19 +1059,15 @@
     return `${day}.${month}.${year}`
   }
 
-  function onCardEnter(entry: RoadmapEntry, side: 'left' | 'right', ev: Event) {
+  function onNodeEnter(entry: RoadmapEntry, side: 'left' | 'right', ev: Event) {
     hoverHref = entry.href
-    hoverSide = side === 'left' ? 'right' : 'left'
     const el = ev.currentTarget as HTMLElement | null
     if (el) positionAside(el, side)
   }
 
-  function onCardLeave() {
+  function onNodeLeave() {
     hoverHref = null
   }
-
-  let asideTop = $state(0)
-  let asideLeft = $state(0)
 
   function positionAside(cardEl: HTMLElement, cardSide: 'left' | 'right') {
     const rect = cardEl.getBoundingClientRect()
@@ -301,14 +1083,15 @@
       if (left < margin) left = rect.right + margin
     }
     left = Math.max(margin, Math.min(window.innerWidth - asideWidth - margin, left))
-    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--np-header-height')) || 0
+    const headerH =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--np-header-height')) || 0
     let top = rect.top
     top = Math.max(headerH + margin, Math.min(window.innerHeight - asideHeightEstimate - margin, top))
     asideTop = top
     asideLeft = left
   }
 
-  function gotoEntry(entry: RoadmapEntry, e: MouseEvent) {
+  function onNodeClick(entry: RoadmapEntry, e: MouseEvent) {
     if (window.matchMedia('(max-width: 900px)').matches) {
       if (hoverHref !== entry.href) {
         e.preventDefault()
@@ -324,53 +1107,40 @@
     if (!track) return
     trackHeight = track.offsetHeight
     trackWidth = track.offsetWidth
-    if (arranged.length === 0) {
-      rocketTop = 0
-      return
-    }
-    const ratio = todayPos / arranged.length
-    rocketTop = Math.max(0, Math.min(trackHeight, ratio * trackHeight))
   }
 
-  function markerSide(row: number, list: Arranged[], w: number): 'left' | 'right' {
-    if (list.length === 0 || trackHeight <= 0) return 'right'
-    const y = (row / list.length) * trackHeight
-    const x = spineXAt(y, list, trackHeight, w)
-    return x >= w / 2 ? 'left' : 'right'
-  }
-
-  function oppositeOfNearest(targetRow: number, list: Arranged[]): 'left' | 'right' {
-    if (list.length === 0) return 'left'
-    let best = list[0]
-    for (const a of list) {
-      if (Math.abs(a.row - targetRow) < Math.abs(best.row - targetRow)) best = a
-    }
-    return best.side === 'left' ? 'right' : 'left'
+  function measureLength() {
+    if (!spinePathEl) return
+    totalLength = spinePathEl.getTotalLength()
   }
 
   let travelFrame = 0
   function travel() {
-    if (!arranged.length || trackHeight <= 0 || !track) return
+    if (!entries.length || !track || !spinePathEl || totalLength === 0) return
     cancelAnimationFrame(travelFrame)
-    const target = (todayPos / arranged.length) * trackHeight
-    const startRocket = trackHeight
+    const target = progressForDate(now)
+    const start = 0
     const duration = 4200
     const trackTop = track.offsetTop
-    rocketTop = startRocket
+    rocketProgress = start
     flying = true
-    const initialScrollY = Math.max(0, trackTop + startRocket - window.innerHeight * 0.55)
+    const startPoint = spinePathEl.getPointAtLength(0)
+    const initialScrollY = Math.max(0, trackTop + startPoint.y - window.innerHeight * 0.55)
     window.scrollTo({ top: initialScrollY, behavior: 'smooth' })
     setTimeout(() => {
       const t0 = performance.now()
       const step = (t: number) => {
         const p = Math.min(1, (t - t0) / duration)
         const eased = 1 - Math.pow(1 - p, 3)
-        rocketTop = startRocket - (startRocket - target) * eased
-        const rocketPageY = trackTop + rocketTop
-        const desired = window.innerHeight * 0.55
-        const currentRocketScreenY = rocketPageY - window.scrollY
-        const delta = currentRocketScreenY - desired
-        if (Math.abs(delta) > 1) window.scrollTo(0, Math.max(0, window.scrollY + delta))
+        rocketProgress = start + (target - start) * eased
+        if (spinePathEl) {
+          const pos = spinePathEl.getPointAtLength(rocketProgress * totalLength)
+          const rocketPageY = trackTop + pos.y
+          const desired = window.innerHeight * 0.55
+          const currentRocketScreenY = rocketPageY - window.scrollY
+          const delta = currentRocketScreenY - desired
+          if (Math.abs(delta) > 1) window.scrollTo(0, Math.max(0, window.scrollY + delta))
+        }
         if (p < 1) {
           travelFrame = requestAnimationFrame(step)
         } else {
@@ -434,23 +1204,43 @@
     requestAnimationFrame(() => {
       measure()
       requestAnimationFrame(() => {
-        const scrollY = rocketTop + (track?.offsetTop ?? 0) - window.innerHeight / 2
-        window.scrollTo({ top: Math.max(0, scrollY), behavior: 'auto' })
+        measureLength()
+        rocketProgress = progressForDate(now)
+        if (spinePathEl && totalLength > 0) {
+          const pt = spinePathEl.getPointAtLength(rocketProgress * totalLength)
+          const scrollY = pt.y + (track?.offsetTop ?? 0) - window.innerHeight / 2
+          window.scrollTo({ top: Math.max(0, scrollY), behavior: 'auto' })
+        }
       })
     })
     if (typeof ResizeObserver !== 'undefined' && track) {
-      ro = new ResizeObserver(() => measure())
+      ro = new ResizeObserver(() => {
+        measure()
+        measureLength()
+      })
       ro.observe(track)
     }
-    const onResize = () => measure()
+    const onResize = () => {
+      measure()
+      measureLength()
+    }
     window.addEventListener('resize', onResize)
-    const stopSpy = setupHashSpy({ root: container, selector: '.np-roadmap-row[id]' })
+    const stopSpy = setupHashSpy({ root: container, selector: '.np-rm-node[id]' })
     return () => {
       ro?.disconnect()
       window.removeEventListener('resize', onResize)
       stopSpy()
       for (const m of mounts) m.destroy()
     }
+  })
+
+  $effect(() => {
+    spinePath
+    tick().then(measureLength)
+  })
+
+  $effect(() => {
+    if (!flying) rocketProgress = progressForDate(now)
   })
 
   $effect(() => {
@@ -483,129 +1273,57 @@
       </button>
     </section>
 
-    <div class="np-roadmap-track" bind:this={track}>
-      <svg class="np-roadmap-spine-svg" viewBox={`0 0 ${trackWidth} ${trackHeight}`} preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <clipPath id="np-roadmap-trail-clip" clipPathUnits="userSpaceOnUse">
-            <rect x="0" y={rocketTop} width={trackWidth} height={Math.max(0, trackHeight - rocketTop)} />
-          </clipPath>
-        </defs>
-        <path d={spinePath} class="np-roadmap-spine-path" />
-        <path d={spinePath} class="np-roadmap-spine-trail" clip-path="url(#np-roadmap-trail-clip)" />
-        {#each arranged as a (a.entry.href)}
-          {@const rowY = rowYPx(a.row, arranged.length, trackHeight)}
-          {@const sX = spineXAt(rowY, arranged, trackHeight, trackWidth)}
-          {@const eX = cardEdgeX(a.side, trackWidth)}
-          <line
-            class="np-roadmap-row-connector"
-            x1={sX}
-            y1={rowY}
-            x2={eX}
-            y2={rowY}
-          />
-          <circle class="np-roadmap-row-dot" cx={sX} cy={rowY} r="4" />
+    <div class="np-roadmap-track" bind:this={track} style:height={`${layout.totalH + 64}px`}>
+      <svg
+        class="np-roadmap-edges"
+        viewBox={`0 0 ${trackWidth || 1100} ${layout.totalH + 64}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        {#each edgeList as e (e.id)}
+          <path d={e.d} class="np-roadmap-edge" />
         {/each}
+        {#each spineConnectors as c (c.id)}
+          <path d={c.d} class="np-roadmap-spine-connector" />
+        {/each}
+        {#if spinePath}
+          <path d={spinePath} class="np-roadmap-spine-path" bind:this={spinePathEl} />
+        {/if}
       </svg>
 
-      {#each changelogMarkers as marker (marker.href + marker.date)}
-        {@const top = (marker.row / Math.max(1, arranged.length)) * trackHeight}
-        {@const x = spineXAt(top, arranged, trackHeight, trackWidth)}
-        {@const side = markerSide(marker.row, arranged, trackWidth)}
-        <a
-          class="np-roadmap-marker np-roadmap-marker-{side}"
-          style:top={`${top}px`}
-          style:left={`${x}px`}
-          href={marker.href}
-          title={`Changelog v${marker.version} on ${formatDate(marker.date)}`}
-          aria-label={`Changelog v${marker.version} ${formatDate(marker.date)}`}
-        >
-          <span class="np-roadmap-marker-line" aria-hidden="true"></span>
-          <span class="np-roadmap-marker-label">v{marker.version} · {formatDate(marker.date)}</span>
-        </a>
+      {#each layout.rows as r (r.rootEntry.href)}
+        {#each r.boxes as b (b.entry.href)}
+          <RoadmapNode
+            entry={b.entry}
+            side={r.side}
+            x={b.x}
+            y={b.y}
+            w={b.w}
+            h={b.h}
+            onClick={(e) => onNodeClick(b.entry, e)}
+            onEnter={(e) => onNodeEnter(b.entry, r.side, e)}
+            onLeave={onNodeLeave}
+            onMeasure={recordMeasure}
+          />
+        {/each}
       {/each}
 
-      {#if arranged.length > 0}
-        {@const todayTop = (todayPos / Math.max(1, arranged.length)) * trackHeight}
-        {@const todayX = spineXAt(todayTop, arranged, trackHeight, trackWidth)}
-        {@const todaySide = oppositeOfNearest(todayPos, arranged)}
-        <div
-          class="np-roadmap-today np-roadmap-today-{todaySide}"
-          style:top={`${todayTop}px`}
-          style:left={`${todayX}px`}
-          aria-hidden="true"
-        >
-          <span class="np-roadmap-today-line"></span>
-          <span class="np-roadmap-today-label">{formatDate(now)}</span>
-        </div>
-        {@const rocketX = spineXAt(rocketTop, arranged, trackHeight, trackWidth)}
-        {@const rocketAngle = spineTangentAt(rocketTop, arranged, trackHeight, trackWidth)}
-        <div class="np-roadmap-rocket" class:flying style:top={`${rocketTop}px`} style:left={`${rocketX}px`} style:transform={`translate(-50%, -50%) rotate(${(rocketAngle * 180) / Math.PI}deg)`} aria-hidden="true">
-          <svg viewBox="0 0 32 48" width="32" height="48">
-            <defs>
-              <linearGradient id="np-rocket-body" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--np-brand)" />
-                <stop offset="100%" stop-color="var(--np-brand-hover, var(--np-brand))" />
-              </linearGradient>
-              <linearGradient id="np-rocket-flame" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--np-brand)" stop-opacity="0.9" />
-                <stop offset="100%" stop-color="var(--np-danger, #ff6b6b)" stop-opacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M16 2 C 22 8, 24 18, 24 26 L 24 34 L 8 34 L 8 26 C 8 18, 10 8, 16 2 Z" fill="url(#np-rocket-body)" stroke="var(--np-text-primary)" stroke-width="1" />
-            <circle cx="16" cy="16" r="3.5" fill="var(--np-bg-card)" stroke="var(--np-text-primary)" stroke-width="1" />
-            <path d="M8 28 L 2 38 L 8 34 Z" fill="var(--np-brand)" />
-            <path d="M24 28 L 30 38 L 24 34 Z" fill="var(--np-brand)" />
-            <path d="M12 34 L 16 46 L 20 34 Z" fill="url(#np-rocket-flame)" />
-          </svg>
-        </div>
+      {#if entries.length === 0}
+        <p class="np-roadmap-empty">No items.</p>
       {/if}
-
-      <div class="np-roadmap-rows">
-        {#each arranged as a, idx (a.entry.href)}
-          {@const cardScale = Math.pow(2 / 3, a.depth)}
-          <div
-            class="np-roadmap-row np-roadmap-row-{a.side} np-roadmap-row-{a.entry.kind} np-roadmap-row-{a.entry.status}"
-            id={a.entry.slug}
-            style:order={a.row}
-            style:--np-card-scale={cardScale}
-            data-depth={a.depth}
-          >
-            <a
-              class="np-roadmap-card"
-              href={a.entry.href}
-              onclick={(e) => gotoEntry(a.entry, e)}
-              onmouseenter={(e) => onCardEnter(a.entry, a.side, e)}
-              onmouseleave={onCardLeave}
-              onfocus={(e) => onCardEnter(a.entry, a.side, e)}
-              onblur={onCardLeave}
-            >
-              <RoadmapBlob seed={a.entry.slug + ':' + idx} />
-              <div class="np-roadmap-card-inner">
-                <header class="np-roadmap-card-head">
-                  <span class="np-roadmap-card-kind">{kindLabel(a.entry.kind)}</span>
-                  {#if a.entry.targetDate}
-                    <span class="np-roadmap-card-date">{formatDate(a.entry.targetDate)}</span>
-                  {/if}
-                </header>
-                <span class="np-roadmap-card-title">{a.entry.title}</span>
-                {#if a.entry.description}
-                  <span class="np-roadmap-card-desc">{a.entry.description}</span>
-                {/if}
-                {#if a.entry.status === 'shipped' || a.entry.status === 'in_progress'}
-                  <span class="np-roadmap-card-status" data-status={a.entry.status}>
-                    {a.entry.status === 'shipped' ? 'Shipped' : 'In progress'}
-                  </span>
-                {/if}
-              </div>
-            </a>
-          </div>
-        {/each}
-        {#if arranged.length === 0}
-          <p class="np-roadmap-empty">No items.</p>
-        {/if}
-      </div>
     </div>
-    <PlanetFooter footer={effectiveFooter ?? ''} />
+
+    <div class="np-roadmap-planet">
+      <div class="np-roadmap-planet-box">
+        <div class="np-roadmap-planet-globe">
+          <PlanetFooter preserveAspectRatio="xMidYMid meet" />
+        </div>
+      </div>
+      <div class="np-roadmap-planet-fade"></div>
+      {#if effectiveFooter}
+        <p class="np-roadmap-footer-text">{effectiveFooter}</p>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -645,34 +1363,29 @@
 <BackToTop />
 
 <style>
-  :global(.np-main):has(.np-roadmap-page) {
-    padding: 0;
-  }
   .np-page-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, var(--np-content-max));
     justify-content: center;
     width: 100%;
   }
   .np-roadmap-page {
     padding: 0;
   }
-  .np-roadmap-hero {
-    padding: 32px 32px 0;
-  }
   .np-page {
     width: 100%;
-    max-width: none;
-    margin: 0;
+    max-width: var(--np-content-max);
+    margin: 0 auto;
     padding: 0;
     box-sizing: border-box;
+    min-width: 0;
   }
 
   .np-roadmap-hero {
     position: relative;
     width: 100%;
     margin: 0 auto;
-    padding: 40px 0 32px;
+    padding: 56px 48px 40px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -755,10 +1468,87 @@
 
   .np-roadmap-track {
     position: relative;
-    padding: 32px 0 80px;
-    margin: 0 auto;
-    max-width: 1100px;
+    padding: 32px 24px 0;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
     min-height: 600px;
+  }
+  .np-roadmap-edges {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+  }
+  .np-roadmap-edge {
+    fill: none;
+    stroke: var(--np-border, #444);
+    stroke-width: 1.5;
+    opacity: 0.55;
+  }
+  .np-roadmap-spine-path {
+    fill: none;
+    stroke: var(--np-brand, #b9b);
+    stroke-width: 2;
+    stroke-dasharray: 6 6;
+    opacity: 0.7;
+  }
+  .np-roadmap-spine-connector {
+    fill: none;
+    stroke: var(--np-brand, #b9b);
+    stroke-width: 1.5;
+    opacity: 0.55;
+  }
+  .np-roadmap-planet {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .np-roadmap-planet-box {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .np-roadmap-planet-globe {
+    position: relative;
+    width: 1024px;
+    height: 1024px;
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+  .np-roadmap-planet-fade {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 100% at 50% 0%, transparent 0%, transparent 55%, var(--np-bg) 100%),
+      linear-gradient(to bottom, transparent 0%, transparent 35%, var(--np-bg) 90%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .np-roadmap-footer-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    margin: 0;
+    text-align: center;
+    color: var(--np-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-line;
+    pointer-events: auto;
+    z-index: 2;
   }
   .np-roadmap-spine-svg {
     position: absolute;
@@ -766,6 +1556,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 1;
   }
   .np-roadmap-spine-path {
     fill: none;
@@ -780,121 +1571,29 @@
     stroke-width: 2.5;
     stroke-linecap: round;
     opacity: 0.85;
-    transition: clip-path 0.3s ease;
   }
-
-  .np-roadmap-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-    position: relative;
-  }
-  .np-roadmap-row {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 200px minmax(0, 1fr);
-    align-items: center;
-    gap: 0;
-  }
-  .np-roadmap-row-left > a { grid-column: 1; justify-self: end; }
-  .np-roadmap-row-right > a { grid-column: 3; justify-self: start; }
-
-  .np-roadmap-row-connector {
-    stroke: var(--np-text-muted);
-    stroke-width: 1.4;
-    stroke-dasharray: 2 5;
+  .np-rm-edge {
+    fill: none;
     stroke-linecap: round;
-    opacity: 0.95;
+    stroke-linejoin: round;
   }
-  .np-roadmap-row-dot {
-    fill: var(--np-bg);
-    stroke: var(--np-text-muted);
-    stroke-width: 2;
+  .np-rm-edge-parent-child {
+    stroke: color-mix(in srgb, var(--np-brand) 50%, transparent);
+    stroke-width: 1.4;
+    stroke-dasharray: 3 4;
+    opacity: 0.85;
   }
-
-  .np-roadmap-card {
-    position: relative;
-    display: inline-block;
-    width: calc(320px * var(--np-card-scale, 1));
-    max-width: calc(320px * var(--np-card-scale, 1));
-    padding: calc(40px * var(--np-card-scale, 1));
-    box-sizing: border-box;
-    text-decoration: none;
-    color: var(--np-text-primary);
-    cursor: pointer;
-    transition: transform 0.18s ease, filter 0.18s ease;
+  .np-rm-edge-branch {
+    stroke: color-mix(in srgb, var(--np-text-muted) 75%, transparent);
+    stroke-width: 1.6;
+    stroke-dasharray: 2 6;
+    opacity: 0.9;
   }
-  .np-roadmap-card-inner {
-    position: relative;
-    z-index: 1;
-  }
-  .np-roadmap-card:hover { transform: translateY(-2px); filter: brightness(1.04); }
-  .np-roadmap-card:focus-visible { outline: 2px solid var(--np-brand); outline-offset: 4px; border-radius: var(--np-radius-lg); }
-  .np-roadmap-row[data-depth='1'] .np-roadmap-card-title { font-size: 0.85em; }
-  .np-roadmap-row[data-depth='1'] .np-roadmap-card-desc { font-size: 0.85em; }
-  .np-roadmap-row[data-depth='2'] .np-roadmap-card-title { font-size: 0.72em; }
-  .np-roadmap-row[data-depth='2'] .np-roadmap-card-desc { font-size: 0.72em; }
-  .np-roadmap-card-inner {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .np-roadmap-card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .np-roadmap-card-kind {
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--np-brand);
-  }
-  .np-roadmap-row-epic .np-roadmap-card-kind { color: var(--np-info, var(--np-brand)); }
-  .np-roadmap-row-feature .np-roadmap-card-kind { color: var(--np-check, var(--np-brand)); }
-  .np-roadmap-row-bug .np-roadmap-card-kind { color: var(--np-danger); }
-  .np-roadmap-card-date {
-    font-family: var(--np-font-mono);
-    font-size: 12px;
-    color: var(--np-text-muted);
-    letter-spacing: 0.04em;
-  }
-  .np-roadmap-card-title {
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-  }
-  .np-roadmap-card-desc {
-    font-size: 13.5px;
-    line-height: 1.55;
-    color: var(--np-text-secondary);
-  }
-  .np-roadmap-card-status {
-    align-self: flex-start;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: var(--np-text-muted);
-    padding: 2px 10px;
-    border-radius: var(--np-radius-pill);
-    background-color: var(--np-bg-surface);
-    border: 1px solid var(--np-border);
-    margin-top: 4px;
-  }
-  .np-roadmap-card-status[data-status='shipped'] {
-    color: var(--np-check, var(--np-brand));
-    border-color: var(--np-check, var(--np-brand));
-    background-color: color-mix(in srgb, var(--np-check, var(--np-brand)) 14%, transparent);
-  }
-  .np-roadmap-card-status[data-status='in_progress'] {
-    color: var(--np-brand);
-    border-color: var(--np-brand);
-    background-color: color-mix(in srgb, var(--np-brand) 14%, transparent);
+  .np-rm-edge-child-branch {
+    stroke: color-mix(in srgb, var(--np-text-muted) 45%, transparent);
+    stroke-width: 1;
+    stroke-dasharray: 1 5;
+    opacity: 0.7;
   }
 
   .np-roadmap-today {
@@ -1034,20 +1733,10 @@
   .np-roadmap-aside-ref-date { color: var(--np-text-muted); font-family: var(--np-font-mono); font-size: 11px; }
 
   @media (max-width: 900px) {
-    .np-roadmap-hero { padding: 72px 0 32px; }
+    .np-roadmap-hero { padding: 32px 20px 24px; }
     .np-roadmap-hero-title { font-size: 38px; }
     .np-roadmap-hero-tagline { font-size: 18px; }
     .np-roadmap-track { padding: 16px 0 60px; }
-    .np-roadmap-row {
-      grid-template-columns: 36px 1fr;
-      gap: 12px;
-    }
-    .np-roadmap-row-left > a,
-    .np-roadmap-row-right > a {
-      grid-column: 2;
-      justify-self: stretch;
-      max-width: none;
-    }
     .np-roadmap-aside { display: none; }
   }
 
@@ -1058,14 +1747,6 @@
     padding: 32px;
   }
 
-  .np-page-footer {
-    margin-top: 96px;
-    padding: 32px 0 0;
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    white-space: pre-line;
-  }
   .np-page-background {
     position: fixed;
     top: var(--np-header-height, 0px);

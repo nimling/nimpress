@@ -3,9 +3,9 @@
 
   let {
     seed,
-    points = 14,
-    wobble = 0.06,
-    margin = 0.06,
+    points = 18,
+    wobble = 0.025,
+    margin = 0.05,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)'
   }: {
