@@ -108,11 +108,7 @@
     overflow-y: auto;
     background-color: var(--np-bg-sidebar);
     border-right: 1px solid var(--np-border);
-    transition: border-right-color 0.2s ease;
     box-sizing: border-box;
-  }
-  .np-collapsed .np-aside :global(.np-sidebar) {
-    border-right-color: transparent;
   }
   .np-main {
     min-height: calc(100vh - var(--np-header-height));

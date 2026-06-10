@@ -37,8 +37,9 @@
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
-    const rx = (W / 2) * 0.94
-    const ry = (H / 2) * 0.94
+    const baseShrink = 1 - w
+    const rx = (W / 2) * baseShrink
+    const ry = (H / 2) * baseShrink
     const pts: { x: number; y: number }[] = []
     for (let i = 0; i < n; i++) {
       const a = (Math.PI * 2 * i) / n

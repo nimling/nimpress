@@ -299,18 +299,18 @@
 {/if}
 <div class="np-page-shell">
   <div class="np-page">
-    <article class="np-prose np-roadmap-intro" bind:this={container}>
-      <span class="np-roadmap-eyebrow">Roadmap</span>
-      {#if page.html}
-        {@html page.html}
-      {:else}
-        <h1>{page.frontmatter.title}</h1>
+    <section class="np-roadmap-hero">
+      <div class="np-roadmap-hero-copy" bind:this={container}>
+        <p class="np-roadmap-eyebrow">Roadmap</p>
+        <h1 class="np-roadmap-hero-title">{page.frontmatter.title}</h1>
         {#if page.frontmatter.description}
-          <p>{page.frontmatter.description}</p>
+          <p class="np-roadmap-hero-tagline">{page.frontmatter.description}</p>
         {/if}
-      {/if}
-      <span class="np-roadmap-accent" aria-hidden="true"></span>
-    </article>
+        {#if page.html}
+          <div class="np-roadmap-hero-body np-prose">{@html page.html}</div>
+        {/if}
+      </div>
+    </section>
 
     <div class="np-roadmap-track" bind:this={track}>
       <svg class="np-roadmap-spine-svg" viewBox={`0 0 ${trackWidth} ${trackHeight}`} preserveAspectRatio="none" aria-hidden="true">
@@ -472,52 +472,57 @@
     padding: 0 32px;
     box-sizing: border-box;
   }
-  .np-roadmap-intro {
+
+  .np-roadmap-hero {
     position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 120px 0 56px;
+  }
+  .np-roadmap-hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
     max-width: 760px;
-    margin: 0 auto 56px;
-    padding: 56px 32px 40px;
-    text-align: center;
-    border-radius: var(--np-radius-lg);
-    background:
-      radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--np-brand) 10%, transparent), transparent 70%),
-      color-mix(in srgb, var(--np-bg-surface) 40%, transparent);
-    overflow: hidden;
+    min-width: 0;
   }
   .np-roadmap-eyebrow {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
+    font-size: 12px;
     color: var(--np-brand);
-    padding: 4px 12px;
-    border: 1px solid color-mix(in srgb, var(--np-brand) 35%, transparent);
-    border-radius: var(--np-radius-pill);
-    margin-bottom: 18px;
-    background-color: color-mix(in srgb, var(--np-brand) 8%, transparent);
-  }
-  .np-roadmap-intro :global(h1) {
-    font-size: 40px;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 14px;
-    line-height: 1.15;
+    margin: 0 0 16px;
   }
-  .np-roadmap-intro :global(p) {
-    font-size: 17px;
-    line-height: 1.6;
+  .np-roadmap-hero-title {
+    font-size: 56px;
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin: 0 0 20px;
+    color: var(--np-brand);
+  }
+  @media (min-width: 960px) {
+    .np-roadmap-hero-title { font-size: 72px; }
+  }
+  .np-roadmap-hero-tagline {
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--np-text-primary);
+    margin: 0 0 16px;
+    font-weight: 500;
+    max-width: 60ch;
+  }
+  .np-roadmap-hero-body {
+    font-size: 16px;
+    line-height: 1.65;
     color: var(--np-text-secondary);
-    margin: 0 auto;
-    max-width: 600px;
+    margin: 8px 0 0;
+    max-width: 60ch;
   }
-  .np-roadmap-accent {
-    display: block;
-    width: 56px;
-    height: 3px;
-    margin: 22px auto 0;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--np-brand), color-mix(in srgb, var(--np-brand) 45%, transparent));
+  .np-roadmap-hero-body :global(p) {
+    margin: 0 0 12px;
   }
 
   .np-roadmap-track {
@@ -553,7 +558,7 @@
   .np-roadmap-rows {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 40px;
     position: relative;
   }
   .np-roadmap-row {
@@ -571,7 +576,7 @@
     display: block;
     width: 100%;
     max-width: 360px;
-    padding: 18px 22px;
+    padding: 32px 40px;
     text-decoration: none;
     color: var(--np-text-primary);
     cursor: pointer;
@@ -658,22 +663,20 @@
     transform: translateX(-50%);
     width: 56px;
     height: 0;
-    border-top: 2px solid var(--np-border);
+    border-top: 1px dotted var(--np-border);
     opacity: 0.9;
   }
   .np-roadmap-today-label {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--np-brand);
+    color: var(--np-text-muted);
     font-family: var(--np-font-mono);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
-  .np-roadmap-today-left .np-roadmap-today-label { right: calc(50% + 40px); }
-  .np-roadmap-today-right .np-roadmap-today-label { left: calc(50% + 40px); }
+  .np-roadmap-today-left .np-roadmap-today-label { right: calc(50% + 36px); }
+  .np-roadmap-today-right .np-roadmap-today-label { left: calc(50% + 36px); }
 
   .np-roadmap-rocket {
     position: absolute;
@@ -700,7 +703,7 @@
     transform: translateX(-50%);
     width: 40px;
     height: 0;
-    border-top: 1px dashed var(--np-border);
+    border-top: 1px dotted var(--np-border);
     opacity: 0.9;
     transition: border-color 0.15s ease, opacity 0.15s ease;
   }
@@ -780,8 +783,9 @@
   .np-roadmap-aside-ref-date { color: var(--np-text-muted); font-family: var(--np-font-mono); font-size: 11px; }
 
   @media (max-width: 900px) {
-    .np-roadmap-intro { padding: 40px 22px 32px; margin-bottom: 36px; }
-    .np-roadmap-intro :global(h1) { font-size: 32px; }
+    .np-roadmap-hero { padding: 72px 0 32px; }
+    .np-roadmap-hero-title { font-size: 38px; }
+    .np-roadmap-hero-tagline { font-size: 18px; }
     .np-roadmap-track { padding: 16px 0 60px; }
     .np-roadmap-row {
       grid-template-columns: 36px 1fr;

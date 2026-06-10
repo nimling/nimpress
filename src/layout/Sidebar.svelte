@@ -55,7 +55,7 @@
   })
 </script>
 
-<nav class="np-sidebar" class:collapsed bind:this={nav} aria-hidden={collapsed}>
+<nav class="np-sidebar" bind:this={nav}>
   {#each sidebar as node, i (node.link ?? node.slug ?? `root-${i}`)}
     <SidebarNode {node} depth={0} groupKey={node.link ?? node.slug ?? `root-${i}`} />
   {/each}
@@ -65,11 +65,5 @@
   .np-sidebar {
     padding: 24px 16px;
     font-size: 14px;
-    overflow: hidden;
-    transition: opacity 0.22s ease;
-  }
-  .np-sidebar.collapsed {
-    opacity: 0;
-    pointer-events: none;
   }
 </style>
