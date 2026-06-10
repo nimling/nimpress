@@ -21,6 +21,18 @@
   const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
   const background = $derived(page.frontmatter.background)
   const renderBackground = $derived(!!background && page.type !== 'hero')
+  const issueKind = $derived(
+    page.type === 'milestone' || page.type === 'epic' || page.type === 'feature' || page.type === 'bug'
+      ? page.type
+      : null
+  )
+  const issueDate = $derived.by(() => {
+    const data = page.frontmatter.data as Record<string, unknown> | undefined
+    const raw = data?.date
+    if (typeof raw !== 'string') return null
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? null : d
+  })
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -162,6 +174,20 @@
 {/if}
 <div class="np-page-shell">
   <div class="np-page">
+    {#if issueKind}
+      <header class="np-issue-head">
+        <span class="np-issue-kind np-issue-kind-{issueKind}">{issueKind}</span>
+        {#if issueDate}
+          <span class="np-issue-date">
+            {String(issueDate.getUTCDate()).padStart(2, '0')}.{String(issueDate.getUTCMonth() + 1).padStart(2, '0')}.{issueDate.getUTCFullYear()}
+          </span>
+        {/if}
+        <h1 class="np-issue-title">{page.frontmatter.title}</h1>
+        {#if page.frontmatter.description}
+          <p class="np-issue-desc">{page.frontmatter.description}</p>
+        {/if}
+      </header>
+    {/if}
     <article class="np-prose" bind:this={container}>
       {@html page.html}
     </article>
@@ -208,6 +234,51 @@
     min-width: 0;
   }
 
+  .np-issue-head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0 24px;
+    border-bottom: 1px solid var(--np-divider);
+    margin: 0 0 32px;
+  }
+  .np-issue-kind {
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 3px 10px;
+    border-radius: var(--np-radius-pill);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+    color: var(--np-text-secondary);
+  }
+  .np-issue-kind-milestone { color: var(--np-brand); border-color: var(--np-brand); background-color: color-mix(in srgb, var(--np-brand) 14%, transparent); }
+  .np-issue-kind-epic { color: var(--np-info, var(--np-brand)); border-color: var(--np-info, var(--np-brand)); background-color: color-mix(in srgb, var(--np-info, var(--np-brand)) 14%, transparent); }
+  .np-issue-kind-feature { color: var(--np-check, var(--np-brand)); border-color: var(--np-check, var(--np-brand)); background-color: color-mix(in srgb, var(--np-check, var(--np-brand)) 14%, transparent); }
+  .np-issue-kind-bug { color: var(--np-danger); border-color: var(--np-danger); background-color: color-mix(in srgb, var(--np-danger) 14%, transparent); }
+  .np-issue-date {
+    align-self: flex-start;
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    color: var(--np-text-muted);
+    letter-spacing: 0.04em;
+  }
+  .np-issue-title {
+    margin: 8px 0 0;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--np-text-primary);
+  }
+  .np-issue-desc {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--np-text-secondary);
+  }
   .np-page :global(.np-prose) {
     max-width: none;
     width: 100%;

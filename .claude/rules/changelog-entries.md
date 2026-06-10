@@ -38,9 +38,9 @@ data:
 
 6. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
 
-## Linking to a roadmap item
+## Linking to a roadmap issue
 
-`data.roadmap` on a changelog entry declares an explicit link to a roadmap item by relative path. The plugin resolves the path against the changelog file. The matched roadmap item flips to `shipped` from the earliest linked release date and lists the linked changelog versions on the hover aside.
+`data.issue` on a changelog entry declares an explicit link to a roadmap issue file by relative path. The plugin resolves the path against the changelog file. `data.status` reports the effect of this release on the issue: a number `0..100` for partial progress, or the literal word `completes` (also `completed`, `complete`, `closes`, `fixes`, `resolves`) to flip the issue to `shipped`.
 
 ```yaml
 data:
@@ -48,10 +48,17 @@ data:
   release_date: 2026-06-10
   title: Organization settings
   description: Plain text sentence.
-  roadmap: ../roadmap/org-settings.md
+  issue: ../roadmap/organization-settings
+  status: completes
 ```
 
-Use the path with or without the trailing `.md`. Use it once per changelog entry. One changelog entry can land work for one roadmap item. Split shipped scope across separate entries when one release closes several roadmap items.
+1. Use the issue path with or without the trailing `.md`.
+
+2. `data.status` as a number sets the rocket position; the highest number across all linked releases for the same issue wins.
+
+3. `data.status: completes` flips the issue to `shipped` and parks the rocket at this point.
+
+4. The release drops a marker on the roadmap spine at the changelog's `release_date`. Clicking the marker navigates back to the changelog entry.
 
 ## Never set these on a changelog entry
 

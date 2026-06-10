@@ -1,4 +1,13 @@
-export type PageType = 'doc' | 'openapi' | 'changelog' | 'hero' | 'roadmap'
+export type PageType =
+  | 'doc'
+  | 'openapi'
+  | 'changelog'
+  | 'hero'
+  | 'roadmap'
+  | 'milestone'
+  | 'epic'
+  | 'feature'
+  | 'bug'
 
 export type RoadmapKind = 'milestone' | 'epic' | 'feature' | 'bug'
 
@@ -10,20 +19,22 @@ export interface RoadmapChangelogRef {
   description?: string
   releaseDate?: string
   progress?: number
+  completes: boolean
   path: string
   slug: string
+  entrySlug: string
 }
 
 export interface RoadmapEntry {
-  id: string
   kind: RoadmapKind
   slug: string
+  filePath: string
+  href: string
   title: string
   description?: string
   targetDate?: string
   parent?: string
   progress?: number
-  issue?: string
   status: RoadmapStatus
   html: string
   headings: Heading[]

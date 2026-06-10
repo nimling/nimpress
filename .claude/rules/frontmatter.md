@@ -38,11 +38,13 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 1. `type: openapi` requires `spec: ./path/to/spec.json` relative to the markdown file.
 
-2. `type: changelog` requires `data.version: '1.2.3'`, `data.release_date` as an RFC 3339 date, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. No `path` field. Optional `data.roadmap: <relative path>` links the entry to a roadmap item. See [changelog-entries.md](./changelog-entries.md).
+2. `type: changelog` requires `data.version: '1.2.3'`, `data.release_date` as an RFC 3339 date, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. No `path` field. Optional `data.issue: <relative path>` plus `data.status` link the entry to a roadmap issue. See [changelog-entries.md](./changelog-entries.md).
 
 3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids do NOT live in `data`. Compose them as `:::actions` and `:::features` in the markdown body. See `docs/hero.md` and `docs/markdown.md`.
 
-4. `type: roadmap` requires `data.id`, `data.kind` (`milestone | epic | feature | bug`), `data.title`, `data.description`, and `data.date` as an RFC 3339 string. Optional `data.parent`, `data.progress`, `data.issue`, and `data.status`. Top level `title` is the shared collection title and the grouping key. See [roadmap-entries.md](./roadmap-entries.md).
+4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
+
+5. `type: milestone | epic | feature | bug` (issue pages) require `title`, `description`, and `data.date` as an RFC 3339 string. Optional `data.parent` references another issue by relative filename. Each issue page renders at its own URL with a kind chip and date header. See [roadmap-entries.md](./roadmap-entries.md).
 
 ## SEO and social cards
 
