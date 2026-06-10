@@ -3,9 +3,9 @@
     seed,
     width = 320,
     height = 220,
-    points = 12,
-    wobble = 0.18,
-    margin = 0.18,
+    points = 14,
+    wobble = 0.10,
+    margin = 0.04,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)'
   }: {
@@ -39,8 +39,8 @@
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
-    const rx = (W / 2) * (Math.SQRT2 + m)
-    const ry = (H / 2) * (Math.SQRT2 + m)
+    const rx = (W / 2) * (1.10 + m)
+    const ry = (H / 2) * (1.16 + m)
     const pts: { x: number; y: number }[] = []
     for (let i = 0; i < n; i++) {
       const a = (Math.PI * 2 * i) / n

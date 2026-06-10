@@ -3,6 +3,7 @@
   import TryPanel from './TryPanel.svelte'
   import CodeExamples from './CodeExamples.svelte'
   import MethodBadge from './MethodBadge.svelte'
+  import CodeEditor from '../markdown/CodeEditor.svelte'
   import { createTryState, type TryState } from './tryState'
   import type { FlatOperation, FlatServer, SecurityScheme } from './types'
 
@@ -272,17 +273,29 @@
         </div>
       </header>
       <div class="np-try-dialog-grid">
-        <div class="np-try-dialog-cell np-try-dialog-cell-try">
+        <div class="np-try-dialog-cell np-try-dialog-cell-inputs">
           {#if tryStates[selectedOpId]}
             <TryPanel
               op={selectedOp}
               {servers}
               {securitySchemes}
               bind:tryState={tryStates[selectedOpId]}
+              hideBody={true}
             />
           {/if}
         </div>
-        <div class="np-try-dialog-cell np-try-dialog-cell-code">
+        <div class="np-try-dialog-cell np-try-dialog-cell-body">
+          {#if tryStates[selectedOpId] && ['POST', 'PUT', 'PATCH'].includes(selectedOp.method)}
+            <header class="np-try-section-head"><span>Body</span></header>
+            <div class="np-try-body-host">
+              <CodeEditor bind:value={tryStates[selectedOpId].bodyValue} language="json" title="body" variant="try" showLineNumbers={false} />
+            </div>
+          {:else}
+            <header class="np-try-section-head"><span>Body</span></header>
+            <div class="np-try-body-empty">This endpoint has no request body.</div>
+          {/if}
+        </div>
+        <div class="np-try-dialog-cell np-try-dialog-cell-footer">
           {#if tryStates[selectedOpId]}
             <CodeExamples
               op={selectedOp}
@@ -416,17 +429,60 @@
   .np-try-dialog-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(360px, 1fr) auto;
     gap: 0;
-    overflow: hidden;
     min-height: 0;
   }
   .np-try-dialog-cell {
-    overflow-y: auto;
     min-height: 0;
     background-color: var(--np-bg);
+    display: flex;
+    flex-direction: column;
   }
-  .np-try-dialog-cell-try {
+  .np-try-dialog-cell-inputs {
+    grid-column: 1;
+    grid-row: 1;
     border-right: 1px solid var(--np-divider);
+    overflow-y: auto;
+  }
+  .np-try-dialog-cell-body {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 360px;
+    overflow: hidden;
+  }
+  .np-try-dialog-cell-footer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    border-top: 1px solid var(--np-divider);
+  }
+  .np-try-section-head {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--np-text-secondary);
+    background-color: var(--np-bg-surface);
+    border-bottom: 1px solid var(--np-divider);
+  }
+  .np-try-body-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+  .np-try-body-host :global(.np-editor) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    border-radius: 0;
+    border: 0;
+  }
+  .np-try-body-empty {
+    padding: 24px 16px;
+    color: var(--np-text-muted);
+    font-style: italic;
+    font-size: 13px;
   }
   .np-try-dialog-cell :global(.np-examples),
   .np-try-dialog-cell :global(.np-try) {

@@ -40,6 +40,7 @@
     entry: RoadmapEntry
     side: 'left' | 'right'
     row: number
+    depth: number
   }
 
   function arrangeEntries(list: RoadmapEntry[]): Arranged[] {
@@ -57,26 +58,37 @@
         childrenOf.set(e.parent, list)
       }
     }
+    function depthOf(href: string, seen: Set<string> = new Set()): number {
+      const e = byHref.get(href)
+      if (!e || !e.parent || seen.has(href) || !byHref.has(e.parent)) return 0
+      seen.add(href)
+      return 1 + depthOf(e.parent, seen)
+    }
+    function placeSubtree(href: string, side: 'left' | 'right') {
+      const e = byHref.get(href)
+      if (!e || placedHrefs.has(href)) return
+      result.push({ entry: e, side, row, depth: depthOf(href) })
+      placedHrefs.add(href)
+      row += 1
+      const kids = (childrenOf.get(href) ?? [])
+        .slice()
+        .sort((a, b) => (b.targetDate ?? '').localeCompare(a.targetDate ?? ''))
+      let nextSide: 'left' | 'right' = side === 'left' ? 'right' : 'left'
+      for (const child of kids) {
+        if (placedHrefs.has(child.href)) continue
+        placeSubtree(child.href, nextSide)
+        nextSide = nextSide === 'left' ? 'right' : 'left'
+      }
+    }
     for (const e of sorted) {
       if (placedHrefs.has(e.href)) continue
       if (e.parent && byHref.has(e.parent)) continue
-      const side = alternate
-      result.push({ entry: e, side, row })
-      placedHrefs.add(e.href)
-      const kids = childrenOf.get(e.href) ?? []
-      for (const child of kids) {
-        if (placedHrefs.has(child.href)) continue
-        row += 1
-        const childSide: 'left' | 'right' = side === 'left' ? 'right' : 'left'
-        result.push({ entry: child, side: childSide, row })
-        placedHrefs.add(child.href)
-      }
-      row += 1
+      placeSubtree(e.href, alternate)
       alternate = alternate === 'left' ? 'right' : 'left'
     }
     for (const e of sorted) {
       if (placedHrefs.has(e.href)) continue
-      result.push({ entry: e, side: alternate, row })
+      result.push({ entry: e, side: alternate, row, depth: depthOf(e.href) })
       placedHrefs.add(e.href)
       row += 1
       alternate = alternate === 'left' ? 'right' : 'left'
@@ -544,10 +556,13 @@
 
       <div class="np-roadmap-rows">
         {#each arranged as a, idx (a.entry.href)}
+          {@const cardScale = Math.pow(2 / 3, a.depth)}
           <div
             class="np-roadmap-row np-roadmap-row-{a.side} np-roadmap-row-{a.entry.kind} np-roadmap-row-{a.entry.status}"
             id={a.entry.slug}
             style:order={a.row}
+            style:--np-card-scale={cardScale}
+            data-depth={a.depth}
           >
             <a
               class="np-roadmap-card"
@@ -785,9 +800,9 @@
   .np-roadmap-card {
     position: relative;
     display: block;
-    width: 100%;
-    max-width: 420px;
-    padding: 44px 52px;
+    width: calc(100% * var(--np-card-scale, 1));
+    max-width: calc(420px * var(--np-card-scale, 1));
+    padding: calc(44px * var(--np-card-scale, 1)) calc(52px * var(--np-card-scale, 1));
     text-decoration: none;
     color: var(--np-text-primary);
     cursor: pointer;
@@ -795,6 +810,10 @@
   }
   .np-roadmap-card:hover { transform: translateY(-2px); filter: brightness(1.04); }
   .np-roadmap-card:focus-visible { outline: 2px solid var(--np-brand); outline-offset: 4px; border-radius: var(--np-radius-lg); }
+  .np-roadmap-row[data-depth='1'] .np-roadmap-card-title { font-size: 0.85em; }
+  .np-roadmap-row[data-depth='1'] .np-roadmap-card-desc { font-size: 0.85em; }
+  .np-roadmap-row[data-depth='2'] .np-roadmap-card-title { font-size: 0.72em; }
+  .np-roadmap-row[data-depth='2'] .np-roadmap-card-desc { font-size: 0.72em; }
   .np-roadmap-card-inner {
     position: relative;
     display: flex;

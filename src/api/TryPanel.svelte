@@ -10,6 +10,7 @@
     securitySchemes = {},
     tryState = $bindable(),
     disabled = false,
+    hideBody = false,
     onOpenDialog,
     onClear,
     onShare
@@ -19,6 +20,7 @@
     securitySchemes?: Record<string, SecurityScheme>
     tryState: TryState
     disabled?: boolean
+    hideBody?: boolean
     onOpenDialog?: (opId: string) => void
     onClear?: (opId: string) => void
     onShare?: (opId: string) => Promise<'ok' | 'fail'> | 'ok' | 'fail'
@@ -310,7 +312,7 @@
       </div>
     {/if}
 
-    {#if hasBody}
+    {#if hasBody && !hideBody}
       <div class="np-try-group np-try-group-body" class:np-try-group-open={bodyOpen}>
         <button type="button" class="np-try-group-head np-try-group-head-body" aria-expanded={bodyOpen} onclick={() => toggle('body')}>
           <span class="np-try-group-label">Body</span>
