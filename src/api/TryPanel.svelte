@@ -264,7 +264,7 @@
         </button>
         {#if bodyOpen}
           <div class="np-try-body-editor">
-            <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" variant="try" />
+            <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" variant="try" showLineNumbers={false} />
           </div>
         {/if}
       </div>

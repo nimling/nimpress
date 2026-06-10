@@ -3,7 +3,9 @@
   import { mount, unmount } from 'svelte'
   import type { PageModule } from '../types'
   import { configStore } from '../framework/configStore'
+  import { setupHashSpy } from '../framework/hashSpy'
   import RightToc from '../layout/RightToc.svelte'
+  import BackToTop from '../layout/BackToTop.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
@@ -139,7 +141,12 @@
         if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' })
       })
     }
+    const stopSpy = setupHashSpy({
+      root: container,
+      selector: 'h1[id], h2[id], h3[id], h4[id]'
+    })
     return () => {
+      stopSpy()
       for (const m of mounted) m.destroy()
     }
   })

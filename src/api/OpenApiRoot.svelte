@@ -4,6 +4,7 @@
   import Schema from './Schema.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
   import { configStore } from '../framework/configStore'
+  import { setupHashSpy } from '../framework/hashSpy'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
   import type { Frontmatter } from '../types'
 
@@ -89,8 +90,12 @@
         if (id) markMounted(id)
       })
     }
+    const stopSpy = setupHashSpy({
+      selector: '[id^="operation/"], [id^="tag/"], [id^="schema/"]'
+    })
     return () => {
       window.removeEventListener('hashchange', onHash)
+      stopSpy()
       observer?.disconnect()
       observer = null
     }

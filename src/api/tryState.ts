@@ -10,8 +10,78 @@ export interface TryState {
   bodyValue: string
 }
 
+type JsonSchema = {
+  type?: string
+  properties?: Record<string, JsonSchema>
+  required?: string[]
+  items?: JsonSchema
+  enum?: unknown[]
+  example?: unknown
+  default?: unknown
+  format?: string
+  oneOf?: JsonSchema[]
+  anyOf?: JsonSchema[]
+  allOf?: JsonSchema[]
+}
+
+function pickJsonContent(op: FlatOperation): { schema?: JsonSchema; example?: unknown } | null {
+  const body = op.requestBody as { content?: Record<string, { schema?: JsonSchema; example?: unknown; examples?: Record<string, { value?: unknown }> }> } | undefined
+  const content = body?.content
+  if (!content) return null
+  const json = content['application/json'] ?? content[Object.keys(content)[0] ?? '']
+  if (!json) return null
+  let example: unknown = json.example
+  if (example === undefined && json.examples) {
+    const first = Object.values(json.examples)[0]
+    if (first && typeof first === 'object' && 'value' in first) example = first.value
+  }
+  return { schema: json.schema, example }
+}
+
+function synthesizeFromSchema(schema: JsonSchema | undefined, seen: Set<JsonSchema> = new Set()): unknown {
+  if (!schema || typeof schema !== 'object') return null
+  if (seen.has(schema)) return null
+  seen.add(schema)
+  if (schema.example !== undefined) return schema.example
+  if (schema.default !== undefined) return schema.default
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0]
+  const composed = schema.oneOf?.[0] ?? schema.anyOf?.[0] ?? (schema.allOf?.length ? Object.assign({}, ...schema.allOf) as JsonSchema : undefined)
+  if (composed) return synthesizeFromSchema(composed, seen)
+  const t = schema.type
+  if (t === 'object' || schema.properties) {
+    const out: Record<string, unknown> = {}
+    const required = new Set(schema.required ?? [])
+    const props = schema.properties ?? {}
+    for (const [name, propSchema] of Object.entries(props)) {
+      if (!required.has(name)) continue
+      out[name] = synthesizeFromSchema(propSchema, seen)
+    }
+    return out
+  }
+  if (t === 'array') return [synthesizeFromSchema(schema.items, seen)]
+  if (t === 'string') {
+    if (schema.format === 'date-time') return '2026-01-01T00:00:00Z'
+    if (schema.format === 'date') return '2026-01-01'
+    if (schema.format === 'uuid') return '00000000-0000-0000-0000-000000000000'
+    if (schema.format === 'email') return 'user@example.com'
+    return ''
+  }
+  if (t === 'integer' || t === 'number') return 0
+  if (t === 'boolean') return false
+  return null
+}
+
+function buildBodyExample(op: FlatOperation): unknown {
+  if (op.requestExample !== undefined) return op.requestExample
+  const json = pickJsonContent(op)
+  if (!json) return undefined
+  if (json.example !== undefined) return json.example
+  return synthesizeFromSchema(json.schema)
+}
+
 export function createTryState(op: FlatOperation, initialServer: string, schemes: Record<string, SecurityScheme>): TryState {
   const schemeNames = Object.keys(schemes ?? {})
+  const example = buildBodyExample(op)
   return {
     selectedScheme: schemeNames[0] ?? '',
     authValue: '',
@@ -19,8 +89,7 @@ export function createTryState(op: FlatOperation, initialServer: string, schemes
     pathValues: {},
     queryValues: {},
     headerValues: {},
-    bodyValue:
-      op.requestExample !== undefined ? JSON.stringify(op.requestExample, null, 2) : ''
+    bodyValue: example !== undefined ? JSON.stringify(example, null, 2) : ''
   }
 }
 

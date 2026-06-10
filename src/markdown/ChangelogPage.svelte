@@ -2,6 +2,7 @@
   import { onMount, tick, mount, unmount } from 'svelte'
   import type { PageModule, ChangelogEntry } from '../types'
   import { configStore } from '../framework/configStore'
+  import { setupHashSpy } from '../framework/hashSpy'
   import RightToc from '../layout/RightToc.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
@@ -183,8 +184,13 @@
       })
     }
     window.addEventListener('hashchange', onHash)
+    const stopSpy = setupHashSpy({
+      root: container,
+      selector: '.np-changelog-header[id]'
+    })
     return () => {
       window.removeEventListener('hashchange', onHash)
+      stopSpy()
       for (const m of mounted) m.destroy()
     }
   })
