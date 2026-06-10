@@ -1,6 +1,6 @@
 {
   "name": "@nimling/nimpress",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Svelte docs framework with Anthropic styling, markdown pipeline, OpenAPI renderer, and samna_auth session login",
   "author": "nimling",
   "license": "MIT",
