@@ -15,6 +15,7 @@ export { default as App } from './layout/App.svelte'
 export { default as Page } from './markdown/Page.svelte'
 export { default as ChangelogPage } from './markdown/ChangelogPage.svelte'
 export { default as HeroPage } from './markdown/HeroPage.svelte'
+export { default as RoadmapPage } from './markdown/RoadmapPage.svelte'
 export { default as Actions } from './markdown/Actions.svelte'
 export { default as FeatureGrid } from './markdown/FeatureGrid.svelte'
 export { default as Feature } from './markdown/Feature.svelte'
@@ -53,6 +54,10 @@ export type {
   TwitterMeta,
   Heading,
   ChangelogEntry,
+  RoadmapEntry,
+  RoadmapKind,
+  RoadmapStatus,
+  RoadmapChangelogRef,
   SidebarNode,
   SiteMeta,
   Manifest,

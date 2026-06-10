@@ -38,6 +38,21 @@ data:
 
 6. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
 
+## Linking to a roadmap item
+
+`data.roadmap` on a changelog entry declares an explicit link to a roadmap item by relative path. The plugin resolves the path against the changelog file. The matched roadmap item flips to `shipped` from the earliest linked release date and lists the linked changelog versions on the hover aside.
+
+```yaml
+data:
+  version: 1.5.0
+  release_date: 2026-06-10
+  title: Organization settings
+  description: Plain text sentence.
+  roadmap: ../roadmap/org-settings.md
+```
+
+Use the path with or without the trailing `.md`. Use it once per changelog entry. One changelog entry can land work for one roadmap item. Split shipped scope across separate entries when one release closes several roadmap items.
+
 ## Never set these on a changelog entry
 
 1. `path` is rejected. The route is derived from the entry folder.

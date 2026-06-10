@@ -42,6 +42,18 @@ Use sparingly for:
 
 Do not use `hero` for ordinary documentation. The oversized typography is a beacon, not a default.
 
+## `roadmap`
+
+Use when:
+
+1. The page surfaces planned and shipped work as a customer facing timeline.
+
+2. Each item should be authored as one markdown file with `data.id`, `data.kind`, `data.title`, `data.description`, and `data.date`.
+
+3. Multiple files should share one URL and render as a single vertical timeline. Changelog entries can opt in with `data.roadmap: <relative path>` so shipped work updates the timeline automatically.
+
+Do not use `roadmap` for internal status notes or engineering tickets. The page is customer facing. See [roadmap-entries.md](./roadmap-entries.md).
+
 ## Decision tree
 
 ```
@@ -50,6 +62,8 @@ Is the page rendered from an OpenAPI spec?
 └─ No
    ├─ Is it a stack of versioned release notes?
    │  └─ Yes  → type: changelog
+   ├─ Is it a customer facing timeline of planned and shipped work?
+   │  └─ Yes  → type: roadmap
    ├─ Is it a beacon style landing page?
    │  └─ Yes  → type: hero
    └─ Otherwise → type: doc  (omit the field)

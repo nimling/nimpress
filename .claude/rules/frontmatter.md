@@ -22,6 +22,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 7. `footer: string` renders a centered, muted line at the bottom. Use for "Last reviewed", attribution, or a contact pointer.
 
+8. `tags` is a comma separated string or a YAML array of short keywords. The search index boosts tag matches and shows matched tags as pills under each result. Query syntax: a token ending in `/` like `api/` scopes the result set to pages whose sidebar path starts with that segment, case insensitive. Combine: `api/ device` returns device results inside the api folder.
+
 ## Choosing `type`
 
 | You want | Set `type:` |
@@ -30,14 +32,17 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A reference page rendered from an OpenAPI 3.1 spec | `openapi` |
 | A page combining several release notes into one collapsible list | `changelog` |
 | A landing page with an oversized hero band on top | `hero` |
+| A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
 
 ## Type specific fields
 
 1. `type: openapi` requires `spec: ./path/to/spec.json` relative to the markdown file.
 
-2. `type: changelog` requires `data.version: '1.2.3'`, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. No `path` field. See [changelog-entries.md](./changelog-entries.md).
+2. `type: changelog` requires `data.version: '1.2.3'`, `data.release_date` as an RFC 3339 date, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. No `path` field. Optional `data.roadmap: <relative path>` links the entry to a roadmap item. See [changelog-entries.md](./changelog-entries.md).
 
 3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids do NOT live in `data`. Compose them as `:::actions` and `:::features` in the markdown body. See `docs/hero.md` and `docs/markdown.md`.
+
+4. `type: roadmap` requires `data.id`, `data.kind` (`milestone | epic | feature | bug`), `data.title`, `data.description`, and `data.date` as an RFC 3339 string. Optional `data.parent`, `data.progress`, `data.issue`, and `data.status`. Top level `title` is the shared collection title and the grouping key. See [roadmap-entries.md](./roadmap-entries.md).
 
 ## SEO and social cards
 

@@ -18,6 +18,10 @@ import type {
   Heading,
   PageMeta,
   PageType,
+  RoadmapChangelogRef,
+  RoadmapEntry,
+  RoadmapKind,
+  RoadmapStatus,
   SearchEntry,
   SidebarNode
 } from './types'
@@ -65,7 +69,7 @@ const metaTagsSchema = z.object({
 const frontmatterSchema = z.object({
   title: z.string(),
   slug: z.string().optional(),
-  type: z.union([z.literal('doc'), z.literal('openapi'), z.literal('changelog'), z.literal('hero')]).optional(),
+  type: z.union([z.literal('doc'), z.literal('openapi'), z.literal('changelog'), z.literal('hero'), z.literal('roadmap')]).optional(),
   path: z.string().optional(),
   spec: z.string().optional(),
   scope: z.string().optional(),
@@ -104,6 +108,7 @@ interface ProcessedPage {
   rawText: string
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
+  roadmapEntries?: RoadmapEntry[]
 }
 
 function compareVersions(a: string, b: string): number {
@@ -693,6 +698,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const result = new Map<string, ProcessedPage>()
     const pathToFile = new Map<string, string>()
     const changelogGroups = new Map<string, ProcessedPage[]>()
+    const roadmapGroups = new Map<string, ProcessedPage[]>()
+    const allProcessed: ProcessedPage[] = []
 
     for (const file of files) {
       let p: ProcessedPage | null = null
@@ -704,12 +711,21 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       }
       if (!p) continue
       if (isExcluded(p.slug)) continue
+      allProcessed.push(p)
       if (p.type === 'changelog') {
         const parent = parentSlug(p.slug)
         const groupKey = `${parent} ${p.frontmatter.title}`
         const list = changelogGroups.get(groupKey) ?? []
         list.push(p)
         changelogGroups.set(groupKey, list)
+        continue
+      }
+      if (p.type === 'roadmap') {
+        const parent = parentSlug(p.slug)
+        const groupKey = `${parent} ${p.frontmatter.title}`
+        const list = roadmapGroups.get(groupKey) ?? []
+        list.push(p)
+        roadmapGroups.set(groupKey, list)
         continue
       }
       const seen = pathToFile.get(p.effectivePath)
@@ -789,7 +805,150 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       result.set(merged.slug, merged)
     }
 
+    const roadmapCollections = buildRoadmapCollections(roadmapGroups, allProcessed)
+    for (const merged of roadmapCollections) {
+      if (pathToFile.has(merged.effectivePath)) {
+        throw new Error(
+          `[nimpress] path ${merged.effectivePath} is occupied by both a roadmap collection and a regular page`
+        )
+      }
+      pathToFile.set(merged.effectivePath, merged.filePath)
+      result.set(merged.slug, merged)
+    }
+
     pages = result
+  }
+
+  function buildRoadmapCollections(
+    roadmapGroups: Map<string, ProcessedPage[]>,
+    allProcessed: ProcessedPage[]
+  ): ProcessedPage[] {
+    if (roadmapGroups.size === 0) return []
+    const out: ProcessedPage[] = []
+    const entryByPath = new Map<string, { path: string; entryId: string }>()
+    for (const entries of roadmapGroups.values()) {
+      for (const e of entries) {
+        const data = e.frontmatter.data as Record<string, unknown> | undefined
+        const entryId = String(data?.id ?? e.slug.split('/').pop() ?? e.slug)
+        entryByPath.set(e.filePath, { path: e.effectivePath, entryId })
+      }
+    }
+    const changelogByRoadmap = new Map<string, RoadmapChangelogRef[]>()
+    for (const p of allProcessed) {
+      if (p.type !== 'changelog') continue
+      const data = p.frontmatter.data as Record<string, unknown> | undefined
+      const ref = data?.roadmap
+      if (!ref) continue
+      const refStr = String(ref).trim()
+      if (!refStr) continue
+      const resolvedFile = resolveRoadmapRef(p.filePath, refStr)
+      if (!resolvedFile) continue
+      const target = entryByPath.get(resolvedFile)
+      if (!target) continue
+      const version = String(data?.version ?? '')
+      const releaseDate = readDateField(data?.release_date)
+      const progress = readNumber(data?.progress)
+      const list = changelogByRoadmap.get(target.entryId) ?? []
+      list.push({
+        version,
+        title: String(data?.title ?? p.frontmatter.title),
+        description: data?.description !== undefined ? String(data.description) : undefined,
+        releaseDate,
+        progress,
+        path: p.effectivePath,
+        slug: version ? `v${version}` : 'unreleased'
+      })
+      changelogByRoadmap.set(target.entryId, list)
+    }
+
+    for (const [groupKey, entries] of roadmapGroups) {
+      const parent = groupKey.split(' ', 1)[0]
+      const path = normalizePath(parent ? '/' + parent : '/')
+      const mergedSlug = `__roadmap__${(parent || 'root').replace(/\//g, '__')}`
+      const built: RoadmapEntry[] = entries.map((e) => {
+        const data = e.frontmatter.data as Record<string, unknown> | undefined
+        const id = String(data?.id ?? e.slug.split('/').pop() ?? e.slug)
+        const kindRaw = String(data?.kind ?? 'feature').toLowerCase() as RoadmapKind
+        const kind: RoadmapKind = ['milestone', 'epic', 'feature', 'bug'].includes(kindRaw) ? kindRaw : 'feature'
+        const targetDate = readDateField(data?.date ?? data?.target_date)
+        const refs = changelogByRoadmap.get(id) ?? []
+        const earliest = refs
+          .map((r) => r.releaseDate)
+          .filter((d): d is string => !!d)
+          .sort()
+        const shipped = refs.length > 0
+        const explicitStatus = String(data?.status ?? '').toLowerCase()
+        const status: RoadmapStatus = explicitStatus === 'shipped' || explicitStatus === 'in_progress' || explicitStatus === 'planned'
+          ? (explicitStatus as RoadmapStatus)
+          : shipped ? 'shipped' : 'planned'
+        return {
+          id,
+          kind,
+          slug: id,
+          title: String(data?.title ?? e.frontmatter.title),
+          description: data?.description !== undefined ? String(data.description) : undefined,
+          targetDate,
+          parent: data?.parent !== undefined ? String(data.parent) : undefined,
+          progress: readNumber(data?.progress),
+          issue: data?.issue !== undefined ? String(data.issue) : undefined,
+          status,
+          html: e.html,
+          headings: e.headings,
+          data: e.frontmatter.data,
+          changelog: refs.sort((a, b) => (a.releaseDate ?? '').localeCompare(b.releaseDate ?? ''))
+        }
+      })
+      built.sort((a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
+      const top = entries[0]
+      const mergedHeadings: Heading[] = built.map((e) => ({
+        level: 2,
+        text: e.title,
+        slug: e.id
+      }))
+      const merged: ProcessedPage = {
+        slug: mergedSlug,
+        filePath: top.filePath,
+        effectivePath: path,
+        type: 'roadmap',
+        frontmatter: {
+          ...top.frontmatter,
+          path,
+          type: 'roadmap'
+        },
+        html: '',
+        headings: mergedHeadings,
+        rawText: entries.map((e) => e.rawText).join('\n\n'),
+        roadmapEntries: built
+      }
+      out.push(merged)
+    }
+    return out
+  }
+
+  function resolveRoadmapRef(fromFile: string, ref: string): string | null {
+    const base = dirname(fromFile)
+    const cleaned = ref.replace(/\\/g, '/').trim()
+    const withExt = cleaned.endsWith('.md') ? cleaned : `${cleaned}.md`
+    return resolve(base, withExt)
+  }
+
+  function readDateField(raw: unknown): string | undefined {
+    if (raw === undefined || raw === null) return undefined
+    if (raw instanceof Date) return raw.toISOString()
+    const str = String(raw).trim()
+    if (!str) return undefined
+    const parsed = new Date(str)
+    if (Number.isNaN(parsed.getTime())) return undefined
+    return parsed.toISOString()
+  }
+
+  function readNumber(raw: unknown): number | undefined {
+    if (typeof raw === 'number') return raw
+    if (typeof raw === 'string' && raw.trim() !== '') {
+      const n = Number(raw)
+      return Number.isFinite(n) ? n : undefined
+    }
+    return undefined
   }
 
   function buildSidebar(): SidebarNode[] {
@@ -852,6 +1011,33 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
             order: idx
           }))
           node.items = items.length ? [...versionNodes, ...items] : versionNodes
+        } else if (t.page.type === 'roadmap' && t.page.roadmapEntries?.length) {
+          const entries = t.page.roadmapEntries
+          const byId = new Map(entries.map((e) => [e.id, e]))
+          const childrenOf = new Map<string, typeof entries>()
+          const roots: typeof entries = []
+          for (const e of entries) {
+            if (e.parent && byId.has(e.parent)) {
+              const list = childrenOf.get(e.parent) ?? []
+              list.push(e)
+              childrenOf.set(e.parent, list)
+            } else {
+              roots.push(e)
+            }
+          }
+          const buildNode = (e: typeof entries[number], idx: number): SidebarNode => {
+            const kids = childrenOf.get(e.id) ?? []
+            const node: SidebarNode = {
+              text: e.title || e.id,
+              link: `${t.page!.effectivePath}#${e.id}`,
+              slug: `${t.page!.slug}__${e.id}`,
+              order: idx
+            }
+            if (kids.length) node.items = kids.map((k, i) => buildNode(k, i))
+            return node
+          }
+          const entryNodes = roots.map((e, idx) => buildNode(e, idx))
+          node.items = items.length ? [...entryNodes, ...items] : entryNodes
         } else if (items.length) {
           node.items = items
         }
@@ -967,7 +1153,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       html: p.html,
       headings: p.headings,
       openApiSpec: p.openApiSpec,
-      changelogEntries: p.changelogEntries
+      changelogEntries: p.changelogEntries,
+      roadmapEntries: p.roadmapEntries
     }
     return `export default ${JSON.stringify(payload)}\n`
   }
@@ -984,7 +1171,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, setPageMeta } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, setPageMeta } from '@nimling/nimpress'
   import type { PageBody } from '@nimling/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -1001,6 +1188,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       <OpenApiRoot spec={mod.default.openApiSpec} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
     {:else if shell.type === 'changelog'}
       <ChangelogPage page={{ ...shell, ...mod.default }} />
+    {:else if shell.type === 'roadmap'}
+      <RoadmapPage page={{ ...shell, ...mod.default }} />
     {:else}
       <Page page={{ ...shell, ...mod.default }} />
     {/if}

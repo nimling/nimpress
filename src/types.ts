@@ -1,4 +1,35 @@
-export type PageType = 'doc' | 'openapi' | 'changelog' | 'hero'
+export type PageType = 'doc' | 'openapi' | 'changelog' | 'hero' | 'roadmap'
+
+export type RoadmapKind = 'milestone' | 'epic' | 'feature' | 'bug'
+
+export type RoadmapStatus = 'shipped' | 'in_progress' | 'planned'
+
+export interface RoadmapChangelogRef {
+  version: string
+  title: string
+  description?: string
+  releaseDate?: string
+  progress?: number
+  path: string
+  slug: string
+}
+
+export interface RoadmapEntry {
+  id: string
+  kind: RoadmapKind
+  slug: string
+  title: string
+  description?: string
+  targetDate?: string
+  parent?: string
+  progress?: number
+  issue?: string
+  status: RoadmapStatus
+  html: string
+  headings: Heading[]
+  data?: Record<string, unknown>
+  changelog: RoadmapChangelogRef[]
+}
 
 export interface OpenGraphMeta {
   title?: string
@@ -85,6 +116,7 @@ export interface PageBody {
   headings: Heading[]
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
+  roadmapEntries?: RoadmapEntry[]
 }
 
 export interface PageModule extends PageShell, PageBody {}
