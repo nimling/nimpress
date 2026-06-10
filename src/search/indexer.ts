@@ -8,7 +8,7 @@ export function buildIndex(entries: SearchEntry[]): MiniSearch<SearchEntry> {
   const ms = new MiniSearch<SearchEntry>({
     idField: 'slug',
     fields: ['title', 'description', 'body', 'headings', 'tags'],
-    storeFields: ['slug', 'path', 'title', 'description', 'scope', 'claim', 'tags'],
+    storeFields: ['slug', 'path', 'title', 'description', 'scope', 'claim', 'tags', 'body'],
     searchOptions: {
       boost: { title: 3, tags: 3, headings: 2 },
       fuzzy: 0.2,

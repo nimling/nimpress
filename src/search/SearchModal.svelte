@@ -65,6 +65,60 @@
     navigate('/' + slug)
   }
 
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  const searchTerms = $derived(
+    text
+      .trim()
+      .split(/\s+/)
+      .filter((t) => t.length >= 2)
+  )
+
+  function buildHighlightRegex(terms: string[]): RegExp | null {
+    if (terms.length === 0) return null
+    const escaped = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    return new RegExp(`(${escaped.join('|')})`, 'gi')
+  }
+
+  function highlight(value: string, re: RegExp | null): string {
+    const safe = escapeHtml(value)
+    if (!re) return safe
+    return safe.replace(re, '<mark>$1</mark>')
+  }
+
+  function snippet(body: string, terms: string[]): string {
+    if (!body) return ''
+    const cleaned = body.replace(/\s+/g, ' ').trim()
+    if (!cleaned) return ''
+    const lower = cleaned.toLowerCase()
+    let hit = -1
+    for (const t of terms) {
+      const idx = lower.indexOf(t.toLowerCase())
+      if (idx >= 0 && (hit < 0 || idx < hit)) hit = idx
+    }
+    const window = 160
+    let start: number
+    let end: number
+    if (hit < 0) {
+      start = 0
+      end = Math.min(cleaned.length, window)
+    } else {
+      start = Math.max(0, hit - Math.floor(window / 2))
+      end = Math.min(cleaned.length, start + window)
+      start = Math.max(0, end - window)
+    }
+    const head = start > 0 ? '… ' : ''
+    const tail = end < cleaned.length ? ' …' : ''
+    return head + cleaned.slice(start, end) + tail
+  }
+
   async function ensureVisible() {
     await tick()
     if (!listEl) return
@@ -162,9 +216,16 @@
 
     <ul class="np-results" bind:this={listEl}>
       {#each results as r, i (r.slug || `res-${i}`)}
+        {@const re = buildHighlightRegex(searchTerms)}
+        {@const snip = snippet(String(r.body ?? ''), searchTerms)}
         <li class:active={i === activeIndex}>
           <button onclick={() => go(r.slug as string)} onmouseenter={() => (activeIndex = i)}>
-            <div class="np-result-title">{r.title}</div>
+            <div class="np-result-title">{@html highlight(String(r.title ?? ''), re)}</div>
+            {#if snip}
+              <div class="np-result-snippet">{@html highlight(snip, re)}</div>
+            {:else if r.description}
+              <div class="np-result-snippet">{@html highlight(String(r.description), re)}</div>
+            {/if}
             {#if Array.isArray(r.tags) && r.tags.length}
               <div class="np-result-tags">
                 {#each r.tags as t (t)}
@@ -316,11 +377,31 @@
   }
   .np-results li.active .np-result-title { color: var(--np-brand); }
   .np-result-title { font-weight: 500; }
+  .np-result-snippet {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--np-text-secondary);
+    line-height: 1.5;
+    max-height: 3.2em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .np-result-snippet :global(mark),
+  .np-result-title :global(mark) {
+    background-color: color-mix(in srgb, var(--np-brand) 28%, transparent);
+    color: var(--np-text-primary);
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
   .np-result-slug {
     font-size: 12px;
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
-    margin-top: 2px;
+    margin-top: 4px;
   }
   .np-result-tags {
     display: flex;
