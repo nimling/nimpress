@@ -33,7 +33,7 @@ data:
 
 4. `data.title` is the per release headline shown next to the version pill in the entry header.
 
-5. `data.description` is one short sentence shown under the header when the entry is expanded.
+5. `data.description` is one short sentence shown under the header when the entry is expanded. Plain text only, markdown is not rendered. Inline code spans, links, bold, and lists in this field show as raw markdown source. Write the sentence in prose, naming identifiers without backticks.
 
 ## Never set these on a changelog entry
 

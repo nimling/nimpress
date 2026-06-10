@@ -59,6 +59,40 @@
   const pathParams = $derived(op.parameters.filter((p) => p.in === 'path'))
   const queryParams = $derived(op.parameters.filter((p) => p.in === 'query'))
   const headerParams = $derived(op.parameters.filter((p) => p.in === 'header'))
+  const hasBody = $derived(['POST', 'PUT', 'PATCH'].includes(op.method))
+
+  let panelEl = $state<HTMLDivElement | null>(null)
+  let pathOpen = $state(true)
+  let headersOpen = $state(true)
+  let queryOpen = $state(true)
+  let bodyOpen = $state(true)
+  let userToggled = false
+
+  function measureFit() {
+    if (userToggled || !panelEl) return
+    const overflow = panelEl.scrollHeight > window.innerHeight
+    const open = !overflow
+    pathOpen = open
+    headersOpen = open
+    queryOpen = open
+    bodyOpen = open
+  }
+
+  $effect(() => {
+    if (disabled || !panelEl) return
+    queueMicrotask(measureFit)
+    const onResize = () => measureFit()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  })
+
+  function toggle(which: 'path' | 'headers' | 'query' | 'body') {
+    userToggled = true
+    if (which === 'path') pathOpen = !pathOpen
+    else if (which === 'headers') headersOpen = !headersOpen
+    else if (which === 'query') queryOpen = !queryOpen
+    else bodyOpen = !bodyOpen
+  }
 
   async function send() {
     sending = true
@@ -90,7 +124,7 @@
   }
 </script>
 
-<div class="np-try" class:np-try-disabled={disabled}>
+<div class="np-try" class:np-try-disabled={disabled} bind:this={panelEl}>
   <header class="np-try-head">
     <span class="np-try-title">Try it</span>
     <button class="np-try-send" onclick={send} disabled={sending || disabled}>
@@ -139,47 +173,89 @@
     {/if}
 
     {#if pathParams.length > 0}
-      <div class="np-try-group">
-        <div class="np-try-group-label">Path</div>
-        {#each pathParams as p (p.name)}
-          <label class="np-try-field">
-            <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={tryState.pathValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
-          </label>
-        {/each}
+      <div class="np-try-group" class:np-try-group-open={pathOpen}>
+        <button type="button" class="np-try-group-head" aria-expanded={pathOpen} onclick={() => toggle('path')}>
+          <span class="np-try-group-label">Path</span>
+          <span class="np-try-group-chev" class:open={pathOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
+        </button>
+        {#if pathOpen}
+          <div class="np-try-group-fields">
+            {#each pathParams as p (p.name)}
+              <label class="np-try-field">
+                <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
+                <input bind:value={tryState.pathValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+              </label>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
 
     {#if headerParams.length > 0}
-      <div class="np-try-group">
-        <div class="np-try-group-label">Headers</div>
-        {#each headerParams as p (p.name)}
-          <label class="np-try-field">
-            <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={tryState.headerValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
-          </label>
-        {/each}
+      <div class="np-try-group" class:np-try-group-open={headersOpen}>
+        <button type="button" class="np-try-group-head" aria-expanded={headersOpen} onclick={() => toggle('headers')}>
+          <span class="np-try-group-label">Headers</span>
+          <span class="np-try-group-chev" class:open={headersOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
+        </button>
+        {#if headersOpen}
+          <div class="np-try-group-fields">
+            {#each headerParams as p (p.name)}
+              <label class="np-try-field">
+                <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
+                <input bind:value={tryState.headerValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+              </label>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
 
     {#if queryParams.length > 0}
-      <div class="np-try-group">
-        <div class="np-try-group-label">Query</div>
-        {#each queryParams as p (p.name)}
-          <label class="np-try-field">
-            <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
-            <input bind:value={tryState.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
-          </label>
-        {/each}
+      <div class="np-try-group" class:np-try-group-open={queryOpen}>
+        <button type="button" class="np-try-group-head" aria-expanded={queryOpen} onclick={() => toggle('query')}>
+          <span class="np-try-group-label">Query</span>
+          <span class="np-try-group-chev" class:open={queryOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
+        </button>
+        {#if queryOpen}
+          <div class="np-try-group-fields">
+            {#each queryParams as p (p.name)}
+              <label class="np-try-field">
+                <span><code>{p.name}</code>{#if p.required}<em class="np-req">*</em>{/if}</span>
+                <input bind:value={tryState.queryValues[p.name]} placeholder={p.example !== undefined ? String(p.example) : ''} />
+              </label>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
 
-    {#if ['POST', 'PUT', 'PATCH'].includes(op.method)}
-      <div class="np-try-group np-try-group-body">
-        <div class="np-try-group-label">Body</div>
-        <div class="np-try-body-editor">
-          <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" variant="try" />
-        </div>
+    {#if hasBody}
+      <div class="np-try-group np-try-group-body" class:np-try-group-open={bodyOpen}>
+        <button type="button" class="np-try-group-head np-try-group-head-body" aria-expanded={bodyOpen} onclick={() => toggle('body')}>
+          <span class="np-try-group-label">Body</span>
+          <span class="np-try-group-chev" class:open={bodyOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
+        </button>
+        {#if bodyOpen}
+          <div class="np-try-body-editor">
+            <CodeEditor bind:value={tryState.bodyValue} language="json" title="body" variant="try" />
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -297,19 +373,65 @@
   }
   .np-try-group {
     border-top: 1px solid var(--np-divider);
-    padding-top: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
     min-width: 0;
   }
-  .np-try-group:first-child { border-top: 0; padding-top: 0; }
+  .np-try-group:first-child { border-top: 0; }
+  .np-try-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: transparent;
+    border: 0;
+    padding: 12px 0 4px;
+    width: 100%;
+    cursor: pointer;
+    color: inherit;
+    text-align: left;
+    font: inherit;
+  }
+  .np-try-group:first-child .np-try-group-head { padding-top: 0; }
+  .np-try-group-head:hover .np-try-group-label,
+  .np-try-group-head:focus-visible .np-try-group-label {
+    color: var(--np-text-secondary);
+  }
+  .np-try-group-head:hover .np-try-group-chev,
+  .np-try-group-head:focus-visible .np-try-group-chev {
+    color: var(--np-text-primary);
+  }
+  .np-try-group-head:focus { outline: none; }
+  .np-try-group-head:focus-visible {
+    outline: 2px solid var(--np-brand);
+    outline-offset: 2px;
+    border-radius: var(--np-radius-sm);
+  }
   .np-try-group-label {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 600;
     color: var(--np-text-muted);
+  }
+  .np-try-group-chev {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: var(--np-text-muted);
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .np-try-group-chev.open {
+    transform: rotate(90deg);
+  }
+  .np-try-group-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 4px;
   }
   .np-try-result {
     padding: 0;
@@ -377,10 +499,9 @@
     margin-right: -16px;
     margin-bottom: -16px;
     border-top: 1px solid var(--np-border);
-    padding-top: 12px;
   }
-  .np-try-group-body .np-try-group-label {
-    padding-left: 16px;
+  .np-try-group-body .np-try-group-head {
+    padding: 12px 16px;
   }
   .np-try-body-editor :global(.np-editor) {
     border-radius: 0;

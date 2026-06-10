@@ -831,10 +831,11 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           }))
           node.items = [...tagNodes, ...items]
         } else if (t.page.type === 'changelog' && t.page.changelogEntries?.length) {
-          const versionNodes: SidebarNode[] = t.page.changelogEntries.map((e) => ({
+          const versionNodes: SidebarNode[] = t.page.changelogEntries.map((e, idx) => ({
             text: e.version ? `v${e.version}` : (e.title || 'unreleased'),
             link: `${t.page!.effectivePath}#${e.slug}`,
-            slug: `${t.page!.slug}__${e.slug}`
+            slug: `${t.page!.slug}__${e.slug}`,
+            order: idx
           }))
           node.items = items.length ? [...versionNodes, ...items] : versionNodes
         } else if (items.length) {
