@@ -409,52 +409,61 @@
     line-height: 1.6;
   }
   .np-changelog-body :global(h1) {
-    font-size: 22px;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 700;
+    margin: 80px 0 18px;
+    color: var(--np-text-primary);
+    border-top: 0;
+    padding-top: 0;
+    letter-spacing: -0.015em;
+  }
+  .np-changelog-body :global(h1::before) { display: none; }
+  .np-changelog-body :global(h2) {
+    font-size: 23px;
     line-height: 1.25;
     font-weight: 700;
-    margin: 28px 0 10px;
+    margin: 64px 0 14px;
     color: var(--np-text-primary);
     border-top: 0;
     padding-top: 0;
     letter-spacing: -0.01em;
   }
-  .np-changelog-body :global(h1::before) { display: none; }
-  .np-changelog-body :global(h2) {
-    font-size: 19px;
-    line-height: 1.3;
-    font-weight: 700;
-    margin: 24px 0 8px;
-    color: var(--np-text-primary);
-    border-top: 0;
-    padding-top: 0;
-    letter-spacing: -0.005em;
-  }
   .np-changelog-body :global(h2::before) { display: none; }
   .np-changelog-body :global(h3) {
-    font-size: 16.5px;
-    line-height: 1.35;
+    font-size: 19px;
+    line-height: 1.3;
     font-weight: 600;
-    margin: 20px 0 6px;
+    margin: 52px 0 12px;
     color: var(--np-text-primary);
     border-left: 0;
     padding-left: 0;
     margin-left: 0;
+    letter-spacing: -0.005em;
   }
   .np-changelog-body :global(h4) {
-    font-size: 14.5px;
-    line-height: 1.4;
+    font-size: 16px;
+    line-height: 1.35;
     font-weight: 600;
-    margin: 16px 0 4px;
+    margin: 40px 0 10px;
     color: var(--np-text-primary);
   }
   .np-changelog-body :global(h5),
   .np-changelog-body :global(h6) {
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 14px 0 4px;
+    letter-spacing: 0.08em;
+    margin: 32px 0 8px;
     color: var(--np-text-secondary);
+  }
+  .np-changelog-body :global(h1):first-child,
+  .np-changelog-body :global(h2):first-child,
+  .np-changelog-body :global(h3):first-child,
+  .np-changelog-body :global(h4):first-child,
+  .np-changelog-body :global(h5):first-child,
+  .np-changelog-body :global(h6):first-child {
+    margin-top: 0;
   }
   .np-changelog-body :global(p),
   .np-changelog-body :global(li) {
@@ -463,7 +472,7 @@
   }
   .np-changelog-body :global(ul),
   .np-changelog-body :global(ol) {
-    margin: 10px 0;
+    margin: 14px 0;
   }
   .np-changelog-body :global(code) {
     font-size: 13.5px;

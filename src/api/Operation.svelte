@@ -2,11 +2,8 @@
   import { onMount } from 'svelte'
   import MethodBadge from './MethodBadge.svelte'
   import ParamRow from './ParamRow.svelte'
-  import CodeExamples from './CodeExamples.svelte'
-  import TryPanel from './TryPanel.svelte'
   import Schema from './Schema.svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
-  import { createTryState } from './tryState'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
 
   let {
@@ -31,76 +28,10 @@
   const responses = $derived(op.responses as Record<string, any> | undefined)
 
   let expanded = $state(!collapsedDefault)
-  let mountRight = $state(false)
-  const initialServer = (() => {
-    const list = servers ?? []
-    const dev = list.find((s) => typeof s?.url === 'string' && s.url.includes('.dev.'))
-    return dev?.url ?? list[0]?.url ?? serverUrl
-  })()
 
-  const cacheKey = $derived(`nimpress-try-cache-v1-${specVersion || 'unknown'}`)
-  function readCached(): import('./tryState').TryState | null {
-    if (typeof localStorage === 'undefined') return null
-    try {
-      const raw = localStorage.getItem(cacheKey)
-      if (!raw) return null
-      const obj = JSON.parse(raw)
-      if (!obj || typeof obj !== 'object') return null
-      return obj[op.id] ?? null
-    } catch {
-      try { localStorage.removeItem(cacheKey) } catch {}
-      return null
-    }
-  }
-  function writeCached(state: import('./tryState').TryState) {
-    if (typeof localStorage === 'undefined') return
-    try {
-      const raw = localStorage.getItem(cacheKey)
-      const obj = raw ? JSON.parse(raw) : {}
-      obj[op.id] = state
-      localStorage.setItem(cacheKey, JSON.stringify(obj))
-    } catch {
-      try { localStorage.removeItem(cacheKey) } catch {}
-    }
-  }
-  function clearCached() {
-    if (typeof localStorage === 'undefined') return
-    try {
-      const raw = localStorage.getItem(cacheKey)
-      if (!raw) return
-      const obj = JSON.parse(raw)
-      if (obj && typeof obj === 'object') {
-        delete obj[op.id]
-        if (Object.keys(obj).length === 0) localStorage.removeItem(cacheKey)
-        else localStorage.setItem(cacheKey, JSON.stringify(obj))
-      }
-    } catch {
-      try { localStorage.removeItem(cacheKey) } catch {}
-    }
-  }
-  const cached = readCached()
-  const baseState = createTryState(op, initialServer, securitySchemes)
-  let tryState = $state(cached ? { ...baseState, ...cached } : baseState)
-  $effect(() => {
-    writeCached(tryState)
-  })
-  function handleClear() {
-    tryState = createTryState(op, initialServer, securitySchemes)
-    clearCached()
-  }
-  async function handleShare(): Promise<'ok' | 'fail'> {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return 'fail'
-    try {
-      const url = new URL(window.location.href)
-      url.searchParams.set('try', op.id)
-      const json = JSON.stringify(tryState)
-      const enc = btoa(unescape(encodeURIComponent(json)))
-      url.searchParams.set('state', enc)
-      await navigator.clipboard.writeText(url.toString())
-      return 'ok'
-    } catch {
-      return 'fail'
-    }
+  function openTryDialog() {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId: op.id } }))
   }
 
   let respTab = $state<Record<string, string>>({})
@@ -206,22 +137,8 @@
       expanded = !(detail?.collapsed ?? true)
     }
     window.addEventListener('np-api-toggle-all', onToggleAll)
-    const ric =
-      typeof (window as any).requestIdleCallback === 'function'
-        ? (window as any).requestIdleCallback
-        : null
-    if (ric) {
-      const handle = ric(() => (mountRight = true), { timeout: 600 })
-      return () => {
-        window.removeEventListener('np-api-toggle-all', onToggleAll)
-        const cic = (window as any).cancelIdleCallback
-        if (typeof cic === 'function') cic(handle)
-      }
-    }
-    const t = setTimeout(() => (mountRight = true), 60)
     return () => {
       window.removeEventListener('np-api-toggle-all', onToggleAll)
-      clearTimeout(t)
     }
   })
 </script>
@@ -242,29 +159,16 @@
             <p class="np-op-desc">{op.description}</p>
           {/if}
         </div>
-        <div class="np-op-head-actions">
-          <button
-            class="np-op-try-btn"
-            type="button"
-            onclick={() => window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId: op.id } }))}
-            title="Open the Try out dialog for this endpoint"
-          >
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-              <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
-            </svg>
-            <span>Try out</span>
-          </button>
-          <button
-            class="np-op-toggle"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-            aria-expanded={expanded}
-            onclick={() => (expanded = !expanded)}
-          >
-            <svg class="np-op-toggle-chev" class:open={expanded} viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="9 6 15 12 9 18" />
-            </svg>
-          </button>
-        </div>
+        <button
+          class="np-op-toggle"
+          aria-label={expanded ? 'Collapse' : 'Expand'}
+          aria-expanded={expanded}
+          onclick={() => (expanded = !expanded)}
+        >
+          <svg class="np-op-toggle-chev" class:open={expanded} viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 6 15 12 9 18" />
+          </svg>
+        </button>
       </header>
 
       {#if expanded && op.parameters.length}
@@ -415,29 +319,17 @@
       {/if}
     </div>
 
-    <aside class="np-op-right">
-      <div class="np-op-right-sticky">
-        <div class="np-op-right-card">
-          {#if mountRight}
-            <TryPanel
-              {op}
-              {servers}
-              {securitySchemes}
-              bind:tryState
-              disabled={!expanded}
-              onOpenDialog={(opId) => window.dispatchEvent(new CustomEvent('nimpress:try-open', { detail: { opId } }))}
-              onClear={() => handleClear()}
-              onShare={() => handleShare()}
-            />
-            {#if expanded}
-              <CodeExamples {op} {securitySchemes} bind:tryState />
-            {/if}
-          {:else}
-            <div class="np-op-right-skeleton" aria-hidden="true"></div>
-          {/if}
-        </div>
-      </div>
-    </aside>
+    <button
+      class="np-op-try-side"
+      type="button"
+      onclick={openTryDialog}
+      title="Open the Try out dialog for this endpoint"
+    >
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
+      </svg>
+      <span>Try out</span>
+    </button>
   </div>
 </section>
 
@@ -459,35 +351,37 @@
     flex: 1;
     min-width: 0;
   }
-  .np-op-head-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 0 0 auto;
+  .np-op-try-side {
+    grid-column: 2;
     align-self: stretch;
-  }
-  .np-op-try-btn {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: var(--np-radius-pill);
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 12px;
+    margin-left: 12px;
     border: 1px solid color-mix(in srgb, var(--np-brand) 50%, transparent);
     background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
     color: var(--np-brand);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    border-radius: var(--np-radius-lg);
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    min-width: 0;
   }
-  .np-op-try-btn:hover {
-    background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
+  .np-op-try-side:hover {
+    background-color: color-mix(in srgb, var(--np-brand) 20%, transparent);
     border-color: var(--np-brand);
-    transform: translateY(-1px);
   }
-  .np-op-try-btn svg { display: block; }
+  .np-op-try-side svg {
+    writing-mode: horizontal-tb;
+    display: block;
+  }
   .np-op-toggle {
     flex: 0 0 auto;
     align-self: stretch;
@@ -559,70 +453,15 @@
   }
   .np-op-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0;
+    align-items: stretch;
   }
   .np-op-left {
     display: flex;
     flex-direction: column;
     gap: 16px;
     min-width: 0;
-  }
-  .np-op-right {
-    align-self: stretch;
-    min-width: 0;
-    height: 100%;
-  }
-  .np-op-right-sticky {
-    position: sticky;
-    top: calc(var(--np-header-height) + 16px);
-    display: flex;
-    flex-direction: column;
-    align-self: flex-start;
-  }
-  .np-op-right-card {
-    background-color: var(--np-bg-card);
-    border: 1px solid var(--np-border);
-    border-radius: var(--np-radius-lg);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .np-op-right-skeleton {
-    min-height: 220px;
-    background:
-      linear-gradient(
-        110deg,
-        rgba(255, 255, 255, 0.02) 8%,
-        rgba(255, 255, 255, 0.05) 18%,
-        rgba(255, 255, 255, 0.02) 33%
-      );
-    background-size: 200% 100%;
-    animation: np-op-shimmer 1.6s linear infinite;
-  }
-  @keyframes np-op-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-  .np-op-right-card :global(.np-examples),
-  .np-op-right-card :global(.np-try) {
-    margin: 0;
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
-  }
-  .np-op-right-card > :global(:first-child) {
-    border-top: 0;
-  }
-  .np-op-right-card > :global(:not(:last-child)) {
-    border-bottom: 1px solid var(--np-divider);
-  }
-  .np-op-right-card :global(.np-try) {
-    flex: 0 0 auto;
-    min-height: 0;
-    overflow: visible;
   }
 
   .np-section {
@@ -750,9 +589,19 @@
   }
   .np-resp-view > :global(*) { width: 100%; }
 
-  @media (max-width: 1280px) {
-    .np-op-grid { grid-template-columns: 1fr; }
-    .np-op-right { border-left: 0; border-top: 1px solid var(--np-divider); }
-    .np-op-right-sticky { position: static; }
+  @media (max-width: 720px) {
+    .np-op-try-side {
+      writing-mode: horizontal-tb;
+      flex-direction: row;
+      padding: 10px 16px;
+      margin-left: 0;
+      margin-top: 12px;
+    }
+    .np-op-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .np-op-try-side {
+      grid-column: 1;
+    }
   }
 </style>

@@ -132,9 +132,12 @@
 
   function close() {
     open = false
-    suppressUrlUpdate = true
-    updateUrl('', null)
-    suppressUrlUpdate = false
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('try')
+      url.searchParams.delete('state')
+      window.history.replaceState({}, '', url.toString())
+    }
   }
 
   function onPickOp(ev: Event) {
@@ -187,7 +190,14 @@
   }
 
   function onKey(ev: KeyboardEvent) {
-    if (ev.key === 'Escape' && open) close()
+    if (!open) return
+    if (ev.key === 'Escape') close()
+    if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+      ev.preventDefault()
+      if (typeof window !== 'undefined' && selectedOpId) {
+        window.dispatchEvent(new CustomEvent('nimpress:try-send', { detail: { opId: selectedOpId } }))
+      }
+    }
   }
 
   $effect(() => {
@@ -242,6 +252,9 @@
   <div class="np-try-backdrop" role="dialog" aria-modal="true" onclick={onBackdrop}>
     <div class="np-try-dialog">
       <header class="np-try-dialog-head">
+        <div class="np-try-target">
+          <MethodBadge method={selectedOp.method} size="md" />
+        </div>
         <div class="np-try-picker">
           <select aria-label="Endpoint" value={selectedOpId} onchange={onPickOp}>
             {#each operations as o (o.id)}
@@ -249,17 +262,7 @@
             {/each}
           </select>
         </div>
-        <div class="np-try-target">
-          <MethodBadge method={selectedOp.method} size="md" />
-          <code class="np-try-path">{selectedOp.path}</code>
-        </div>
         <div class="np-try-dialog-controls">
-          <button class="np-try-meta" type="button" onclick={share} title="Copy shareable link">
-            {shareLabel}
-          </button>
-          <button class="np-try-meta" type="button" onclick={clearCurrent} title="Reset inputs and clear storage for this endpoint">
-            Clear
-          </button>
           <button class="np-try-close" type="button" onclick={close} aria-label="Close">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -314,22 +317,26 @@
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
     width: min(1280px, 100%);
     max-height: calc(100vh - 48px);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
   }
   .np-try-dialog-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 16px;
     align-items: center;
-    padding: 14px 18px;
+    padding: 14px 22px;
     border-bottom: 1px solid var(--np-divider);
     background-color: var(--np-bg-surface);
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
   .np-try-picker select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 18px;
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     border: 1px solid var(--np-border);

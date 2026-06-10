@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
   import { buildUrl, buildHeaders, createTryState, type TryState } from './tryState'
@@ -168,6 +169,17 @@
       sending = false
     }
   }
+
+  onMount(() => {
+    const onTrySend = (e: Event) => {
+      const detail = (e as CustomEvent<{ opId?: string }>).detail
+      if (detail?.opId === op.id && !disabled && !sending) send()
+    }
+    window.addEventListener('nimpress:try-send', onTrySend as EventListener)
+    return () => {
+      window.removeEventListener('nimpress:try-send', onTrySend as EventListener)
+    }
+  })
 </script>
 
 <div class="np-try" class:np-try-disabled={disabled} bind:this={panelEl}>
@@ -180,8 +192,9 @@
       <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
         Clear
       </button>
-      <button class="np-try-send" onclick={send} disabled={sending || disabled}>
-        {sending ? 'Sending…' : 'Send'}
+      <code class="np-try-shortcut" title="Send via Cmd or Ctrl plus Enter">⌘⏎</code>
+      <button class={`np-try-send np-try-send-${op.method.toLowerCase()}`} onclick={send} disabled={sending || disabled}>
+        {sending ? 'Sending…' : op.method.toUpperCase()}
       </button>
     </div>
   </header>
@@ -371,6 +384,21 @@
   }
   .np-try-send:hover { background-color: var(--np-brand-hover); }
   .np-try-send:disabled { opacity: 0.6; cursor: wait; }
+  .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
+  .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
+  .np-try-send-put { background-color: var(--np-method-put, #b07309); }
+  .np-try-send-patch { background-color: var(--np-method-patch, #8a52ce); }
+  .np-try-send-delete { background-color: var(--np-method-delete, #d44a4a); }
+  .np-try-shortcut {
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    color: var(--np-text-muted);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    padding: 3px 8px;
+    background-color: var(--np-bg);
+    letter-spacing: 0.04em;
+  }
   .np-try-actions {
     display: inline-flex;
     align-items: center;
