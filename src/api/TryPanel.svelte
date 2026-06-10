@@ -70,7 +70,9 @@
 
   function measureFit() {
     if (userToggled || !panelEl) return
-    const overflow = panelEl.scrollHeight > window.innerHeight
+    const rect = panelEl.getBoundingClientRect()
+    const available = Math.max(0, window.innerHeight - rect.top - 80)
+    const overflow = panelEl.scrollHeight > available
     const open = !overflow
     pathOpen = open
     headersOpen = open
@@ -80,10 +82,19 @@
 
   $effect(() => {
     if (disabled || !panelEl) return
-    queueMicrotask(measureFit)
+    let active = true
+    requestAnimationFrame(() => {
+      if (!active) return
+      requestAnimationFrame(() => {
+        if (active) measureFit()
+      })
+    })
     const onResize = () => measureFit()
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    return () => {
+      active = false
+      window.removeEventListener('resize', onResize)
+    }
   })
 
   function toggle(which: 'path' | 'headers' | 'query' | 'body') {
