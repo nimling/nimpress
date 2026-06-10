@@ -42,7 +42,7 @@
   .np-schema { font-size: 13.5px; }
   .np-schema-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     background: transparent;
     border: 0;
@@ -51,6 +51,17 @@
     color: var(--np-text-primary);
     text-align: left;
     width: 100%;
+  }
+  .np-schema-head .np-chev,
+  .np-schema-head .np-chev-spacer,
+  .np-schema-head .np-schema-name,
+  .np-schema-head .np-schema-type {
+    flex: 0 0 auto;
+    padding-top: 1px;
+  }
+  .np-schema-head .np-schema-desc {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .np-schema-head:disabled { cursor: default; }
   .np-chev {

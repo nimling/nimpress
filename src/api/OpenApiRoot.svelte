@@ -54,6 +54,7 @@
   }
 
   let allCollapsed = $state(false)
+  let schemasOpen = $state(true)
 
   function toggleAll() {
     allCollapsed = !allCollapsed
@@ -179,19 +180,26 @@
     {/each}
 
     {#if Object.keys(flat.schemas).length}
-      <section class="np-schemas-card">
-        <header class="np-tag-head">
+      <section class="np-schemas-card" class:open={schemasOpen}>
+        <button type="button" class="np-tag-head np-schemas-toggle" aria-expanded={schemasOpen} onclick={() => (schemasOpen = !schemasOpen)}>
+          <span class="np-schemas-chev" class:open={schemasOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
           <h2>Schemas</h2>
           <span class="np-tag-count">{Object.keys(flat.schemas).length} model{Object.keys(flat.schemas).length === 1 ? '' : 's'}</span>
-        </header>
-        <div class="np-schemas-grid">
-          {#each Object.entries(flat.schemas) as [name, schema], si (name || `schema-${si}`)}
-            <div id={`schema/${name}`} class="np-schema-block">
-              <h3>{name}</h3>
-              <Schema {schema} />
-            </div>
-          {/each}
-        </div>
+        </button>
+        {#if schemasOpen}
+          <div class="np-schemas-grid">
+            {#each Object.entries(flat.schemas) as [name, schema], si (name || `schema-${si}`)}
+              <div id={`schema/${name}`} class="np-schema-block">
+                <h3>{name}</h3>
+                <Schema {schema} />
+              </div>
+            {/each}
+          </div>
+        {/if}
       </section>
     {/if}
 
@@ -336,6 +344,55 @@
     margin-bottom: 8px;
     border-bottom: 1px solid var(--np-divider);
     scroll-margin-top: calc(var(--np-header-height) + 16px);
+  }
+  .np-schemas-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--np-divider);
+    padding: 16px 4px;
+    margin: 0 0 8px;
+    cursor: pointer;
+    color: var(--np-text-primary);
+    text-align: left;
+    font: inherit;
+  }
+  .np-schemas-toggle:focus { outline: none; }
+  .np-schemas-toggle:focus-visible {
+    outline: 2px solid var(--np-brand);
+    outline-offset: 2px;
+    border-radius: var(--np-radius-sm);
+  }
+  .np-schemas-toggle h2 { flex: 0 0 auto; }
+  .np-schemas-toggle .np-tag-count { margin-left: auto; }
+  .np-schemas-chev {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: var(--np-text-muted);
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .np-schemas-chev.open {
+    transform: rotate(90deg);
+  }
+  .np-schemas-toggle:hover .np-schemas-chev {
+    color: var(--np-text-primary);
+  }
+
+  .np-page-footer {
+    margin-top: 64px;
+    padding: 32px 0 0;
+    border-top: 0;
+    text-align: center;
+    color: var(--np-text-faint);
+    font-size: 13px;
+    white-space: pre-line;
   }
   h2 {
     font-size: 22px;
