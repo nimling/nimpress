@@ -6,6 +6,7 @@
   import { navigate } from '../router'
   import BackToTop from '../layout/BackToTop.svelte'
   import RoadmapBlob from './RoadmapBlob.svelte'
+  import PlanetFooter from './PlanetFooter.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
@@ -568,25 +569,7 @@
         {/if}
       </div>
     </div>
-    {#if effectiveFooter}
-      <footer class="np-page-footer">{effectiveFooter}</footer>
-    {/if}
-    <div class="np-roadmap-planet" aria-hidden="true">
-      <svg viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice">
-        <defs>
-          <radialGradient id="np-planet-glow" cx="50%" cy="20%" r="70%">
-            <stop offset="0%" stop-color="var(--np-brand)" stop-opacity="1" />
-            <stop offset="65%" stop-color="var(--np-brand)" stop-opacity="0.55" />
-            <stop offset="100%" stop-color="var(--np-brand)" stop-opacity="0.15" />
-          </radialGradient>
-        </defs>
-        <circle cx="800" cy="980" r="820" fill="url(#np-planet-glow)" />
-        <circle cx="800" cy="980" r="820" fill="none" stroke="var(--np-brand)" stroke-width="2" opacity="0.7" />
-        <ellipse cx="560" cy="360" rx="80" ry="22" fill="var(--np-brand)" opacity="0.35" />
-        <ellipse cx="1040" cy="420" rx="120" ry="28" fill="var(--np-brand)" opacity="0.3" />
-        <ellipse cx="720" cy="490" rx="60" ry="16" fill="var(--np-brand)" opacity="0.4" />
-      </svg>
-    </div>
+    <PlanetFooter footer={effectiveFooter ?? ''} />
   </div>
 </div>
 

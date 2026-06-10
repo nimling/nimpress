@@ -368,7 +368,7 @@
   }
   .np-changelog-version {
     font-family: var(--np-font-mono);
-    font-size: 30px;
+    font-size: 24px;
     color: var(--np-brand);
     font-weight: 700;
     line-height: 1;
@@ -458,21 +458,21 @@
   }
   .np-changelog-body :global(p),
   .np-changelog-body :global(li) {
-    font-size: 13.5px;
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.65;
   }
   .np-changelog-body :global(ul),
   .np-changelog-body :global(ol) {
-    margin: 8px 0;
+    margin: 10px 0;
   }
   .np-changelog-body :global(code) {
-    font-size: 12.5px;
+    font-size: 13.5px;
   }
   .np-changelog-description {
     margin: 0 0 16px;
     color: var(--np-text-secondary);
-    font-size: 13.5px;
-    line-height: 1.55;
+    font-size: 14.5px;
+    line-height: 1.6;
   }
 
   .np-changelog-empty {
