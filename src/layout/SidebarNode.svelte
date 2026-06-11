@@ -30,7 +30,7 @@
   {#if isGroup}
     {#if depth === 0}
       <div class="np-group">
-        <div class="np-group-header">
+        <div class="np-group-header" class:active>
           {#if node.link}
             <a class="np-group-label-link" href={node.link} class:active>{node.text}</a>
           {:else}
@@ -55,7 +55,7 @@
         {/if}
       </div>
     {:else}
-      <div class="np-subgroup-row">
+      <div class="np-subgroup-row" class:active>
         {#if node.link}
           <a class="np-link np-subgroup-link" href={node.link} class:active>{node.text}</a>
         {:else}
@@ -96,6 +96,18 @@
     gap: 0;
     padding: 0;
     border-radius: var(--np-radius-md);
+  }
+  .np-group-header.active,
+  .np-subgroup-row.active {
+    background-color: color-mix(in srgb, var(--np-brand) 16%, transparent);
+  }
+  .np-group-header.active .np-group-label-link,
+  .np-subgroup-row.active .np-subgroup-link {
+    color: var(--np-brand);
+  }
+  .np-group-header.active .np-group-toggle,
+  .np-subgroup-row.active .np-subgroup-toggle {
+    color: var(--np-brand);
   }
 
   .np-group-label,
@@ -191,8 +203,8 @@
     color: var(--np-text-primary);
   }
   .np-link.active {
-    color: var(--np-text-primary);
-    background-color: var(--np-bg-surface);
+    color: var(--np-brand);
+    background-color: color-mix(in srgb, var(--np-brand) 16%, transparent);
     font-weight: 500;
   }
 </style>

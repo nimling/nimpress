@@ -218,7 +218,7 @@
     width: 100%;
     max-width: var(--np-content-max, 1024px);
     margin: 0 auto;
-    padding: 32px 32px 0;
+    padding: 96px 32px 0;
     box-sizing: border-box;
     min-width: 0;
   }
