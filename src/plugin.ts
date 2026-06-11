@@ -1,6 +1,7 @@
-import type { Plugin } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
 import { readFile, readdir, copyFile } from 'node:fs/promises'
 import { resolve, relative, join, sep, dirname, isAbsolute } from 'node:path'
+import { createHash } from 'node:crypto'
 import matter from 'gray-matter'
 import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
@@ -433,6 +434,36 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   let highlighter: Highlighter | null = null
   let resolvedOutDir = resolve(process.cwd(), 'dist')
   let isBuildCommand = false
+  let server: ViteDevServer | null = null
+  const fileCache = new Map<string, { hash: string; processed: ProcessedPage }>()
+  const specToMd = new Map<string, string>()
+  const trackedSpecs = new Set<string>()
+
+  function hashContent(text: string): string {
+    return createHash('sha1').update(text).digest('hex')
+  }
+
+  function sidebarSignature(p: ProcessedPage): string {
+    const f = p.frontmatter
+    return JSON.stringify({
+      type: p.type,
+      effectivePath: p.effectivePath,
+      title: f.title,
+      slug: f.slug,
+      path: f.path,
+      order: f.order,
+      hidden: f.hidden,
+      collapsed: f.collapsed,
+      icon: f.icon,
+      redirect: f.redirect,
+      scope: f.scope,
+      claim: f.claim,
+      description: f.description,
+      meta: f.meta,
+      data: f.data,
+      tags: f.tags
+    })
+  }
 
   async function ensureHighlighter() {
     if (highlighter) return highlighter
@@ -668,14 +699,18 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const html = md.render(prepared)
 
     let openApiSpec: unknown | undefined
+    let specPath: string | undefined
     if (type === 'openapi') {
       if (!fm.spec) {
         console.warn(`[nimpress] page ${file} has type openapi but no spec field`)
       } else {
+        specPath = isAbsolute(fm.spec) ? fm.spec : resolve(dirname(file), fm.spec)
         const raw = await loadSpec(file, fm.spec)
         openApiSpec = raw ? flattenSpecForEmbed(raw, md) ?? undefined : undefined
       }
     }
+
+    rememberSpecBinding(file, specPath)
 
     return {
       slug,
@@ -688,6 +723,42 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       rawText: content,
       openApiSpec
     }
+  }
+
+  function rememberSpecBinding(mdFile: string, specPath: string | undefined): void {
+    for (const [s, m] of specToMd) {
+      if (m === mdFile) specToMd.delete(s)
+    }
+    if (specPath) {
+      specToMd.set(specPath, mdFile)
+      if (server && !trackedSpecs.has(specPath)) {
+        server.watcher.add(specPath)
+        trackedSpecs.add(specPath)
+      }
+    }
+  }
+
+  async function processFileCached(file: string): Promise<ProcessedPage | null> {
+    let raw: string
+    try {
+      raw = await readFile(file, 'utf-8')
+    } catch {
+      return null
+    }
+    const hash = hashContent(raw)
+    const hit = fileCache.get(file)
+    if (hit && hit.hash === hash) return hit.processed
+    const processed = await processFile(file)
+    if (!processed) {
+      fileCache.delete(file)
+      return null
+    }
+    fileCache.set(file, { hash, processed })
+    return processed
+  }
+
+  function dropFileCache(file: string): void {
+    fileCache.delete(file)
   }
 
   function isExcluded(slug: string): boolean {
@@ -708,10 +779,14 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const roadmapGroups = new Map<string, ProcessedPage[]>()
     const allProcessed: ProcessedPage[] = []
 
+    const fileSet = new Set(files)
+    for (const cached of [...fileCache.keys()]) {
+      if (!fileSet.has(cached)) fileCache.delete(cached)
+    }
     for (const file of files) {
       let p: ProcessedPage | null = null
       try {
-        p = await processFile(file)
+        p = await processFileCached(file)
       } catch (err) {
         console.warn(`[nimpress] failed to process ${file}:`, err)
         continue
@@ -1266,6 +1341,24 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     return safe === '__root__' ? '' : safe
   }
 
+  function invalidateMeta(dev: ViteDevServer): void {
+    for (const id of [VIRTUAL_MANIFEST, VIRTUAL_SEARCH, VIRTUAL_PAGES, VIRTUAL_BODIES]) {
+      const m = dev.moduleGraph.getModuleById('\0' + id)
+      if (m) dev.moduleGraph.invalidateModule(m)
+    }
+  }
+
+  function invalidateAllBodies(dev: ViteDevServer): void {
+    for (const slug of pages.keys()) {
+      const bodyId = '\0' + PAGE_BODY_PREFIX + urlSlug(slug) + '.js'
+      const compId = '\0' + PAGE_COMPONENT_PREFIX + urlSlug(slug) + '.svelte'
+      const b = dev.moduleGraph.getModuleById(bodyId)
+      const c = dev.moduleGraph.getModuleById(compId)
+      if (b) dev.moduleGraph.invalidateModule(b)
+      if (c) dev.moduleGraph.invalidateModule(c)
+    }
+  }
+
   function buildPagesEntry(): string {
     const entries: string[] = []
     for (const slug of pages.keys()) {
@@ -1357,14 +1450,52 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       await copyFile(src, dest)
     },
 
-    configureServer(server) {
+    configureServer(devServer) {
+      server = devServer
+      for (const specPath of trackedSpecs) devServer.watcher.add(specPath)
+
+      const onAdd = async (file: string) => {
+        if (!file.endsWith('.md')) return
+        if (!file.startsWith(contentRoot)) return
+        try {
+          await processAll()
+        } catch (err) {
+          devServer.config.logger.error(String(err))
+          return
+        }
+        invalidateMeta(devServer)
+        invalidateAllBodies(devServer)
+        devServer.ws.send({ type: 'full-reload' })
+      }
+      const onUnlink = async (file: string) => {
+        if (file.endsWith('.md') && file.startsWith(contentRoot)) {
+          dropFileCache(file)
+          try {
+            await processAll()
+          } catch (err) {
+            devServer.config.logger.error(String(err))
+            return
+          }
+          invalidateMeta(devServer)
+          invalidateAllBodies(devServer)
+          devServer.ws.send({ type: 'full-reload' })
+          return
+        }
+        if (specToMd.has(file)) {
+          const mdFile = specToMd.get(file)!
+          dropFileCache(mdFile)
+        }
+      }
+      devServer.watcher.on('add', onAdd)
+      devServer.watcher.on('unlink', onUnlink)
+
       if (options.banner === false) return
       const consumer = readConsumerPackage()
       const userBanner: BannerOptions = options.banner ?? {}
       const startedAt = Date.now()
-      server.printUrls = function () {
-        const urls = server.resolvedUrls
-        const local = urls?.local?.[0] ?? `http://localhost:${server.config.server.port ?? 5173}/`
+      devServer.printUrls = function () {
+        const urls = devServer.resolvedUrls
+        const local = urls?.local?.[0] ?? `http://localhost:${devServer.config.server.port ?? 5173}/`
         const network = urls?.network?.[0] ?? 'use --host to expose'
         const banner = buildBanner({
           title: userBanner.title ?? consumer.name ?? 'Nimpress',
@@ -1381,19 +1512,39 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     },
 
     async handleHotUpdate(ctx) {
-      if (!ctx.file.endsWith('.md')) return
-      if (!ctx.file.startsWith(contentRoot)) return
+      const file = ctx.file
+      const isMd = file.endsWith('.md') && file.startsWith(contentRoot)
+      const ownsSpec = specToMd.get(file)
+      if (!isMd && !ownsSpec) return
+      const targetMd = isMd ? file : ownsSpec!
+      const targetSlug = slugFromPath(contentRoot, targetMd)
+      const prev = pages.get(targetSlug)
+      const prevSig = prev ? sidebarSignature(prev) : null
+      dropFileCache(targetMd)
       try {
         await processAll()
       } catch (err) {
         ctx.server.config.logger.error(String(err))
         return
       }
-      const ids = [VIRTUAL_MANIFEST, VIRTUAL_SEARCH, VIRTUAL_PAGES, VIRTUAL_BODIES]
-      const mods = ids
-        .map((id) => ctx.server.moduleGraph.getModuleById('\0' + id))
-        .filter(Boolean) as never[]
-      return mods
+      const next = pages.get(targetSlug)
+      const nextSig = next ? sidebarSignature(next) : null
+      const sidebarChanged = prevSig !== nextSig || !prev || !next
+      const mods: unknown[] = []
+      const pushById = (id: string) => {
+        const m = ctx.server.moduleGraph.getModuleById(id)
+        if (m) mods.push(m)
+      }
+      const slugForUrl = next?.slug ?? targetSlug
+      pushById('\0' + PAGE_BODY_PREFIX + urlSlug(slugForUrl) + '.js')
+      pushById('\0' + PAGE_COMPONENT_PREFIX + urlSlug(slugForUrl) + '.svelte')
+      if (sidebarChanged) {
+        pushById('\0' + VIRTUAL_MANIFEST)
+        pushById('\0' + VIRTUAL_SEARCH)
+        pushById('\0' + VIRTUAL_PAGES)
+        pushById('\0' + VIRTUAL_BODIES)
+      }
+      return mods as never[]
     },
 
     resolveId(id) {
