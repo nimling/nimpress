@@ -7,10 +7,12 @@
 
   let {
     onOpenSearch,
-    onToggleDrawer
+    onToggleDrawer,
+    drawerOpen = false
   }: {
     onOpenSearch: () => void
     onToggleDrawer?: () => void
+    drawerOpen?: boolean
   } = $props()
 
   const config = $derived($configStore)
@@ -29,14 +31,16 @@
 <header class="np-header">
   <button
     class="np-menu-btn"
+    class:is-open={drawerOpen}
     aria-label="Toggle menu"
+    aria-expanded={drawerOpen}
     onclick={() => onToggleDrawer?.()}
   >
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-      <line x1="4" y1="7" x2="20" y2="7" />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="17" x2="20" y2="17" />
-    </svg>
+    <span class="np-menu-icon" aria-hidden="true">
+      <span class="np-menu-line np-menu-line-top"></span>
+      <span class="np-menu-line np-menu-line-mid"></span>
+      <span class="np-menu-line np-menu-line-bot"></span>
+    </span>
   </button>
   <a class="np-brand" href="/">
     {#if config.logo}
@@ -88,8 +92,9 @@
     column-gap: 16px;
     height: var(--np-header-height);
     padding: 0 20px;
-    border-bottom: 1px solid var(--np-border);
-    background-color: var(--np-bg);
+    border-bottom: 1px solid var(--np-header-border, var(--np-border));
+    background-color: var(--np-header-bg, var(--np-bg));
+    color: var(--np-header-text, var(--np-text-primary));
   }
   .np-brand {
     display: flex;
@@ -178,16 +183,43 @@
     height: 36px;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--np-border);
-    border-radius: var(--np-radius-sm);
-    background-color: var(--np-bg-surface);
+    border: 0;
+    background: transparent;
     color: var(--np-text-secondary);
     cursor: pointer;
     padding: 0;
   }
-  .np-menu-btn:hover {
-    color: var(--np-text-primary);
-    border-color: var(--np-border-strong);
+  .np-menu-btn:hover { color: var(--np-text-primary); }
+  .np-menu-icon {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 16px;
+  }
+  .np-menu-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease, top 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: 50% 50%;
+  }
+  .np-menu-line-top { top: 0; }
+  .np-menu-line-mid { top: 7px; }
+  .np-menu-line-bot { top: 14px; }
+  .np-menu-btn.is-open .np-menu-line-top {
+    top: 7px;
+    transform: rotate(45deg);
+  }
+  .np-menu-btn.is-open .np-menu-line-mid {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  .np-menu-btn.is-open .np-menu-line-bot {
+    top: 7px;
+    transform: rotate(-45deg);
   }
   @media (max-width: 1024px) {
     .np-header {

@@ -173,6 +173,8 @@
 
 {#if renderBackground}
   <div class="np-page-background" style:background-image={`url('${background}')`}></div>
+{:else}
+  <div class="np-page-backdrop np-page-backdrop-doc" aria-hidden="true"></div>
 {/if}
 <div class="np-page-shell" class:has-rail={showRail}>
   <div class="np-page">
@@ -207,29 +209,26 @@
 
 <style>
   .np-page-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
+    position: relative;
     width: 100%;
-    align-items: stretch;
-  }
-
-  .np-page-shell.has-rail {
-    grid-template-columns: minmax(0, 1fr) min-content;
-    gap: 8px;
-  }
-
-  @media (min-width: 1280px) {
-    .np-page-shell.has-rail {
-      gap: 48px;
-    }
+    margin-left: var(--np-content-offset, 0px);
   }
 
   .np-page {
+    display: block;
     width: 100%;
+    max-width: var(--np-content-max, 1024px);
+    margin: 0 auto;
     padding: 0 32px;
     box-sizing: border-box;
     min-width: 0;
+  }
+
+  .np-page-shell.has-rail .np-toc-rail {
+    position: absolute;
+    top: 0;
+    left: calc(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px);
+    width: var(--np-toc-width);
   }
 
   .np-issue-head {
@@ -286,7 +285,17 @@
   }
 
   @media (max-width: 1279px) {
-    .np-toc-rail { display: none; }
+    .np-page-shell.has-rail .np-toc-rail {
+      position: static;
+      left: auto;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .np-toc-rail :global(.np-toc-wrap) {
+      pointer-events: auto;
+    }
   }
 
   .np-page-footer {
@@ -302,9 +311,25 @@
     height: 25vh;
     min-height: 160px;
   }
+  .np-page-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  }
+  .np-page-backdrop-doc {
+    height: min(360px, 50vh);
+    background:
+      radial-gradient(ellipse 70% 60% at 30% 0%, color-mix(in srgb, var(--np-brand) 14%, transparent) 0%, transparent 70%),
+      linear-gradient(to bottom, color-mix(in srgb, var(--np-brand) 7%, var(--np-bg)) 0%, var(--np-bg) 100%);
+  }
   .np-page-background {
-    position: fixed;
-    top: var(--np-header-height, 0px);
+    position: absolute;
+    top: 0;
     left: 0;
     right: 0;
     height: min(520px, 80vh);

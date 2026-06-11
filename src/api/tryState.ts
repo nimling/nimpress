@@ -32,8 +32,9 @@ function pickJsonContent(op: FlatOperation): { schema?: JsonSchema; example?: un
   if (!json) return null
   let example: unknown = json.example
   if (example === undefined && json.examples) {
-    const first = Object.values(json.examples)[0]
-    if (first && typeof first === 'object' && 'value' in first) example = first.value
+    const picked = json.examples.default ?? Object.values(json.examples)[0]
+    if (picked && typeof picked === 'object' && 'value' in picked) example = picked.value
+    else example = picked
   }
   return { schema: json.schema, example }
 }

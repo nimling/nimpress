@@ -175,22 +175,43 @@
     return defaultTab(tabs)
   }
 
+  function pickExampleObject(examples: Record<string, any> | undefined): any {
+    if (!examples) return undefined
+    if (examples.default !== undefined) return examples.default
+    const first = Object.values(examples)[0]
+    return first
+  }
+
+  function unwrapExampleValue(raw: any): any {
+    if (raw !== null && typeof raw === 'object' && 'value' in raw) {
+      return (raw as { value?: unknown }).value
+    }
+    return raw
+  }
+
   function exampleValue(code: string, resp: any, ct: string): string {
     const entry = resp?.content?.[ct] ?? {}
     const raw =
       entry.example ??
-      (entry.examples ? Object.values(entry.examples)[0] : undefined) ??
+      pickExampleObject(entry.examples) ??
       entry.schema?.example ??
       (ct === 'application/json' ? op.responseExamples?.[code] : undefined)
     if (raw === undefined) return ''
+    const value = unwrapExampleValue(raw)
+    if (value === undefined) return ''
     if (ct === 'application/json') {
       try {
-        return JSON.stringify(typeof raw === 'object' ? raw : (raw as { value?: unknown })?.value ?? raw, null, 2)
+        return JSON.stringify(value, null, 2)
       } catch {
-        return String(raw)
+        return String(value)
       }
     }
-    return String(raw)
+    if (typeof value === 'string') return value
+    try {
+      return JSON.stringify(value, null, 2)
+    } catch {
+      return String(value)
+    }
   }
 
   function exampleLang(ct: string): 'json' | 'plain' {
@@ -310,13 +331,15 @@
             const entry = reqBody.content[ct] ?? {}
             const ex =
               entry.example ??
-              (entry.examples ? Object.values(entry.examples)[0] : undefined) ??
+              pickExampleObject(entry.examples) ??
               entry.schema?.example ??
               (ct === 'application/json' ? op.requestExample : undefined)
             if (ex !== undefined) {
+              const unwrapped = unwrapExampleValue(ex)
+              if (unwrapped === undefined) continue
               const value = ct === 'application/json'
-                ? (() => { try { return JSON.stringify((ex as { value?: unknown })?.value ?? ex, null, 2) } catch { return String(ex) } })()
-                : String(ex)
+                ? (() => { try { return JSON.stringify(unwrapped, null, 2) } catch { return String(unwrapped) } })()
+                : (typeof unwrapped === 'string' ? unwrapped : (() => { try { return JSON.stringify(unwrapped, null, 2) } catch { return String(unwrapped) } })())
               out.push({
                 key: `example:${ct}`,
                 label: cts.length > 1 ? `Example (${shortCt(ct)})` : 'Example',
@@ -350,6 +373,7 @@
                             value={t.example ?? ''}
                             language={exampleLang(t.contentType)}
                             readonly
+                            fitContent={true}
                             title={t.contentType}
                             showLineNumbers={false}
                           />
@@ -403,6 +427,7 @@
                             value={exampleValue(code, resp, t.contentType)}
                             language={exampleLang(t.contentType)}
                             readonly
+                            fitContent={true}
                             title={t.contentType}
                             showLineNumbers={false}
                           />

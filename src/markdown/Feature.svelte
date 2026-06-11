@@ -23,7 +23,12 @@
 
 <svelte:element this={link ? 'a' : 'div'} class="np-feature-card" href={link || undefined}>
   {#if icon}
-    {#if isImage}
+    {#if isImage && /\.svg(\?.*)?$/i.test(icon)}
+      <span
+        class="np-feature-icon np-feature-icon-svg"
+        style:--np-feature-icon-url={`url('${icon}')`}
+      ></span>
+    {:else if isImage}
       <img class="np-feature-icon np-feature-icon-img" src={icon} alt="" />
     {:else}
       <span class="np-feature-icon np-feature-icon-text">{icon}</span>
@@ -70,6 +75,19 @@
     width: 48px;
     height: 48px;
     object-fit: contain;
+  }
+  .np-feature-icon-svg {
+    width: 48px;
+    height: 48px;
+    background-color: var(--np-brand);
+    -webkit-mask-image: var(--np-feature-icon-url);
+    mask-image: var(--np-feature-icon-url);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
   }
   .np-feature-content { min-width: 0; }
   .np-feature-content h3 {

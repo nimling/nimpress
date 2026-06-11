@@ -200,7 +200,15 @@
     }
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 1280px) {
+    .np-toc-wrap {
+      position: fixed;
+      top: calc(var(--np-header-height) + 16px);
+      right: 12px;
+      z-index: 40;
+    }
+  }
+  @media (max-width: 480px) {
     .np-toc-wrap { display: none; }
   }
 </style>

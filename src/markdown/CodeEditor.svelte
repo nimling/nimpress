@@ -11,7 +11,6 @@
   import { shell } from '@codemirror/legacy-modes/mode/shell'
   import { go } from '@codemirror/legacy-modes/mode/go'
   import { csharp } from '@codemirror/legacy-modes/mode/clike'
-  import { oneDark } from '@codemirror/theme-one-dark'
   import { tags as t } from '@lezer/highlight'
 
   const npHighlight = HighlightStyle.define([
@@ -46,6 +45,7 @@
     readonly = false,
     minHeight = 120,
     maxHeight = 360,
+    fitContent = false,
     title = '',
     variant = 'default',
     showLineNumbers = true
@@ -55,6 +55,7 @@
     readonly?: boolean
     minHeight?: number
     maxHeight?: number
+    fitContent?: boolean
     title?: string
     variant?: 'default' | 'try'
     showLineNumbers?: boolean
@@ -81,8 +82,8 @@
       ? 'color-mix(in srgb, var(--np-brand) 50%, var(--np-text-faint))'
       : 'var(--np-text-faint)'
     const selection = tryVariant
-      ? 'color-mix(in srgb, var(--np-brand) 32%, transparent)'
-      : 'rgba(204, 120, 92, 0.28)'
+      ? 'color-mix(in srgb, var(--np-brand) 45%, transparent)'
+      : 'color-mix(in srgb, var(--np-brand) 40%, transparent)'
     const caretColor = tryVariant ? 'var(--np-brand)' : 'var(--np-text-code-block)'
     return EditorView.theme({
       '&': {
@@ -95,7 +96,8 @@
         fontSize: '12.5px',
         lineHeight: '1.65',
         minHeight: `${minHeight}px`,
-        maxHeight: `${maxHeight}px`,
+        maxHeight: fitContent ? 'none' : `${maxHeight}px`,
+        overflow: fitContent ? 'visible' : 'auto',
         backgroundColor: bg
       },
       '.cm-line': { backgroundColor: 'transparent' },
@@ -142,9 +144,10 @@
         lineNumbers(),
         history(),
         highlightActiveLine(),
+        EditorView.lineWrapping,
         keymap.of([...defaultKeymap, indentWithTab]),
         langCompartment.of(langExt()),
-        themeCompartment.of([oneDark, syntaxHighlighting(npHighlight), buildTheme()]),
+        themeCompartment.of([syntaxHighlighting(npHighlight), buildTheme()]),
         readOnlyCompartment.of(EditorState.readOnly.of(readonly)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

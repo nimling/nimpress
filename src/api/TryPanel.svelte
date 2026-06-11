@@ -1,8 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
+  import FullscreenIcon from '../icons/FullscreenIcon.svelte'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
   import { buildUrl, buildHeaders, createTryState, type TryState } from './tryState'
+
+  interface TryResponse {
+    status: number | null
+    body: string
+    error: string | null
+    sending: boolean
+  }
 
   let {
     op,
@@ -12,6 +20,8 @@
     disabled = false,
     hideBody = false,
     hideHeader = false,
+    hideResponse = false,
+    response = $bindable(),
     onOpenDialog,
     onClear,
     onShare
@@ -23,6 +33,8 @@
     disabled?: boolean
     hideBody?: boolean
     hideHeader?: boolean
+    hideResponse?: boolean
+    response?: TryResponse
     onOpenDialog?: (opId: string) => void
     onClear?: (opId: string) => void
     onShare?: (opId: string) => Promise<'ok' | 'fail'> | 'ok' | 'fail'
@@ -63,6 +75,15 @@
   let responseStatus = $state<number | null>(null)
   let responseBody = $state<string>('')
   let responseError = $state<string | null>(null)
+
+  $effect(() => {
+    if (response) {
+      response.status = responseStatus
+      response.body = responseBody
+      response.error = responseError
+      response.sending = sending
+    }
+  })
 
   const STORAGE_KEY = 'nimpress-try-auth'
 
@@ -196,6 +217,14 @@
         </button>
         <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
           Clear
+        </button>
+        <button class="np-try-meta np-try-meta-icon" type="button" onclick={openDialog} disabled={disabled} title="Open Try out as dialog" aria-label="Open Try out as dialog">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h6v6" />
+            <path d="M9 21H3v-6" />
+            <path d="M21 3l-7 7" />
+            <path d="M3 21l7-7" />
+          </svg>
         </button>
         <button class={`np-try-send np-try-send-${op.method.toLowerCase()}`} onclick={send} disabled={sending || disabled}>
           {sending ? 'Sending…' : op.method.toUpperCase()}
@@ -335,7 +364,7 @@
   </div>
   {/if}
 
-  {#if !disabled && (responseStatus !== null || responseError)}
+  {#if !hideResponse && !disabled && (responseStatus !== null || responseError)}
     <div class="np-try-result">
       <div class="np-try-result-head">
         <span class="np-try-group-label">Response</span>
@@ -426,6 +455,31 @@
     border-color: var(--np-text-muted);
   }
   .np-try-meta:disabled { opacity: 0.4; cursor: not-allowed; }
+  .np-try-meta-icon {
+    padding: 5px 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .np-try-icon-btn {
+    background-color: transparent;
+    color: var(--np-text-secondary);
+    border: 1px solid var(--np-border);
+    padding: 5px 7px;
+    border-radius: var(--np-radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .np-try-icon-btn:hover {
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-primary);
+    border-color: var(--np-text-muted);
+  }
+  .np-try-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .np-try-open-dialog {
     background-color: var(--np-brand);
     color: var(--np-text-on-brand);

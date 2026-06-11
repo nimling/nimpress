@@ -1,30 +1,30 @@
 :root {
-  --np-brand: #CC785C;
-  --np-brand-hover: #B5664D;
-  --np-brand-soft: rgba(204, 120, 92, 0.08);
-  --np-link: #CC785C;
+  --np-brand: #A85A3F;
+  --np-brand-hover: #8C492F;
+  --np-brand-soft: rgba(168, 90, 63, 0.12);
+  --np-link: #8C492F;
 
   --np-bg: #FFFFFF;
-  --np-bg-surface: #F9FAFB;
-  --np-bg-sidebar: #FFFFFF;
+  --np-bg-surface: #F4F4F5;
+  --np-bg-sidebar: #FAFAFA;
   --np-bg-card: #FFFFFF;
-  --np-bg-code-inline: #F4F4F5;
+  --np-bg-code-inline: #ECECEE;
   --np-bg-code-block: #0B1020;
 
-  --np-text-primary: #18181B;
-  --np-text-secondary: #52525B;
-  --np-text-muted: #71717A;
-  --np-text-faint: #A1A1AA;
+  --np-text-primary: #09090B;
+  --np-text-secondary: #3F3F46;
+  --np-text-muted: #52525B;
+  --np-text-faint: #71717A;
   --np-text-on-brand: #FFFFFF;
   --np-text-code-block: #E5E7EB;
 
-  --np-border: #E4E4E7;
-  --np-border-strong: #D4D4D8;
-  --np-divider: #F4F4F5;
+  --np-border: #C8C8CC;
+  --np-border-strong: #A1A1AA;
+  --np-divider: #D4D4D8;
 
-  --np-table-row-alt: #FAFAF9;
-  --np-table-row-hover: #F4F4F5;
-  --np-table-header-bg: #F5F4F2;
+  --np-table-row-alt: #F4F4F5;
+  --np-table-row-hover: #E4E4E7;
+  --np-table-header-bg: #ECECEE;
 
   --np-tip: #CC785C;
   --np-note: #3B82F6;

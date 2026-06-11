@@ -1748,8 +1748,8 @@
   }
 
   .np-page-background {
-    position: fixed;
-    top: var(--np-header-height, 0px);
+    position: absolute;
+    top: 0;
     left: 0;
     right: 0;
     height: min(520px, 80vh);

@@ -59,6 +59,7 @@
   <Header
     onOpenSearch={() => (searchOpen = true)}
     onToggleDrawer={toggleSidebar}
+    drawerOpen={drawerOpen || !collapsed}
   />
   <div class="np-body">
     <aside class="np-aside" class:open={drawerOpen}>
@@ -82,11 +83,24 @@
 
 <style>
   .np-app {
+    position: relative;
     min-height: 100vh;
     background-color: var(--np-bg);
     color: var(--np-text-primary);
+    overflow-x: clip;
+    --np-content-offset: 0px;
+  }
+  .np-app:not(.np-collapsed) {
+    --np-content-offset: calc(var(--np-sidebar-width) / -2);
+  }
+  @media (max-width: 1024px) {
+    .np-app,
+    .np-app:not(.np-collapsed) {
+      --np-content-offset: 0px;
+    }
   }
   .np-body {
+    position: relative;
     display: grid;
     grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
     align-items: start;
@@ -111,38 +125,46 @@
     bottom: 0;
     width: var(--np-sidebar-width);
     overflow-y: auto;
-    background-color: var(--np-bg-sidebar);
+    background: none;
+    background-color: transparent;
+    border: 0;
     border-right: 1px solid var(--np-border);
     box-sizing: border-box;
   }
   .np-main {
-    position: relative;
-    z-index: 0;
     min-height: calc(100vh - var(--np-header-height));
-    padding: 32px 8px 32px 32px;
+    padding: 32px;
     min-width: 0;
-  }
-  @media (min-width: 1280px) {
-    .np-main { padding: 32px; }
   }
   .np-drawer-backdrop {
     display: none;
   }
   @media (max-width: 1024px) {
     .np-body {
-      grid-template-columns: 1fr;
+      display: block;
+    }
+    .np-collapsed .np-body {
+      display: block;
+      grid-template-columns: none;
+    }
+    .np-main {
+      width: 100%;
+      box-sizing: border-box;
     }
     .np-aside {
       position: fixed;
       top: var(--np-header-height);
       left: 0;
       bottom: 0;
-      width: min(320px, 85vw);
+      width: min(260px, 80vw);
       height: calc(100vh - var(--np-header-height));
       z-index: 40;
       transform: translateX(-100%);
       transition: transform 0.22s ease;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+    .np-aside :global(.np-sidebar) {
+      width: 100%;
     }
     .np-aside.open {
       transform: translateX(0);

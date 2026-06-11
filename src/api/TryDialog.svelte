@@ -28,11 +28,24 @@
   let suppressUrlUpdate = false
   let dropdownOpen = $state(false)
   let dropdownEl: HTMLDivElement | null = null
-
+  let rightTab = $state<'body' | 'response'>('body')
+  let response = $state<{ status: number | null; body: string; error: string | null; sending: boolean }>({
+    status: null,
+    body: '',
+    error: null,
+    sending: false
+  })
   const selectedOp = $derived(operations.find((o) => o.id === selectedOpId) ?? null)
   const initialServer = $derived(
     servers.find((s) => typeof s?.url === 'string' && s.url.includes('.dev.'))?.url ?? servers[0]?.url ?? ''
   )
+  const methodHasBody = $derived(selectedOp ? ['POST', 'PUT', 'PATCH'].includes(selectedOp.method) : false)
+  $effect(() => {
+    if (!methodHasBody) rightTab = 'response'
+  })
+  $effect(() => {
+    if (response.status !== null || response.error) rightTab = 'response'
+  })
 
   function loadCache(): Record<string, TryState> | null {
     if (typeof localStorage === 'undefined') return null
@@ -343,21 +356,47 @@
               {servers}
               {securitySchemes}
               bind:tryState={tryStates[selectedOpId]}
+              bind:response
               hideBody={true}
               hideHeader={true}
+              hideResponse={true}
             />
           {/if}
         </div>
         <div class="np-try-dialog-cell np-try-dialog-cell-body">
-          {#if tryStates[selectedOpId] && ['POST', 'PUT', 'PATCH'].includes(selectedOp.method)}
-            <header class="np-try-section-head"><span>Body</span></header>
-            <div class="np-try-body-host">
-              <CodeEditor bind:value={tryStates[selectedOpId].bodyValue} language="json" title="body" variant="try" showLineNumbers={false} />
+          {#if methodHasBody}
+            <div class="np-try-tabs-bar">
+              <button
+                type="button"
+                class:active={rightTab === 'body'}
+                onclick={() => (rightTab = 'body')}
+              >body</button>
+              <button
+                type="button"
+                class:active={rightTab === 'response'}
+                onclick={() => (rightTab = 'response')}
+              >response{#if response.status !== null}<span class="np-try-tab-status" data-ok={response.status < 400}>{response.status}</span>{/if}</button>
             </div>
-          {:else}
-            <header class="np-try-section-head"><span>Body</span></header>
-            <div class="np-try-body-empty">This endpoint has no request body.</div>
           {/if}
+          <div class="np-try-tab-panel">
+            {#if methodHasBody && rightTab === 'body'}
+              {#if tryStates[selectedOpId]}
+                <div class="np-try-body-host">
+                  <CodeEditor bind:value={tryStates[selectedOpId].bodyValue} language="json" title="body" variant="try" showLineNumbers={false} />
+                </div>
+              {/if}
+            {:else}
+              {#if response.error}
+                <pre class="np-try-response-error">{response.error}</pre>
+              {:else if response.status !== null}
+                <div class="np-try-response-body">
+                  <CodeEditor value={response.body} language="json" title="response" variant="try" showLineNumbers={false} />
+                </div>
+              {:else}
+                <div class="np-try-body-empty">Send the request to see a response.</div>
+              {/if}
+            {/if}
+          </div>
         </div>
         <div class="np-try-dialog-cell np-try-dialog-cell-footer">
           {#if tryStates[selectedOpId]}
@@ -386,6 +425,8 @@
     justify-content: center;
     padding: 24px;
     box-sizing: border-box;
+    overscroll-behavior: contain;
+    touch-action: none;
   }
   .np-try-dialog {
     position: relative;
@@ -455,7 +496,7 @@
     background-color: var(--np-brand);
     color: var(--np-text-on-brand);
     border: 0;
-    padding: 10px 14px;
+    padding: 4px 8px;
     border-radius: var(--np-radius-md);
     font-weight: 700;
     cursor: pointer;
@@ -463,13 +504,19 @@
     letter-spacing: 0.05em;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
     line-height: 1;
   }
   .np-try-send:hover { filter: brightness(1.08); }
+  .np-try-send-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 4px;
+  }
   .np-try-send-shortcut {
     font-family: var(--np-font-mono);
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
     letter-spacing: 0;
     padding: 2px 4px;
@@ -477,6 +524,9 @@
     background-color: rgba(0, 0, 0, 0.32);
     color: rgba(255, 255, 255, 0.96);
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .np-try-send-get { background-color: var(--np-method-get, #14a44d); }
   .np-try-send-post { background-color: var(--np-method-post, #2079c7); }
@@ -629,11 +679,109 @@
     border-right: 1px solid var(--np-divider);
     overflow-y: auto;
     overflow-x: auto;
+    min-height: 0;
+  }
+  .np-try-dialog-cell-inputs > :global(.np-try) {
+    flex: 0 0 auto;
   }
   .np-try-dialog-cell-body {
     grid-column: 2;
     grid-row: 1;
     overflow: hidden;
+    min-height: 0;
+  }
+  .np-try-tabs-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: transparent;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: 0 0 auto;
+  }
+  .np-try-tabs-bar::-webkit-scrollbar { display: none; height: 0; }
+  .np-try-tabs-bar > button {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 0;
+    color: rgba(229, 231, 235, 0.55);
+    font-size: 12.5px;
+    padding: 10px 12px;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: var(--np-font-mono);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .np-try-tabs-bar > button:hover { color: rgba(229, 231, 235, 0.95); }
+  .np-try-tabs-bar > button.active {
+    color: var(--np-brand);
+    border-bottom-color: var(--np-brand);
+    background-color: transparent;
+  }
+  .np-try-tab-status {
+    font-family: var(--np-font-mono);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: var(--np-radius-sm);
+    background-color: rgba(0, 0, 0, 0.28);
+    color: rgba(229, 231, 235, 0.95);
+  }
+  .np-try-tab-status[data-ok='true'] { color: var(--np-method-get, #14a44d); }
+  .np-try-tab-status[data-ok='false'] { color: var(--np-method-delete, #d44a4a); }
+  .np-try-tab-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .np-try-response-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    position: relative;
+  }
+  .np-try-response-body :global(.np-editor) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    border-radius: 0;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .np-try-response-body :global(.np-editor-host) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+  }
+  .np-try-response-body :global(.cm-editor) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100% !important;
+    width: 100%;
+  }
+  .np-try-response-body :global(.cm-scroller) {
+    max-height: none !important;
+    height: 100%;
+  }
+  .np-try-response-error {
+    margin: 0;
+    padding: 16px;
+    color: var(--np-method-delete, #d44a4a);
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: auto;
   }
   .np-try-dialog-cell-footer {
     grid-column: 1 / -1;
