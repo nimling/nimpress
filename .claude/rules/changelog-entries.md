@@ -182,6 +182,22 @@ A release that introduces a new example, a new concept page, or a new API endpoi
 
 7. Restating what the version number already conveys. A line that says "this release ships v1.5.1" carries no information.
 
+## How to phrase changes for the reader
+
+The reader is an API consumer planning their next integration step. They do not run the database, they do not know the trigger or migration names, and they have never seen the table that backs a resource. Frame every change in the words the consumer would use when describing it to a teammate.
+
+1. Lead with what the consumer can now do, or what they no longer need to do.
+
+2. Skip database and infrastructure terms. Words like `seed`, `seeded`, `row`, `trigger`, `materialized`, `backfill`, `cascade table`, `enqueued`, `dispatcher`, `pool` belong to the implementation. Reach for `prefilled with the default values`, `record`, `behind the scenes`, `applied to every existing organization at the release`.
+
+3. Skip naming internal subsystems. The reader does not know which Go package or SQL function owns the change. Talk about the API surface and the resulting behavior.
+
+4. Skip implementation rationale unless the consumer needs it to integrate. The reader does not need to know that a function moved or that two write paths merged into one; they need to know which endpoint to call.
+
+5. Match the tone of a release note that a product team sends to integrators: short, clear, friendly, anchored on what the consumer sees in their own client.
+
+A sentence that names an internal column, a function name, or a migration number is a sign the section is written for a contributor, not a consumer. Rewrite it in the consumer's words.
+
 ## How to phrase removals
 
 A removal lands in one of three buckets. Pick the bucket; the wording follows.

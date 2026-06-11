@@ -396,6 +396,17 @@
 .np-details-body > * {
   margin: 0;
 }
+.np-details-body > .np-code-group {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.np-details-body > pre,
+.np-details-body > .np-code-mount {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
 
 .np-code-group {
   border: 1px solid var(--np-border);
