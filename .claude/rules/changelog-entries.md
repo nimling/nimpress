@@ -142,6 +142,32 @@ The body carries the real detail of the release. The renderer applies its own sc
 
 4. Anything already obvious from the version number.
 
+5. Repository file paths, directory layouts, code-base file names, or any reference to where code lives in the source tree. The changelog is read by API consumers, not by repo contributors. Anything that names `internal/`, `cmd/`, `openapi_definition/`, `<op_id>_*.yml`, or a path under the repo is a rule violation. The API path (`/api/...`) is fine; the file path is not.
+
+6. Wording that names the same fact from two angles ("absent from the running surface and absent from the spec", "removed from the code and the spec", "dropped from both X and Y"). State the user-facing fact once. The reader does not see the spec and the running handlers as two separate things — only the API.
+
+7. Restating what the version number already conveys. A line that says "this release ships v1.5.1" carries no information.
+
+## How to phrase removals
+
+A removal lands in one of three buckets. Pick the bucket; the wording follows.
+
+1. Breaking removal of a public capability — keep the heading short, name the capability, write a short paragraph that names what the consumer must change to keep working, and bold the word `breaking`.
+
+2. Gated capability that is held back from public exposure — say it is held back and why ("held back until end-to-end testing finishes"), do not say "removed". A held-back capability is coming back; calling it removed is misleading.
+
+3. Capability the consumer never saw (debug, internal, deprecated-from-day-one) — do not write a line at all. It does not belong in the changelog.
+
+## How to phrase examples and error responses
+
+The reader cares that the docs Try-It and the response panels show meaningful bodies, not that some example file lives at a repo path.
+
+1. Write what the reader sees in the docs: "Every endpoint shows a real captured response body for `200`, `400` and `403` in the docs panel" — not "examples live under `openapi_definition/examples/...`".
+
+2. Status codes belong inside backticks. Repo paths to example files do not appear at all.
+
+3. If the change is the addition of error response bodies on the docs site, that is one line. Not three list items naming the file layout.
+
 ## Rendered shape
 
 1. Page H1 reads from the top level `title` of the highest version entry, so every entry file uses the same string.
