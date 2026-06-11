@@ -119,25 +119,21 @@
 
   const pathParams = $derived(op.parameters.filter((p) => p.in === 'path'))
   const queryParams = $derived(op.parameters.filter((p) => p.in === 'query'))
-  const headerParams = $derived.by(() => {
-    const declared = op.parameters.filter((p) => p.in === 'header')
-    const hasAuthHeader = declared.some((p) => p.name.toLowerCase() === 'authorization')
-    const hasSecurity = schemeNames.length > 0
-    if (hasAuthHeader || !hasSecurity) return declared
-    return [
-      {
-        name: 'Authorization',
-        in: 'header' as const,
-        required: false,
-        description: 'Authentication header. Paste the full value, e.g. "Bearer <token>".',
-        example: 'Bearer <token>'
-      },
-      ...declared
-    ]
-  })
+  const headerParams = $derived(op.parameters.filter((p) => p.in === 'header'))
   const hasBody = $derived(['POST', 'PUT', 'PATCH'].includes(op.method))
+  const authPlaceholder = $derived.by(() => {
+    const scheme = securitySchemes[tryState.selectedScheme]
+    if (!scheme) return ''
+    if (scheme.type === 'http' && scheme.scheme === 'bearer') {
+      return scheme.bearerFormat ? `<${scheme.bearerFormat} token>` : '<token>'
+    }
+    if (scheme.type === 'http' && scheme.scheme === 'basic') return '<base64(user:pass)>'
+    if (scheme.type === 'apiKey') return '<api key>'
+    return '<value>'
+  })
 
   let panelEl = $state<HTMLDivElement | null>(null)
+  let authOpen = $state(true)
   let pathOpen = $state(true)
   let headersOpen = $state(true)
   let queryOpen = $state(true)
@@ -150,6 +146,7 @@
     const available = Math.max(0, window.innerHeight - rect.top - 80)
     const overflow = panelEl.scrollHeight > available
     const open = !overflow
+    authOpen = open
     pathOpen = open
     headersOpen = open
     queryOpen = open
@@ -173,9 +170,10 @@
     }
   })
 
-  function toggle(which: 'path' | 'headers' | 'query' | 'body') {
+  function toggle(which: 'auth' | 'path' | 'headers' | 'query' | 'body') {
     userToggled = true
-    if (which === 'path') pathOpen = !pathOpen
+    if (which === 'auth') authOpen = !authOpen
+    else if (which === 'path') pathOpen = !pathOpen
     else if (which === 'headers') headersOpen = !headersOpen
     else if (which === 'query') queryOpen = !queryOpen
     else bodyOpen = !bodyOpen
@@ -267,8 +265,37 @@
       </label>
     {/if}
 
-    <!-- Auth is set directly through the Authorization header below; no separate auth UI. -->
-
+    {#if schemeNames.length > 0}
+      <div class="np-try-group" class:np-try-group-open={authOpen}>
+        <button type="button" class="np-try-group-head" aria-expanded={authOpen} onclick={() => toggle('auth')}>
+          <span class="np-try-group-label">Auth</span>
+          <span class="np-try-group-chev" class:open={authOpen} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
+        </button>
+        {#if authOpen}
+          <div class="np-try-group-fields">
+            <label class="np-try-field">
+              <span>Scheme</span>
+              <select bind:value={tryState.selectedScheme}>
+                <option value="">None</option>
+                {#each schemeNames as name (name)}
+                  <option value={name}>{name}</option>
+                {/each}
+              </select>
+            </label>
+            {#if tryState.selectedScheme}
+              <label class="np-try-field">
+                <span>Value</span>
+                <input bind:value={tryState.authValue} placeholder={authPlaceholder} />
+              </label>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     {#if pathParams.length > 0}
       <div class="np-try-group" class:np-try-group-open={pathOpen}>

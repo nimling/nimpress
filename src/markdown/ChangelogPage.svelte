@@ -271,6 +271,13 @@
     z-index: 1;
   }
 
+  @media (min-width: 1280px) {
+    .np-page-shell.has-rail {
+      padding-left: calc(var(--np-sidebar-width) - var(--np-sidebar-current));
+      transition: padding-left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
   .np-page-shell.has-rail .np-toc-rail {
     position: absolute;
     top: 0;
