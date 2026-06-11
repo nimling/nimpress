@@ -122,6 +122,40 @@ The body carries the real detail of the release. The renderer applies its own sc
 
 7. Link to the relevant PR or issue when the change references work outside the docs.
 
+## Markdown shapes that are encouraged
+
+The body is rendered as full GitHub flavored markdown. Reach for whichever shape makes the change scan fastest, not just prose paragraphs.
+
+1. Bulleted lists for two or more sibling changes under one theme.
+
+2. Tables when the section is a list of `(thing, effect)` pairs, `(field, default value)` pairs, `(endpoint, status)` pairs, or any other rows that share the same columns. A table reads faster than five bullets that repeat the same sentence shape. Wrap identifiers in backticks inside cells.
+
+3. Fenced code blocks for HTTP exchanges, request bodies, response bodies, YAML, JSON, and SQL snippets. Tag the language so the docs panel highlights.
+
+4. Block quotes for a one line callout when a section needs to interrupt the flow with a warning or a note (use sparingly).
+
+5. Nested lists when a single change has two or three steps that the consumer runs in order; a flat bulleted list is the default and the nested shape is the exception.
+
+A section that compares before and after, names defaults per field, or lists endpoints with their new status code is almost always clearer as a table than as a stack of bullets.
+
+## Linking from a changelog entry
+
+A release that introduces a new example, a new concept page, or a new API endpoint links to the canonical doc page from inside the entry body. The reader scanning the changelog jumps straight to the deeper doc.
+
+1. New example walkthrough — link to `/solutions/<product>/examples/<slug>` from inside the prose of the section that ships the example.
+
+2. New concept page — link to `/solutions/<product>/concepts/<slug>` from the section that explains the new concept.
+
+3. New API endpoint — link to the docs panel anchor for that endpoint when one exists; otherwise link to the section in the relevant concept page that names the endpoint.
+
+4. Roadmap issue — set `data.issue` on the frontmatter (see above). Do not also paste the link in the body.
+
+5. Use markdown link syntax `[label](path)`. Relative paths are resolved against the changelog file; site root paths starting at `/solutions/` also work and read more obviously.
+
+6. Link text is the human label of the target, not the path. `the Admin booking management example` reads; `/solutions/bookable/examples/admin_booking_management` does not.
+
+7. Link once per target inside a single entry. A second mention in the same entry stays as plain text.
+
 ## What to include
 
 1. User visible behavior changes.
