@@ -75,6 +75,7 @@
     <main class="np-main">
       {@render children()}
     </main>
+    <div class="np-aside-mirror" aria-hidden="true"></div>
   </div>
   {#if searchOpen}
     <SearchModal onClose={() => (searchOpen = false)} />
@@ -88,27 +89,32 @@
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     overflow-x: clip;
-    --np-content-offset: 0px;
-  }
-  .np-app:not(.np-collapsed) {
-    --np-content-offset: calc(var(--np-sidebar-width) / -2);
-  }
-  @media (max-width: 1024px) {
-    .np-app,
-    .np-app:not(.np-collapsed) {
-      --np-content-offset: 0px;
-    }
   }
   .np-body {
     position: relative;
     display: grid;
-    grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
+    grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr) var(--np-sidebar-width);
     align-items: start;
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: grid-template-columns;
   }
   .np-collapsed .np-body {
-    grid-template-columns: 0px minmax(0, 1fr);
+    grid-template-columns: 0px minmax(0, 1fr) var(--np-sidebar-width);
+  }
+  .np-aside-mirror {
+    height: 0;
+    pointer-events: none;
+  }
+  @media (max-width: 1279px) {
+    .np-body {
+      grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
+    }
+    .np-collapsed .np-body {
+      grid-template-columns: 0px minmax(0, 1fr);
+    }
+    .np-aside-mirror {
+      display: none;
+    }
   }
   .np-aside {
     position: sticky;

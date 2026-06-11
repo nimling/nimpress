@@ -211,7 +211,6 @@
   .np-page-shell {
     position: relative;
     width: 100%;
-    margin-left: var(--np-content-offset, 0px);
   }
 
   .np-page {

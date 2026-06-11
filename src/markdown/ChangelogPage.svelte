@@ -269,7 +269,6 @@
     position: relative;
     width: 100%;
     z-index: 1;
-    margin-left: var(--np-content-offset, 0px);
   }
 
   .np-page-shell.has-rail .np-toc-rail {
