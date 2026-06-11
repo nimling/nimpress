@@ -207,4 +207,7 @@
     background-color: color-mix(in srgb, var(--np-brand) 16%, transparent);
     font-weight: 500;
   }
+  .np-subgroup-row.active .np-link.active {
+    background-color: transparent;
+  }
 </style>
