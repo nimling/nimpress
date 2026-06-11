@@ -41,11 +41,10 @@
       stage.innerHTML = svg
       const node = stage.querySelector('svg')
       if (node) {
-        node.removeAttribute('width')
-        node.removeAttribute('height')
-        node.style.maxWidth = '100%'
-        node.style.height = 'auto'
+        node.setAttribute('preserveAspectRatio', 'xMidYMid meet')
         node.style.display = 'block'
+        node.style.maxWidth = '100%'
+        node.style.maxHeight = '100%'
       }
       reset()
     } catch (err) {
@@ -179,6 +178,9 @@
     touch-action: none;
     cursor: grab;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .np-mermaid-fullscreen .np-mermaid-viewport {
     height: 100vh;
@@ -187,16 +189,19 @@
     cursor: grabbing;
   }
   .np-mermaid-stage {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    max-height: 100%;
     transform-origin: center center;
-    translate: -50% -50%;
     will-change: transform;
   }
   .np-mermaid-stage :global(svg) {
     display: block;
     max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
   }
   .np-mermaid-toolbar {
