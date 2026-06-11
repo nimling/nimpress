@@ -29,7 +29,7 @@
     mermaid.initialize({
       startOnLoad: false,
       theme: $theme === 'dark' ? 'dark' : 'default',
-      fontFamily: 'var(--np-font-sans)',
+      fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       securityLevel: 'loose',
       logLevel: 'error',
       flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 50 },
@@ -178,9 +178,6 @@
     touch-action: none;
     cursor: grab;
     user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
   .np-mermaid-fullscreen .np-mermaid-viewport {
     height: 100vh;
@@ -189,11 +186,11 @@
     cursor: grabbing;
   }
   .np-mermaid-stage {
-    display: inline-flex;
+    position: absolute;
+    inset: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
-    max-width: 100%;
-    max-height: 100%;
     transform-origin: center center;
     will-change: transform;
   }
@@ -201,8 +198,6 @@
     display: block;
     max-width: 100%;
     max-height: 100%;
-    width: auto;
-    height: auto;
   }
   .np-mermaid-toolbar {
     position: absolute;
