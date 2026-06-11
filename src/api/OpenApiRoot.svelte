@@ -25,13 +25,59 @@
 
   let mounted = $state<Set<string>>(new Set())
   let observer: IntersectionObserver | null = null
+  const orderedOpKeys = $derived(
+    flat ? flat.tags.flatMap((t) => t.operations.map((op) => `operation/${op.id}`)) : []
+  )
+
+  const WINDOW_BEFORE = 6
+  const WINDOW_AFTER = 6
+  const ROOT_MARGIN = '600px 0px'
+
+  const hydrateQueue: string[] = []
+  const queued = new Set<string>()
+  let drainScheduled = false
 
   function markMounted(id: string) {
-    if (!mounted.has(id)) {
-      const next = new Set(mounted)
-      next.add(id)
-      mounted = next
+    if (mounted.has(id)) return
+    const next = new Set(mounted)
+    next.add(id)
+    mounted = next
+  }
+
+  function enqueueHydrate(id: string) {
+    if (mounted.has(id) || queued.has(id)) return
+    queued.add(id)
+    hydrateQueue.push(id)
+    scheduleDrain()
+  }
+
+  function scheduleDrain() {
+    if (drainScheduled) return
+    drainScheduled = true
+    const run = () => {
+      drainScheduled = false
+      const next = hydrateQueue.shift()
+      if (!next) return
+      queued.delete(next)
+      markMounted(next)
+      if (hydrateQueue.length) scheduleDrain()
     }
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+    }
+    if (typeof w.requestIdleCallback === 'function') w.requestIdleCallback(run, { timeout: 200 })
+    else requestAnimationFrame(run)
+  }
+
+  function seedInitialWindow() {
+    const keys = orderedOpKeys
+    if (!keys.length) return
+    const hash = window.location.hash.slice(1)
+    const anchorIndex = hash.startsWith('operation/') ? keys.indexOf(hash) : -1
+    const center = anchorIndex >= 0 ? anchorIndex : 0
+    const start = Math.max(0, center - WINDOW_BEFORE)
+    const end = Math.min(keys.length - 1, center + WINDOW_AFTER)
+    for (let i = start; i <= end; i++) markMounted(keys[i])
   }
 
   function scrollToHash() {
@@ -48,12 +94,6 @@
     })
   }
 
-  function attachObserver(el: HTMLElement, opId: string) {
-    if (!observer) return
-    el.dataset.opid = opId
-    observer.observe(el)
-  }
-
   let allCollapsed = $state(false)
   let schemasOpen = $state(true)
 
@@ -63,6 +103,7 @@
   }
 
   onMount(() => {
+    seedInitialWindow()
     scrollToHash()
     const onHash = () => scrollToHash()
     window.addEventListener('hashchange', onHash)
@@ -74,13 +115,13 @@
               const target = e.target as HTMLElement
               const id = target.dataset.opid
               if (id) {
-                markMounted(id)
+                enqueueHydrate(id)
                 observer?.unobserve(target)
               }
             }
           }
         },
-        { rootMargin: '1200px 0px' }
+        { rootMargin: ROOT_MARGIN }
       )
       document.querySelectorAll<HTMLElement>('.np-op-lazy').forEach((el) => {
         const id = el.dataset.opid
@@ -89,7 +130,7 @@
     } else {
       document.querySelectorAll<HTMLElement>('.np-op-lazy').forEach((el) => {
         const id = el.dataset.opid
-        if (id) markMounted(id)
+        if (id) enqueueHydrate(id)
       })
     }
     const stopSpy = setupHashSpy({

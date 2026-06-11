@@ -34,9 +34,27 @@ data:
 
 4. `data.release_date` is required. An RFC 3339 timestamp. Date only (`2026-06-08`) is accepted and interpreted as midnight UTC. Full timestamps (`2026-06-08T09:00:00Z`) are accepted. The renderer formats it as `DD.MM.YYYY` next to the entry title. Invalid values fail the build.
 
-5. `data.title` is the per release name. Keep it to a short, friendly one phrase label. No comma lists, no laundry list of changes. Example: `Booking calendars`, `Organization settings`, `Conflict clarity`. The full rundown goes in the markdown body.
+5. `data.title` is the per release name. Hard limits:
 
-6. `data.description` is the brief outline shown under the header when the entry is expanded. One short sentence that frames the release for a reader scanning the changelog. Plain text only, markdown is not rendered. Skip identifier lists, skip backticks, save details for the body.
+5.1. **Max 48 characters.** Builds fail above the limit.
+
+5.2. **No commas.** A comma means the title is trying to list more than one shipped thing — split it into two releases or move the rest to the body.
+
+5.3. **No code identifiers.** No backticks, no method names, no path segments, no query parameters, no field names, no SQL identifiers, no Go symbols, no `:`-prefixed param placeholders. If the only way to name the release is with an identifier, the title is wrong — pick the user-visible capability instead.
+
+5.4. **Sentence case, one phrase.** Examples to write: `Booking calendars`, `Organization settings`, `Conflict clarity`. Examples to reject: `Setting joins claimius, with-set hydration on the audit and relation endpoints, and an actor naming sweep`, `` `with=access` everywhere ``, `POST /api/calendar shipped`.
+
+6. `data.description` is one short sentence that frames the release for a reader scanning the changelog. Hard limits:
+
+6.1. **Max 160 characters.** Builds fail above the limit.
+
+6.2. **One sentence.** Period only at the end.
+
+6.3. **No code identifiers.** No backticks, no method names, no paths, no query parameters, no function names, no struct names, no SQL identifiers. The description is the introduction, not the implementation summary.
+
+6.4. **No detail enumeration.** Skip `routes through`, `hydrates`, `is renamed to`, multi-clause `and …, and …` constructions. Frame the why or the user-facing effect.
+
+6.5. Plain text only, markdown is not rendered.
 
 ## Linking to a roadmap issue
 
