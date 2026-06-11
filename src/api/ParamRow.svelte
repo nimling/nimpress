@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { getContext } from 'svelte'
   import Schema from './Schema.svelte'
+  import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
   import type { FlatParameter } from './types'
 
   let { param }: { param: FlatParameter } = $props()
 
-  const schema = $derived(param.schema as any)
-  const type = $derived(schema?.type ?? schema?.$ref?.split('/').pop() ?? 'any')
-  const hasNested = $derived(!!(schema?.properties || schema?.items))
+  const registry = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
+  const schema = $derived<any>(param.schema as any)
+  const resolved = $derived<any>(resolveRef(schema, registry ? registry() : null))
+  const type = $derived(resolved?.type ?? resolved?.$ref?.split('/').pop() ?? 'any')
+  const hasNested = $derived(!!(resolved?.properties || resolved?.items))
 </script>
 
 <div class="np-param">

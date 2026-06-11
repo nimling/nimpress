@@ -1,10 +1,21 @@
 <script lang="ts">
+  import { getContext } from 'svelte'
+  import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
+
   let { schema, name = '', depth = 0 }: { schema: any; name?: string; depth?: number } = $props()
+
+  const registry = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
+  const resolved = $derived<any>(resolveRef(schema, registry ? registry() : null))
 
   let expanded = $state(depth < 1)
 
-  const type = $derived(schema?.type ?? (schema?.$ref ? schema.$ref.split('/').pop() : 'any'))
-  const hasChildren = $derived(!!(schema?.properties || schema?.items || schema?.oneOf || schema?.anyOf))
+  const type = $derived(
+    resolved?.type ??
+      (resolved?.$ref ? String(resolved.$ref).split('/').pop() : 'any')
+  )
+  const hasChildren = $derived(
+    !!(resolved?.properties || resolved?.items || resolved?.oneOf || resolved?.anyOf)
+  )
 </script>
 
 <div class="np-schema">
@@ -16,24 +27,24 @@
     {/if}
     {#if name}<code class="np-schema-name">{name}</code>{/if}
     <span class="np-schema-type">{type}</span>
-    {#if schema?.description_html}
-      <span class="np-schema-desc">{@html schema.description_html}</span>
-    {:else if schema?.description}
-      <span class="np-schema-desc">{schema.description}</span>
+    {#if resolved?.description_html}
+      <span class="np-schema-desc">{@html resolved.description_html}</span>
+    {:else if resolved?.description}
+      <span class="np-schema-desc">{resolved.description}</span>
     {/if}
   </button>
 
-  {#if expanded && schema?.properties}
+  {#if expanded && resolved?.properties}
     <div class="np-schema-children">
-      {#each Object.entries(schema.properties) as [key, val], i (key || `prop-${i}`)}
+      {#each Object.entries(resolved.properties) as [key, val], i (key || `prop-${i}`)}
         <svelte:self schema={val} name={key} depth={depth + 1} />
       {/each}
     </div>
   {/if}
 
-  {#if expanded && schema?.items}
+  {#if expanded && resolved?.items}
     <div class="np-schema-children">
-      <svelte:self schema={schema.items} name="[item]" depth={depth + 1} />
+      <svelte:self schema={resolved.items} name="[item]" depth={depth + 1} />
     </div>
   {/if}
 </div>

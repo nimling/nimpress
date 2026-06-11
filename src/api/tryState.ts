@@ -1,4 +1,5 @@
 import type { FlatOperation, SecurityScheme } from './types'
+import { resolveRef, type SchemaRegistry } from './refs'
 
 export interface TryState {
   selectedScheme: string
@@ -39,32 +40,37 @@ function pickJsonContent(op: FlatOperation): { schema?: JsonSchema; example?: un
   return { schema: json.schema, example }
 }
 
-function synthesizeFromSchema(schema: JsonSchema | undefined, seen: Set<JsonSchema> = new Set()): unknown {
-  if (!schema || typeof schema !== 'object') return null
-  if (seen.has(schema)) return null
-  seen.add(schema)
-  if (schema.example !== undefined) return schema.example
-  if (schema.default !== undefined) return schema.default
-  if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0]
-  const composed = schema.oneOf?.[0] ?? schema.anyOf?.[0] ?? (schema.allOf?.length ? Object.assign({}, ...schema.allOf) as JsonSchema : undefined)
-  if (composed) return synthesizeFromSchema(composed, seen)
-  const t = schema.type
-  if (t === 'object' || schema.properties) {
+function synthesizeFromSchema(
+  schema: JsonSchema | undefined,
+  registry: SchemaRegistry | null | undefined,
+  seen: Set<JsonSchema> = new Set()
+): unknown {
+  const resolved = resolveRef(schema, registry) as JsonSchema | undefined
+  if (!resolved || typeof resolved !== 'object') return null
+  if (seen.has(resolved)) return null
+  seen.add(resolved)
+  if (resolved.example !== undefined) return resolved.example
+  if (resolved.default !== undefined) return resolved.default
+  if (Array.isArray(resolved.enum) && resolved.enum.length > 0) return resolved.enum[0]
+  const composed = resolved.oneOf?.[0] ?? resolved.anyOf?.[0] ?? (resolved.allOf?.length ? Object.assign({}, ...resolved.allOf) as JsonSchema : undefined)
+  if (composed) return synthesizeFromSchema(composed, registry, seen)
+  const t = resolved.type
+  if (t === 'object' || resolved.properties) {
     const out: Record<string, unknown> = {}
-    const required = new Set(schema.required ?? [])
-    const props = schema.properties ?? {}
+    const required = new Set(resolved.required ?? [])
+    const props = resolved.properties ?? {}
     for (const [name, propSchema] of Object.entries(props)) {
       if (!required.has(name)) continue
-      out[name] = synthesizeFromSchema(propSchema, seen)
+      out[name] = synthesizeFromSchema(propSchema, registry, seen)
     }
     return out
   }
-  if (t === 'array') return [synthesizeFromSchema(schema.items, seen)]
+  if (t === 'array') return [synthesizeFromSchema(resolved.items, registry, seen)]
   if (t === 'string') {
-    if (schema.format === 'date-time') return '2026-01-01T00:00:00Z'
-    if (schema.format === 'date') return '2026-01-01'
-    if (schema.format === 'uuid') return '00000000-0000-0000-0000-000000000000'
-    if (schema.format === 'email') return 'user@example.com'
+    if (resolved.format === 'date-time') return '2026-01-01T00:00:00Z'
+    if (resolved.format === 'date') return '2026-01-01'
+    if (resolved.format === 'uuid') return '00000000-0000-0000-0000-000000000000'
+    if (resolved.format === 'email') return 'user@example.com'
     return ''
   }
   if (t === 'integer' || t === 'number') return 0
@@ -72,17 +78,22 @@ function synthesizeFromSchema(schema: JsonSchema | undefined, seen: Set<JsonSche
   return null
 }
 
-function buildBodyExample(op: FlatOperation): unknown {
+function buildBodyExample(op: FlatOperation, registry: SchemaRegistry | null | undefined): unknown {
   if (op.requestExample !== undefined) return op.requestExample
   const json = pickJsonContent(op)
   if (!json) return undefined
   if (json.example !== undefined) return json.example
-  return synthesizeFromSchema(json.schema)
+  return synthesizeFromSchema(json.schema, registry)
 }
 
-export function createTryState(op: FlatOperation, initialServer: string, schemes: Record<string, SecurityScheme>): TryState {
+export function createTryState(
+  op: FlatOperation,
+  initialServer: string,
+  schemes: Record<string, SecurityScheme>,
+  registry: SchemaRegistry | null | undefined = null
+): TryState {
   void schemes
-  const example = buildBodyExample(op)
+  const example = buildBodyExample(op, registry)
   return {
     selectedScheme: '',
     authValue: '',

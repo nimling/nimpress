@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, setContext } from 'svelte'
   import Operation from './Operation.svelte'
   import Schema from './Schema.svelte'
   import TryDialog from './TryDialog.svelte'
@@ -7,6 +7,7 @@
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
+  import { SCHEMAS_CONTEXT, type SchemaRegistry } from './refs'
   import type { Frontmatter } from '../types'
 
   let {
@@ -22,6 +23,8 @@
   const serverUrl = $derived(flat?.servers?.[0]?.url ?? '')
   const servers = $derived(flat?.servers ?? [])
   const securitySchemes = $derived(flat?.securitySchemes ?? {})
+  const schemas = $derived<SchemaRegistry>(flat?.schemas ?? {})
+  setContext<() => SchemaRegistry>(SCHEMAS_CONTEXT, () => schemas)
 
   let mounted = $state<Set<string>>(new Set())
   let observer: IntersectionObserver | null = null

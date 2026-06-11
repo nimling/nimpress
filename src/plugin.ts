@@ -471,23 +471,13 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     return cursor
   }
 
-  function specDeref(value: any, spec: any, seen: WeakSet<object> = new WeakSet()): any {
-    if (value == null || typeof value !== 'object') return value
-    if (seen.has(value)) return value
-    seen.add(value)
-    if (typeof (value as any).$ref === 'string') {
-      const resolved = specResolveRef(spec, (value as any).$ref)
-      if (resolved == null) return value
-      return specDeref(resolved, spec, seen)
-    }
-    if (Array.isArray(value)) {
-      return value.map((v) => specDeref(v, spec, seen))
-    }
-    const out: any = {}
-    for (const k of Object.keys(value)) {
-      out[k] = specDeref(value[k], spec, seen)
-    }
-    return out
+  function resolveStructural(value: any, spec: any, depth = 0): any {
+    if (depth > 4) return value
+    if (!value || typeof value !== 'object') return value
+    if (typeof (value as any).$ref !== 'string') return value
+    const target = specResolveRef(spec, (value as any).$ref)
+    if (target == null) return value
+    return resolveStructural(target, spec, depth + 1)
   }
 
   function renderMd(md: MarkdownIt, text: unknown): string | undefined {
@@ -501,10 +491,14 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
 
   function flattenSpecForEmbed(rawSpec: any, md: MarkdownIt) {
     if (!rawSpec) return null
-    const spec = specDeref(rawSpec, rawSpec)
+    const spec = rawSpec
     const info = spec.info ?? {}
     const securitySchemes = spec.components?.securitySchemes ?? {}
     const methods = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
+    const exampleFromSchema = (schemaOrRef: any): unknown => {
+      const resolved = resolveStructural(schemaOrRef, spec)
+      return resolved?.example
+    }
 
     interface FlatParam {
       name: string
@@ -539,14 +533,17 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const operations: Record<string, FlatOp> = {}
     const paths = spec.paths ?? {}
 
-    for (const [path, pathItem] of Object.entries(paths) as [string, any][]) {
-      const inheritedParams = (pathItem.parameters ?? []) as any[]
+    for (const [path, pathItemRaw] of Object.entries(paths) as [string, any][]) {
+      const pathItem = resolveStructural(pathItemRaw, spec)
+      if (!pathItem || typeof pathItem !== 'object') continue
+      const inheritedParams = ((pathItem.parameters ?? []) as any[]).map((p) => resolveStructural(p, spec))
       for (const method of methods) {
         const op = pathItem[method]
         if (!op) continue
         const id = op.operationId ?? `${method}-${path.replace(/[^a-z0-9]+/gi, '-')}`
         const tag = op.tags?.[0] ?? 'default'
-        const merged = [...inheritedParams, ...(op.parameters ?? [])]
+        const opParams = ((op.parameters ?? []) as any[]).map((p) => resolveStructural(p, spec))
+        const merged = [...inheritedParams, ...opParams]
         const seenParams = new Set<string>()
         const parameters: FlatParam[] = []
         for (const raw of merged) {
@@ -563,25 +560,27 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
             schema: p.schema,
             description: p.description,
             description_html: renderMd(md, p.description),
-            example: p.example ?? p.schema?.example
+            example: p.example ?? exampleFromSchema(p.schema)
           })
         }
 
-        const reqBody = op.requestBody as any
+        const reqBody = op.requestBody ? resolveStructural(op.requestBody, spec) : undefined
         const reqJson = reqBody?.content?.['application/json']
         const reqExample =
           reqJson?.example ??
           (reqJson?.examples ? Object.values(reqJson.examples as Record<string, any>)[0]?.value : undefined) ??
-          reqJson?.schema?.example
+          exampleFromSchema(reqJson?.schema)
 
         const responseExamples: Record<string, unknown> = {}
-        const responses = op.responses ?? {}
-        for (const [code, r] of Object.entries(responses) as [string, any][]) {
+        const responses: Record<string, any> = {}
+        for (const [code, rRaw] of Object.entries(op.responses ?? {}) as [string, any][]) {
+          const r = resolveStructural(rRaw, spec)
+          responses[code] = r
           const rJson = r?.content?.['application/json']
           const ex =
             rJson?.example ??
             (rJson?.examples ? Object.values(rJson.examples as Record<string, any>)[0]?.value : undefined) ??
-            rJson?.schema?.example
+            exampleFromSchema(rJson?.schema)
           if (ex !== undefined) responseExamples[code] = ex
         }
 
@@ -616,10 +615,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const schemasRaw = spec.components?.schemas ?? {}
     const schemas: Record<string, any> = {}
     for (const [name, s] of Object.entries(schemasRaw) as [string, any][]) {
-      schemas[name] = {
-        ...s,
-        description_html: renderMd(md, s?.description)
-      }
+      const html = renderMd(md, s?.description)
+      schemas[name] = html ? { ...s, description_html: html } : s
     }
 
     return {

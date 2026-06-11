@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, getContext } from 'svelte'
   import MethodBadge from './MethodBadge.svelte'
   import ParamRow from './ParamRow.svelte'
   import Schema from './Schema.svelte'
@@ -7,6 +7,7 @@
   import CodeExamples from './CodeExamples.svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
   import { createTryState } from './tryState'
+  import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
 
   let {
@@ -24,6 +25,9 @@
     collapsedDefault?: boolean
     specVersion?: string
   } = $props()
+
+  const registryAccess = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
+  const getRegistry = () => (registryAccess ? registryAccess() : null)
 
   const id = $derived(`operation/${op.id}`)
   const reqBody = $derived(op.requestBody as any)
@@ -76,12 +80,12 @@
       try { localStorage.removeItem(cacheKey) } catch {}
     }
   }
-  const baseState = createTryState(op, initialServer, securitySchemes)
+  const baseState = createTryState(op, initialServer, securitySchemes, getRegistry())
   const cached = readCached()
   let tryState = $state(cached ? { ...baseState, ...cached } : baseState)
   $effect(() => { writeCached(tryState) })
   function handleClear() {
-    tryState = createTryState(op, initialServer, securitySchemes)
+    tryState = createTryState(op, initialServer, securitySchemes, getRegistry())
     clearCached()
   }
   async function handleShare(): Promise<'ok' | 'fail'> {
@@ -138,10 +142,11 @@
     }
     for (const ct of contentTypes) {
       const entry = content[ct] ?? {}
+      const resolvedSchema = entry.schema ? (resolveRef(entry.schema, getRegistry()) as any) : undefined
       const hasExample =
         entry.example !== undefined ||
         (entry.examples && Object.keys(entry.examples).length) ||
-        entry.schema?.example !== undefined ||
+        resolvedSchema?.example !== undefined ||
         (ct === 'application/json' && op.responseExamples?.[code] !== undefined)
       if (hasExample) {
         tabs.push({
@@ -191,10 +196,11 @@
 
   function exampleValue(code: string, resp: any, ct: string): string {
     const entry = resp?.content?.[ct] ?? {}
+    const resolvedSchema = entry.schema ? (resolveRef(entry.schema, getRegistry()) as any) : undefined
     const raw =
       entry.example ??
       pickExampleObject(entry.examples) ??
-      entry.schema?.example ??
+      resolvedSchema?.example ??
       (ct === 'application/json' ? op.responseExamples?.[code] : undefined)
     if (raw === undefined) return ''
     const value = unwrapExampleValue(raw)
@@ -329,10 +335,11 @@
           }
           for (const ct of cts) {
             const entry = reqBody.content[ct] ?? {}
+            const resolvedSchema = entry.schema ? (resolveRef(entry.schema, getRegistry()) as any) : undefined
             const ex =
               entry.example ??
               pickExampleObject(entry.examples) ??
-              entry.schema?.example ??
+              resolvedSchema?.example ??
               (ct === 'application/json' ? op.requestExample : undefined)
             if (ex !== undefined) {
               const unwrapped = unwrapExampleValue(ex)
