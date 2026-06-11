@@ -81,10 +81,10 @@ function buildBodyExample(op: FlatOperation): unknown {
 }
 
 export function createTryState(op: FlatOperation, initialServer: string, schemes: Record<string, SecurityScheme>): TryState {
-  const schemeNames = Object.keys(schemes ?? {})
+  void schemes
   const example = buildBodyExample(op)
   return {
-    selectedScheme: schemeNames[0] ?? '',
+    selectedScheme: '',
     authValue: '',
     serverUrl: initialServer,
     pathValues: {},
@@ -132,13 +132,15 @@ export function buildAuthHeader(state: TryState, schemes: Record<string, Securit
 }
 
 export function buildHeaders(op: FlatOperation, state: TryState, schemes: Record<string, SecurityScheme>): Record<string, string> {
+  void schemes
   const out: Record<string, string> = {}
   for (const param of op.parameters.filter((x) => x.in === 'header')) {
     const v = state.headerValues[param.name]
     if (v) out[param.name] = v
   }
-  const auth = buildAuthHeader(state, schemes)
-  if (auth) out[auth.key] = auth.value
+  for (const [k, v] of Object.entries(state.headerValues)) {
+    if (v && out[k] === undefined) out[k] = v
+  }
   if (state.bodyValue && ['POST', 'PUT', 'PATCH'].includes(op.method)) {
     out['Content-Type'] = out['Content-Type'] ?? 'application/json'
   }

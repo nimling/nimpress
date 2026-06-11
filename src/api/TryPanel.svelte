@@ -119,7 +119,22 @@
 
   const pathParams = $derived(op.parameters.filter((p) => p.in === 'path'))
   const queryParams = $derived(op.parameters.filter((p) => p.in === 'query'))
-  const headerParams = $derived(op.parameters.filter((p) => p.in === 'header'))
+  const headerParams = $derived.by(() => {
+    const declared = op.parameters.filter((p) => p.in === 'header')
+    const hasAuthHeader = declared.some((p) => p.name.toLowerCase() === 'authorization')
+    const hasSecurity = schemeNames.length > 0
+    if (hasAuthHeader || !hasSecurity) return declared
+    return [
+      {
+        name: 'Authorization',
+        in: 'header' as const,
+        required: false,
+        description: 'Authentication header. Paste the full value, e.g. "Bearer <token>".',
+        example: 'Bearer <token>'
+      },
+      ...declared
+    ]
+  })
   const hasBody = $derived(['POST', 'PUT', 'PATCH'].includes(op.method))
 
   let panelEl = $state<HTMLDivElement | null>(null)
@@ -252,28 +267,8 @@
       </label>
     {/if}
 
-    {#if schemeNames.length > 0}
-      <label class="np-try-field">
-        <span>Auth</span>
-        <select bind:value={tryState.selectedScheme}>
-          <option value="">None</option>
-          {#each schemeNames as name (name)}
-            <option value={name}>{name} ({securitySchemes[name].type ?? 'auth'})</option>
-          {/each}
-        </select>
-      </label>
+    <!-- Auth is set directly through the Authorization header below; no separate auth UI. -->
 
-      {#if tryState.selectedScheme}
-        <label class="np-try-field">
-          <span>{securitySchemes[tryState.selectedScheme].scheme === 'bearer' ? 'Token' : 'Value'}</span>
-          <input
-            type="password"
-            bind:value={tryState.authValue}
-            placeholder={securitySchemes[tryState.selectedScheme].bearerFormat ?? 'enter value'}
-          />
-        </label>
-      {/if}
-    {/if}
 
     {#if pathParams.length > 0}
       <div class="np-try-group" class:np-try-group-open={pathOpen}>
