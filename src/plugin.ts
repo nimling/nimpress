@@ -484,10 +484,81 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         ? specRef
         : resolve(dirname(mdFile), specRef)
       const raw = await readFile(target, 'utf-8')
-      return JSON.parse(raw)
+      const top = JSON.parse(raw) as any
+      await inlineExternalRefs(top, dirname(target))
+      return top
     } catch (err) {
       console.warn(`[nimpress] failed to load spec ${specRef} for ${mdFile}:`, err)
       return null
+    }
+  }
+
+  async function inlineExternalRefs(top: any, topDir: string): Promise<void> {
+    if (!top || typeof top !== 'object') return
+    if (!top.components) top.components = {}
+    if (!top.components.schemas) top.components.schemas = {}
+    const schemas = top.components.schemas as Record<string, any>
+    const seen = new Map<string, string>()
+
+    const loadJsonFile = async (absPath: string): Promise<any> => {
+      const raw = await readFile(absPath, 'utf-8')
+      return JSON.parse(raw)
+    }
+
+    const ensureSchema = async (absPath: string): Promise<string> => {
+      if (seen.has(absPath)) return seen.get(absPath)!
+      const fileName = absPath.split('/').pop() ?? ''
+      const name = fileName.replace(/\.json$/, '')
+      seen.set(absPath, name)
+      const content = await loadJsonFile(absPath)
+      await walkRefs(content, dirname(absPath))
+      schemas[name] = content
+      return name
+    }
+
+    const walkRefs = async (node: any, baseDir: string): Promise<void> => {
+      if (!node || typeof node !== 'object') return
+      if (Array.isArray(node)) {
+        for (const child of node) await walkRefs(child, baseDir)
+        return
+      }
+      const ref = node.$ref
+      if (typeof ref === 'string' && !ref.startsWith('#')) {
+        const absPath = isAbsolute(ref) ? ref : resolve(baseDir, ref)
+        const parentDir = dirname(absPath).split('/').pop() ?? ''
+        if (parentDir === 'schemas') {
+          const name = await ensureSchema(absPath)
+          node.$ref = `#/components/schemas/${name}`
+          return
+        }
+        if (parentDir === 'operations') {
+          const content = await loadJsonFile(absPath)
+          await walkRefs(content, dirname(absPath))
+          delete node.$ref
+          for (const k of Object.keys(content)) node[k] = content[k]
+          return
+        }
+        return
+      }
+      for (const k of Object.keys(node)) {
+        await walkRefs(node[k], baseDir)
+      }
+    }
+
+    for (const name of Object.keys(schemas)) {
+      const entry = schemas[name]
+      if (entry && typeof entry === 'object' && typeof entry.$ref === 'string' && !entry.$ref.startsWith('#')) {
+        const absPath = isAbsolute(entry.$ref) ? entry.$ref : resolve(topDir, entry.$ref)
+        seen.set(absPath, name)
+        const content = await loadJsonFile(absPath)
+        await walkRefs(content, dirname(absPath))
+        schemas[name] = content
+      }
+    }
+
+    for (const key of Object.keys(top)) {
+      if (key === 'components') continue
+      await walkRefs(top[key], topDir)
     }
   }
 
