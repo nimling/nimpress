@@ -75,7 +75,6 @@
     <main class="np-main">
       {@render children()}
     </main>
-    <div class="np-aside-mirror" aria-hidden="true"></div>
   </div>
   {#if searchOpen}
     <SearchModal onClose={() => (searchOpen = false)} />
@@ -89,32 +88,18 @@
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     overflow-x: clip;
+    --np-sidebar-current: var(--np-sidebar-width);
+  }
+  .np-app.np-collapsed {
+    --np-sidebar-current: 0px;
   }
   .np-body {
     position: relative;
     display: grid;
-    grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr) var(--np-sidebar-width);
+    grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr);
     align-items: start;
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: grid-template-columns;
-  }
-  .np-collapsed .np-body {
-    grid-template-columns: 0px minmax(0, 1fr) var(--np-sidebar-width);
-  }
-  .np-aside-mirror {
-    height: 0;
-    pointer-events: none;
-  }
-  @media (max-width: 1279px) {
-    .np-body {
-      grid-template-columns: var(--np-sidebar-width) minmax(0, 1fr);
-    }
-    .np-collapsed .np-body {
-      grid-template-columns: 0px minmax(0, 1fr);
-    }
-    .np-aside-mirror {
-      display: none;
-    }
   }
   .np-aside {
     position: sticky;
@@ -139,8 +124,9 @@
   }
   .np-main {
     min-height: calc(100vh - var(--np-header-height));
-    padding: 32px;
+    padding: 32px 32px 32px calc(32px + var(--np-sidebar-width) - var(--np-sidebar-current));
     min-width: 0;
+    transition: padding-left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .np-drawer-backdrop {
     display: none;
@@ -156,6 +142,7 @@
     .np-main {
       width: 100%;
       box-sizing: border-box;
+      padding: 32px;
     }
     .np-aside {
       position: fixed;
