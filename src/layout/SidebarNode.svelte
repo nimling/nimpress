@@ -2,7 +2,7 @@
   import { sidebarState, toggleGroup } from '../framework/stores/sidebar'
   import { viewer } from '../framework/stores/viewer'
   import { viewerCanAccess } from '../auth/guard'
-  import { resolvedRoute } from '../router'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import type { SidebarNode } from '../types'
 
   let {

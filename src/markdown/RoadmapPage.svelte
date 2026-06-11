@@ -3,7 +3,7 @@
   import type { PageModule, RoadmapEntry, RoadmapKind } from '../types'
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
-  import { navigate } from '../router'
+  import { navigate } from 'sly-svelte-location-router'
   import BackToTop from '../layout/BackToTop.svelte'
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
-  import { resolvedRoute, navigate, erroneousRoute } from '../router'
+  import { resolvedRoute, navigate, erroneousRoute } from 'sly-svelte-location-router'
   import { onMount } from 'svelte'
   import HomePage from './HomePage.svelte'
   import { viewerCanReach, waitForViewer, redirectToLogin } from '../framework/router'

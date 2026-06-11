@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte'
   import { configStore } from '../framework/configStore'
-  import { resolvedRoute } from '../router'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import { sidebarState, setGroupOpen } from '../framework/stores/sidebar'
   import SidebarNode from './SidebarNode.svelte'
   import type { SidebarNode as SidebarNodeType } from '../types'

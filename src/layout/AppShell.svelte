@@ -2,7 +2,7 @@
   import Header from './Header.svelte'
   import Sidebar from './Sidebar.svelte'
   import SearchModal from '../search/SearchModal.svelte'
-  import { resolvedRoute } from '../router'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import type { Snippet } from 'svelte'
 
   let { children }: { children: Snippet } = $props()

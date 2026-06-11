@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Router } from '../router'
-  import type { Routes } from '../router'
+  import { Router } from 'sly-svelte-location-router'
+  import type { Routes } from 'sly-svelte-location-router'
   import AppShell from './AppShell.svelte'
   import App from './App.svelte'
 

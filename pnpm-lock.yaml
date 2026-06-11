@@ -77,6 +77,9 @@ importers:
       shiki:
         specifier: ^1.24.0
         version: 1.29.2
+      sly-svelte-location-router:
+        specifier: ^3.3.5
+        version: 3.3.5(svelte@5.56.3)
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -1712,6 +1715,11 @@ packages:
 
   shiki@1.29.2:
     resolution: {integrity: sha512-njXuliz/cP+67jU2hukkxCNuH1yUi4QfdZZY+sMr5PPrIyXSu5iTb/qYC4BiWWB0vZ+7TbdvYUCeL23zpwCfbg==}
+
+  sly-svelte-location-router@3.3.5:
+    resolution: {integrity: sha512-l+yXuyi7V673YJxeIoaXDBosMqnYKPJTBK31cX61UvCB0GKDzE6yHuzks3hKvx3eDDl5s3a0l9zGhEWH5XMnkw==}
+    peerDependencies:
+      svelte: ^5.0.0
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -3492,6 +3500,11 @@ snapshots:
       '@shikijs/types': 1.29.2
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
+
+  sly-svelte-location-router@3.3.5(svelte@5.56.3):
+    dependencies:
+      path-to-regexp: 8.4.2
+      svelte: 5.56.3
 
   source-map-js@1.2.1: {}
 

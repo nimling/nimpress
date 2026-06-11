@@ -3,7 +3,7 @@
   import { configStore } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { buildIndex, searchIndex } from './indexer'
-  import { navigate } from '../router'
+  import { navigate } from 'sly-svelte-location-router'
 
   let { onClose }: { onClose: () => void } = $props()
 

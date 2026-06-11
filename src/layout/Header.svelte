@@ -1,7 +1,7 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
   import { theme, toggleTheme } from '../framework/stores/theme'
-  import { resolvedRoute } from '../router'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import AccountMenu from '../auth/AccountMenu.svelte'
   import Breadcrumbs from './Breadcrumbs.svelte'
 
