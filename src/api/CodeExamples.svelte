@@ -139,7 +139,7 @@
     {/each}
   </div>
   <div class="np-examples-body">
-    <CodeEditor value={code} language={active} readonly minHeight={160} maxHeight={520} title={active} showLineNumbers={false} />
+    <CodeEditor value={code} language={active} readonly minHeight={0} fitContent={true} title={active} showLineNumbers={false} />
   </div>
 </div>
 

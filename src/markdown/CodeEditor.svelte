@@ -97,7 +97,8 @@
         lineHeight: '1.65',
         minHeight: `${minHeight}px`,
         maxHeight: fitContent ? 'none' : `${maxHeight}px`,
-        overflow: fitContent ? 'visible' : 'auto',
+        overflowX: 'auto',
+        overflowY: fitContent ? 'visible' : 'auto',
         backgroundColor: bg
       },
       '.cm-line': { backgroundColor: 'transparent' },
@@ -131,7 +132,7 @@
     if (lang === 'javascript' || lang === 'js') return javascript()
     if (lang === 'python' || lang === 'py') return python()
     if (lang === 'go') return StreamLanguage.define(go)
-    if (lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'curl') return StreamLanguage.define(shell)
+    if (lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'curl' || lang === 'hurl' || lang === 'http') return StreamLanguage.define(shell)
     if (lang === 'dotnet' || lang === 'csharp' || lang === 'cs' || lang === 'c#') return StreamLanguage.define(csharp)
     return []
   }
@@ -141,10 +142,9 @@
       doc: value,
       extensions: [
         basicSetup,
-        lineNumbers(),
+        showLineNumbers ? lineNumbers() : [],
         history(),
-        highlightActiveLine(),
-        EditorView.lineWrapping,
+        !readonly ? highlightActiveLine() : [],
         keymap.of([...defaultKeymap, indentWithTab]),
         langCompartment.of(langExt()),
         themeCompartment.of([syntaxHighlighting(npHighlight), buildTheme()]),
