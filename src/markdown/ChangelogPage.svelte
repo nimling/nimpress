@@ -274,6 +274,7 @@
   .np-page-shell.has-rail .np-toc-rail {
     position: absolute;
     top: 0;
+    bottom: 0;
     left: calc(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px);
     width: var(--np-toc-width);
   }
