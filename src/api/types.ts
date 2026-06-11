@@ -59,7 +59,6 @@ export interface FlattenedSpec {
   servers?: FlatServer[]
   securitySchemes: Record<string, SecurityScheme>
   tags: { name: string; operations: FlatOperation[] }[]
-  operations: Record<string, FlatOperation>
   schemas: Record<string, FlatSchema>
 }
 

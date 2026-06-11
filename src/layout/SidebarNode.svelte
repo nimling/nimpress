@@ -34,12 +34,12 @@
           {#if node.link}
             <a class="np-group-label-link" href={node.link} class:active>{node.text}</a>
           {:else}
-            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey)}>{node.text}</button>
+            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{node.text}</button>
           {/if}
           <button
             class="np-group-toggle"
             aria-label="Toggle {node.text}"
-            onclick={() => toggleGroup(groupKey)}
+            onclick={() => toggleGroup(groupKey, open)}
           >
             <span class="np-chev" class:open>›</span>
           </button>
@@ -59,12 +59,12 @@
         {#if node.link}
           <a class="np-link np-subgroup-link" href={node.link} class:active>{node.text}</a>
         {:else}
-          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey)}>{node.text}</button>
+          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{node.text}</button>
         {/if}
         <button
           class="np-subgroup-toggle"
           aria-label="Toggle {node.text}"
-          onclick={() => toggleGroup(groupKey)}
+          onclick={() => toggleGroup(groupKey, open)}
         >
           <span class="np-chev" class:open>›</span>
         </button>

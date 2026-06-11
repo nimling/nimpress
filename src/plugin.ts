@@ -561,7 +561,6 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     }
 
     const tagMap = new Map<string, FlatOp[]>()
-    const operations: Record<string, FlatOp> = {}
     const paths = spec.paths ?? {}
 
     for (const [path, pathItemRaw] of Object.entries(paths) as [string, any][]) {
@@ -633,7 +632,6 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           security: op.security ?? spec.security,
           operationName: op.operationId
         }
-        operations[id] = flatOp
         if (!tagMap.has(tag)) tagMap.set(tag, [])
         tagMap.get(tag)!.push(flatOp)
       }
@@ -658,7 +656,6 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       servers: spec.servers,
       securitySchemes,
       tags,
-      operations,
       schemas
     }
   }

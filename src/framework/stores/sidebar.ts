@@ -21,8 +21,8 @@ sidebarState.subscribe((state) => {
   } catch {}
 })
 
-export function toggleGroup(key: string) {
-  sidebarState.update((s) => ({ ...s, [key]: !s[key] }))
+export function toggleGroup(key: string, currentlyOpen: boolean) {
+  sidebarState.update((s) => ({ ...s, [key]: currentlyOpen }))
 }
 
 export function setGroupOpen(key: string, open: boolean) {
