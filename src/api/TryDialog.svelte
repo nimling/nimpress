@@ -11,16 +11,18 @@
     operations,
     securitySchemes = {},
     servers = [],
-    specVersion = ''
+    specVersion = '',
+    specId = ''
   }: {
     operations: FlatOperation[]
     securitySchemes?: Record<string, SecurityScheme>
     servers?: FlatServer[]
     specVersion?: string
+    specId?: string
   } = $props()
 
   const CACHE_VERSION = 'v1'
-  const cacheKey = $derived(`nimpress-try-cache-${CACHE_VERSION}-${specVersion || 'unknown'}`)
+  const cacheKey = $derived(`nimpress-try-cache-${CACHE_VERSION}-${specId || 'unknown'}-${specVersion || 'unknown'}`)
 
   let open = $state(false)
   let selectedOpId = $state<string>('')
@@ -61,13 +63,15 @@
     }
   }
 
+  const specPrefix = $derived(`nimpress-try-cache-${CACHE_VERSION}-${specId || 'unknown'}-`)
+
   function clearCache() {
     if (typeof localStorage === 'undefined') return
     try {
       const keep = new Set([cacheKey])
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const k = localStorage.key(i)
-        if (k && k.startsWith(`nimpress-try-cache-`) && !keep.has(k)) {
+        if (k && k.startsWith(specPrefix) && !keep.has(k)) {
           localStorage.removeItem(k)
         }
       }

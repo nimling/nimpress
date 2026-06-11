@@ -16,7 +16,8 @@
     servers = [],
     securitySchemes = {},
     collapsedDefault = false,
-    specVersion = ''
+    specVersion = '',
+    specId = ''
   }: {
     op: FlatOperation
     serverUrl?: string
@@ -24,6 +25,7 @@
     securitySchemes?: Record<string, SecurityScheme>
     collapsedDefault?: boolean
     specVersion?: string
+    specId?: string
   } = $props()
 
   const registryAccess = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
@@ -41,7 +43,7 @@
     const dev = list.find((s) => typeof s?.url === 'string' && s.url.includes('.dev.'))
     return dev?.url ?? list[0]?.url ?? serverUrl
   })()
-  const cacheKey = $derived(`nimpress-try-cache-v1-${specVersion || 'unknown'}`)
+  const cacheKey = $derived(`nimpress-try-cache-v1-${specId || 'unknown'}-${specVersion || 'unknown'}`)
   function readCached() {
     if (typeof localStorage === 'undefined') return null
     try {

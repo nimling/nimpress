@@ -1078,6 +1078,9 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         } else if (items.length) {
           node.items = items
         }
+        if (node.collapsed !== false && node.items?.some((it) => it.collapsed === false)) {
+          node.collapsed = false
+        }
         return node
       }
 
@@ -1092,6 +1095,9 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           if (it.order !== undefined && it.order < minOrder) minOrder = it.order
         }
         if (minOrder !== Number.MAX_SAFE_INTEGER) node.order = minOrder
+      }
+      if (node.items?.some((it) => it.collapsed === false)) {
+        node.collapsed = false
       }
       return node
     }

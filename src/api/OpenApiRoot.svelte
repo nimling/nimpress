@@ -26,6 +26,31 @@
   const schemas = $derived<SchemaRegistry>(flat?.schemas ?? {})
   setContext<() => SchemaRegistry>(SCHEMAS_CONTEXT, () => schemas)
 
+  function slugify(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown'
+  }
+  const specId = $derived(slugify(frontmatter?.spec || flat?.title || title || ''))
+
+  $effect(() => {
+    if (typeof localStorage === 'undefined') return
+    if (!flat) return
+    const version = flat.version || 'unknown'
+    const markerKey = `nimpress-try-cache-version-${specId}`
+    const seen = localStorage.getItem(markerKey)
+    if (seen === version) return
+    const keepPrefix = `nimpress-try-cache-v1-${specId}-`
+    const keepKey = `${keepPrefix}${version}`
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith(keepPrefix) && k !== keepKey) {
+          localStorage.removeItem(k)
+        }
+      }
+      localStorage.setItem(markerKey, version)
+    } catch {}
+  })
+
   let mounted = $state<Set<string>>(new Set())
   let observer: IntersectionObserver | null = null
   const orderedOpKeys = $derived(
@@ -205,7 +230,7 @@
           {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
             {@const opKey = `operation/${op.id}`}
             {#if mounted.has(opKey)}
-              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} specVersion={flat.version} />
+              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} specVersion={flat.version} {specId} />
             {:else}
               <div
                 class="np-op-lazy"
@@ -258,6 +283,7 @@
     securitySchemes={flat.securitySchemes}
     servers={flat.servers ?? []}
     specVersion={flat.version}
+    {specId}
   />
   <BackToTop />
 {:else}
