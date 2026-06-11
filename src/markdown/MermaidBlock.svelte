@@ -7,7 +7,7 @@
   let wrapper: HTMLDivElement
   let stage: HTMLDivElement
   let viewport: HTMLDivElement
-  let svgId = `np-mermaid-${Math.floor(Math.random() * 1_000_000)}`
+  let rendering = false
 
   let scale = $state(1)
   let panX = $state(0)
@@ -24,20 +24,22 @@
   const scaleStep = 1.2
 
   async function render() {
-    if (!stage) return
-    const mermaid = (await import('mermaid')).default
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: $theme === 'dark' ? 'dark' : 'default',
-      fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      securityLevel: 'loose',
-      logLevel: 'error',
-      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 50 },
-      sequence: { useMaxWidth: true, actorMargin: 60, boxMargin: 15, boxTextMargin: 8, noteMargin: 15, messageMargin: 40, mirrorActors: true, diagramMarginX: 30, diagramMarginY: 30 },
-      gantt: { useMaxWidth: true, fontSize: 12 }
-    })
+    if (!stage || rendering) return
+    rendering = true
     try {
-      const { svg } = await mermaid.render(svgId, source)
+      const mermaid = (await import('mermaid')).default
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: $theme === 'dark' ? 'dark' : 'default',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        securityLevel: 'loose',
+        logLevel: 'error',
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 50 },
+        sequence: { useMaxWidth: true, actorMargin: 60, boxMargin: 15, boxTextMargin: 8, noteMargin: 15, messageMargin: 40, mirrorActors: true, diagramMarginX: 30, diagramMarginY: 30 },
+        gantt: { useMaxWidth: true, fontSize: 12 }
+      })
+      const id = `np-mermaid-${Math.floor(Math.random() * 1_000_000_000)}`
+      const { svg } = await mermaid.render(id, source)
       stage.innerHTML = svg
       const node = stage.querySelector('svg')
       if (node) {
@@ -49,11 +51,12 @@
       reset()
     } catch (err) {
       stage.innerHTML = `<pre>${err}</pre>`
+    } finally {
+      rendering = false
     }
   }
 
   onMount(() => {
-    void render()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && fullscreen) toggleFullscreen()
     }
