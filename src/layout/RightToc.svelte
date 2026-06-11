@@ -199,4 +199,8 @@
       pointer-events: auto;
     }
   }
+
+  @media (max-width: 720px) {
+    .np-toc-wrap { display: none; }
+  }
 </style>
