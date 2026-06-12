@@ -108,10 +108,10 @@
     display: none;
   }
   @media (min-width: 1280px) {
-    .np-body {
+    .np-body:has(:global(.np-page-shell.has-rail)) {
       grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr) var(--np-sidebar-current);
     }
-    .np-aside-mirror {
+    .np-body:has(:global(.np-page-shell.has-rail)) .np-aside-mirror {
       display: block;
     }
   }
