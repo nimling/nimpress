@@ -168,9 +168,11 @@
       transform: translateX(-100%);
       transition: transform 0.22s ease;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+      background-color: var(--np-bg);
     }
     .np-aside :global(.np-sidebar) {
       width: 100%;
+      background-color: var(--np-bg);
     }
     .np-aside.open {
       transform: translateX(0);
