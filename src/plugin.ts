@@ -892,14 +892,16 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           `[nimpress] path ${path} is occupied by both a changelog collection and a regular page`
         )
       }
-      entries.sort((a, b) => {
+      const visible = entries.filter((e) => !e.frontmatter.hidden)
+      if (visible.length === 0) continue
+      visible.sort((a, b) => {
         const va = String((a.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
         const vb = String((b.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
         return compareVersions(vb, va)
       })
-      const top = entries[0]
+      const top = visible[0]
       const mergedSlug = `__changelog__${(parent || 'root').replace(/\//g, '__')}`
-      const built: ChangelogEntry[] = entries.map((e) => {
+      const built: ChangelogEntry[] = visible.map((e) => {
         const data = e.frontmatter.data as Record<string, unknown> | undefined
         const version = String(data?.version ?? '')
         const entryTitle = String(data?.title ?? '')
@@ -944,7 +946,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         },
         html: '',
         headings: mergedHeadings,
-        rawText: entries.map((e) => e.rawText).join('\n\n'),
+        rawText: visible.map((e) => e.rawText).join('\n\n'),
         changelogEntries: built
       }
       pathToFile.set(path, merged.filePath)
