@@ -107,7 +107,7 @@
     pointer-events: none;
     display: none;
   }
-  @media (min-width: 1280px) {
+  @media (min-width: 1536px) {
     .np-body:has(:global(.np-page-shell.has-rail)) {
       grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr) var(--np-sidebar-current);
     }

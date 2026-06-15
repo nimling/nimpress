@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick, mount, unmount } from 'svelte'
-  import type { PageModule, RoadmapEntry, RoadmapKind } from '../types'
+  import type { PageModule, RoadmapEntry, RoadmapKind, RoadmapChangelogRef } from '../types'
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import { navigate } from 'sly-svelte-location-router'
@@ -23,15 +23,14 @@
   let track: HTMLElement
   let spinePathEl: SVGPathElement | null = $state(null)
   let hoverHref = $state<string | null>(null)
+  let rocketHover = $state(false)
   let mounts: Array<{ destroy: () => void }> = []
   let trackHeight = $state(0)
   let trackWidth = $state(1100)
   let totalLength = $state(0)
-  let rocketProgress = $state(0)
+  let rocketLen = $state(0)
   let flying = $state(false)
   let now = $state(new Date().toISOString())
-  let asideTop = $state(0)
-  let asideLeft = $state(0)
   let measuredSizes = $state<Record<string, [number, number]>>({})
 
   function recordMeasure(href: string, visW: number, visH: number) {
@@ -253,8 +252,65 @@
   const dateBounds = $derived(computeBounds(entries))
   const changelogMarkers = $derived(collectChangelogMarkers(tree))
   const activeHover = $derived(findActiveHover(tree, hoverHref))
-  const rocketPoint = $derived(pointAt(rocketProgress))
+  const rocketPoint = $derived(pointAtLen(rocketLen))
   const todayPoint = $derived(pointAt(progressForDate(now)))
+  const rocketShown = $derived(totalLength > 0 && !!spinePathEl && entries.length > 0)
+  const trailDashoffset = $derived(Math.max(0, totalLength - rocketLen))
+  const spineTopPoint = $derived.by(() => {
+    const anchors = computeSpineAnchors(layout.rows, effectiveTrackW)
+    if (!anchors.length) return null
+    const n = anchors[anchors.length - 1]
+    return { x: n.x, y: Math.max(40, n.y - 92) - 26 }
+  })
+  const todayNearestSide = $derived.by(() => {
+    const t = new Date(now).getTime()
+    let side: 1 | -1 = 1
+    let bestDiff = Infinity
+    for (const a of computeSpineAnchors(layout.rows, effectiveTrackW)) {
+      const diff = Math.abs(a.date - t)
+      if (diff < bestDiff) {
+        bestDiff = diff
+        side = a.side
+      }
+    }
+    return side
+  })
+  const roadmapChangelog = $derived.by(() => {
+    const seen = new Set<string>()
+    const out: RoadmapChangelogRef[] = []
+    for (const n of flattenTree(tree)) {
+      for (const ref of n.entry.changelog) {
+        if (seen.has(ref.entrySlug)) continue
+        seen.add(ref.entrySlug)
+        out.push(ref)
+      }
+    }
+    return out.sort((a, b) => (b.releaseDate ?? '').localeCompare(a.releaseDate ?? ''))
+  })
+  const changelogHref = $derived(roadmapChangelog[0]?.path ?? null)
+  const modalView = $derived.by(() => {
+    if (activeHover) {
+      return {
+        kind: activeHover.kind as RoadmapKind | null,
+        title: activeHover.title,
+        date: activeHover.targetDate,
+        description: activeHover.description,
+        html: activeHover.html,
+        changelog: activeHover.changelog
+      }
+    }
+    if (rocketHover && roadmapChangelog.length) {
+      return {
+        kind: null,
+        title: 'Changelog',
+        date: now,
+        description: 'Releases shipped on this roadmap.',
+        html: '',
+        changelog: roadmapChangelog
+      }
+    }
+    return null
+  })
 
   const MIN_GAP = 20
   const AVG_GAP = 56
@@ -318,8 +374,7 @@
     )
 
     const FIRST_X = 100
-    const MIN_VERT_GAP = 200
-    const TIME_PX_PER_DAY = 0.5
+    const ROW_GAP = 220
     const TOP_PAD = 80
     const BOTTOM_PAD = 80
     const PATH_CLEARANCE = 20
@@ -659,13 +714,10 @@
 
     const gaps: number[] = []
     for (let i = 1; i < N; i++) {
-      const dt = Math.abs(rootTimes[i] - rootTimes[i - 1])
-      const days = dt / 86400000
-      const timeGap = days * TIME_PX_PER_DAY
       const aboveOfPrev = preplaced[i - 1].aboveExtent - NODE_H_BASE / 2
       const belowOfThis = preplaced[i].belowExtent - NODE_H_BASE / 2
       const clusterGap = aboveOfPrev + belowOfThis + CLUSTER_EDGE_GAP
-      gaps.push(Math.max(MIN_VERT_GAP, timeGap, clusterGap))
+      gaps.push(Math.max(ROW_GAP, clusterGap))
     }
 
     const totalIssueHeight = N * NODE_H_BASE
@@ -782,42 +834,64 @@
       const center = b.x + b.w / 2
       const side: 1 | -1 = center <= cx ? 1 : -1
       const haloHalfW = b.w * (BLOB_VISIBLE_FACTOR - 1) / 2
-      const ax = side === 1 ? b.x + b.w + haloHalfW + 12 : b.x - haloHalfW - 12
+      const ax = side === 1 ? b.x + b.w + haloHalfW + 16 : b.x - haloHalfW - 16
       const ay = b.y + b.h / 2
       return { box: b, x: ax, y: ay, side, date: b.date ?? 0 }
     })
   }
 
+  function avoidCards(px: number, py: number, boxes: NodeBox[], w: number): number {
+    const pad = 10
+    let x = px
+    for (const r of boxes) {
+      const hx = r.w * 0.25
+      const hy = r.h * 0.25
+      const rx = r.x - hx
+      const rw = r.w + 2 * hx
+      const ry = r.y - hy
+      const rh = r.h + 2 * hy
+      if (py <= ry - pad || py >= ry + rh + pad) continue
+      if (rx + rw / 2 < w / 2) x = Math.max(x, rx + rw + pad)
+      else x = Math.min(x, rx - pad)
+    }
+    return Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X, x))
+  }
+
+  function latticeHash(i: number, seed: number): number {
+    let h = (Math.imul(i, 374761393) + Math.imul(seed, 668265263)) >>> 0
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296
+  }
+
+  function valueNoise1D(x: number, seed: number): number {
+    const i0 = Math.floor(x)
+    const f = x - i0
+    const u = f * f * (3 - 2 * f)
+    const r0 = latticeHash(i0, seed)
+    const r1 = latticeHash(i0 + 1, seed)
+    return r0 + (r1 - r0) * u
+  }
+
   function generateSwirlBetween(
     start: { x: number; y: number },
     end: { x: number; y: number },
-    targetLen: number,
-    clusterCx: number,
-    clusterCy: number
+    boxes: NodeBox[],
+    openDir: number,
+    amp: number,
+    seed: number,
+    w: number
   ): { x: number; y: number }[] {
     const dx = end.x - start.x
     const dy = end.y - start.y
-    const straight = Math.hypot(dx, dy) || 1
-    const extra = targetLen - straight
-    if (extra <= 50) return []
-    const count = Math.max(1, Math.min(8, Math.floor(extra / 100)))
-    const reach = Math.min(140, Math.max(40, extra * 0.18))
-    const perpX = -dy / straight
-    const perpY = dx / straight
-    const midX = (start.x + end.x) / 2
-    const midY = (start.y + end.y) / 2
-    const toClusterX = clusterCx - midX
-    const toClusterY = clusterCy - midY
-    const dot = toClusterX * perpX + toClusterY * perpY
-    const clearSign = dot > 0 ? -1 : 1
+    const N = 18
     const pts: { x: number; y: number }[] = []
-    for (let i = 1; i <= count; i++) {
-      const t = i / (count + 1)
-      const bx = start.x + dx * t
-      const by = start.y + dy * t
-      const lobe = Math.sin(Math.PI * t)
-      const r = reach * (0.5 + 0.5 * lobe)
-      pts.push({ x: bx + clearSign * r * perpX, y: by + clearSign * r * perpY })
+    for (let i = 1; i <= N; i++) {
+      const t = i / (N + 1)
+      const env = Math.sin(Math.PI * t)
+      const nz = 0.7 + 0.3 * valueNoise1D(t * 2.4 + seed * 0.01, seed)
+      const x = start.x + dx * t + openDir * amp * env * nz
+      const y = start.y + dy * t
+      pts.push({ x: avoidCards(x, y, boxes, w), y })
     }
     return pts
   }
@@ -838,93 +912,86 @@
     const anchors = computeSpineAnchors(rows, w)
     if (anchors.length === 0) return ''
 
-    const allBoxes: NodeBox[] = []
-    for (const r of rows) for (const b of r.boxes) allBoxes.push(b)
-    let cxSum = 0
-    let cySum = 0
-    for (const b of allBoxes) {
-      cxSum += b.x + b.w / 2
-      cySum += b.y + b.h / 2
-    }
-    const clusterCx = allBoxes.length > 0 ? cxSum / allBoxes.length : w / 2
-    const clusterCy = allBoxes.length > 0 ? cySum / allBoxes.length : 0
-
     const oldest = anchors[0]
     const newest = anchors[anchors.length - 1]
 
     const planetX = w / 2
     const planetY = trackH
 
+    const allBoxes: NodeBox[] = anchors.map((an) => an.box)
+    const STUB = 30
     const pts: { x: number; y: number }[] = []
     pts.push({ x: planetX, y: planetY })
 
     const span = planetY - oldest.y
     const approachY = oldest.y + Math.min(span * 0.45, Math.max(80, span * 0.3))
     pts.push({ x: oldest.x, y: approachY })
+    pts.push({ x: oldest.x, y: oldest.y + STUB })
     pts.push({ x: oldest.x, y: oldest.y })
+    pts.push({ x: oldest.x, y: oldest.y - STUB })
 
-    const TIME_PX_PER_DAY = 5
     for (let i = 0; i < anchors.length - 1; i++) {
       const a = anchors[i]
       const b = anchors[i + 1]
-      const days = Math.abs(b.date - a.date) / 86400000
-      const straight = Math.hypot(b.x - a.x, b.y - a.y)
-      const target = Math.max(straight + 40, days * TIME_PX_PER_DAY)
-      const swirls = generateSwirlBetween({ x: a.x, y: a.y }, { x: b.x, y: b.y }, target, clusterCx, clusterCy)
-      for (const s of swirls) pts.push(s)
+      const amp = Math.min(w * 0.42, w / 2 - 30)
+      const openDir = a.side
+      const seed = (i + 1) * 2654435761
+      const loop = generateSwirlBetween(
+        { x: a.x, y: a.y - STUB },
+        { x: b.x, y: b.y + STUB },
+        allBoxes,
+        openDir,
+        amp,
+        seed,
+        w
+      )
+      for (const s of loop) pts.push(s)
+      pts.push({ x: b.x, y: b.y + STUB })
       pts.push({ x: b.x, y: b.y })
+      pts.push({ x: b.x, y: b.y - STUB })
     }
 
-    pts.push({ x: newest.x, y: newest.y - 80 })
+    pts.push({ x: newest.x, y: Math.max(40, newest.y - 92) })
 
-    return pointsToCentripetalCatmullRomPath(pts)
+    return buildSpineHermite(pts)
   }
 
-  function buildSpineConnectors(rows: RowLayout[], w: number): { id: string; d: string }[] {
+  function buildSpineConnectors(rows: RowLayout[], w: number): { id: string; d: string; cx: number; cy: number }[] {
     const anchors = computeSpineAnchors(rows, w)
     if (anchors.length === 0) return []
-    const BLOB_VISIBLE_FACTOR = 1.5
 
     return anchors.map((a) => {
       const box = a.box
-      const haloHalfW = box.w * (BLOB_VISIBLE_FACTOR - 1) / 2
-      const startX = a.side === 1 ? box.x + box.w + haloHalfW : box.x - haloHalfW
+      const startX = a.side === 1 ? box.x + box.w : box.x
       const startY = box.y + box.h / 2
       const d = `M ${startX.toFixed(1)} ${startY.toFixed(1)} L ${a.x.toFixed(1)} ${a.y.toFixed(1)}`
-      return { id: box.entry.href + ':conn', d }
+      return { id: box.entry.href + ':conn', d, cx: a.x, cy: a.y }
     })
   }
 
-  function pointsToCentripetalCatmullRomPath(pts: { x: number; y: number }[]): string {
-    if (pts.length < 2) return ''
+  function buildSpineHermite(points: { x: number; y: number }[]): string {
     const dedup: { x: number; y: number }[] = []
-    for (const p of pts) {
+    for (const p of points) {
       const last = dedup[dedup.length - 1]
-      if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 0.5) dedup.push(p)
+      if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 1) dedup.push(p)
     }
-    if (dedup.length < 2) return `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
-    let d = `M ${dedup[0].x.toFixed(2)} ${dedup[0].y.toFixed(2)} `
     const n = dedup.length
+    if (n < 2) return n === 1 ? `M ${dedup[0].x.toFixed(2)} ${dedup[0].y.toFixed(2)}` : ''
     const alpha = 0.5
+    let d = `M ${dedup[0].x.toFixed(2)} ${dedup[0].y.toFixed(2)} `
     for (let i = 0; i < n - 1; i++) {
       const p0 = dedup[Math.max(0, i - 1)]
       const p1 = dedup[i]
       const p2 = dedup[i + 1]
       const p3 = dedup[Math.min(n - 1, i + 2)]
-      const d01 = Math.pow(Math.hypot(p1.x - p0.x, p1.y - p0.y), alpha)
-      const d12 = Math.pow(Math.hypot(p2.x - p1.x, p2.y - p1.y), alpha)
-      const d23 = Math.pow(Math.hypot(p3.x - p2.x, p3.y - p2.y), alpha)
-      const denom1 = d01 + d12
-      const denom2 = d12 + d23
-      const t1x = denom1 > 0 ? (p2.x - p0.x) * d12 / denom1 : p2.x - p1.x
-      const t1y = denom1 > 0 ? (p2.y - p0.y) * d12 / denom1 : p2.y - p1.y
-      const t2x = denom2 > 0 ? (p3.x - p1.x) * d12 / denom2 : p2.x - p1.x
-      const t2y = denom2 > 0 ? (p3.y - p1.y) * d12 / denom2 : p2.y - p1.y
-      const cp1x = p1.x + t1x / 3
-      const cp1y = p1.y + t1y / 3
-      const cp2x = p2.x - t2x / 3
-      const cp2y = p2.y - t2y / 3
-      d += `C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)} `
+      const d01 = Math.pow(Math.hypot(p1.x - p0.x, p1.y - p0.y), alpha) || 1
+      const d12 = Math.pow(Math.hypot(p2.x - p1.x, p2.y - p1.y), alpha) || 1
+      const d23 = Math.pow(Math.hypot(p3.x - p2.x, p3.y - p2.y), alpha) || 1
+      const c1x = p1.x + ((p2.x - p0.x) * d12) / (3 * (d01 + d12))
+      const c1y = p1.y + ((p2.y - p0.y) * d12) / (3 * (d01 + d12))
+      const c2x = p2.x - ((p3.x - p1.x) * d12) / (3 * (d12 + d23))
+      const c2y = p2.y - ((p3.y - p1.y) * d12) / (3 * (d12 + d23))
+      d += `C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)} `
     }
     return d
   }
@@ -979,8 +1046,8 @@
     return Math.max(0, Math.min(1, (t - dateBounds.start) / span))
   }
 
-  function pointAt(progress: number): { x: number; y: number; angle: number } {
-    if (!spinePathEl || totalLength === 0) return { x: (trackWidth || 1100) / 2, y: 0, angle: 0 }
+  function lenForProgress(progress: number): number {
+    if (!spinePathEl || totalLength === 0) return 0
     const rows = layout.rows
     let tailLen = 0
     let headLen = 0
@@ -992,10 +1059,19 @@
     }
     const timelineLen = Math.max(1, totalLength - headLen - tailLen)
     const clampedP = Math.max(0, Math.min(1, progress))
-    const len = tailLen + clampedP * timelineLen
-    const p = spinePathEl.getPointAtLength(len)
-    const p2 = spinePathEl.getPointAtLength(Math.min(totalLength, len + 1))
+    return tailLen + clampedP * timelineLen
+  }
+
+  function pointAtLen(len: number): { x: number; y: number; angle: number } {
+    if (!spinePathEl || totalLength === 0) return { x: (trackWidth || 1100) / 2, y: 0, angle: 0 }
+    const L = Math.max(0, Math.min(totalLength, len))
+    const p = spinePathEl.getPointAtLength(L)
+    const p2 = spinePathEl.getPointAtLength(Math.min(totalLength, L + 1))
     return { x: p.x, y: p.y, angle: Math.atan2(p2.y - p.y, p2.x - p.x) }
+  }
+
+  function pointAt(progress: number): { x: number; y: number; angle: number } {
+    return pointAtLen(lenForProgress(progress))
   }
 
   function computeBounds(list: RoadmapEntry[]): { start: number; end: number } {
@@ -1059,36 +1135,22 @@
     return `${day}.${month}.${year}`
   }
 
-  function onNodeEnter(entry: RoadmapEntry, side: 'left' | 'right', ev: Event) {
+  function onNodeEnter(entry: RoadmapEntry, _side: 'left' | 'right', _ev: Event) {
     hoverHref = entry.href
-    const el = ev.currentTarget as HTMLElement | null
-    if (el) positionAside(el, side)
   }
 
   function onNodeLeave() {
     hoverHref = null
   }
 
-  function positionAside(cardEl: HTMLElement, cardSide: 'left' | 'right') {
-    const rect = cardEl.getBoundingClientRect()
-    const margin = 16
-    const asideWidth = Math.min(380, window.innerWidth * 0.32)
-    const asideHeightEstimate = 320
-    let left: number
-    if (cardSide === 'left') {
-      left = rect.right + margin
-      if (left + asideWidth + margin > window.innerWidth) left = rect.left - asideWidth - margin
-    } else {
-      left = rect.left - asideWidth - margin
-      if (left < margin) left = rect.right + margin
+  function portal(node: HTMLElement) {
+    if (typeof document === 'undefined') return
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode === document.body) document.body.removeChild(node)
+      }
     }
-    left = Math.max(margin, Math.min(window.innerWidth - asideWidth - margin, left))
-    const headerH =
-      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--np-header-height')) || 0
-    let top = rect.top
-    top = Math.max(headerH + margin, Math.min(window.innerHeight - asideHeightEstimate - margin, top))
-    asideTop = top
-    asideLeft = left
   }
 
   function onNodeClick(entry: RoadmapEntry, e: MouseEvent) {
@@ -1101,6 +1163,10 @@
     }
     e.preventDefault()
     navigate(entry.href)
+  }
+
+  function onRocketClick() {
+    if (changelogHref) navigate(changelogHref)
   }
 
   function measure() {
@@ -1118,11 +1184,11 @@
   function travel() {
     if (!entries.length || !track || !spinePathEl || totalLength === 0) return
     cancelAnimationFrame(travelFrame)
-    const target = progressForDate(now)
+    const target = lenForProgress(progressForDate(now))
     const start = 0
-    const duration = 4200
+    const duration = 11000
     const trackTop = track.offsetTop
-    rocketProgress = start
+    rocketLen = start
     flying = true
     const startPoint = spinePathEl.getPointAtLength(0)
     const initialScrollY = Math.max(0, trackTop + startPoint.y - window.innerHeight * 0.55)
@@ -1131,10 +1197,9 @@
       const t0 = performance.now()
       const step = (t: number) => {
         const p = Math.min(1, (t - t0) / duration)
-        const eased = 1 - Math.pow(1 - p, 3)
-        rocketProgress = start + (target - start) * eased
+        rocketLen = start + (target - start) * p
         if (spinePathEl) {
-          const pos = spinePathEl.getPointAtLength(rocketProgress * totalLength)
+          const pos = spinePathEl.getPointAtLength(rocketLen)
           const rocketPageY = trackTop + pos.y
           const desired = window.innerHeight * 0.55
           const currentRocketScreenY = rocketPageY - window.scrollY
@@ -1145,6 +1210,7 @@
           travelFrame = requestAnimationFrame(step)
         } else {
           flying = false
+          rocketLen = target
         }
       }
       travelFrame = requestAnimationFrame(step)
@@ -1205,12 +1271,7 @@
       measure()
       requestAnimationFrame(() => {
         measureLength()
-        rocketProgress = progressForDate(now)
-        if (spinePathEl && totalLength > 0) {
-          const pt = spinePathEl.getPointAtLength(rocketProgress * totalLength)
-          const scrollY = pt.y + (track?.offsetTop ?? 0) - window.innerHeight / 2
-          window.scrollTo({ top: Math.max(0, scrollY), behavior: 'auto' })
-        }
+        rocketLen = lenForProgress(progressForDate(now))
       })
     })
     if (typeof ResizeObserver !== 'undefined' && track) {
@@ -1240,7 +1301,7 @@
   })
 
   $effect(() => {
-    if (!flying) rocketProgress = progressForDate(now)
+    if (!flying) rocketLen = lenForProgress(progressForDate(now))
   })
 
   $effect(() => {
@@ -1289,6 +1350,14 @@
         {#if spinePath}
           <path d={spinePath} class="np-roadmap-spine-path" bind:this={spinePathEl} />
         {/if}
+        {#if spinePath && rocketShown}
+          <path
+            d={spinePath}
+            class="np-roadmap-spine-trail"
+            style:stroke-dasharray={`${totalLength}`}
+            style:stroke-dashoffset={`${trailDashoffset}`}
+          />
+        {/if}
       </svg>
 
       {#each layout.rows as r (r.rootEntry.href)}
@@ -1307,6 +1376,63 @@
           />
         {/each}
       {/each}
+
+      {#each spineConnectors as c (c.id + ':dot')}
+        <span class="np-roadmap-issue-dot" style:left={`${c.cx}px`} style:top={`${c.cy}px`}></span>
+      {/each}
+
+      {#if spineTopPoint}
+        <div class="np-roadmap-top-arrow" style:left={`${spineTopPoint.x}px`} style:top={`${spineTopPoint.y}px`}>
+          <svg
+            viewBox="0 0 24 28"
+            width="20"
+            height="24"
+            aria-hidden="true"
+            fill="none"
+            stroke="var(--np-brand)"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="26" x2="12" y2="4" />
+            <polyline points="5 11 12 4 19 11" />
+          </svg>
+        </div>
+      {/if}
+
+      {#if rocketShown}
+        <div
+          class="np-roadmap-today"
+          class:np-roadmap-today-left={todayNearestSide === -1}
+          class:np-roadmap-today-right={todayNearestSide === 1}
+          style:left={`${todayPoint.x}px`}
+          style:top={`${todayPoint.y}px`}
+        >
+          <span class="np-roadmap-today-line"></span>
+          <span class="np-roadmap-today-label">TODAY {formatDate(now)}</span>
+        </div>
+        <div
+          class="np-roadmap-rocket"
+          class:flying
+          class:np-roadmap-rocket-link={!!changelogHref}
+          role="button"
+          tabindex="0"
+          aria-label="Changelog"
+          style:left={`${rocketPoint.x}px`}
+          style:top={`${rocketPoint.y}px`}
+          style:transform={`translate(-50%, -50%) rotate(${rocketPoint.angle + Math.PI / 2}rad)`}
+          onmouseenter={() => (rocketHover = true)}
+          onmouseleave={() => (rocketHover = false)}
+          onclick={onRocketClick}
+          onkeydown={(e) => e.key === 'Enter' && onRocketClick()}
+        >
+          <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
+            <path d="M12 2 C 16 6, 17 12, 12 22 C 7 12, 8 6, 12 2 Z" fill="var(--np-brand)" />
+            <circle cx="12" cy="9" r="2.4" fill="var(--np-bg-card)" />
+            <path d="M8 15 L 5 20 L 9 18 Z M16 15 L 19 20 L 15 18 Z" fill="var(--np-brand)" opacity="0.7" />
+          </svg>
+        </div>
+      {/if}
 
       {#if entries.length === 0}
         <p class="np-roadmap-empty">No items.</p>
@@ -1327,24 +1453,28 @@
   </div>
 </div>
 
-{#if activeHover}
-  <aside class="np-roadmap-aside" style:top={`${asideTop}px`} style:left={`${asideLeft}px`}>
+{#if modalView}
+  <div class="np-roadmap-modal-root" use:portal>
+    <div class="np-roadmap-modal-content">
+  <aside class="np-roadmap-aside">
     <header class="np-roadmap-aside-head">
-      <span class="np-roadmap-card-kind">{kindLabel(activeHover.kind)}</span>
-      <h2>{activeHover.title}</h2>
-      {#if activeHover.targetDate}
-        <span class="np-roadmap-aside-date">{formatDate(activeHover.targetDate)}</span>
+      {#if modalView.kind}
+        <span class="np-roadmap-card-kind">{kindLabel(modalView.kind)}</span>
+      {/if}
+      <h2>{modalView.title}</h2>
+      {#if modalView.date}
+        <span class="np-roadmap-aside-date">{formatDate(modalView.date)}</span>
       {/if}
     </header>
-    {#if activeHover.description}
-      <p class="np-roadmap-aside-desc">{activeHover.description}</p>
+    {#if modalView.description}
+      <p class="np-roadmap-aside-desc">{modalView.description}</p>
     {/if}
-    {#if activeHover.html}
-      <div class="np-roadmap-aside-body">{@html activeHover.html}</div>
+    {#if modalView.html}
+      <div class="np-roadmap-aside-body">{@html modalView.html}</div>
     {/if}
-    {#if activeHover.changelog.length}
+    {#if modalView.changelog.length}
       <ul class="np-roadmap-aside-changelog">
-        {#each activeHover.changelog as ref (ref.entrySlug)}
+        {#each modalView.changelog as ref (ref.entrySlug)}
           <li>
             <a href={ref.entrySlug}>
               <span class="np-roadmap-aside-version">v{ref.version}</span>
@@ -1358,6 +1488,8 @@
       </ul>
     {/if}
   </aside>
+    </div>
+  </div>
 {/if}
 
 <BackToTop />
@@ -1496,11 +1628,29 @@
     stroke-dasharray: 6 6;
     opacity: 0.7;
   }
+  .np-roadmap-spine-trail {
+    fill: none;
+    stroke: var(--np-brand, #b9b);
+    stroke-width: 3;
+    stroke-linecap: round;
+    opacity: 0.95;
+  }
   .np-roadmap-spine-connector {
     fill: none;
     stroke: var(--np-brand, #b9b);
     stroke-width: 1.5;
     opacity: 0.55;
+  }
+  .np-roadmap-issue-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--np-bg-card);
+    border: 2px solid var(--np-brand, #b9b);
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    pointer-events: none;
   }
   .np-roadmap-planet {
     position: relative;
@@ -1638,6 +1788,17 @@
   .np-roadmap-rocket.flying {
     transition: none;
   }
+  .np-roadmap-rocket-link {
+    cursor: pointer;
+  }
+  .np-roadmap-top-arrow {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    pointer-events: none;
+    line-height: 0;
+    filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--np-brand) 30%, transparent));
+  }
 
   .np-roadmap-marker {
     position: absolute;
@@ -1680,17 +1841,32 @@
     opacity: 1;
   }
 
-  .np-roadmap-aside {
+  .np-roadmap-modal-root {
     position: fixed;
-    width: min(380px, 32vw);
-    max-height: calc(100vh - var(--np-header-height) - 48px);
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .np-roadmap-modal-content {
+    display: flex;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    pointer-events: none;
+  }
+  .np-roadmap-aside {
+    position: relative;
+    width: min(420px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
     overflow-y: auto;
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-lg);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
     padding: 20px 22px;
-    z-index: 40;
+    pointer-events: auto;
   }
   .np-roadmap-aside-head h2 {
     margin: 8px 0 4px;

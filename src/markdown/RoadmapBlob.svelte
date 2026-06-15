@@ -3,6 +3,7 @@
 
   let {
     seed,
+    banner,
     points = 18,
     wobble = 0.025,
     margin = 0.05,
@@ -10,12 +11,15 @@
     stroke = 'var(--np-border)'
   }: {
     seed: string
+    banner?: string
     points?: number
     wobble?: number
     margin?: number
     fill?: string
     stroke?: string
   } = $props()
+
+  const clipId = `np-blob-clip-${seed.replace(/[^a-zA-Z0-9]/g, '-')}`
 
   let host: HTMLDivElement
   let measuredW = $state(320)
@@ -36,6 +40,11 @@
   }
 
   const path = $derived(buildPath(seed, points, wobble, margin, measuredW, measuredH))
+  const bounds = $derived.by(() => {
+    const rx = (measuredW / 2) * (Math.SQRT2 + margin)
+    const ry = (measuredH / 2) * (Math.SQRT2 + margin)
+    return { x: measuredW / 2 - rx, y: measuredH / 2 - ry, w: 2 * rx, h: 2 * ry }
+  })
 
   function buildPath(s: string, n: number, w: number, m: number, W: number, H: number): string {
     if (W <= 0 || H <= 0) return ''
@@ -92,7 +101,26 @@
     overflow="visible"
     aria-hidden="true"
   >
-    <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
+    {#if banner}
+      <defs>
+        <clipPath id={clipId}>
+          <path d={path} />
+        </clipPath>
+      </defs>
+      <image
+        href={banner}
+        x={bounds.x}
+        y={bounds.y}
+        width={bounds.w}
+        height={bounds.h}
+        preserveAspectRatio="xMidYMid slice"
+        clip-path={`url(#${clipId})`}
+      />
+      <path d={path} fill="color-mix(in srgb, var(--np-bg-card) 74%, transparent)" />
+      <path d={path} fill="none" stroke={stroke} stroke-width="1.5" />
+    {:else}
+      <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
+    {/if}
   </svg>
 </div>
 

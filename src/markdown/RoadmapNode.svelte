@@ -83,6 +83,7 @@
   const metaSize = $derived(Math.max(8, 11 * scale))
   const descLines = $derived(h < 110 ? 1 : h < 160 ? 2 : 3)
   const titleLines = $derived(h < 110 ? 1 : 2)
+  const banner = $derived((entry.data as Record<string, unknown> | undefined)?.banner as string | undefined)
 </script>
 
 <a
@@ -101,7 +102,7 @@
   onfocus={onEnter}
   onblur={onLeave}
 >
-  <RoadmapBlob seed={entry.slug} />
+  <RoadmapBlob seed={entry.slug} {banner} />
   <div class="np-rm-node-inner">
     <header class="np-rm-node-head" style:font-size={`${metaSize}px`}>
       <span class="np-rm-node-kind">{kindLabel(entry.kind)}</span>

@@ -1,22 +1,21 @@
 <script lang="ts">
   import { getContext } from 'svelte'
   import Schema from './Schema.svelte'
-  import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
+  import { SCHEMAS_CONTEXT, describeSchema, type SchemaRegistry } from './refs'
   import type { FlatParameter } from './types'
 
   let { param }: { param: FlatParameter } = $props()
 
   const registry = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
   const schema = $derived<any>(param.schema as any)
-  const resolved = $derived<any>(resolveRef(schema, registry ? registry() : null))
-  const type = $derived(resolved?.type ?? resolved?.$ref?.split('/').pop() ?? 'any')
-  const hasNested = $derived(!!(resolved?.properties || resolved?.items))
+  const meta = $derived(describeSchema(schema, registry ? registry() : null))
 </script>
 
 <div class="np-param">
   <div class="np-param-head">
     <code class="np-param-name">{param.name}</code>
-    <span class="np-param-type">{type}</span>
+    <span class="np-param-type">{meta.typeLabel}</span>
+    {#if meta.format}<span class="np-param-format">{meta.format}</span>{/if}
     <span class="np-param-in">{param.in}</span>
     {#if param.required}<span class="np-param-required">required</span>{/if}
   </div>
@@ -25,7 +24,14 @@
   {:else if param.description}
     <p class="np-param-desc">{param.description}</p>
   {/if}
-  {#if hasNested}
+  {#if meta.enumValues}
+    <div class="np-param-enum">
+      {#each meta.enumValues as val, i (i)}
+        <code class="np-param-enum-val">{val}</code>
+      {/each}
+    </div>
+  {/if}
+  {#if meta.expandable}
     <div class="np-param-nested">
       <Schema schema={schema} />
     </div>
@@ -61,6 +67,26 @@
     border-radius: var(--np-radius-pill);
     background-color: var(--np-bg-surface);
     border: 1px solid var(--np-border);
+  }
+  .np-param-format {
+    font-family: var(--np-font-mono);
+    font-size: 11.5px;
+    color: var(--np-text-faint);
+  }
+  .np-param-enum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+  }
+  .np-param-enum-val {
+    font-family: var(--np-font-mono);
+    font-size: 11.5px;
+    color: var(--np-text-secondary);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    padding: 1px 6px;
   }
   .np-param-in {
     font-size: 10px;

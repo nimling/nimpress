@@ -1,32 +1,34 @@
 <script lang="ts">
   import { getContext } from 'svelte'
-  import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
+  import Schema from './Schema.svelte'
+  import { SCHEMAS_CONTEXT, resolveRef, leafSchema, describeSchema, type SchemaRegistry } from './refs'
 
-  let { schema, name = '', depth = 0 }: { schema: any; name?: string; depth?: number } = $props()
+  interface Props {
+    schema: unknown
+    name?: string
+    depth?: number
+  }
+  let { schema, name = '', depth = 0 }: Props = $props()
 
   const registry = getContext<() => SchemaRegistry>(SCHEMAS_CONTEXT)
-  const resolved = $derived<any>(resolveRef(schema, registry ? registry() : null))
+  const reg = $derived<SchemaRegistry | null>(registry ? registry() : null)
+  const resolved = $derived(resolveRef(schema, reg) as Record<string, unknown> | null)
+  const meta = $derived(describeSchema(schema, reg))
+  const properties = $derived(leafSchema(schema, reg)?.properties as Record<string, unknown> | undefined)
 
   let expanded = $state(depth < 1)
-
-  const type = $derived(
-    resolved?.type ??
-      (resolved?.$ref ? String(resolved.$ref).split('/').pop() : 'any')
-  )
-  const hasChildren = $derived(
-    !!(resolved?.properties || resolved?.items || resolved?.oneOf || resolved?.anyOf)
-  )
 </script>
 
 <div class="np-schema">
-  <button class="np-schema-head" onclick={() => (expanded = !expanded)} disabled={!hasChildren}>
-    {#if hasChildren}
+  <button class="np-schema-head" onclick={() => (expanded = !expanded)} disabled={!meta.expandable}>
+    {#if meta.expandable}
       <span class="np-chev" class:open={expanded}>›</span>
     {:else}
       <span class="np-chev-spacer"></span>
     {/if}
     {#if name}<code class="np-schema-name">{name}</code>{/if}
-    <span class="np-schema-type">{type}</span>
+    <span class="np-schema-type">{meta.typeLabel}</span>
+    {#if meta.format}<span class="np-schema-format">{meta.format}</span>{/if}
     {#if resolved?.description_html}
       <span class="np-schema-desc">{@html resolved.description_html}</span>
     {:else if resolved?.description}
@@ -34,17 +36,19 @@
     {/if}
   </button>
 
-  {#if expanded && resolved?.properties}
-    <div class="np-schema-children">
-      {#each Object.entries(resolved.properties) as [key, val], i (key || `prop-${i}`)}
-        <svelte:self schema={val} name={key} depth={depth + 1} />
+  {#if meta.enumValues}
+    <div class="np-schema-enum">
+      {#each meta.enumValues as val, i (i)}
+        <code class="np-schema-enum-val">{val}</code>
       {/each}
     </div>
   {/if}
 
-  {#if expanded && resolved?.items}
+  {#if expanded && properties}
     <div class="np-schema-children">
-      <svelte:self schema={resolved.items} name="[item]" depth={depth + 1} />
+      {#each Object.entries(properties) as [key, val], i (key || `prop-${i}`)}
+        <Schema schema={val} name={key} depth={depth + 1} />
+      {/each}
     </div>
   {/if}
 </div>
@@ -101,6 +105,28 @@
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
     font-size: 12.5px;
+  }
+  .np-schema-format {
+    flex: 0 0 auto;
+    padding-top: 1px;
+    color: var(--np-text-faint);
+    font-family: var(--np-font-mono);
+    font-size: 11.5px;
+  }
+  .np-schema-enum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 4px 24px;
+  }
+  .np-schema-enum-val {
+    font-family: var(--np-font-mono);
+    font-size: 11.5px;
+    color: var(--np-text-secondary);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    padding: 1px 6px;
   }
   .np-schema-desc {
     color: var(--np-text-secondary);

@@ -304,7 +304,7 @@
     min-width: 0;
   }
 
-  @media (max-width: 1279px) {
+  @media (max-width: 1535px) {
     .np-page-shell.has-rail .np-toc-rail {
       display: none;
     }

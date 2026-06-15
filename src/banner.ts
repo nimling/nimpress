@@ -95,8 +95,9 @@ export function buildBanner(opts: BannerOptions = {}): string {
 
   const summary = box(rows)
   const artWidth = ART[0].length
+  const artLead = ART[0].length - ART[0].trimStart().length
   const boxWidth = BOX_WIDTH + 4
-  const boxIndent = ' '.repeat(Math.max(0, Math.floor((artWidth - boxWidth) / 2)))
+  const boxIndent = ' '.repeat(Math.max(0, Math.floor((artWidth + artLead - boxWidth) / 2)))
   for (const row of summary) lines.push(boxIndent + row)
   lines.push('')
   return lines.join('\n')

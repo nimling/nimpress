@@ -33,6 +33,11 @@
     const d = new Date(raw)
     return Number.isNaN(d.getTime()) ? null : d
   })
+  const issueBanner = $derived.by(() => {
+    const data = page.frontmatter.data as Record<string, unknown> | undefined
+    const b = data?.banner
+    return typeof b === 'string' ? b : null
+  })
   const tocHeadings = $derived((page.headings ?? []).filter((h) => h.level <= 3))
   const showRail = $derived(!page.frontmatter.noToc && tocHeadings.length > 0)
 
@@ -179,7 +184,10 @@
 <div class="np-page-shell" class:has-rail={showRail}>
   <div class="np-page">
     {#if issueKind}
-      <header class="np-issue-head">
+      <header class="np-issue-head" class:has-banner={!!issueBanner}>
+        {#if issueBanner}
+          <div class="np-issue-banner" style:background-image={`url('${issueBanner}')`}></div>
+        {/if}
         <span class="np-issue-kind np-issue-kind-{issueKind}">{issueKind}</span>
         {#if issueDate}
           <span class="np-issue-date">
@@ -239,6 +247,37 @@
     border-bottom: 1px solid var(--np-divider);
     margin: 0 0 32px;
   }
+  .np-issue-head.has-banner {
+    position: relative;
+    padding-top: 120px;
+  }
+  .np-issue-banner {
+    position: absolute;
+    top: -96px;
+    left: 0;
+    width: min(640px, 100%);
+    height: 320px;
+    z-index: 0;
+    background-size: cover;
+    background-position: top left;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 92%),
+      linear-gradient(to right, rgba(0, 0, 0, 1) 40%, transparent);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 92%),
+      linear-gradient(to right, rgba(0, 0, 0, 1) 40%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+    pointer-events: none;
+  }
+  .np-issue-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: color-mix(in srgb, var(--np-bg) 45%, transparent);
+  }
+  .np-issue-head.has-banner > :not(.np-issue-banner) {
+    position: relative;
+    z-index: 1;
+  }
   .np-issue-kind {
     align-self: flex-start;
     font-size: 11px;
@@ -284,7 +323,7 @@
     min-width: 0;
   }
 
-  @media (max-width: 1279px) {
+  @media (max-width: 1535px) {
     .np-page-shell.has-rail .np-toc-rail {
       position: static;
       left: auto;

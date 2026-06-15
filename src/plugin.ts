@@ -892,7 +892,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           `[nimpress] path ${path} is occupied by both a changelog collection and a regular page`
         )
       }
-      const visible = entries.filter((e) => !e.frontmatter.hidden)
+      const visible = entries.filter((e) => !(isBuildCommand && e.frontmatter.hidden))
       if (visible.length === 0) continue
       visible.sort((a, b) => {
         const va = String((a.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
@@ -1140,7 +1140,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
 
     for (const p of pages.values()) {
-      if (p.frontmatter.hidden) continue
+      if (isBuildCommand && p.frontmatter.hidden) continue
       if (p.effectivePath === '/') continue
       const segments = p.effectivePath.split('/').filter(Boolean)
       let cursor = root
@@ -1258,6 +1258,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const byPath: Record<string, string> = {}
 
     for (const [slug, p] of pages) {
+      if (isBuildCommand && p.frontmatter.hidden) continue
       const meta: PageMeta = {
         slug,
         path: p.effectivePath,
@@ -1281,7 +1282,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   function buildSearch(): SearchEntry[] {
     const out: SearchEntry[] = []
     for (const [slug, p] of pages) {
-      if (p.frontmatter.hidden) continue
+      if (isBuildCommand && p.frontmatter.hidden) continue
       const baseBody = p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' ')
       const specBody = p.type === 'openapi' ? extractOpenApiText(p.openApiSpec) : ''
       const roadmapBody = p.type === 'roadmap' ? extractRoadmapText(p.roadmapEntries ?? []) : ''
@@ -1431,7 +1432,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
 
   function buildPagesEntry(): string {
     const entries: string[] = []
-    for (const slug of pages.keys()) {
+    for (const [slug, p] of pages) {
+      if (isBuildCommand && p.frontmatter.hidden) continue
       const id = `${PAGE_COMPONENT_PREFIX}${urlSlug(slug)}.svelte`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
@@ -1440,7 +1442,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
 
   function buildBodiesEntry(): string {
     const entries: string[] = []
-    for (const slug of pages.keys()) {
+    for (const [slug, p] of pages) {
+      if (isBuildCommand && p.frontmatter.hidden) continue
       const id = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
