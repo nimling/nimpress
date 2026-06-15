@@ -32,7 +32,7 @@
       <div class="np-group">
         <div class="np-group-header" class:active>
           {#if node.link}
-            <a class="np-group-label-link" href={node.link} class:active>{node.text}</a>
+            <a class="np-group-label-link" href={node.link} class:active>{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
             <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{node.text}</button>
           {/if}
@@ -57,7 +57,7 @@
     {:else}
       <div class="np-subgroup-row" class:active>
         {#if node.link}
-          <a class="np-link np-subgroup-link" href={node.link} class:active>{node.text}</a>
+          <a class="np-link np-subgroup-link" href={node.link} class:active>{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
           <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{node.text}</button>
         {/if}
@@ -81,13 +81,23 @@
     {/if}
   {:else}
     <a href={node.link ?? '#'} class="np-link" class:active>
-      {node.text}
+      {node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
     </a>
   {/if}
 {/if}
 
 <style>
   .np-group { margin-bottom: 12px; }
+
+  .np-hidden-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background-color: var(--np-danger, #e5484d);
+    vertical-align: middle;
+  }
 
   .np-group-header,
   .np-subgroup-row {

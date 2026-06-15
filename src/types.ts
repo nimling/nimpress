@@ -141,6 +141,7 @@ export interface SidebarNode {
   icon?: string
   order?: number
   collapsed?: boolean
+  hidden?: boolean
   items?: SidebarNode[]
 }
 

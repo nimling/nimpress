@@ -1171,7 +1171,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           claim: t.page.frontmatter.claim,
           icon: t.page.frontmatter.icon,
           order: t.page.frontmatter.order,
-          collapsed: t.page.frontmatter.collapsed
+          collapsed: t.page.frontmatter.collapsed,
+          hidden: t.page.frontmatter.hidden
         }
         const flat = t.page.openApiSpec as { tags?: { name: string }[] } | undefined
         if (t.page.type === 'openapi' && flat?.tags?.length) {
