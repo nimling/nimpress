@@ -105,7 +105,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   @media (min-width: 960px) {
-    .np-hero { padding: 0 80px; }
+    .np-hero { padding: 120px 80px 96px; }
     .np-hero-side .np-hero-inner {
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
       gap: 24px;
