@@ -36,6 +36,7 @@ export interface RoadmapEntry {
   parent?: string
   progress?: number
   status: RoadmapStatus
+  hidden?: boolean
   html: string
   headings: Heading[]
   data?: Record<string, unknown>
@@ -110,6 +111,7 @@ export interface ChangelogEntry {
   title: string
   description?: string
   releaseDate?: string
+  hidden?: boolean
   html: string
   headings: Heading[]
   data?: Record<string, unknown>

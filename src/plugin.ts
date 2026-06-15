@@ -924,6 +924,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           title: entryTitle,
           description: entryDescription,
           releaseDate,
+          hidden: e.frontmatter.hidden,
           html: e.html,
           headings: e.headings,
           data: e.frontmatter.data
@@ -1083,6 +1084,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
           parent,
           progress: maxProgress,
           status,
+          hidden: e.frontmatter.hidden,
           html: e.html,
           headings: e.headings,
           data: e.frontmatter.data,
@@ -1187,6 +1189,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
             text: e.version ? `v${e.version}` : (e.title || 'unreleased'),
             link: `${t.page!.effectivePath}#${e.slug}`,
             slug: `${t.page!.slug}__${e.slug}`,
+            hidden: e.hidden,
             order: idx
           }))
           node.items = items.length ? [...versionNodes, ...items] : versionNodes
@@ -1213,6 +1216,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
               link: e.href,
               slug: e.slug,
               icon: e.kind,
+              hidden: e.hidden,
               order: idx
             }
             if (kids.length) node.items = kids.map((k, i) => buildEntryNode(k, i))
