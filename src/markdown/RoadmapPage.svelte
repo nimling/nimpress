@@ -841,7 +841,7 @@
   }
 
   function avoidCards(px: number, py: number, boxes: NodeBox[], w: number): number {
-    const pad = 10
+    const pad = 12
     let x = px
     for (const r of boxes) {
       const hx = r.w * 0.25
@@ -851,8 +851,10 @@
       const ry = r.y - hy
       const rh = r.h + 2 * hy
       if (py <= ry - pad || py >= ry + rh + pad) continue
-      if (rx + rw / 2 < w / 2) x = Math.max(x, rx + rw + pad)
-      else x = Math.min(x, rx - pad)
+      if (x <= rx - pad || x >= rx + rw + pad) continue
+      const toLeft = rx - pad
+      const toRight = rx + rw + pad
+      x = Math.abs(x - toLeft) <= Math.abs(x - toRight) ? toLeft : toRight
     }
     return Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X, x))
   }
@@ -872,25 +874,27 @@
     return r0 + (r1 - r0) * u
   }
 
-  function generateSwirlBetween(
+  function generateMeander(
     start: { x: number; y: number },
     end: { x: number; y: number },
     boxes: NodeBox[],
-    openDir: number,
     amp: number,
+    lobes: number,
+    dir0: number,
     seed: number,
     w: number
   ): { x: number; y: number }[] {
     const dx = end.x - start.x
     const dy = end.y - start.y
-    const N = 18
+    const N = Math.max(28, lobes * 18)
     const pts: { x: number; y: number }[] = []
     for (let i = 1; i <= N; i++) {
-      const t = i / (N + 1)
-      const env = Math.sin(Math.PI * t)
-      const nz = 0.7 + 0.3 * valueNoise1D(t * 2.4 + seed * 0.01, seed)
-      const x = start.x + dx * t + openDir * amp * env * nz
-      const y = start.y + dy * t
+      const s = i / (N + 1)
+      const taper = Math.sin(Math.PI * s) ** 2
+      const wave = Math.sin(Math.PI * lobes * s)
+      const ampN = amp * (0.86 + 0.14 * valueNoise1D(s * 1.4 + seed * 0.01, seed))
+      const x = start.x + dx * s + dir0 * ampN * taper * wave
+      const y = start.y + dy * s
       pts.push({ x: avoidCards(x, y, boxes, w), y })
     }
     return pts
@@ -933,15 +937,18 @@
     for (let i = 0; i < anchors.length - 1; i++) {
       const a = anchors[i]
       const b = anchors[i + 1]
-      const amp = Math.min(w * 0.42, w / 2 - 30)
-      const openDir = a.side
+      const gap = Math.abs((a.y - STUB) - (b.y + STUB))
+      const lobes = Math.max(1, Math.min(4, Math.round(gap / 200)))
+      const amp = Math.min(w * 0.46, w / 2 - TRACK_PAD_X - 12)
       const seed = (i + 1) * 2654435761
-      const loop = generateSwirlBetween(
+      const dir0 = a.side
+      const loop = generateMeander(
         { x: a.x, y: a.y - STUB },
         { x: b.x, y: b.y + STUB },
         allBoxes,
-        openDir,
         amp,
+        lobes,
+        dir0,
         seed,
         w
       )
@@ -1403,13 +1410,13 @@
       {#if rocketShown}
         <div
           class="np-roadmap-today"
-          class:np-roadmap-today-left={todayNearestSide === -1}
-          class:np-roadmap-today-right={todayNearestSide === 1}
+          class:np-roadmap-today-left={todayNearestSide === 1}
+          class:np-roadmap-today-right={todayNearestSide === -1}
           style:left={`${todayPoint.x}px`}
           style:top={`${todayPoint.y}px`}
         >
           <span class="np-roadmap-today-line"></span>
-          <span class="np-roadmap-today-label">TODAY {formatDate(now)}</span>
+          <span class="np-roadmap-today-label">{formatDate(now)}</span>
         </div>
         <div
           class="np-roadmap-rocket"
