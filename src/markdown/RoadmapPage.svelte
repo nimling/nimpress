@@ -262,18 +262,32 @@
     const n = anchors[anchors.length - 1]
     return { x: n.x, y: Math.max(40, n.y - 92) - 26 }
   })
-  const todayNearestSide = $derived.by(() => {
-    const t = new Date(now).getTime()
-    let side: 1 | -1 = 1
-    let bestDiff = Infinity
+  const todayMarker = $derived.by(() => {
+    const tp = todayPoint
+    let near: { x: number; y: number } | null = null
+    let bd = Infinity
     for (const a of computeSpineAnchors(layout.rows, effectiveTrackW)) {
-      const diff = Math.abs(a.date - t)
-      if (diff < bestDiff) {
-        bestDiff = diff
-        side = a.side
+      const d = (a.x - tp.x) ** 2 + (a.y - tp.y) ** 2
+      if (d < bd) {
+        bd = d
+        near = a
       }
     }
-    return side
+    let nx = -Math.sin(tp.angle)
+    let ny = Math.cos(tp.angle)
+    if (near && nx * (tp.x - near.x) + ny * (tp.y - near.y) < 0) {
+      nx = -nx
+      ny = -ny
+    }
+    const TICK = 30
+    const GAP = 10
+    return {
+      x: tp.x,
+      y: tp.y,
+      deg: (Math.atan2(ny, nx) * 180) / Math.PI,
+      labelX: nx * (TICK + GAP),
+      labelY: ny * (TICK + GAP)
+    }
   })
   const roadmapChangelog = $derived.by(() => {
     const seen = new Set<string>()
@@ -859,43 +873,80 @@
     return Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X, x))
   }
 
-  function latticeHash(i: number, seed: number): number {
-    let h = (Math.imul(i, 374761393) + Math.imul(seed, 668265263)) >>> 0
-    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296
+  function coilPoint(
+    sA: { x: number; y: number },
+    sB: { x: number; y: number },
+    dir: number,
+    rx: number,
+    ry: number,
+    loops: number,
+    t: number
+  ): { x: number; y: number } {
+    const e = t * t * t * (t * (t * 6 - 15) + 10)
+    const baseX = sA.x + (sB.x - sA.x) * e
+    const baseY = sA.y + (sB.y - sA.y) * e
+    const env = Math.sin(Math.PI * t) ** 2
+    const theta = 2 * Math.PI * loops * t
+    const x = baseX + dir * rx * env * (1 - Math.cos(theta)) / 2
+    const y = baseY + ry * env * Math.sin(theta)
+    return { x, y }
   }
 
-  function valueNoise1D(x: number, seed: number): number {
-    const i0 = Math.floor(x)
-    const f = x - i0
-    const u = f * f * (3 - 2 * f)
-    const r0 = latticeHash(i0, seed)
-    const r1 = latticeHash(i0 + 1, seed)
-    return r0 + (r1 - r0) * u
+  function coilArcLength(
+    sA: { x: number; y: number },
+    sB: { x: number; y: number },
+    dir: number,
+    rx: number,
+    ry: number,
+    loops: number
+  ): number {
+    const STEPS = 280
+    let px = sA.x
+    let py = sA.y
+    let len = 0
+    for (let k = 1; k <= STEPS; k++) {
+      const p = coilPoint(sA, sB, dir, rx, ry, loops, k / STEPS)
+      len += Math.hypot(p.x - px, p.y - py)
+      px = p.x
+      py = p.y
+    }
+    return len
   }
 
-  function generateMeander(
-    start: { x: number; y: number },
-    end: { x: number; y: number },
+  function solveCoilSize(
+    sA: { x: number; y: number },
+    sB: { x: number; y: number },
+    dir: number,
+    ryRatio: number,
+    loops: number,
+    maxRx: number,
+    target: number
+  ): number {
+    let lo = 0
+    let hi = maxRx
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2
+      if (coilArcLength(sA, sB, dir, mid, mid * ryRatio, loops) < target) lo = mid
+      else hi = mid
+    }
+    return (lo + hi) / 2
+  }
+
+  function sampleCoil(
+    sA: { x: number; y: number },
+    sB: { x: number; y: number },
+    dir: number,
+    rx: number,
+    ry: number,
+    loops: number,
     boxes: NodeBox[],
-    amp: number,
-    lobes: number,
-    dir0: number,
-    seed: number,
     w: number
   ): { x: number; y: number }[] {
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const N = Math.max(28, lobes * 18)
+    const SAMPLES = Math.max(96, Math.round(loops * 110))
     const pts: { x: number; y: number }[] = []
-    for (let i = 1; i <= N; i++) {
-      const s = i / (N + 1)
-      const taper = Math.sin(Math.PI * s) ** 2
-      const wave = Math.sin(Math.PI * lobes * s)
-      const ampN = amp * (0.86 + 0.14 * valueNoise1D(s * 1.4 + seed * 0.01, seed))
-      const x = start.x + dx * s + dir0 * ampN * taper * wave
-      const y = start.y + dy * s
-      pts.push({ x: avoidCards(x, y, boxes, w), y })
+    for (let i = 1; i <= SAMPLES; i++) {
+      const p = coilPoint(sA, sB, dir, rx, ry, loops, i / (SAMPLES + 1))
+      pts.push({ x: avoidCards(p.x, p.y, boxes, w), y: p.y })
     }
     return pts
   }
@@ -911,54 +962,160 @@
     return maxRight + 30
   }
 
+  function fillingPath(
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    box: { x: number; y: number; w: number; h: number },
+    blockedRects: { x: number; y: number; w: number; h: number }[],
+    budget: number,
+    seed: number
+  ): { x: number; y: number }[] {
+    let s = seed >>> 0
+    const rng = () => {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0
+      return s / 4294967296
+    }
+    const cell = 46
+    const cols = Math.max(3, Math.round(box.w / cell))
+    const rows = Math.max(3, Math.round(box.h / cell))
+    const cw = box.w / cols
+    const ch = box.h / rows
+    const pt = (c: number, r: number) => ({ x: box.x + (c + 0.5) * cw, y: box.y + (r + 0.5) * ch })
+    const inGrid = (c: number, r: number) => c >= 0 && c < cols && r >= 0 && r < rows
+    const blocked = (c: number, r: number) => {
+      const p = pt(c, r)
+      return blockedRects.some(
+        (R) => p.x >= R.x - cw * 0.5 && p.x <= R.x + R.w + cw * 0.5 && p.y >= R.y - ch * 0.5 && p.y <= R.y + R.h + ch * 0.5
+      )
+    }
+    const snap = (p: { x: number; y: number }) => {
+      let bc = 0
+      let br = 0
+      let bd = Infinity
+      for (let c = 0; c < cols; c++)
+        for (let r = 0; r < rows; r++) {
+          if (blocked(c, r)) continue
+          const q = pt(c, r)
+          const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
+          if (d < bd) {
+            bd = d
+            bc = c
+            br = r
+          }
+        }
+      return { c: bc, r: br }
+    }
+    const E = snap(end)
+    const S = snap(start)
+    const key = (c: number, r: number) => c * 1000 + r
+    let freeCount = 0
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if (!blocked(c, r)) freeCount++
+    let L = Math.max(2, Math.min(Math.round(budget), Math.floor(freeCount * 0.5)))
+    const baseMan = Math.abs(S.c - E.c) + Math.abs(S.r - E.r)
+    while (L > 2 && (L - 1 - baseMan < 0 || (L - 1 - baseMan) % 2 !== 0)) L--
+    const dirs = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1]
+    ]
+    const visited = new Set<number>()
+    let iters = 0
+    const CAP = 6000
+    const dfs = (c: number, r: number, len: number): { c: number; r: number }[] | null => {
+      if (iters++ > CAP) return null
+      if (len === L) return c === E.c && r === E.r ? [{ c, r }] : null
+      if (c === E.c && r === E.r) return null
+      const rem = L - len
+      const d = Math.abs(c - E.c) + Math.abs(r - E.r)
+      if (d > rem || (rem - d) % 2 !== 0) return null
+      visited.add(key(c, r))
+      const nbs = dirs
+        .map(([dc, dr]) => [c + dc, r + dr])
+        .filter(([nc, nr]) => inGrid(nc, nr) && !blocked(nc, nr) && !visited.has(key(nc, nr)))
+        .sort(() => rng() - 0.5)
+      for (const [nc, nr] of nbs) {
+        const sub = dfs(nc, nr, len + 1)
+        if (sub) {
+          visited.delete(key(c, r))
+          return [{ c, r }, ...sub]
+        }
+      }
+      visited.delete(key(c, r))
+      return null
+    }
+    let route = dfs(S.c, S.r, 1)
+    let tries = 0
+    while (!route && L > 2 && tries < 5) {
+      L -= 2
+      iters = 0
+      visited.clear()
+      route = dfs(S.c, S.r, 1)
+      tries++
+    }
+    if (!route) route = [{ c: S.c, r: S.r }, { c: E.c, r: E.r }]
+    let pts = route.map((n) => pt(n.c, n.r))
+    pts[0] = start
+    pts[pts.length - 1] = end
+    for (let it = 0; it < 3; it++) {
+      const np = [pts[0]]
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i]
+        const b = pts[i + 1]
+        np.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 })
+        np.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 })
+      }
+      np.push(pts[pts.length - 1])
+      pts = np
+    }
+    return pts
+  }
+
   function buildSpinePath(rows: RowLayout[], w: number, trackH: number, _side: number): string {
     if (!rows.length || w <= 0 || trackH <= 0) return ''
     const anchors = computeSpineAnchors(rows, w)
     if (anchors.length === 0) return ''
 
     const oldest = anchors[0]
-    const newest = anchors[anchors.length - 1]
 
     const planetX = w / 2
     const planetY = trackH
 
-    const allBoxes: NodeBox[] = anchors.map((an) => an.box)
-    const STUB = 30
+    const ox = oldest.x
+    const oy = oldest.y
+
     const pts: { x: number; y: number }[] = []
     pts.push({ x: planetX, y: planetY })
+    pts.push({ x: ox, y: oy })
 
-    const span = planetY - oldest.y
-    const approachY = oldest.y + Math.min(span * 0.45, Math.max(80, span * 0.3))
-    pts.push({ x: oldest.x, y: approachY })
-    pts.push({ x: oldest.x, y: oldest.y + STUB })
-    pts.push({ x: oldest.x, y: oldest.y })
-    pts.push({ x: oldest.x, y: oldest.y - STUB })
-
+    const HOUR_MS = 3600000
+    let minHours = Infinity
+    for (let i = 0; i < anchors.length - 1; i++) {
+      const h = Math.abs((anchors[i + 1].date ?? 0) - (anchors[i].date ?? 0)) / HOUR_MS
+      if (h > 0 && h < minHours) minHours = h
+    }
+    if (!Number.isFinite(minHours)) minHours = 1
+    const blockedRects = anchors.map((a) => {
+      const haloX = a.box.w * 0.25
+      const haloY = a.box.h * 0.25
+      return { x: a.box.x - haloX, y: a.box.y - haloY, w: a.box.w + 2 * haloX, h: a.box.h + 2 * haloY }
+    })
+    const BASELINE_CELLS = 9
+    const LARGER = 1.35
     for (let i = 0; i < anchors.length - 1; i++) {
       const a = anchors[i]
       const b = anchors[i + 1]
-      const gap = Math.abs((a.y - STUB) - (b.y + STUB))
-      const lobes = Math.max(1, Math.min(4, Math.round(gap / 200)))
-      const amp = Math.min(w * 0.46, w / 2 - TRACK_PAD_X - 12)
-      const seed = (i + 1) * 2654435761
-      const dir0 = a.side
-      const loop = generateMeander(
-        { x: a.x, y: a.y - STUB },
-        { x: b.x, y: b.y + STUB },
-        allBoxes,
-        amp,
-        lobes,
-        dir0,
-        seed,
-        w
-      )
-      for (const s of loop) pts.push(s)
-      pts.push({ x: b.x, y: b.y + STUB })
-      pts.push({ x: b.x, y: b.y })
-      pts.push({ x: b.x, y: b.y - STUB })
+      const hours = Math.abs((b.date ?? 0) - (a.date ?? 0)) / HOUR_MS
+      const top = Math.min(a.y, b.y)
+      const box = { x: TRACK_PAD_X, y: top, w: w - 2 * TRACK_PAD_X, h: Math.abs(a.y - b.y) }
+      const budget = Math.max(BASELINE_CELLS, Math.round(LARGER * BASELINE_CELLS * (hours / minHours)))
+      const seed = (1013904223 + i * 2654435761) >>> 0
+      const seg = fillingPath({ x: a.x, y: a.y }, { x: b.x, y: b.y }, box, blockedRects, budget, seed)
+      for (let k = 1; k < seg.length; k++) pts.push(seg[k])
     }
 
-    pts.push({ x: newest.x, y: Math.max(40, newest.y - 92) })
+    const last = anchors[anchors.length - 1]
+    pts.push({ x: last.x, y: Math.max(40, last.y - 92) })
 
     return buildSpineHermite(pts)
   }
@@ -1200,6 +1357,9 @@
     const startPoint = spinePathEl.getPointAtLength(0)
     const initialScrollY = Math.max(0, trackTop + startPoint.y - window.innerHeight * 0.55)
     window.scrollTo({ top: initialScrollY, behavior: 'smooth' })
+    const anchorYs = computeSpineAnchors(layout.rows, effectiveTrackW)
+      .map((a) => a.y)
+      .sort((m, n) => m - n)
     setTimeout(() => {
       const t0 = performance.now()
       const step = (t: number) => {
@@ -1207,11 +1367,17 @@
         rocketLen = start + (target - start) * p
         if (spinePathEl) {
           const pos = spinePathEl.getPointAtLength(rocketLen)
-          const rocketPageY = trackTop + pos.y
-          const desired = window.innerHeight * 0.55
-          const currentRocketScreenY = rocketPageY - window.scrollY
-          const delta = currentRocketScreenY - desired
-          if (Math.abs(delta) > 1) window.scrollTo(0, Math.max(0, window.scrollY + delta))
+          let nextY = anchorYs.length ? anchorYs[0] : pos.y
+          for (let k = anchorYs.length - 1; k >= 0; k--) {
+            if (anchorYs[k] < pos.y - 2) {
+              nextY = anchorYs[k]
+              break
+            }
+          }
+          const focusPageY = trackTop + (pos.y * 0.35 + nextY * 0.65)
+          const desiredScroll = focusPageY - window.innerHeight * 0.5
+          const off = desiredScroll - window.scrollY
+          if (Math.abs(off) > 60) window.scrollTo(0, Math.max(0, window.scrollY + off * 0.12))
         }
         if (p < 1) {
           travelFrame = requestAnimationFrame(step)
@@ -1397,9 +1563,11 @@
             aria-hidden="true"
             fill="none"
             stroke="var(--np-brand)"
-            stroke-width="2.4"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
+            stroke-dasharray="2.5 2.5"
+            opacity="0.7"
           >
             <line x1="12" y1="26" x2="12" y2="4" />
             <polyline points="5 11 12 4 19 11" />
@@ -1410,13 +1578,14 @@
       {#if rocketShown}
         <div
           class="np-roadmap-today"
-          class:np-roadmap-today-left={todayNearestSide === 1}
-          class:np-roadmap-today-right={todayNearestSide === -1}
-          style:left={`${todayPoint.x}px`}
-          style:top={`${todayPoint.y}px`}
+          style:left={`${todayMarker.x}px`}
+          style:top={`${todayMarker.y}px`}
         >
-          <span class="np-roadmap-today-line"></span>
-          <span class="np-roadmap-today-label">{formatDate(now)}</span>
+          <span class="np-roadmap-today-line" style:transform={`translate(-50%, -50%) rotate(${todayMarker.deg}deg)`}></span>
+          <span
+            class="np-roadmap-today-label"
+            style:transform={`translate(-50%, -50%) translate(${todayMarker.labelX}px, ${todayMarker.labelY}px)`}
+          >{formatDate(now)}</span>
         </div>
         <div
           class="np-roadmap-rocket"
@@ -1755,34 +1924,31 @@
 
   .np-roadmap-today {
     position: absolute;
-    transform: translate(-50%, -50%);
+    width: 0;
     height: 0;
-    display: flex;
-    align-items: center;
     pointer-events: none;
     z-index: 3;
     white-space: nowrap;
   }
   .np-roadmap-today-line {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 56px;
+    left: 0;
+    top: 0;
+    transform-origin: 50% 50%;
+    width: 60px;
     height: 0;
     border-top: 1px dotted var(--np-border);
     opacity: 0.9;
   }
   .np-roadmap-today-label {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 0;
+    top: 0;
     color: var(--np-text-muted);
     font-family: var(--np-font-mono);
     font-size: 10px;
     letter-spacing: 0.04em;
   }
-  .np-roadmap-today-left .np-roadmap-today-label { right: calc(50% + 36px); }
-  .np-roadmap-today-right .np-roadmap-today-label { left: calc(50% + 36px); }
 
   .np-roadmap-rocket {
     position: absolute;

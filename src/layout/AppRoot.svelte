@@ -1,15 +1,45 @@
 <script lang="ts">
+  import { get } from 'svelte/store'
   import { Router } from 'sly-svelte-location-router'
   import type { Routes } from 'sly-svelte-location-router'
   import AppShell from './AppShell.svelte'
-  import App from './App.svelte'
+  import HomePage from './HomePage.svelte'
+  import { configStore } from '../framework/configStore'
+  import { pageGuard } from '../auth/guard'
 
-  const routes: Routes = {
-    '/': {
-      name: 'shell',
-      component: () => Promise.resolve({ default: App })
+  function buildRoutes(): Routes {
+    const config = get(configStore)
+    const pages = config.manifest?.pages ?? {}
+    const loaders = config.pageLoader ?? {}
+    const routes: Routes = {}
+
+    for (const [slug, meta] of Object.entries(pages)) {
+      if (meta.redirect) {
+        routes[meta.path] = meta.redirect
+        continue
+      }
+      const loader = loaders[slug]
+      if (!loader) continue
+      routes[meta.path] = {
+        name: slug || 'index',
+        component: loader as () => Promise<{ default: unknown }>,
+        guard: meta.scope || meta.claim
+          ? pageGuard({ scope: meta.scope, claim: meta.claim })
+          : undefined
+      }
     }
+
+    if (!routes['/']) {
+      routes['/'] = {
+        name: 'home',
+        component: () => Promise.resolve({ default: HomePage })
+      }
+    }
+
+    return routes
   }
+
+  const routes = buildRoutes()
 </script>
 
 <AppShell>

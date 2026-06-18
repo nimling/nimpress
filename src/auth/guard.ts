@@ -34,9 +34,9 @@ export function pageGuard(required: AccessRequirement) {
         })
       })
     }
-    if (viewerCanAccess(required, get(viewer))) return
+    if (viewerCanAccess(required, get(viewer))) return undefined
     const returnTo = window.location.pathname + window.location.search
     startLogin(undefined, returnTo)
-    return
+    return undefined
   }
 }

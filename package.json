@@ -37,7 +37,7 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build:lib": "vite build --mode library",
     "preview:lib": "vite preview --mode library",
     "type-check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",

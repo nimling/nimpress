@@ -49,18 +49,22 @@
 
   async function load(path: string) {
     const token = ++loadToken
-    PageComponent = null
     blockedPath = null
     erroneousRoute.set(null)
 
     const slug = resolveSlug(path)
-    if (slug === null && (path === '/' || path === '')) return
+    if (slug === null && (path === '/' || path === '')) {
+      PageComponent = null
+      return
+    }
     if (slug === null) {
+      PageComponent = null
       handleUnresolved(path)
       return
     }
     const meta = config.manifest?.pages[slug]
     if (!meta) {
+      PageComponent = null
       handleUnresolved(path)
       return
     }
@@ -72,6 +76,7 @@
     await waitForViewer()
     if (token !== loadToken) return
     if (!viewerCanReach({ scope: meta.scope, claim: meta.claim })) {
+      PageComponent = null
       blockedPath = path
       redirectToLogin(path)
       return
@@ -79,6 +84,7 @@
 
     const loader = config.pageLoader?.[slug]
     if (!loader) {
+      PageComponent = null
       handleUnresolved(path)
       return
     }

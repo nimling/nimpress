@@ -93,6 +93,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
 code, pre, kbd, samp {
   font-family: var(--np-font-mono);
 }
