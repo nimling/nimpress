@@ -1115,7 +1115,7 @@
     }
 
     const last = anchors[anchors.length - 1]
-    pts.push({ x: last.x, y: Math.max(40, last.y - 92) })
+    pts.push({ x: last.x, y: Math.max(40, last.y - 92) - 8 })
 
     return buildSpineHermite(pts)
   }
@@ -1562,12 +1562,12 @@
             height="24"
             aria-hidden="true"
             fill="none"
-            stroke="var(--np-brand)"
+            stroke="var(--np-text-muted)"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-dasharray="2.5 2.5"
-            opacity="0.7"
+            opacity="0.9"
           >
             <line x1="12" y1="26" x2="12" y2="4" />
             <polyline points="5 11 12 4 19 11" />
