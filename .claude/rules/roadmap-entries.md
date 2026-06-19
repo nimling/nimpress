@@ -101,17 +101,27 @@ data:
 
 1. Cards alternate left and right of the spine by default. Issues with a `data.parent` sit next to their parent in chronological order.
 
-2. Each card carries the `KIND` label at the top-left and the target date at the top-right. Title below, description below that, status pill at the bottom-left.
+2. Each card carries the `KIND` label as a solid colored pill at the top-left and the target date at the top-right. Title below, description below that. The kind pill is indigo for epic, green for feature, red for bug.
 
-3. Card backgrounds are organic SVG blobs deterministically generated from the filename, so each card looks unique but stays stable.
+3. The card border color carries the issue status. Green for shipped, yellow for in progress, the default border for planned. Status is driven by the linked changelog `data.status`, so authors set status through the changelog, not on the issue file.
 
-4. The spine is a dashed snaking SVG path centered in the timeline track.
+4. Card backgrounds are organic SVG blobs deterministically generated from the filename, so each card looks unique but stays stable.
 
-5. Today renders as a dotted line crossing the spine with a `TODAY DD.MM.YYYY` pill. An SVG rocket sits at the chronological position of today (or at the highest linked changelog progress, whichever is further).
+5. The spine is a single smooth curve from the planet at the bottom to an arrow at the top. The arc length between two consecutive issues scales with the time between them, so a long gap draws a longer stretch of path. The traveled portion is solid, the untraveled portion is dashed and muted, matching the top arrow.
 
-6. Every linked changelog entry drops a smaller dotted line with the version and release date at its release-date position. Clicking the marker navigates to the changelog entry.
+6. Today renders as a short tick drawn as a normal to the path, carrying a date-only label placed on the side away from the nearest issue. An SVG rocket sits at the chronological position of today, or at the highest linked changelog progress, whichever is further.
 
-7. Clicking a card navigates to the issue's own page (each issue is a real standalone page at its file URL).
+7. Every linked changelog entry drops a smaller dotted marker with the version and release date at its release-date position. Clicking the marker navigates to the changelog entry.
+
+8. Clicking a card navigates to the issue's own page (each issue is a real standalone page at its file URL).
+
+## Responsive
+
+1. At 800px viewport width and below, every issue moves into a single column on the right, ordered by date with the oldest at the bottom.
+
+2. The spine becomes a straight vertical line on the left. It starts at the globe at the bottom, curls to the left, and runs straight up to the top arrow. Each card connects to the line with a horizontal connector.
+
+3. The hover aside is off at this width. Tapping a card navigates to its page.
 
 ## Hover aside
 

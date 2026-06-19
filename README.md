@@ -117,6 +117,23 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Auth, scope, and claim guards | [docs/auth.md](./docs/auth.md) |
 | Search index | [docs/search.md](./docs/search.md) |
 
+## Authoring docs with Claude
+
+The package ships the authoring rules at `node_modules/@nimling/nimpress/.claude/rules/`. They cover how to write each page type: docs, changelog entries, hero pages, roadmap pages, and roadmap issues, plus frontmatter, file layout, and styling.
+
+Claude does not auto load rules from inside `node_modules`. So in the repo that consumes Nimpress, add a pointer in your root `CLAUDE.md` so Claude can find them:
+
+```md
+## Nimpress docs authoring
+
+When writing or editing markdown under the docs content directory, follow the Nimpress authoring rules in `node_modules/@nimling/nimpress/.claude/rules/`. Read the rule that matches the page type before writing:
+
+- `docs-authoring.md`, `doc-pages.md`, `page-types.md`, `frontmatter.md`, `file-layout.md` for general pages
+- `changelog-entries.md` for changelog entries
+- `roadmap-entries.md` for roadmap pages and issue pages
+- `style.md` for theming and overrides
+```
+
 ## Structure
 
 ```

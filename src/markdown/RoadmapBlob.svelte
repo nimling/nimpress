@@ -8,7 +8,8 @@
     wobble = 0.025,
     margin = 0.05,
     fill = 'var(--np-bg-card)',
-    stroke = 'var(--np-border)'
+    stroke = 'var(--np-border)',
+    strokeWidth = 1.5
   }: {
     seed: string
     banner?: string
@@ -17,6 +18,7 @@
     margin?: number
     fill?: string
     stroke?: string
+    strokeWidth?: number
   } = $props()
 
   const clipId = `np-blob-clip-${seed.replace(/[^a-zA-Z0-9]/g, '-')}`
@@ -117,9 +119,9 @@
         clip-path={`url(#${clipId})`}
       />
       <path d={path} fill="color-mix(in srgb, var(--np-bg-card) 74%, transparent)" />
-      <path d={path} fill="none" stroke={stroke} stroke-width="1.5" />
+      <path d={path} fill="none" stroke={stroke} stroke-width={strokeWidth} />
     {:else}
-      <path d={path} fill={fill} stroke={stroke} stroke-width="1.5" />
+      <path d={path} fill={fill} stroke={stroke} stroke-width={strokeWidth} />
     {/if}
   </svg>
 </div>

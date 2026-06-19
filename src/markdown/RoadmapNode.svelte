@@ -65,6 +65,12 @@
     return kind.toUpperCase()
   }
 
+  function statusStroke(status: string): string {
+    if (status === 'shipped') return 'var(--np-check)'
+    if (status === 'in_progress') return 'var(--np-warning)'
+    return 'var(--np-border)'
+  }
+
   function formatDate(iso: string | undefined): string {
     if (!iso) return ''
     const d = new Date(iso)
@@ -102,16 +108,16 @@
   onfocus={onEnter}
   onblur={onLeave}
 >
-  <RoadmapBlob seed={entry.slug} {banner} />
+  <RoadmapBlob
+    seed={entry.slug}
+    {banner}
+    stroke={statusStroke(entry.status)}
+    strokeWidth={entry.status === 'planned' ? 1.5 : 2.4}
+  />
   <div class="np-rm-node-inner">
     <header class="np-rm-node-head" style:font-size={`${metaSize}px`}>
       <span class="np-rm-node-kind">{kindLabel(entry.kind)}</span>
       <span class="np-rm-node-meta">
-        {#if entry.status === 'shipped' || entry.status === 'in_progress'}
-          <span class="np-rm-node-status" data-status={entry.status}>
-            {entry.status === 'shipped' ? 'Shipped' : 'In progress'}
-          </span>
-        {/if}
         {#if entry.targetDate}
           <span class="np-rm-node-date">{formatDate(entry.targetDate)}</span>
         {/if}
@@ -169,14 +175,20 @@
     gap: 8px;
   }
   .np-rm-node-kind {
+    display: inline-flex;
+    align-items: center;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--np-brand);
+    letter-spacing: 0.12em;
+    line-height: 1;
+    padding: 3px 9px;
+    border-radius: var(--np-radius-pill);
+    color: #ffffff;
+    background-color: var(--np-brand);
   }
-  .np-rm-node-epic .np-rm-node-kind { color: var(--np-info, var(--np-brand)); }
-  .np-rm-node-feature .np-rm-node-kind { color: var(--np-check, var(--np-brand)); }
-  .np-rm-node-bug .np-rm-node-kind { color: var(--np-danger); }
+  .np-rm-node-epic .np-rm-node-kind { background-color: var(--np-info); }
+  .np-rm-node-feature .np-rm-node-kind { background-color: var(--np-check); }
+  .np-rm-node-bug .np-rm-node-kind { background-color: var(--np-danger); }
   .np-rm-node-date {
     font-family: var(--np-font-mono);
     color: var(--np-text-muted);
@@ -196,25 +208,5 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-  .np-rm-node-status {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: var(--np-text-muted);
-    padding: 1px 7px;
-    border-radius: var(--np-radius-pill);
-    background-color: var(--np-bg-surface);
-    border: 1px solid var(--np-border);
-  }
-  .np-rm-node-status[data-status='shipped'] {
-    color: var(--np-check, var(--np-brand));
-    border-color: var(--np-check, var(--np-brand));
-    background-color: color-mix(in srgb, var(--np-check, var(--np-brand)) 14%, transparent);
-  }
-  .np-rm-node-status[data-status='in_progress'] {
-    color: var(--np-brand);
-    border-color: var(--np-brand);
-    background-color: color-mix(in srgb, var(--np-brand) 14%, transparent);
   }
 </style>

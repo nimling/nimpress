@@ -34,7 +34,8 @@
     "./style.css": "./dist/style.css"
   },
   "files": [
-    "dist"
+    "dist",
+    ".claude/rules"
   ],
   "scripts": {
     "dev": "node scripts/dev.mjs",

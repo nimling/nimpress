@@ -24,9 +24,13 @@
   let spinePathEl: SVGPathElement | null = $state(null)
   let hoverHref = $state<string | null>(null)
   let rocketHover = $state(false)
+  let hoverRect = $state<{ left: number; top: number; right: number; bottom: number } | null>(null)
+  let popupW = $state(0)
+  let popupH = $state(0)
   let mounts: Array<{ destroy: () => void }> = []
   let trackHeight = $state(0)
   let trackWidth = $state(1100)
+  let narrow = $state(false)
   let totalLength = $state(0)
   let rocketLen = $state(0)
   let flying = $state(false)
@@ -90,6 +94,9 @@
   }
 
   const TRACK_PAD_X = 24
+  const NARROW_SPINE_X = TRACK_PAD_X + 28
+  const NARROW_CONNECTOR = 44
+  const NARROW_GAP = 96
 
   interface ClusterEdge {
     d: string
@@ -326,6 +333,11 @@
     return null
   })
 
+  const popupPos = $derived.by(() => {
+    if (!modalView || !hoverRect || popupW === 0 || popupH === 0) return null
+    return placeNearAnchor(hoverRect, popupW, popupH, true)
+  })
+
   const MIN_GAP = 20
   const AVG_GAP = 56
 
@@ -335,6 +347,7 @@
   }
 
   function buildParentEdges(rows: RowLayout[], allEntries: RoadmapEntry[]): ParentEdge[] {
+    if (narrow) return []
     const byHref = new Map<string, NodeBox>()
     for (const r of rows) for (const b of r.boxes) byHref.set(b.entry.href, b)
     const result: ParentEdge[] = []
@@ -375,9 +388,65 @@
     return result
   }
 
+  function layoutTrackNarrow(roots: TreeNode[], w: number): { rows: RowLayout[]; totalH: number } {
+    const TOP_PAD = 80
+    const BOTTOM_PAD = 80
+    const sorted = flattenTree(roots).sort((a, b) =>
+      (a.entry.targetDate ?? '').localeCompare(b.entry.targetDate ?? '')
+    )
+    const sizeOf = (href: string) => {
+      const m = measuredSizes[href]
+      return { w: m ? m[0] : NODE_W_BASE, h: m ? m[1] : NODE_H_BASE }
+    }
+    const totalCards = sorted.reduce((s, n) => s + sizeOf(n.entry.href).h, 0)
+    const totalH = TOP_PAD + totalCards + Math.max(0, sorted.length - 1) * NARROW_GAP + BOTTOM_PAD
+
+    const rows: RowLayout[] = []
+    let yBottom = totalH - BOTTOM_PAD
+    for (let i = 0; i < sorted.length; i++) {
+      const n = sorted[i]
+      const sz = sizeOf(n.entry.href)
+      const cardW = Math.min(sz.w, w - (NARROW_SPINE_X + NARROW_CONNECTOR + TRACK_PAD_X))
+      const x = w - TRACK_PAD_X - cardW
+      const y = yBottom - sz.h
+      const cy = y + sz.h / 2
+      rows.push({
+        rootEntry: n.entry,
+        side: 'right',
+        boxes: [
+          {
+            entry: n.entry,
+            depth: 0,
+            x,
+            y,
+            w: cardW,
+            h: sz.h,
+            anchorSide: 'right',
+            anchorX: NARROW_SPINE_X,
+            anchorY: cy,
+            date: n.entry.targetDate ? new Date(n.entry.targetDate).getTime() : 0
+          }
+        ],
+        top: y,
+        cellSide: sz.h,
+        issueCellX: x,
+        pathCellX: 0,
+        pathCenterX: NARROW_SPINE_X,
+        rowMid: cy,
+        gapAfter: 0,
+        spineAnchorX: NARROW_SPINE_X,
+        spineAnchorY: cy
+      })
+      yBottom = y - NARROW_GAP
+    }
+    return { rows, totalH }
+  }
+
   function layoutTrack(roots: TreeNode[], w: number, _side: number, _availW: number): { rows: RowLayout[]; totalH: number } {
     const cx = w / 2
     if (roots.length === 0) return { rows: [], totalH: 0 }
+
+    if (narrow) return layoutTrackNarrow(roots, w)
 
     const sortedRoots = [...roots].sort((a, b) =>
       (a.entry.targetDate ?? '').localeCompare(b.entry.targetDate ?? '')
@@ -842,6 +911,9 @@
       if (b.depth === 0) boxes.push(b)
     }
     boxes.sort((a, b) => (a.date ?? 0) - (b.date ?? 0))
+    if (narrow) {
+      return boxes.map((b) => ({ box: b, x: NARROW_SPINE_X, y: b.y + b.h / 2, side: -1, date: b.date ?? 0 }))
+    }
     const cx = w / 2
     const BLOB_VISIBLE_FACTOR = 1.5
     return boxes.map((b) => {
@@ -1054,21 +1126,27 @@
       tries++
     }
     if (!route) route = [{ c: S.c, r: S.r }, { c: E.c, r: E.r }]
-    let pts = route.map((n) => pt(n.c, n.r))
-    pts[0] = start
-    pts[pts.length - 1] = end
-    for (let it = 0; it < 3; it++) {
-      const np = [pts[0]]
-      for (let i = 0; i < pts.length - 1; i++) {
-        const a = pts[i]
-        const b = pts[i + 1]
-        np.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 })
-        np.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 })
-      }
-      np.push(pts[pts.length - 1])
-      pts = np
+    const grid = route.map((n) => pt(n.c, n.r))
+    grid[0] = start
+    grid[grid.length - 1] = end
+    const corners = [grid[0]]
+    for (let i = 1; i < grid.length - 1; i++) {
+      const a = grid[i - 1]
+      const b = grid[i]
+      const c = grid[i + 1]
+      const cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+      if (Math.abs(cross) > 1e-6) corners.push(b)
     }
-    return pts
+    corners.push(grid[grid.length - 1])
+    const np = [corners[0]]
+    for (let i = 0; i < corners.length - 1; i++) {
+      const a = corners[i]
+      const b = corners[i + 1]
+      np.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 })
+      np.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 })
+    }
+    np.push(corners[corners.length - 1])
+    return np
   }
 
   function buildSpinePath(rows: RowLayout[], w: number, trackH: number, _side: number): string {
@@ -1076,17 +1154,22 @@
     const anchors = computeSpineAnchors(rows, w)
     if (anchors.length === 0) return ''
 
-    const oldest = anchors[0]
+    if (narrow) {
+      const x = NARROW_SPINE_X
+      const top = anchors[anchors.length - 1]
+      const topY = Math.max(40, top.y - 92) - 8
+      const cx = w / 2
+      const joinY = anchors[0].y
+      const dy = (trackH - joinY) * 0.5
+      return (
+        `M ${cx.toFixed(2)} ${trackH.toFixed(2)} ` +
+        `C ${cx.toFixed(2)} ${(trackH - dy).toFixed(2)}, ${x.toFixed(2)} ${(joinY + dy).toFixed(2)}, ${x.toFixed(2)} ${joinY.toFixed(2)} ` +
+        `L ${x.toFixed(2)} ${topY.toFixed(2)}`
+      )
+    }
 
     const planetX = w / 2
     const planetY = trackH
-
-    const ox = oldest.x
-    const oy = oldest.y
-
-    const pts: { x: number; y: number }[] = []
-    pts.push({ x: planetX, y: planetY })
-    pts.push({ x: ox, y: oy })
 
     const HOUR_MS = 3600000
     let minHours = Infinity
@@ -1101,7 +1184,9 @@
       return { x: a.box.x - haloX, y: a.box.y - haloY, w: a.box.w + 2 * haloX, h: a.box.h + 2 * haloY }
     })
     const BASELINE_CELLS = 9
-    const LARGER = 1.35
+    const LARGER = 1.5
+
+    const segs: { x: number; y: number }[][] = []
     for (let i = 0; i < anchors.length - 1; i++) {
       const a = anchors[i]
       const b = anchors[i + 1]
@@ -1110,11 +1195,73 @@
       const box = { x: TRACK_PAD_X, y: top, w: w - 2 * TRACK_PAD_X, h: Math.abs(a.y - b.y) }
       const budget = Math.max(BASELINE_CELLS, Math.round(LARGER * BASELINE_CELLS * (hours / minHours)))
       const seed = (1013904223 + i * 2654435761) >>> 0
-      const seg = fillingPath({ x: a.x, y: a.y }, { x: b.x, y: b.y }, box, blockedRects, budget, seed)
-      for (let k = 1; k < seg.length; k++) pts.push(seg[k])
+      segs.push(fillingPath({ x: a.x, y: a.y }, { x: b.x, y: b.y }, box, blockedRects, budget, seed))
     }
 
-    const last = anchors[anchors.length - 1]
+    const dist = (p: { x: number; y: number }, q: { x: number; y: number }) => Math.hypot(p.x - q.x, p.y - q.y)
+    const lerp = (p: { x: number; y: number }, q: { x: number; y: number }, t: number) => ({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t })
+    const norm = (v: { x: number; y: number }) => {
+      const m = Math.hypot(v.x, v.y) || 1
+      return { x: v.x / m, y: v.y / m }
+    }
+    const segLen = (poly: { x: number; y: number }[]) => {
+      let L = 0
+      for (let k = 1; k < poly.length; k++) L += dist(poly[k], poly[k - 1])
+      return L
+    }
+    const arcPoint = (poly: { x: number; y: number }[], fromStart: boolean, D: number) => {
+      if (poly.length < 2) return { pt: poly[0], idx: 0 }
+      if (fromStart) {
+        let acc = 0
+        for (let k = 1; k < poly.length; k++) {
+          const s = dist(poly[k], poly[k - 1])
+          if (acc + s >= D) return { pt: lerp(poly[k - 1], poly[k], s ? (D - acc) / s : 0), idx: k }
+          acc += s
+        }
+        return { pt: poly[poly.length - 1], idx: poly.length - 1 }
+      }
+      let acc = 0
+      for (let k = poly.length - 2; k >= 0; k--) {
+        const s = dist(poly[k + 1], poly[k])
+        if (acc + s >= D) return { pt: lerp(poly[k + 1], poly[k], s ? (D - acc) / s : 0), idx: k }
+        acc += s
+      }
+      return { pt: poly[0], idx: 0 }
+    }
+
+    const lens = segs.map(segLen)
+    const GUIDE = 34
+    const dAt = (i: number) => Math.min(GUIDE, Math.max(6, lens[i] * 0.42))
+
+    const pts: { x: number; y: number }[] = []
+    pts.push({ x: planetX, y: planetY })
+
+    const N = anchors.length
+    for (let i = 0; i < N; i++) {
+      const A = { x: anchors[i].x, y: anchors[i].y }
+      const inDir =
+        i > 0
+          ? norm({ x: A.x - arcPoint(segs[i - 1], false, dAt(i - 1)).pt.x, y: A.y - arcPoint(segs[i - 1], false, dAt(i - 1)).pt.y })
+          : norm({ x: A.x - planetX, y: A.y - planetY })
+      const outDir =
+        i < N - 1
+          ? norm({ x: arcPoint(segs[i], true, dAt(i)).pt.x - A.x, y: arcPoint(segs[i], true, dAt(i)).pt.y - A.y })
+          : { x: 0, y: -1 }
+      let T = norm({ x: inDir.x + outDir.x, y: inDir.y + outDir.y })
+      if (!Number.isFinite(T.x) || !Number.isFinite(T.y) || (T.x === 0 && T.y === 0)) T = outDir
+      const dBefore = i > 0 ? dAt(i - 1) : Math.min(GUIDE, dist(A, { x: planetX, y: planetY }) * 0.4)
+      const dAfter = i < N - 1 ? dAt(i) : 40
+      pts.push({ x: A.x - T.x * dBefore, y: A.y - T.y * dBefore })
+      pts.push(A)
+      pts.push({ x: A.x + T.x * dAfter, y: A.y + T.y * dAfter })
+      if (i < N - 1) {
+        const startIdx = arcPoint(segs[i], true, dAt(i)).idx
+        const endIdx = arcPoint(segs[i], false, dAt(i)).idx
+        for (let k = startIdx; k <= endIdx; k++) pts.push(segs[i][k])
+      }
+    }
+
+    const last = anchors[N - 1]
     pts.push({ x: last.x, y: Math.max(40, last.y - 92) - 8 })
 
     return buildSpineHermite(pts)
@@ -1299,12 +1446,46 @@
     return `${day}.${month}.${year}`
   }
 
-  function onNodeEnter(entry: RoadmapEntry, _side: 'left' | 'right', _ev: Event) {
+  function captureRect(ev: Event) {
+    const el = (ev?.currentTarget ?? ev?.target) as HTMLElement | null
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      const r = el.getBoundingClientRect()
+      hoverRect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+    }
+  }
+
+  function onNodeEnter(entry: RoadmapEntry, _side: 'left' | 'right', ev: Event) {
     hoverHref = entry.href
+    captureRect(ev)
   }
 
   function onNodeLeave() {
     hoverHref = null
+    hoverRect = null
+  }
+
+  function placeNearAnchor(
+    rect: { left: number; top: number; right: number; bottom: number },
+    pw: number,
+    ph: number,
+    favorMostSpace = true
+  ): { left: number; top: number } {
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const margin = 12
+    const offset = 14
+    const spaceRight = vw - rect.right - margin
+    const spaceLeft = rect.left - margin
+    let left: number
+    if (favorMostSpace) {
+      left = spaceRight >= spaceLeft ? rect.right + offset : rect.left - offset - pw
+    } else if (pw <= spaceRight) left = rect.right + offset
+    else if (pw <= spaceLeft) left = rect.left - offset - pw
+    else left = spaceRight >= spaceLeft ? rect.right + offset : rect.left - offset - pw
+    let top = rect.top + (rect.bottom - rect.top) / 2 - ph / 2
+    left = Math.max(margin, Math.min(left, vw - pw - margin))
+    top = Math.max(margin, Math.min(top, vh - ph - margin))
+    return { left, top }
   }
 
   function portal(node: HTMLElement) {
@@ -1337,6 +1518,7 @@
     if (!track) return
     trackHeight = track.offsetHeight
     trackWidth = track.offsetWidth
+    narrow = typeof window !== 'undefined' && window.innerWidth <= 800
   }
 
   function measureLength() {
@@ -1488,23 +1670,21 @@
 {/if}
 <div class="np-page-shell np-roadmap-shell">
   <div class="np-page np-roadmap-page">
-    <section class="np-roadmap-hero">
-      <div class="np-roadmap-hero-copy" bind:this={container}>
-        <p class="np-roadmap-eyebrow">Roadmap</p>
-        <h1 class="np-roadmap-hero-title">{page.frontmatter.title}</h1>
-        {#if page.frontmatter.description}
-          <p class="np-roadmap-hero-tagline">{page.frontmatter.description}</p>
-        {/if}
-        {#if page.html}
-          <div class="np-roadmap-hero-body np-prose">{@html page.html}</div>
-        {/if}
-      </div>
+    <section class="np-roadmap-hero" bind:this={container}>
+      <p class="np-roadmap-eyebrow">Roadmap</p>
+      <h1 class="np-roadmap-hero-title">{page.frontmatter.title}</h1>
       <button class="np-roadmap-travel" type="button" onclick={travel}>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
         </svg>
         <span>Travel</span>
       </button>
+      {#if page.frontmatter.description}
+        <p class="np-roadmap-hero-tagline">{page.frontmatter.description}</p>
+      {/if}
+      {#if page.html}
+        <div class="np-roadmap-hero-body np-prose">{@html page.html}</div>
+      {/if}
     </section>
 
     <div class="np-roadmap-track" bind:this={track} style:height={`${layout.totalH + 64}px`}>
@@ -1597,8 +1777,8 @@
           style:left={`${rocketPoint.x}px`}
           style:top={`${rocketPoint.y}px`}
           style:transform={`translate(-50%, -50%) rotate(${rocketPoint.angle + Math.PI / 2}rad)`}
-          onmouseenter={() => (rocketHover = true)}
-          onmouseleave={() => (rocketHover = false)}
+          onmouseenter={(e) => { rocketHover = true; captureRect(e) }}
+          onmouseleave={() => { rocketHover = false; hoverRect = null }}
           onclick={onRocketClick}
           onkeydown={(e) => e.key === 'Enter' && onRocketClick()}
         >
@@ -1631,8 +1811,14 @@
 
 {#if modalView}
   <div class="np-roadmap-modal-root" use:portal>
-    <div class="np-roadmap-modal-content">
-  <aside class="np-roadmap-aside">
+    <div
+      class="np-roadmap-modal-content"
+      class:np-roadmap-modal-placed={!!popupPos}
+      style:left={popupPos ? `${popupPos.left}px` : null}
+      style:top={popupPos ? `${popupPos.top}px` : null}
+      style:opacity={popupW === 0 ? '0' : null}
+    >
+  <aside class="np-roadmap-aside" bind:clientWidth={popupW} bind:clientHeight={popupH}>
     <header class="np-roadmap-aside-head">
       {#if modalView.kind}
         <span class="np-roadmap-card-kind">{kindLabel(modalView.kind)}</span>
@@ -1694,22 +1880,17 @@
     width: 100%;
     margin: 0 auto;
     padding: 56px 48px 40px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 32px;
-  }
-  .np-roadmap-hero-copy {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    max-width: 760px;
-    min-width: 0;
-    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr min-content;
+    grid-template-rows: auto auto auto auto;
+    column-gap: 32px;
+    align-items: start;
   }
   .np-roadmap-travel {
-    flex-shrink: 0;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+    justify-self: end;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -1724,7 +1905,7 @@
     text-transform: uppercase;
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-    margin-top: 8px;
+    white-space: nowrap;
   }
   .np-roadmap-travel:hover {
     background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
@@ -1737,6 +1918,8 @@
   }
   .np-roadmap-travel svg { display: block; }
   .np-roadmap-eyebrow {
+    grid-column: 1;
+    grid-row: 1;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font-size: 12px;
@@ -1745,6 +1928,8 @@
     margin: 0 0 16px;
   }
   .np-roadmap-hero-title {
+    grid-column: 1;
+    grid-row: 2;
     font-size: 56px;
     line-height: 1.05;
     font-weight: 800;
@@ -1756,6 +1941,8 @@
     .np-roadmap-hero-title { font-size: 72px; }
   }
   .np-roadmap-hero-tagline {
+    grid-column: 1 / -1;
+    grid-row: 3;
     font-size: 22px;
     line-height: 1.4;
     color: var(--np-text-primary);
@@ -1764,6 +1951,8 @@
     max-width: 60ch;
   }
   .np-roadmap-hero-body {
+    grid-column: 1 / -1;
+    grid-row: 4;
     font-size: 16px;
     line-height: 1.65;
     color: var(--np-text-secondary);
@@ -2028,6 +2217,10 @@
     max-width: calc(100vw - 24px);
     max-height: calc(100vh - 24px);
     pointer-events: none;
+  }
+  .np-roadmap-modal-content.np-roadmap-modal-placed {
+    position: fixed;
+    transition: left 0.12s ease, top 0.12s ease;
   }
   .np-roadmap-aside {
     position: relative;
