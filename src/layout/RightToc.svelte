@@ -22,6 +22,16 @@
     }
     return () => obs.disconnect()
   })
+
+  function goTo(slug: string, ev: MouseEvent) {
+    if (typeof document === 'undefined') return
+    const el = document.getElementById(slug)
+    if (!el) return
+    ev.preventDefault()
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    history.pushState(null, '', `#${slug}`)
+    activeSlug = slug
+  }
 </script>
 
 {#if headings.length > 0}
@@ -31,7 +41,7 @@
       <ul>
         {#each headings as h, i (h.slug || `h-${i}`)}
           <li class:lvl2={h.level === 2} class:lvl3={h.level === 3} class:lvl4={h.level >= 4}>
-            <a href={`#${h.slug}`} class:active={activeSlug === h.slug}>{h.text}</a>
+            <a href={`#${h.slug}`} class:active={activeSlug === h.slug} onclick={(e) => goTo(h.slug, e)}>{h.text}</a>
           </li>
         {/each}
       </ul>
@@ -41,7 +51,7 @@
       <ul class="np-toc-strip-dots">
         {#each headings as h, i (h.slug || `h-${i}`)}
           <li class:lvl2={h.level === 2} class:lvl3={h.level === 3} class:lvl4={h.level >= 4}>
-            <a href={`#${h.slug}`} class:active={activeSlug === h.slug} title={h.text}>
+            <a href={`#${h.slug}`} class:active={activeSlug === h.slug} title={h.text} onclick={(e) => goTo(h.slug, e)}>
               <span class="np-toc-strip-dot"></span>
             </a>
           </li>
@@ -52,7 +62,7 @@
         <ul>
           {#each headings as h, i (h.slug || `oh-${i}`)}
             <li class:lvl2={h.level === 2} class:lvl3={h.level === 3} class:lvl4={h.level >= 4}>
-              <a href={`#${h.slug}`} class:active={activeSlug === h.slug}>{h.text}</a>
+              <a href={`#${h.slug}`} class:active={activeSlug === h.slug} onclick={(e) => goTo(h.slug, e)}>{h.text}</a>
             </li>
           {/each}
         </ul>
