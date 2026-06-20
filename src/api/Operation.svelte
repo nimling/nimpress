@@ -634,6 +634,7 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--np-text-primary);
+    transition: font-size 0.3s ease;
   }
   .np-op-desc-wrap {
     display: grid;
@@ -658,11 +659,22 @@
     opacity: 0;
   }
   .np-op-collapsed .np-op-head {
-    padding: 12px 20px;
+    padding: 6px 20px;
     align-items: center;
   }
   .np-op-collapsed .np-op-title-row {
-    margin-bottom: 6px;
+    margin-bottom: 2px;
+  }
+  .np-op-collapsed .np-op-summary {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .np-op-collapsed :global(.np-method-lg) {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  .np-op-collapsed .np-op-path {
+    font-size: 13px;
   }
   .np-op-desc :global(p) { margin: 0 0 8px; }
   .np-op-desc :global(p:last-child) { margin-bottom: 0; }

@@ -231,7 +231,7 @@
         <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
           Clear
         </button>
-        <button class="np-try-meta np-try-meta-icon" type="button" onclick={openDialog} disabled={disabled} title="Open Try out as dialog" aria-label="Open Try out as dialog">
+        <button class="np-try-meta np-try-meta-icon" type="button" onclick={openDialog} title="Open Try out as dialog" aria-label="Open Try out as dialog">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 3h6v6" />
             <path d="M9 21H3v-6" />
@@ -248,9 +248,7 @@
 
   {#if disabled}
     <div class="np-try-collapsed-msg">
-      <button class="np-try-open-dialog" type="button" onclick={openDialog}>
-        Open Try out as dialog
-      </button>
+      <span>Open the dialog from the header to try this endpoint</span>
     </div>
   {:else}
   <div class="np-try-body">
@@ -502,17 +500,6 @@
     border-color: var(--np-text-muted);
   }
   .np-try-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .np-try-open-dialog {
-    background-color: var(--np-brand);
-    color: var(--np-text-on-brand);
-    border: 0;
-    padding: 10px 16px;
-    border-radius: var(--np-radius-md);
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .np-try-open-dialog:hover { background-color: var(--np-brand-hover); }
   .np-try-body {
     padding: 16px;
     display: flex;
