@@ -710,8 +710,17 @@
     width: 100%;
   }
 
+  .np-try-disabled {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
   .np-try-collapsed-msg {
-    padding: 24px 16px 32px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 16px;
     text-align: center;
     color: var(--np-text-muted);
     font-size: 13px;

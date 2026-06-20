@@ -267,10 +267,14 @@
             <code class="np-op-path">{op.path}</code>
           </div>
           <h3 class="np-op-summary">{op.summary}</h3>
-          {#if op.description_html}
-            <div class="np-op-desc">{@html op.description_html}</div>
-          {:else if op.description}
-            <p class="np-op-desc">{op.description}</p>
+          {#if op.description_html || op.description}
+            <div class="np-op-desc-wrap">
+              {#if op.description_html}
+                <div class="np-op-desc">{@html op.description_html}</div>
+              {:else}
+                <p class="np-op-desc">{op.description}</p>
+              {/if}
+            </div>
           {/if}
         </div>
         <button
@@ -541,6 +545,7 @@
     display: flex;
     align-items: stretch;
     gap: 16px;
+    transition: padding 0.3s ease;
   }
   .np-op-head-body {
     flex: 1;
@@ -613,6 +618,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    transition: margin-bottom 0.3s ease;
   }
   .np-op-path {
     font-family: var(--np-font-mono);
@@ -624,16 +630,39 @@
     word-break: break-all;
   }
   .np-op-summary {
-    margin: 0 0 6px;
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: var(--np-text-primary);
   }
+  .np-op-desc-wrap {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.3s ease;
+  }
   .np-op-desc {
     color: var(--np-text-secondary);
     margin: 0;
+    padding-top: 6px;
     font-size: 14px;
     line-height: 1.6;
+    overflow: hidden;
+    min-height: 0;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+  }
+  .np-op-collapsed .np-op-desc-wrap {
+    grid-template-rows: 0fr;
+  }
+  .np-op-collapsed .np-op-desc {
+    opacity: 0;
+  }
+  .np-op-collapsed .np-op-head {
+    padding: 12px 20px;
+    align-items: center;
+  }
+  .np-op-collapsed .np-op-title-row {
+    margin-bottom: 6px;
   }
   .np-op-desc :global(p) { margin: 0 0 8px; }
   .np-op-desc :global(p:last-child) { margin-bottom: 0; }
@@ -816,6 +845,13 @@
     }
     .np-op-try-side {
       display: none;
+    }
+    .np-op-collapsed .np-op-card,
+    .np-op-collapsed .np-op-top,
+    .np-op-collapsed .np-op-head,
+    .np-op-collapsed .np-op-inline-sticky,
+    .np-op-collapsed .np-op-inline-card {
+      height: 100%;
     }
   }
 </style>
