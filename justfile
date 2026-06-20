@@ -23,10 +23,10 @@ publish:
     pnpm publish --no-git-checks
 
 deploy:
-    go run ../sbump/cmd patch --json package.json@.version --push-version --auto --workflow
+    sbump patch --json package.json@.version --push-version --auto --workflow
 
 deploy-minor:
-    go run ../sbump/cmd minor --json package.json@.version --push-version --auto --workflow
+    sbump minor --json package.json@.version --push-version --auto --workflow
 
 deploy-major:
-    go run ../sbump/cmd major --json package.json@.version --push-version --auto --workflow
+    sbump major --json package.json@.version --push-version --auto --workflow
