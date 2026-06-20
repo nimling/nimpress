@@ -662,6 +662,11 @@
     padding: 0 16px;
     align-items: center;
   }
+  .np-op-collapsed .np-op-head-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
   .np-op-collapsed .np-op-toggle {
     margin: 0;
   }
@@ -670,7 +675,7 @@
     height: 22px;
   }
   .np-op-collapsed .np-op-title-row {
-    margin-bottom: 2px;
+    margin-bottom: 6px;
   }
   .np-op-collapsed .np-op-summary {
     font-size: 14px;
