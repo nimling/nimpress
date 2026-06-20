@@ -659,18 +659,22 @@
     opacity: 0;
   }
   .np-op-collapsed .np-op-head {
-    padding: 3px 16px;
+    padding: 0 16px;
     align-items: center;
   }
   .np-op-collapsed .np-op-toggle {
     margin: 0;
   }
+  .np-op-collapsed .np-op-toggle-chev {
+    width: 22px;
+    height: 22px;
+  }
   .np-op-collapsed .np-op-title-row {
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .np-op-collapsed .np-op-summary {
     font-size: 14px;
-    line-height: 1.3;
+    line-height: 1.2;
   }
   .np-op-collapsed :global(.np-method-lg) {
     padding: 3px 8px;
