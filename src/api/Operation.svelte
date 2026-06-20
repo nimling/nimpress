@@ -659,11 +659,14 @@
     opacity: 0;
   }
   .np-op-collapsed .np-op-head {
-    padding: 6px 20px;
+    padding: 3px 16px;
     align-items: center;
   }
+  .np-op-collapsed .np-op-toggle {
+    margin: 0;
+  }
   .np-op-collapsed .np-op-title-row {
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
   .np-op-collapsed .np-op-summary {
     font-size: 14px;
