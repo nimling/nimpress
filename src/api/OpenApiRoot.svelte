@@ -122,12 +122,32 @@
     })
   }
 
-  let allCollapsed = $state(false)
+  let endpointsCollapsed = $state(false)
+  let collapsedTags = $state<Set<string>>(new Set())
   let schemasOpen = $state(true)
 
+  const allCollapsed = $derived(
+    flat ? flat.tags.every((t) => collapsedTags.has(t.name)) && !schemasOpen : false
+  )
+
+  function toggleEndpoints() {
+    endpointsCollapsed = !endpointsCollapsed
+    window.dispatchEvent(new CustomEvent('np-api-toggle-all', { detail: { collapsed: endpointsCollapsed } }))
+  }
+
   function toggleAll() {
-    allCollapsed = !allCollapsed
-    window.dispatchEvent(new CustomEvent('np-api-toggle-all', { detail: { collapsed: allCollapsed } }))
+    const collapse = !allCollapsed
+    collapsedTags = collapse ? new Set((flat?.tags ?? []).map((t) => t.name)) : new Set()
+    schemasOpen = !collapse
+    endpointsCollapsed = collapse
+    window.dispatchEvent(new CustomEvent('np-api-toggle-all', { detail: { collapsed: collapse } }))
+  }
+
+  function toggleTag(name: string) {
+    const next = new Set(collapsedTags)
+    if (next.has(name)) next.delete(name)
+    else next.add(name)
+    collapsedTags = next
   }
 
   onMount(() => {
@@ -184,16 +204,28 @@
       <div class="np-api-title-row">
         <h1>{title ?? flat.title}</h1>
         {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
-        <button type="button" class="np-api-collapse-all" onclick={toggleAll} title={allCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            {#if allCollapsed}
-              <polyline points="6 9 12 15 18 9" />
-            {:else}
-              <polyline points="18 15 12 9 6 15" />
-            {/if}
-          </svg>
-          <span>{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
-        </button>
+        <div class="np-api-actions">
+          <button type="button" class="np-api-collapse-all" onclick={toggleEndpoints} title={endpointsCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              {#if endpointsCollapsed}
+                <polyline points="6 9 12 15 18 9" />
+              {:else}
+                <polyline points="18 15 12 9 6 15" />
+              {/if}
+            </svg>
+            <span>{endpointsCollapsed ? 'Expand endpoints' : 'Collapse endpoints'}</span>
+          </button>
+          <button type="button" class="np-api-collapse-all" onclick={toggleAll} title={allCollapsed ? 'Expand every group' : 'Collapse every group'}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              {#if allCollapsed}
+                <polyline points="6 9 12 15 18 9" />
+              {:else}
+                <polyline points="18 15 12 9 6 15" />
+              {/if}
+            </svg>
+            <span>{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
+          </button>
+        </div>
       </div>
       {#if servers.length}
         <table class="np-api-servers-table">
@@ -221,31 +253,39 @@
     </header>
 
     {#each flat.tags as tag, ti (tag.name || `tag-${ti}`)}
-      <section class="np-tag-card">
-        <header class="np-tag-head" id={`tag/${tag.name}`}>
+      {@const tagCollapsed = collapsedTags.has(tag.name)}
+      <section class="np-tag-card" class:collapsed={tagCollapsed}>
+        <button type="button" class="np-tag-head np-tag-toggle" id={`tag/${tag.name}`} aria-expanded={!tagCollapsed} onclick={() => toggleTag(tag.name)}>
+          <span class="np-tag-chev" class:open={!tagCollapsed} aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </span>
           <h2>{tag.name}</h2>
           <span class="np-tag-count">{tag.operations.length} endpoint{tag.operations.length === 1 ? '' : 's'}</span>
-        </header>
-        <div class="np-tag-ops">
-          {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
-            {@const opKey = `operation/${op.id}`}
-            {#if mounted.has(opKey)}
-              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={allCollapsed} specVersion={flat.version} {specId} />
-            {:else}
-              <div
-                class="np-op-lazy"
-                data-opid={opKey}
-                id={opKey}
-              >
-                <div class="np-op-lazy-row">
-                  <span class={`np-op-lazy-method np-op-lazy-method-${op.method.toLowerCase()}`}>{op.method}</span>
-                  <code class="np-op-lazy-path">{op.path}</code>
+        </button>
+        {#if !tagCollapsed}
+          <div class="np-tag-ops">
+            {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
+              {@const opKey = `operation/${op.id}`}
+              {#if mounted.has(opKey)}
+                <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={endpointsCollapsed} specVersion={flat.version} {specId} />
+              {:else}
+                <div
+                  class="np-op-lazy"
+                  data-opid={opKey}
+                  id={opKey}
+                >
+                  <div class="np-op-lazy-row">
+                    <span class={`np-op-lazy-method np-op-lazy-method-${op.method.toLowerCase()}`}>{op.method}</span>
+                    <code class="np-op-lazy-path">{op.path}</code>
+                  </div>
+                  <div class="np-op-lazy-summary">{op.summary}</div>
                 </div>
-                <div class="np-op-lazy-summary">{op.summary}</div>
-              </div>
-            {/if}
-          {/each}
-        </div>
+              {/if}
+            {/each}
+          </div>
+        {/if}
       </section>
     {/each}
 
@@ -311,8 +351,12 @@
     gap: 12px;
     margin-bottom: 12px;
   }
-  .np-api-collapse-all {
+  .np-api-actions {
     margin-left: auto;
+    display: inline-flex;
+    gap: 8px;
+  }
+  .np-api-collapse-all {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -422,7 +466,8 @@
     border-bottom: 1px solid var(--np-divider);
     scroll-margin-top: calc(var(--np-header-height) + 16px);
   }
-  .np-schemas-toggle {
+  .np-schemas-toggle,
+  .np-tag-toggle {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -437,15 +482,21 @@
     text-align: left;
     font: inherit;
   }
-  .np-schemas-toggle:focus { outline: none; }
-  .np-schemas-toggle:focus-visible {
+  .np-tag-card.collapsed .np-tag-toggle { margin-bottom: 0; }
+  .np-schemas-toggle:focus,
+  .np-tag-toggle:focus { outline: none; }
+  .np-schemas-toggle:focus-visible,
+  .np-tag-toggle:focus-visible {
     outline: 2px solid var(--np-brand);
     outline-offset: 2px;
     border-radius: var(--np-radius-sm);
   }
-  .np-schemas-toggle h2 { flex: 0 0 auto; }
-  .np-schemas-toggle .np-tag-count { margin-left: auto; }
-  .np-schemas-chev {
+  .np-schemas-toggle h2,
+  .np-tag-toggle h2 { flex: 0 0 auto; }
+  .np-schemas-toggle .np-tag-count,
+  .np-tag-toggle .np-tag-count { margin-left: auto; }
+  .np-schemas-chev,
+  .np-tag-chev {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -455,10 +506,12 @@
     color: var(--np-text-muted);
     transition: transform 0.15s ease, color 0.15s ease;
   }
-  .np-schemas-chev.open {
+  .np-schemas-chev.open,
+  .np-tag-chev.open {
     transform: rotate(90deg);
   }
-  .np-schemas-toggle:hover .np-schemas-chev {
+  .np-schemas-toggle:hover .np-schemas-chev,
+  .np-tag-toggle:hover .np-tag-chev {
     color: var(--np-text-primary);
   }
 
