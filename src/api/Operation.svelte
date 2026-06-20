@@ -861,12 +861,8 @@
     .np-op-try-side {
       display: none;
     }
-    .np-op-collapsed .np-op-card,
-    .np-op-collapsed .np-op-top,
-    .np-op-collapsed .np-op-head,
-    .np-op-collapsed .np-op-inline-sticky,
-    .np-op-collapsed .np-op-inline-card {
-      height: 100%;
+    .np-op-shell.np-op-collapsed {
+      align-items: start;
     }
   }
 </style>

@@ -264,28 +264,26 @@
           <h2>{tag.name}</h2>
           <span class="np-tag-count">{tag.operations.length} endpoint{tag.operations.length === 1 ? '' : 's'}</span>
         </button>
-        {#if !tagCollapsed}
-          <div class="np-tag-ops">
-            {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
-              {@const opKey = `operation/${op.id}`}
-              {#if mounted.has(opKey)}
-                <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={endpointsCollapsed} specVersion={flat.version} {specId} />
-              {:else}
-                <div
-                  class="np-op-lazy"
-                  data-opid={opKey}
-                  id={opKey}
-                >
-                  <div class="np-op-lazy-row">
-                    <span class={`np-op-lazy-method np-op-lazy-method-${op.method.toLowerCase()}`}>{op.method}</span>
-                    <code class="np-op-lazy-path">{op.path}</code>
-                  </div>
-                  <div class="np-op-lazy-summary">{op.summary}</div>
+        <div class="np-tag-ops">
+          {#each tag.operations as op, oi (op.id || `op-${ti}-${oi}`)}
+            {@const opKey = `operation/${op.id}`}
+            {#if mounted.has(opKey)}
+              <Operation {op} {serverUrl} {servers} {securitySchemes} collapsedDefault={endpointsCollapsed} specVersion={flat.version} {specId} />
+            {:else}
+              <div
+                class="np-op-lazy"
+                data-opid={opKey}
+                id={opKey}
+              >
+                <div class="np-op-lazy-row">
+                  <span class={`np-op-lazy-method np-op-lazy-method-${op.method.toLowerCase()}`}>{op.method}</span>
+                  <code class="np-op-lazy-path">{op.path}</code>
                 </div>
-              {/if}
-            {/each}
-          </div>
-        {/if}
+                <div class="np-op-lazy-summary">{op.summary}</div>
+              </div>
+            {/if}
+          {/each}
+        </div>
       </section>
     {/each}
 
@@ -541,6 +539,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  .np-tag-card.collapsed .np-tag-ops {
+    display: none;
   }
 
   .np-schemas-grid {
