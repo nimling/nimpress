@@ -246,11 +246,7 @@
     </header>
   {/if}
 
-  {#if disabled}
-    <button class="np-try-collapsed-msg" type="button" onclick={openDialog} title="Open Try out as dialog">
-      <span>Open the dialog from the header to try this endpoint</span>
-    </button>
-  {:else}
+  {#if !disabled}
   <div class="np-try-body">
     {#if servers.length > 0}
       <label class="np-try-field">
@@ -698,35 +694,14 @@
   }
 
   .np-try-disabled {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  .np-try-collapsed-msg {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 14px 16px;
-    text-align: center;
-    color: var(--np-text-muted);
-    font-size: 13px;
-    font-style: italic;
-    font-family: inherit;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease;
+    flex-direction: column;
   }
-  .np-try-collapsed-msg:hover {
-    color: var(--np-text-secondary);
-    background-color: var(--np-bg-surface);
-  }
-  .np-try-collapsed-msg:focus { outline: none; }
-  .np-try-collapsed-msg:focus-visible {
-    outline: 2px solid var(--np-brand);
-    outline-offset: -2px;
+  .np-try-disabled .np-try-head {
+    flex: 1;
+    padding: 8px 16px;
+    border-bottom: 0;
   }
   .np-try-disabled .np-try-send {
     opacity: 0.5;

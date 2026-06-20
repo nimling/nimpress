@@ -666,7 +666,7 @@
     margin: 0;
   }
   .np-op-collapsed .np-op-title-row {
-    margin-bottom: 1px;
+    margin-bottom: 4px;
   }
   .np-op-collapsed .np-op-summary {
     font-size: 14px;
@@ -861,8 +861,12 @@
     .np-op-try-side {
       display: none;
     }
-    .np-op-shell.np-op-collapsed {
-      align-items: start;
+    .np-op-collapsed .np-op-card,
+    .np-op-collapsed .np-op-top,
+    .np-op-collapsed .np-op-head,
+    .np-op-collapsed .np-op-inline-sticky,
+    .np-op-collapsed .np-op-inline-card {
+      height: 100%;
     }
   }
 </style>
