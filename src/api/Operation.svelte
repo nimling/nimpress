@@ -657,7 +657,7 @@
     opacity: 0;
   }
   .np-op-collapsed .np-op-head {
-    padding: 0 16px;
+    padding: 12px 16px;
     align-items: center;
   }
   .np-op-collapsed .np-op-head-body {
