@@ -489,6 +489,10 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
+    transition: margin-bottom 0.3s ease;
+  }
+  .np-op-collapsed {
+    margin-bottom: 16px;
   }
   .np-op-card {
     min-width: 0;

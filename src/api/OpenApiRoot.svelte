@@ -538,7 +538,7 @@
   .np-tag-ops {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
   }
   .np-tag-card.collapsed .np-tag-ops {
     display: none;
@@ -570,7 +570,7 @@
   }
 
   .np-op-lazy {
-    margin-bottom: 16px;
+    margin-bottom: 32px;
     padding: 20px 24px;
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
