@@ -295,10 +295,10 @@
         onclick={openTryDialog}
         title="Open the Try out dialog for this endpoint"
       >
+        <span>Try out</span>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <path d="M4 2 L 14 8 L 4 14 Z" fill="currentColor" />
         </svg>
-        <span>Try out</span>
       </button>
   </div>
 
@@ -555,11 +555,11 @@
     flex: 0 0 auto;
     align-self: stretch;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 12px 12px;
+    padding: 10px 16px;
     margin-left: 12px;
     border: 1px solid color-mix(in srgb, var(--np-brand) 50%, transparent);
     background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
@@ -570,7 +570,6 @@
     font-weight: 800;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    writing-mode: vertical-rl;
     transition: background-color 0.15s ease, border-color 0.15s ease;
     min-width: 0;
   }
@@ -579,7 +578,6 @@
     border-color: var(--np-brand);
   }
   .np-op-try-side svg {
-    writing-mode: horizontal-tb;
     display: block;
   }
   .np-op-toggle {
@@ -849,12 +847,8 @@
       flex-direction: column;
     }
     .np-op-try-side {
-      writing-mode: horizontal-tb;
-      flex-direction: row;
-      padding: 10px 16px;
       margin-left: 0;
       margin-top: 12px;
-      align-self: stretch;
     }
   }
 

@@ -6,6 +6,8 @@ default:
 
 install:
     pnpm install
+    go install github.com/nimling/sbump/cmd@latest
+    mv "$(go env GOPATH)/bin/cmd" "$(go env GOPATH)/bin/sbump"
 
 dev:
     pnpm run dev
