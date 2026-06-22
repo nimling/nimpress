@@ -657,7 +657,7 @@
     opacity: 0;
   }
   .np-op-collapsed .np-op-head {
-    padding: 12px 16px;
+    padding: 8px 16px;
     align-items: center;
   }
   .np-op-collapsed .np-op-head-body {
@@ -677,7 +677,7 @@
   }
   .np-op-collapsed .np-op-summary {
     font-size: 14px;
-    line-height: 1.2;
+    line-height: 1;
   }
   .np-op-collapsed :global(.np-method-lg) {
     padding: 3px 8px;
