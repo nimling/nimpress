@@ -1,0 +1,30 @@
+name: Notify nimpress docs
+description: Trigger the docs site repo to sync this repo .nimpress folder
+inputs:
+  docs-repo:
+    description: Full name of the docs site repo
+    required: true
+  token:
+    description: Token with dispatch access to the docs site repo
+    required: true
+  event-type:
+    description: Repository dispatch event type
+    required: false
+    default: nimpress-docs-sync
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+    - shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        NIMPRESS_DOCS_REPO: ${{ inputs.docs-repo }}
+        NIMPRESS_EVENT_TYPE: ${{ inputs.event-type }}
+        NIMPRESS_SOURCE_REPO: ${{ github.repository }}
+        NIMPRESS_SHA: ${{ github.sha }}
+        NIMPRESS_REF: ${{ github.ref_name }}
+        NIMPRESS_WORKSPACE: ${{ github.workspace }}
+      run: go run .

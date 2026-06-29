@@ -18,6 +18,10 @@ build:
 check:
     pnpm run type-check
 
+test:
+    cd actions && go test ./...
+    pnpm run type-check
+
 clean:
     rm -rf dist node_modules .vite .cache
 

@@ -108,6 +108,42 @@ const frontmatterSchema = z.object({
   data: z.record(z.unknown()).optional()
 }).passthrough()
 
+function frontmatterIssues(data: unknown): string[] {
+  const issues: string[] = []
+  const parsed = frontmatterSchema.safeParse(data)
+  if (!parsed.success) {
+    for (const e of parsed.error.errors) {
+      issues.push(`${e.path.join('.') || 'frontmatter'}: ${e.message}`)
+    }
+    return issues
+  }
+  const fm = parsed.data
+  const d = (fm.data ?? {}) as Record<string, unknown>
+  if (fm.type === 'openapi' && !fm.spec) {
+    issues.push('type openapi requires a spec field')
+  }
+  if (fm.type === 'changelog') {
+    if (d.version === undefined || String(d.version).trim() === '') issues.push('changelog requires data.version')
+    if (d.release_date === undefined || Number.isNaN(new Date(String(d.release_date)).getTime())) {
+      issues.push('changelog requires a valid data.release_date')
+    }
+    const title = d.title === undefined ? '' : String(d.title)
+    if (!title.trim()) issues.push('changelog requires data.title')
+    if (title.length > 48) issues.push('changelog data.title exceeds 48 characters')
+    if (title.includes(',')) issues.push('changelog data.title must not contain a comma')
+    if (d.description !== undefined && String(d.description).length > 160) {
+      issues.push('changelog data.description exceeds 160 characters')
+    }
+  }
+  if (fm.type === 'milestone' || fm.type === 'epic' || fm.type === 'feature' || fm.type === 'bug') {
+    if (!fm.description) issues.push(`type ${fm.type} requires a description`)
+    if (d.date === undefined || Number.isNaN(new Date(String(d.date)).getTime())) {
+      issues.push(`type ${fm.type} requires a valid data.date`)
+    }
+  }
+  return issues
+}
+
 interface ProcessedPage {
   slug: string
   filePath: string
@@ -738,10 +774,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const raw = await readFile(file, 'utf-8')
     const { data, content } = matter(raw)
 
-    const parsed = frontmatterSchema.safeParse(data)
-    if (!parsed.success) {
-      console.warn(`[nimpress] invalid frontmatter in ${file}: ${parsed.error.message}`)
+    const issues = frontmatterIssues(data)
+    if (issues.length) {
+      const detail = `${file}\n  ${issues.join('\n  ')}`
+      if (isBuildCommand) throw new Error(`[nimpress] invalid frontmatter in ${detail}`)
+      console.warn(`[nimpress] invalid frontmatter in ${detail}`)
     }
+    const parsed = frontmatterSchema.safeParse(data)
     const fm = (parsed.success ? parsed.data : { title: file }) as Frontmatter
 
     const slug = slugFromPath(contentRoot, file)
@@ -1571,6 +1610,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     configureServer(devServer) {
       server = devServer
+      devServer.watcher.add(contentRoot)
+      devServer.watcher.add(assetsRoot)
       for (const specPath of trackedSpecs) devServer.watcher.add(specPath)
 
       const onAdd = async (file: string) => {
@@ -1794,6 +1835,25 @@ app.mount(target)
 
 export function defineConfig(config: NimpressUserConfig): NimpressUserConfig {
   return config
+}
+
+export async function lintContent(cwd: string, contentDir: string): Promise<string[]> {
+  const root = resolve(cwd, contentDir)
+  const files = await walk(root)
+  const problems: string[] = []
+  for (const file of files) {
+    let raw: string
+    try {
+      raw = await readFile(file, 'utf-8')
+    } catch {
+      continue
+    }
+    const { data } = matter(raw)
+    for (const issue of frontmatterIssues(data)) {
+      problems.push(`${relative(root, file).split(sep).join('/')}: ${issue}`)
+    }
+  }
+  return problems
 }
 
 export type { NimpressUserConfig, ResolvedNimpressConfig, NimpressBannerConfig } from './types'

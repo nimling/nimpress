@@ -1,0 +1,17 @@
+name: Publish docs
+
+on:
+  push:
+    branches: [main]
+    paths: ['.nimpress/**']
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nimling/nimpress/actions/docs-notify@main
+        with:
+          docs-repo: nimling/samna
+          token: ${{ secrets.NIMPRESS_DOCS_TOKEN }}

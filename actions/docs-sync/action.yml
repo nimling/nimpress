@@ -1,0 +1,40 @@
+name: Sync nimpress docs
+description: Sync a source repo .nimpress folder into the docs tree and report the change set
+inputs:
+  source-path:
+    description: Absolute path to the checked out .nimpress folder
+    required: true
+  mapping:
+    description: Absolute path to the docs sources mapping json
+    required: true
+  content-root:
+    description: Absolute path to the docs content root the targets resolve under
+    required: true
+  source-repo:
+    description: Full name of the source repo
+    required: true
+outputs:
+  changed:
+    description: Whether the sync produced any change
+    value: ${{ steps.sync.outputs.changed }}
+  auto:
+    description: Whether this source may publish automatically
+    value: ${{ steps.sync.outputs.auto }}
+  target:
+    description: Target subtree the docs landed in
+    value: ${{ steps.sync.outputs.target }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+    - id: sync
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        NIMPRESS_SOURCE: ${{ inputs.source-path }}
+        NIMPRESS_MAPPING: ${{ inputs.mapping }}
+        NIMPRESS_CONTENT_ROOT: ${{ inputs.content-root }}
+        NIMPRESS_REPO: ${{ inputs.source-repo }}
+      run: go run .

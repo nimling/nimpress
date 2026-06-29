@@ -5,6 +5,7 @@ import { loadNimpressConfig } from './config/load'
 import { buildViteConfig } from './config/viteConfig'
 import { indexHtml } from './config/html'
 import { defaultConfig } from './config/defaults'
+import { lintContent } from './plugin'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -18,6 +19,16 @@ export async function run(argv: string[]): Promise<void> {
     return
   }
   const { resolved } = await loadNimpressConfig(cwd)
+  if (cmd === 'lint') {
+    const problems = await lintContent(cwd, resolved.contentDir)
+    if (problems.length) {
+      console.error(`nimpress lint failed with ${problems.length} problems`)
+      for (const p of problems) console.error(`  ${p}`)
+      process.exit(1)
+    }
+    console.log('nimpress lint: frontmatter ok')
+    return
+  }
   if (cmd === 'dev') {
     const server = await createServer(buildViteConfig({ cwd, command: 'serve', resolved }))
     await server.listen()
