@@ -22,12 +22,12 @@ Inputs are absolute paths: `source-path`, `mapping`, `content-root`, and `source
 
 ## Mapping
 
-The docs site owns `docs/.nimpress-sources.json`:
+The docs site owns `nimpress.sources.json` at its repo root:
 
 ```json
 {
   "sources": {
-    "nimling/samna-bookable-server": { "target": "solutions/bookable", "mode": "mirror" }
+    "nimling/samna-bookable-server": { "target": "solutions/bookable", "mode": "mirror", "secret": "NIMPRESS_SYNC_TOKEN" }
   },
   "autoPublish": ["nimling/samna-bookable-server"]
 }
@@ -35,7 +35,9 @@ The docs site owns `docs/.nimpress-sources.json`:
 
 1. `target` is a path under the docs content root. `mode` is `mirror` or `overlay`. Mirror makes the source the single owner of that subtree and removes files it no longer ships. Overlay only adds and updates.
 
-2. `autoPublish` lists sources allowed to ship without a pull request. A source not listed lands as a pull request for review.
+2. `secret` is optional and names the docs repo secret used to check out that source. When absent the receiver falls back to `NIMPRESS_SYNC_TOKEN`.
+
+3. `autoPublish` lists sources allowed to ship without a pull request. A source not listed lands as a pull request for review.
 
 ## Layout
 

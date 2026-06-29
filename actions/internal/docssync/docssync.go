@@ -11,6 +11,7 @@ import (
 type Source struct {
 	Target string `json:"target"`
 	Mode   string `json:"mode"`
+	Secret string `json:"secret"`
 }
 
 type Mapping struct {
