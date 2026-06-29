@@ -482,28 +482,6 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return createHash('sha1').update(text).digest('hex')
   }
 
-  function sidebarSignature(p: ProcessedPage): string {
-    const f = p.frontmatter
-    return JSON.stringify({
-      type: p.type,
-      effectivePath: p.effectivePath,
-      title: f.title,
-      slug: f.slug,
-      path: f.path,
-      order: f.order,
-      hidden: f.hidden,
-      collapsed: f.collapsed,
-      icon: f.icon,
-      redirect: f.redirect,
-      scope: f.scope,
-      claim: f.claim,
-      description: f.description,
-      meta: f.meta,
-      data: f.data,
-      tags: f.tags
-    })
-  }
-
   async function ensureHighlighter() {
     if (highlighter) return highlighter
     highlighter = await createHighlighter({
@@ -1741,9 +1719,6 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (!isMd && !ownsSpec) return
       const targetMd = isMd ? file : ownsSpec!
-      const targetSlug = slugFromPath(contentRoot, targetMd)
-      const prev = pages.get(targetSlug)
-      const prevSig = prev ? sidebarSignature(prev) : null
       dropFileCache(targetMd)
       try {
         await processAll()
@@ -1751,24 +1726,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         ctx.server.config.logger.error(String(err))
         return
       }
-      const next = pages.get(targetSlug)
-      const nextSig = next ? sidebarSignature(next) : null
-      const sidebarChanged = prevSig !== nextSig || !prev || !next
-      const mods: unknown[] = []
-      const pushById = (id: string) => {
-        const m = ctx.server.moduleGraph.getModuleById(id)
-        if (m) mods.push(m)
-      }
-      const slugForUrl = next?.slug ?? targetSlug
-      pushById('\0' + PAGE_BODY_PREFIX + urlSlug(slugForUrl) + '.js')
-      pushById('\0' + PAGE_COMPONENT_PREFIX + urlSlug(slugForUrl) + '.svelte')
-      if (sidebarChanged) {
-        pushById('\0' + VIRTUAL_MANIFEST)
-        pushById('\0' + VIRTUAL_SEARCH)
-        pushById('\0' + VIRTUAL_PAGES)
-        pushById('\0' + VIRTUAL_BODIES)
-      }
-      return mods as never[]
+      invalidateMeta(ctx.server)
+      invalidateAllBodies(ctx.server)
+      ctx.server.ws.send({ type: 'full-reload' })
+      return []
     },
 
     resolveId(id) {
