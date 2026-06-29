@@ -1,6 +1,6 @@
 import type { ResolvedNimpressConfig } from '../types'
 
-export function indexHtml(resolved: ResolvedNimpressConfig): string {
+export function indexHtml(resolved: ResolvedNimpressConfig, entrySrc = 'virtual:nimpress/main'): string {
   const favicon = resolved.logo ?? `${resolved.assetUrlBase}/logo.png`
   return `<!doctype html>
 <html lang="en">
@@ -22,7 +22,7 @@ export function indexHtml(resolved: ResolvedNimpressConfig): string {
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="virtual:nimpress/main"></script>
+    <script type="module" src="${entrySrc}"></script>
   </body>
 </html>
 `

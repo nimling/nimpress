@@ -32,6 +32,7 @@ export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
     root: cwd,
     configFile: false,
     publicDir: false,
+    appType: 'custom',
     plugins: [
       svelte({ compilerOptions: { runes: true, dev: command === 'serve' } }),
       tailwindcss(),

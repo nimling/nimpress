@@ -1650,22 +1650,27 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         return true
       }
 
+      devServer.middlewares.use((req, res, next) => {
+        const url = (req.url ?? '').split('?')[0]
+        if (url.startsWith('/@') || url.startsWith('/node_modules/')) return next()
+        const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
+        if (baseMatch) {
+          const stripped = base === '/' ? url : url.slice(base.length)
+          if (serveFile(assetsRoot, stripped.replace(/^\/+/, ''), res)) return
+        }
+        if (serveFile(contentRoot, url.replace(/^\/+/, ''), res)) return
+        next()
+      })
+
       return () => {
-        devServer.middlewares.use((req, res, next) => {
-          const url = (req.url ?? '').split('?')[0]
-          const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
-          if (baseMatch) {
-            const stripped = base === '/' ? url : url.slice(base.length)
-            if (serveFile(assetsRoot, stripped.replace(/^\/+/, ''), res)) return
-          }
-          if (serveFile(contentRoot, url.replace(/^\/+/, ''), res)) return
-          next()
-        })
         devServer.middlewares.use(async (req, res, next) => {
           if (req.method !== 'GET' && req.method !== 'HEAD') return next()
           if (!(req.headers.accept ?? '').includes('text/html')) return next()
           try {
-            const html = await devServer.transformIndexHtml(req.url ?? '/', indexHtml(resolved))
+            const html = await devServer.transformIndexHtml(
+              req.url ?? '/',
+              indexHtml(resolved, '/@id/__x00__virtual:nimpress/main')
+            )
             res.statusCode = 200
             res.setHeader('Content-Type', 'text/html')
             res.end(html)
