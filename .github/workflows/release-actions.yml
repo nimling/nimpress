@@ -1,0 +1,47 @@
+name: Release nimpress actions
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (e.g., v1.2.3)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag-major:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Validate actions
+        working-directory: actions
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Move major tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=${{ github.event.inputs.tag }}
+          fi
+          MAJOR=${VERSION%%.*}
+          git config user.name nimpress-bot
+          git config user.email bot@nimling.dev
+          git tag -f "$MAJOR" "$VERSION"
+          git push -f origin "refs/tags/$MAJOR"
