@@ -42,6 +42,8 @@ A directory without an `index.md` shows as a synthetic group in the sidebar. The
 
 ## Assets
 
-1. Static assets live in the consumer's `public/` directory and are referenced by absolute path. `![Diagram](/img/architecture.svg)`.
+1. Shared assets live in the `assetsDir` folder, `assets` by default, at the repo root. Reference them by an absolute path under `assetUrlBase`, `/assets` by default. `![Diagram](/assets/architecture.svg)`. Downloadable files such as a pdf live here too and are served at the same base. The whole `assetsDir` folder is copied into the build output.
 
-2. Do not import assets from inside markdown. Markdown is content, not code.
+2. Images that belong to one page live next to that page's markdown file inside `contentDir`. Reference them with a path relative to the markdown file. `![Diagram](./architecture.svg)`. nimpress serves them in dev and emits every non markdown file under `contentDir` into the build output.
+
+3. `assetsDir`, `assetUrlBase`, and `contentDir` are set in `nimpress.config`. A consumer that keeps a single public folder points `assetsDir` at it and sets `assetUrlBase` to `/`.

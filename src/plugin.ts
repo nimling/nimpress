@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
-import { readFile, readdir, copyFile } from 'node:fs/promises'
-import { resolve, relative, join, sep, dirname, isAbsolute } from 'node:path'
+import { readFile, readdir, copyFile, cp } from 'node:fs/promises'
+import { createReadStream, existsSync, statSync } from 'node:fs'
+import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
 import { createHash } from 'node:crypto'
 import matter from 'gray-matter'
 import MarkdownIt from 'markdown-it'
@@ -12,13 +13,15 @@ import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
 import { z } from 'zod'
 import { createHighlighter, type Highlighter } from 'shiki'
-import { buildBanner, readConsumerPackage, type BannerOptions } from './banner'
+import { buildBanner, readConsumerPackage } from './banner'
 import type {
   ChangelogEntry,
   Frontmatter,
   Heading,
+  NimpressUserConfig,
   PageMeta,
   PageType,
+  ResolvedNimpressConfig,
   RoadmapChangelogRef,
   RoadmapEntry,
   RoadmapKind,
@@ -26,11 +29,16 @@ import type {
   SearchEntry,
   SidebarNode
 } from './types'
+import { defaultConfig } from './config/defaults'
+import { loadNimpressConfig, runtimeConfig } from './config/load'
+import { indexHtml } from './config/html'
 
 const VIRTUAL_MANIFEST = 'virtual:nimpress/manifest'
 const VIRTUAL_SEARCH = 'virtual:nimpress/search'
 const VIRTUAL_PAGES = 'virtual:nimpress/pages'
 const VIRTUAL_BODIES = 'virtual:nimpress/bodies'
+const VIRTUAL_CONFIG = 'virtual:nimpress/config'
+const VIRTUAL_MAIN = 'virtual:nimpress/main'
 const PAGE_COMPONENT_PREFIX = 'virtual:nimpress/page-component/'
 const PAGE_BODY_PREFIX = 'virtual:nimpress/page-body/'
 
@@ -100,14 +108,6 @@ const frontmatterSchema = z.object({
   data: z.record(z.unknown()).optional()
 }).passthrough()
 
-export interface NimpressMarkdownOptions {
-  contentDir: string
-  banner?: BannerOptions | false
-  exclude?: string[]
-  defaultFrontmatter?: Partial<Frontmatter>
-  defaultFrontmatterExclude?: string[]
-}
-
 interface ProcessedPage {
   slug: string
   filePath: string
@@ -117,6 +117,7 @@ interface ProcessedPage {
   html: string
   headings: Heading[]
   rawText: string
+  pageCss?: string
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
@@ -428,8 +429,10 @@ function sortNodes(nodes: SidebarNode[]) {
   }
 }
 
-export default function nimpress(options: NimpressMarkdownOptions): Plugin {
-  const contentRoot = resolve(process.cwd(), options.contentDir)
+export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
+  let resolved: ResolvedNimpressConfig = defaultConfig
+  let contentRoot = resolve(process.cwd(), defaultConfig.contentDir)
+  let assetsRoot = resolve(process.cwd(), defaultConfig.assetsDir)
   let pages = new Map<string, ProcessedPage>()
   let highlighter: Highlighter | null = null
   let resolvedOutDir = resolve(process.cwd(), 'dist')
@@ -745,8 +748,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const type: PageType = fm.type ?? 'doc'
     const effectivePath = normalizePath(fm.path ?? defaultPathFromSlug(slug))
 
-    const defaults = options.defaultFrontmatter ?? {}
-    const defaultExcludes = options.defaultFrontmatterExclude ?? []
+    const defaults = resolved.defaultFrontmatter ?? {}
+    const defaultExcludes = resolved.defaultFrontmatterExclude ?? []
     const isExcludedFromDefaults = defaultExcludes.some((prefix) => {
       const p = prefix.startsWith('/') ? prefix : '/' + prefix
       return effectivePath === p || effectivePath.startsWith(p + '/')
@@ -780,6 +783,12 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
 
     rememberSpecBinding(file, specPath)
 
+    const cssFile = file.replace(/\.md$/, '.css')
+    let pageCss: string | undefined
+    if (cssFile !== file && existsSync(cssFile)) {
+      pageCss = await readFile(cssFile, 'utf-8')
+    }
+
     return {
       slug,
       filePath: file,
@@ -789,6 +798,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       html,
       headings,
       rawText: content,
+      pageCss,
       openApiSpec
     }
   }
@@ -830,7 +840,7 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   }
 
   function isExcluded(slug: string): boolean {
-    const list = options.exclude ?? []
+    const list = resolved.exclude ?? []
     for (const pattern of list) {
       const norm = pattern.replace(/\/$/, '')
       if (slug === norm) return true
@@ -1281,7 +1291,13 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       byPath[p.effectivePath] = slug
     }
 
-    return { pages: pageMap, byPath, sidebar: buildSidebar() }
+    const styles: Record<string, string> = {}
+    for (const p of pages.values()) {
+      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (p.pageCss) styles[p.effectivePath] = p.pageCss
+    }
+
+    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles }
   }
 
   function buildSearch(): SearchEntry[] {
@@ -1480,10 +1496,11 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, setPageMeta } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
   import type { PageBody } from '@nimling/nimpress'
   const shell = ${json}
   setPageMeta(shell)
+  applyPageStyles(shell.path)
   const bodyPromise: Promise<{ default: PageBody }> = import(${JSON.stringify(bodyId)})
 </script>
 
@@ -1512,6 +1529,14 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
   return {
     name: '@nimling/nimpress:markdown',
 
+    async config() {
+      const loaded = await loadNimpressConfig(process.cwd(), inline)
+      resolved = loaded.resolved
+      contentRoot = resolve(process.cwd(), resolved.contentDir)
+      assetsRoot = resolve(process.cwd(), resolved.assetsDir)
+      return {}
+    },
+
     configResolved(config) {
       isBuildCommand = config.command === 'build'
       resolvedOutDir = resolve(config.root, config.build.outDir)
@@ -1526,6 +1551,22 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       const src = join(resolvedOutDir, 'index.html')
       const dest = join(resolvedOutDir, '404.html')
       await copyFile(src, dest)
+      if (existsSync(contentRoot)) {
+        await cp(contentRoot, resolvedOutDir, {
+          recursive: true,
+          filter: (s) => {
+            try {
+              return statSync(s).isDirectory() || !(s.endsWith('.md') || s.endsWith('.css'))
+            } catch {
+              return false
+            }
+          }
+        })
+      }
+      if (existsSync(assetsRoot)) {
+        const target = join(resolvedOutDir, resolved.assetUrlBase.replace(/^\//, ''))
+        await cp(assetsRoot, target, { recursive: true })
+      }
     },
 
     configureServer(devServer) {
@@ -1533,8 +1574,9 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       for (const specPath of trackedSpecs) devServer.watcher.add(specPath)
 
       const onAdd = async (file: string) => {
-        if (!file.endsWith('.md')) return
-        if (!file.startsWith(contentRoot)) return
+        const underContent = file.startsWith(contentRoot)
+        if (!underContent || !(file.endsWith('.md') || file.endsWith('.css'))) return
+        if (file.endsWith('.css')) dropFileCache(file.replace(/\.css$/, '.md'))
         try {
           await processAll()
         } catch (err) {
@@ -1546,8 +1588,9 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
         devServer.ws.send({ type: 'full-reload' })
       }
       const onUnlink = async (file: string) => {
-        if (file.endsWith('.md') && file.startsWith(contentRoot)) {
-          dropFileCache(file)
+        const underContent = file.startsWith(contentRoot)
+        if (underContent && (file.endsWith('.md') || file.endsWith('.css'))) {
+          dropFileCache(file.endsWith('.css') ? file.replace(/\.css$/, '.md') : file)
           try {
             await processAll()
           } catch (err) {
@@ -1567,32 +1610,89 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       devServer.watcher.on('add', onAdd)
       devServer.watcher.on('unlink', onUnlink)
 
-      if (options.banner === false) return
-      const consumer = readConsumerPackage()
-      const userBanner: BannerOptions = options.banner ?? {}
-      const startedAt = Date.now()
-      devServer.printUrls = function () {
-        const urls = devServer.resolvedUrls
-        const local = urls?.local?.[0] ?? `http://localhost:${devServer.config.server.port ?? 5173}/`
-        const network = urls?.network?.[0] ?? 'use --host to expose'
-        const banner = buildBanner({
-          title: userBanner.title ?? consumer.name ?? 'Nimpress',
-          tagline: userBanner.tagline,
-          company: userBanner.company,
-          version: userBanner.version ?? consumer.version,
-          localUrl: local,
-          networkUrl: network,
-          duration: Date.now() - startedAt
+      if (resolved.banner !== false) {
+        const consumer = readConsumerPackage()
+        const userBanner = resolved.banner
+        const startedAt = Date.now()
+        devServer.printUrls = function () {
+          const urls = devServer.resolvedUrls
+          const local = urls?.local?.[0] ?? `http://localhost:${devServer.config.server.port ?? 5173}/`
+          const network = urls?.network?.[0] ?? 'use --host to expose'
+          const banner = buildBanner({
+            title: userBanner.title ?? resolved.title ?? consumer.name ?? 'Nimpress',
+            tagline: userBanner.tagline,
+            company: userBanner.company,
+            version: userBanner.version ?? consumer.version,
+            localUrl: local,
+            networkUrl: network,
+            duration: Date.now() - startedAt
+          })
+          process.stdout.write('\x1Bc')
+          process.stdout.write(banner + '\n')
+        }
+      }
+
+      const mimes: Record<string, string> = {
+        '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp',
+        '.ico': 'image/x-icon', '.pdf': 'application/pdf', '.json': 'application/json',
+        '.css': 'text/css', '.js': 'text/javascript', '.txt': 'text/plain',
+        '.woff': 'font/woff', '.woff2': 'font/woff2', '.mp4': 'video/mp4'
+      }
+      const base = resolved.assetUrlBase
+
+      const serveFile = (root: string, rel: string, res: import('node:http').ServerResponse): boolean => {
+        if (!rel || rel.endsWith('.md')) return false
+        const file = join(root, decodeURIComponent(rel))
+        if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) return false
+        res.setHeader('Content-Type', mimes[extname(file).toLowerCase()] ?? 'application/octet-stream')
+        createReadStream(file).pipe(res)
+        return true
+      }
+
+      return () => {
+        devServer.middlewares.use((req, res, next) => {
+          const url = (req.url ?? '').split('?')[0]
+          const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
+          if (baseMatch) {
+            const stripped = base === '/' ? url : url.slice(base.length)
+            if (serveFile(assetsRoot, stripped.replace(/^\/+/, ''), res)) return
+          }
+          if (serveFile(contentRoot, url.replace(/^\/+/, ''), res)) return
+          next()
         })
-        process.stdout.write('\x1Bc')
-        process.stdout.write(banner + '\n')
+        devServer.middlewares.use(async (req, res, next) => {
+          if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+          if (!(req.headers.accept ?? '').includes('text/html')) return next()
+          try {
+            const html = await devServer.transformIndexHtml(req.url ?? '/', indexHtml(resolved))
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'text/html')
+            res.end(html)
+          } catch (err) {
+            next(err as Error)
+          }
+        })
       }
     },
 
     async handleHotUpdate(ctx) {
       const file = ctx.file
       const isMd = file.endsWith('.md') && file.startsWith(contentRoot)
+      const isPageCss = file.endsWith('.css') && file.startsWith(contentRoot)
       const ownsSpec = specToMd.get(file)
+      if (isPageCss) {
+        dropFileCache(file.replace(/\.css$/, '.md'))
+        try {
+          await processAll()
+        } catch (err) {
+          ctx.server.config.logger.error(String(err))
+          return
+        }
+        invalidateMeta(ctx.server)
+        ctx.server.ws.send({ type: 'full-reload' })
+        return []
+      }
       if (!isMd && !ownsSpec) return
       const targetMd = isMd ? file : ownsSpec!
       const targetSlug = slugFromPath(contentRoot, targetMd)
@@ -1630,6 +1730,8 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
       if (id === VIRTUAL_SEARCH) return '\0' + VIRTUAL_SEARCH
       if (id === VIRTUAL_PAGES) return '\0' + VIRTUAL_PAGES
       if (id === VIRTUAL_BODIES) return '\0' + VIRTUAL_BODIES
+      if (id === VIRTUAL_CONFIG) return '\0' + VIRTUAL_CONFIG
+      if (id === VIRTUAL_MAIN) return '\0' + VIRTUAL_MAIN
       if (id.startsWith(PAGE_COMPONENT_PREFIX) && id.endsWith('.svelte')) {
         return id
       }
@@ -1642,6 +1744,26 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     async load(id) {
       if (id === '\0' + VIRTUAL_MANIFEST) {
         return `export default ${JSON.stringify(buildManifest())}`
+      }
+      if (id === '\0' + VIRTUAL_CONFIG) {
+        return `export default ${JSON.stringify(runtimeConfig(resolved))}`
+      }
+      if (id === '\0' + VIRTUAL_MAIN) {
+        const cssImports = resolved.css
+          .map((href) => `import ${JSON.stringify(href.startsWith('/') ? href : '/' + href)}`)
+          .join('\n')
+        return `import '@nimling/nimpress/app.css'
+${cssImports}
+import { createNimpressApp } from '@nimling/nimpress'
+import config from 'virtual:nimpress/config'
+import manifest from 'virtual:nimpress/manifest'
+import searchIndex from 'virtual:nimpress/search'
+import pages from 'virtual:nimpress/pages'
+const app = createNimpressApp({ ...config, manifest, searchIndex, pageLoader: pages })
+const target = document.getElementById('app')
+if (!target) throw new Error('Mount target #app missing')
+app.mount(target)
+`
       }
       if (id === '\0' + VIRTUAL_SEARCH) {
         return `export default ${JSON.stringify(buildSearch())}`
@@ -1664,3 +1786,9 @@ export default function nimpress(options: NimpressMarkdownOptions): Plugin {
     }
   }
 }
+
+export function defineConfig(config: NimpressUserConfig): NimpressUserConfig {
+  return config
+}
+
+export type { NimpressUserConfig, ResolvedNimpressConfig, NimpressBannerConfig } from './types'

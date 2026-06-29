@@ -28,9 +28,9 @@ If none of those apply, keep the literal value in the component.
 
 Consumers override Nimpress styles by:
 
-1. Setting CSS custom properties on `:root` and `:root[data-theme="dark"]`.
+1. A site wide stylesheet named in the `css` config field. nimpress loads it after the framework styles, so setting CSS custom properties on `:root` and `html.dark` or targeting the public `np-` classes there wins the cascade.
 
-2. Targeting the public `np-` classes from their own stylesheet, loaded after `@nimling/nimpress/style.css`.
+2. A per page stylesheet named the same as a markdown file. `guide/index.css` next to `guide/index.md` loads while the route is `/guide` or any path under it. A leaf page's stylesheet loads only on its own page. The author writes normal selectors and they apply only while inside that subtree.
 
 Consumers never need to fork the framework to change visuals.
 

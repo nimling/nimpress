@@ -1,8 +1,9 @@
-import { createServer } from 'vite'
+import { createServer, mergeConfig } from 'vite'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { loadNimpressConfig, buildViteConfig } from '../dist/cli.es.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
@@ -24,14 +25,13 @@ if (linked) {
   })
 }
 
-const server = await createServer({
-  configFile: path.resolve(consumer, 'vite.config.ts'),
-  root: consumer,
+const { resolved } = await loadNimpressConfig(consumer)
+const config = mergeConfig(buildViteConfig({ cwd: consumer, command: 'serve', resolved }), {
   ...(linked ? { optimizeDeps: { exclude: ['@nimling/nimpress'] } } : {}),
-  server: {
-    fs: { allow: [root, consumer] }
-  }
+  server: { fs: { allow: [root, consumer] } }
 })
+
+const server = await createServer(config)
 
 if (linked) {
   server.watcher.add(distDir)

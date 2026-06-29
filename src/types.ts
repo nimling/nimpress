@@ -152,6 +152,7 @@ export interface Manifest {
   byPath: Record<string, string>
   sidebar: SidebarNode[]
   site?: SiteMeta
+  styles?: Record<string, string>
 }
 
 export interface SiteMeta {
@@ -232,6 +233,57 @@ export interface NimpressConfig {
   pageLoader?: Record<string, () => Promise<{ default: unknown } | unknown>>
   bodyLoader?: Record<string, () => Promise<PageBody>>
   accessChecker?: AccessChecker
+}
+
+export interface NimpressBannerConfig {
+  title?: string
+  tagline?: string
+  company?: string
+  version?: string
+}
+
+export interface NimpressUserConfig {
+  title?: string
+  logo?: string
+  github?: string
+  brand?: NimpressBrandConfig
+  footer?: string
+  navRoutes?: NavRoute[]
+  authEndpoint?: string
+  clientSlug?: string
+  site?: SiteMeta
+  contentDir?: string
+  assetsDir?: string
+  assetUrlBase?: string
+  outDir?: string
+  exclude?: string[]
+  defaultFrontmatter?: Partial<Frontmatter>
+  defaultFrontmatterExclude?: string[]
+  banner?: NimpressBannerConfig | false
+  css?: string | string[]
+  vite?: Record<string, unknown>
+}
+
+export interface ResolvedNimpressConfig {
+  title: string
+  logo?: string
+  github?: string
+  brand?: NimpressBrandConfig
+  footer?: string
+  navRoutes?: NavRoute[]
+  authEndpoint?: string
+  clientSlug?: string
+  site?: SiteMeta
+  contentDir: string
+  assetsDir: string
+  assetUrlBase: string
+  outDir: string
+  exclude: string[]
+  defaultFrontmatter: Partial<Frontmatter>
+  defaultFrontmatterExclude: string[]
+  banner: NimpressBannerConfig | false
+  css: string[]
+  vite: Record<string, unknown>
 }
 
 export interface NavRoute {

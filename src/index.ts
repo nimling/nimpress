@@ -4,6 +4,7 @@ export { viewer, refreshViewer } from './framework/stores/viewer'
 export { theme, toggleTheme, applyInitialTheme } from './framework/stores/theme'
 export { sidebarState, toggleGroup } from './framework/stores/sidebar'
 export { setPageMeta, applyPageMeta } from './framework/pageMeta'
+export { applyPageStyles } from './framework/pageStyles'
 
 export { default as AppShell } from './layout/AppShell.svelte'
 export { default as Header } from './layout/Header.svelte'

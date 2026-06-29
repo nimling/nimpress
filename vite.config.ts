@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
           entry: {
             index: path.resolve(dirname, 'src/index.ts'),
             plugin: path.resolve(dirname, 'src/plugin.ts'),
+            cli: path.resolve(dirname, 'src/cli.ts'),
             'tailwind.preset': path.resolve(dirname, 'tailwind.preset.ts')
           },
           formats: ['es'],
@@ -54,6 +55,9 @@ export default defineConfig(({ mode }) => {
             if (id.startsWith('.') || id.startsWith('/')) return false
             if (id === 'svelte' || id.startsWith('svelte/')) return true
             const externals = [
+              'vite',
+              '@sveltejs/vite-plugin-svelte',
+              '@tailwindcss/vite',
               'markdown-it',
               'markdown-it-anchor',
               'markdown-it-attrs',
