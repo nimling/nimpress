@@ -76,7 +76,7 @@ Every field has a default, so a config can be as small as a title.
 
 3. `css` names a site wide stylesheet loaded after the framework styles. A sibling `<name>.css` next to a `<name>.md` loads while that page and its subpages are open.
 
-4. `exclude`, `banner`, `brand`, `footer`, `navRoutes`, `site`, `authEndpoint`, and `clientSlug` tune the shell, theming, SEO, and the session guard.
+4. `exclude`, `banner`, `brand`, `footer`, `navRoutes`, and `site` tune the shell, theming, and SEO.
 
 ### Run
 

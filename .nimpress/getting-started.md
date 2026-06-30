@@ -93,7 +93,6 @@ The config controls the shell, the content roots, and the metadata.
 | `banner` | none | Header banner title, tagline, company, and version |
 | `brand` | none | Primary and hover colors for the theme |
 | `site` | none | SEO defaults such as url, description, and OpenGraph image |
-| `authEndpoint`, `clientSlug` | none | Session guard against samna_auth |
 
 ## Style overrides
 

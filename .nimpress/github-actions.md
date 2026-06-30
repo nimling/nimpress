@@ -1,7 +1,7 @@
 ---
 title: GitHub Actions
 description: Publish a repo's docs into the central site through the nimpress actions on a version tag.
-order: 2
+order: 5
 ---
 
 A repo keeps its docs beside the code in a `.nimpress` folder. On a version tag the nimpress actions mirror that folder into the central docs site under a mapped path. The action owns the whole flow, so a consumer pipeline is checkout, token, run.
