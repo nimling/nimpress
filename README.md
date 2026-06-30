@@ -1,16 +1,16 @@
 <div align="center">
   <img src="assets/logo.svg" alt="Nimpress" width="320" />
 
-  <span><i>Svelte 5 docs framework with content driven routing, custom markdown pipeline, and a built in OpenAPI renderer.</i></span>
+  <span><i>Svelte 5 docs framework with content driven routing, a custom markdown pipeline, and a built in OpenAPI renderer.</i></span>
 </div>
 
-## Getting Started
+## Getting started
 
 Nimpress is published to GitHub Packages under `@nimling/nimpress`. Releases are cut through the same publish pipeline used by `samna-vue-components`.
 
-### Add to a consumer
+### Authenticate against GitHub Packages
 
-The consumer needs two files at the repo root so the package manager can authenticate against `npm.pkg.github.com`.
+The consumer needs two files at the repo root so the package manager can reach `npm.pkg.github.com`.
 
 `.npmrc`:
 
@@ -19,7 +19,7 @@ The consumer needs two files at the repo root so the package manager can authent
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-`.env` (gitignored, never committed):
+`.env`, gitignored, never committed:
 
 ```
 NODE_AUTH_TOKEN=<a github personal access token with read:packages>
@@ -28,69 +28,88 @@ NODE_AUTH_TOKEN=<a github personal access token with read:packages>
 Install with either package manager:
 
 ```bash
-# pnpm
 pnpm add @nimling/nimpress
-
-# npm
 npm install @nimling/nimpress
 ```
 
-For local development on Nimpress itself, link the working tree from the consumer:
+For local work on Nimpress itself, link the working tree from the consumer:
 
 ```bash
 pnpm add @nimling/nimpress@link:../nimpress
 ```
 
-### Wire the Vite plugin
+## Set up a site
+
+A consumer needs one config file and the `nimpress` CLI. The CLI owns Vite, serves the app shell and entry as virtual modules, and reads `nimpress.config`. There is no Vite config to write and no app to mount by hand.
+
+### Scaffold
+
+```bash
+pnpm exec nimpress init
+```
+
+This writes a starter `nimpress.config.ts` and a content folder.
+
+### Configure
+
+`nimpress.config.ts` at the repo root:
 
 ```ts
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import nimpress from '@nimling/nimpress/plugin'
+import { defineConfig } from '@nimling/nimpress/plugin'
 
 export default defineConfig({
-  plugins: [
-    svelte(),
-    nimpress({ contentDir: 'docs' })
-  ]
+  title: 'Docs',
+  logo: '/assets/logo.png',
+  github: 'https://github.com/nimling/your-repo',
+  contentDir: 'docs',
+  assetsDir: 'assets',
+  assetUrlBase: '/assets',
+  css: 'app.css'
 })
 ```
 
-### Mount the app
+Every field has a default, so a config can be as small as a title.
 
-```ts
-import { createNimpressApp } from '@nimling/nimpress'
-import manifest from 'virtual:nimpress/manifest'
-import searchIndex from 'virtual:nimpress/search'
-import pages from 'virtual:nimpress/pages'
-import '@nimling/nimpress/style.css'
+1. `contentDir` holds the markdown and the images that sit next to it. Default `docs`.
 
-createNimpressApp({
-  title: 'Docs',
-  contentRoot: 'docs',
-  authEndpoint: 'http://localhost:4202',
-  clientSlug: 'docs',
-  manifest,
-  searchIndex,
-  pageLoader: pages
-}).mount(document.getElementById('app')!)
+2. `assetsDir` is the shared asset root, copied whole into the build and served at `assetUrlBase`. Default `assets` at `/assets`.
+
+3. `css` names a site wide stylesheet loaded after the framework styles. A sibling `<name>.css` next to a `<name>.md` loads while that page and its subpages are open.
+
+4. `exclude`, `banner`, `brand`, `footer`, `navRoutes`, `site`, `authEndpoint`, and `clientSlug` tune the shell, theming, SEO, and the session guard.
+
+### Run
+
+Wire the CLI into `package.json`:
+
+```json
+{
+  "scripts": {
+    "dev": "nimpress dev",
+    "build": "nimpress build",
+    "preview": "nimpress preview"
+  }
+}
 ```
 
-### Start developing
+## CLI
 
-```bash
-just install
-just dev
-```
+| Command | Description |
+|---------|-------------|
+| `nimpress init` | Scaffold a config and content folder |
+| `nimpress dev` | Start the dev server |
+| `nimpress build` | Build the static site into `outDir`, default `dist` |
+| `nimpress preview` | Serve the built site |
+| `nimpress lint` | Validate frontmatter across the content |
 
-## Commands
+## Working on Nimpress itself
 
 | Command | Description |
 |---------|-------------|
 | `just install` | Install dependencies with pnpm |
 | `just build` | Build the library bundle into `dist/` |
 | `just check` | Run svelte-check and tsc |
-| `just dev` | Run the consumer site that links this package |
+| `just dev` | Run the linked consumer site |
 | `just deploy` | Patch version bump, tag, and trigger the publish workflow |
 | `just deploy-minor` | Minor version bump and publish |
 | `just deploy-major` | Major version bump and publish |
@@ -101,7 +120,7 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 
 | Topic | Guide |
 |-------|-------|
-| Page types: `doc`, `openapi`, `changelog`, `hero` | [docs/page-types.md](./docs/page-types.md) |
+| Page types: `doc`, `openapi`, `changelog`, `hero`, `roadmap` | [docs/page-types.md](./docs/page-types.md) |
 | Markdown support, callouts, actions, features | [docs/markdown.md](./docs/markdown.md) |
 | Definition lists for compact term references | [docs/definition-lists.md](./docs/definition-lists.md) |
 | Mermaid diagrams | [docs/mermaid.md](./docs/mermaid.md) |
@@ -116,6 +135,7 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Theming and overriding styles | [docs/theming.md](./docs/theming.md) |
 | Auth, scope, and claim guards | [docs/auth.md](./docs/auth.md) |
 | Search index | [docs/search.md](./docs/search.md) |
+| Publishing docs to the central site | [docs/docs-sync.md](./docs/docs-sync.md) |
 
 ## Authoring docs with Claude
 
@@ -139,10 +159,14 @@ When writing or editing markdown under the docs content directory, follow the Ni
 ```
 nimpress/
 ├── assets/                 Logo and brand artwork
+├── bin/nimpress.mjs        CLI entry
 ├── docs/                   Concept guides linked from the README
+├── actions/                Cross repo docs sync GitHub Actions
 ├── src/
 │   ├── index.ts            Public Svelte exports
-│   ├── plugin.ts           Vite plugin (separate entry)
+│   ├── plugin.ts           Vite plugin and defineConfig
+│   ├── cli.ts              CLI commands: init, dev, build, preview, lint
+│   ├── config/             Config load, defaults, schema, Vite and html
 │   ├── framework/          App bootstrap, router, stores
 │   ├── layout/             Shell, header, sidebar, breadcrumbs, right TOC
 │   ├── markdown/           Page, ChangelogPage, HeroPage, callouts, code blocks
@@ -151,6 +175,5 @@ nimpress/
 │   ├── auth/               Session login guard
 │   └── styles/             Tokens and preflight
 ├── tailwind.preset.ts      Design tokens exported for consumers
-├── vite.config.ts          Library mode build with two entry points
 └── justfile                Task runner
 ```
