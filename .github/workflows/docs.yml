@@ -10,7 +10,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./actions/docs-notify
+        with:
+          fetch-depth: 0
+
+      - name: Check nimpress docs changed
+        id: changed
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          prev=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+          if [ -z "$prev" ] || git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- .nimpress | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: App token
+        if: steps.changed.outputs.changed == 'true'
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: nimling
+          repositories: samna
+
+      - name: Notify docs
+        if: steps.changed.outputs.changed == 'true'
+        uses: ./actions/docs-notify
         with:
           docs-repo: nimling/samna
-          token: ${{ secrets.NIMPRESS_DOCS_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
