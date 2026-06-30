@@ -71,10 +71,10 @@
 <style>
   .np-hero {
     position: relative;
-    width: calc(100% + 64px);
+    width: calc(100% + 4em);
     max-width: none;
-    margin: -32px -32px 0;
-    padding: 208px 48px 96px;
+    margin: -2em -2em 0;
+    padding: 13em 3em 0;
     box-sizing: border-box;
     display: block;
   }
@@ -94,21 +94,21 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 1280px;
+    max-width: 80em;
     margin: 0 auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 48px;
+    gap: 3em;
     align-items: center;
   }
   .np-hero-side .np-hero-inner {
     grid-template-columns: minmax(0, 1fr);
   }
-  @media (min-width: 960px) {
-    .np-hero { padding: 120px 80px 96px; }
+  @media (min-width: 60em) {
+    .np-hero { padding: 7.5em 5em 0; }
     .np-hero-side .np-hero-inner {
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 24px;
+      gap: 1.5em;
     }
     .np-hero-side.np-hero-align-end .np-hero-inner {
       direction: rtl;
@@ -126,7 +126,7 @@
     align-items: center;
     text-align: center;
     margin: 0 auto;
-    max-width: 760px;
+    max-width: 47.5em;
   }
   .np-hero-align-center .np-hero-lead { margin-left: auto; margin-right: auto; }
 
@@ -136,42 +136,42 @@
     min-width: 0;
   }
   .np-hero-logo {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 20px;
+    width: 4em;
+    height: 4em;
+    margin-bottom: 1.25em;
     border-radius: var(--np-radius-md);
   }
   .np-hero-eyebrow {
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    font-size: 12px;
+    font-size: 0.75em;
     color: var(--np-brand);
     font-weight: 700;
-    margin: 0 0 16px;
+    margin: 0 0 1.33em;
   }
   .np-hero-title {
-    font-size: 56px;
+    font-size: 3.5em;
     line-height: 1.05;
     font-weight: 800;
     letter-spacing: -0.025em;
-    margin: 0 0 20px;
+    margin: 0 0 0.36em;
     color: var(--np-brand);
   }
-  @media (min-width: 960px) {
-    .np-hero-title { font-size: 76px; }
+  @media (min-width: 60em) {
+    .np-hero-title { font-size: 4.75em; }
   }
   .np-hero-tagline {
-    font-size: 24px;
+    font-size: 1.5em;
     line-height: 1.35;
     color: var(--np-text-primary);
-    margin: 0 0 12px;
+    margin: 0 0 0.5em;
     font-weight: 500;
   }
   .np-hero-lead {
-    font-size: 17px;
+    font-size: 1.0625em;
     line-height: 1.7;
     color: var(--np-text-secondary);
-    margin: 0 0 32px;
+    margin: 0 0 1.4em;
     max-width: 60ch;
   }
 
@@ -183,12 +183,15 @@
   }
   .np-hero-art img {
     width: 100%;
-    max-width: 480px;
+    max-width: 30em;
     height: auto;
     border-radius: var(--np-radius-lg);
   }
 
   .np-hero-body {
-    margin-top: 48px;
+    margin-top: 1.5em;
+  }
+  .np-hero-body :global(.np-page) {
+    padding-top: 0;
   }
 </style>
