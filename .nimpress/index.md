@@ -5,7 +5,7 @@ description: The Svelte docs framework that renders this site and every other Sa
 
 ## Overview
 
-Nimpress is a Svelte 5 documentation framework. It turns a folder of markdown into a full docs site with a sidebar, search, an OpenAPI renderer, changelogs, and roadmaps.
+Nimpress is a Svelte 5 documentation framework. It turns a folder of markdown into a full docs site with a sidebar, search, an OpenAPI renderer, changelogs, and roadmaps. It also ships a docs sync action that mirrors this folder into the central docs site.
 
 ## Authoring
 
