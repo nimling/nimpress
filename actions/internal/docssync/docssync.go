@@ -6,17 +6,20 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"text/template"
 )
 
 type Source struct {
-	Target string `json:"target"`
-	Mode   string `json:"mode"`
-	Secret string `json:"secret"`
+	Target     string `json:"target"`
+	Mode       string `json:"mode"`
+	Publish    string `json:"publish"`
+	Branch     string `json:"branch"`
+	Secret     string `json:"secret"`
+	PRTemplate string `json:"prTemplate"`
 }
 
 type Mapping struct {
-	Sources     map[string]Source `json:"sources"`
-	AutoPublish []string          `json:"autoPublish"`
+	Sources map[string]Source `json:"sources"`
 }
 
 type Result struct {
@@ -30,6 +33,33 @@ func (r Result) Changed() bool {
 	return len(r.Added) > 0 || len(r.Modified) > 0 || len(r.Deleted) > 0
 }
 
+type TemplateData struct {
+	Repo     string
+	Target   string
+	Added    []string
+	Modified []string
+	Deleted  []string
+}
+
+const defaultPRTemplate = `Docs sync from {{.Repo}} into {{.Target}}.
+
+{{len .Added}} added, {{len .Modified}} modified, {{len .Deleted}} deleted.`
+
+func RenderPRBody(tmpl string, data TemplateData) (string, error) {
+	if tmpl == "" {
+		tmpl = defaultPRTemplate
+	}
+	t, err := template.New("pr").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 func LoadMapping(path string) (Mapping, error) {
 	var m Mapping
 	data, err := os.ReadFile(path)
@@ -40,15 +70,6 @@ func LoadMapping(path string) (Mapping, error) {
 		return m, err
 	}
 	return m, nil
-}
-
-func (m Mapping) IsAuto(repo string) bool {
-	for _, r := range m.AutoPublish {
-		if r == repo {
-			return true
-		}
-	}
-	return false
 }
 
 func relFiles(root string) (map[string][]byte, error) {

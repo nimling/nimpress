@@ -87,10 +87,10 @@ gh secret set APP_PRIVATE_KEY -R <owner>/<repo> < github.pem
 3. Add a mapping entry to `nimpress.sources.json` at the docs repo root:
 
 ```json
-"<owner>/<repo>": { "target": "<section>/<name>", "mode": "mirror" }
+"<owner>/<repo>": { "target": "<section>/<name>", "mode": "mirror", "publish": "pr" }
 ```
 
-Add the repo to `autoPublish` only if it may ship without review.
+Set `publish` to `auto` to commit to `branch`, default main, and ship a version, or `pr` to open a review pull request. An optional `prTemplate` is a Go template for the pull request body with `.Repo`, `.Target`, `.Added`, `.Modified`, and `.Deleted`.
 
 ## 5. Trigger and verify
 

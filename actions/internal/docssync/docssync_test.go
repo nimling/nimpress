@@ -3,6 +3,7 @@ package docssync
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -85,7 +86,7 @@ func TestSyncUnchanged(t *testing.T) {
 func TestLoadMappingAndAuto(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "map.json")
-	body := `{"sources":{"nimling/x":{"target":"solutions/x","mode":"mirror"}},"autoPublish":["nimling/x"]}`
+	body := `{"sources":{"nimling/x":{"target":"solutions/x","mode":"mirror","publish":"auto","branch":"main"}}}`
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -94,13 +95,25 @@ func TestLoadMappingAndAuto(t *testing.T) {
 		t.Fatal(err)
 	}
 	entry, ok := m.Sources["nimling/x"]
-	if !ok || entry.Target != "solutions/x" || entry.Mode != "mirror" {
+	if !ok || entry.Target != "solutions/x" || entry.Mode != "mirror" || entry.Publish != "auto" || entry.Branch != "main" {
 		t.Fatalf("entry = %+v ok = %v", entry, ok)
 	}
-	if !m.IsAuto("nimling/x") {
-		t.Fatal("expected nimling/x to be auto")
+}
+
+func TestRenderPRBody(t *testing.T) {
+	data := TemplateData{Repo: "nimling/x", Target: "solutions/x", Added: []string{"a.md"}}
+	out, err := RenderPRBody("", data)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if m.IsAuto("nimling/y") {
-		t.Fatal("nimling/y must not be auto")
+	if !strings.Contains(out, "nimling/x") || !strings.Contains(out, "1 added") {
+		t.Fatalf("default body = %q", out)
+	}
+	custom, err := RenderPRBody("Sync {{.Repo}} to {{.Target}}", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if custom != "Sync nimling/x to solutions/x" {
+		t.Fatalf("custom body = %q", custom)
 	}
 }

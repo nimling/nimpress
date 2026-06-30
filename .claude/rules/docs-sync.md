@@ -34,9 +34,11 @@ Rules for wiring a repo's docs into the central docs site through the nimpress a
 
 1. `nimpress.sources.json` maps each source repo to a `target` under the content root and a `mode` of `mirror` or `overlay`. Mirror makes the source the sole owner of that subtree.
 
-2. `autoPublish` lists sources that commit straight to main. Anything else lands as a review pull request on `docs-sync/<owner>/<repo>`.
+2. `publish` on each source is `auto` or `pr`. `auto` commits to `branch`, default main, and ships a version. `pr` opens a review pull request on `docs-sync/<owner>/<repo>`.
 
-3. An optional `secret` on a source names a docs repo secret to use for that checkout instead of the App token.
+3. `prTemplate` is an optional Go template for the pull request body, with `.Repo`, `.Target`, `.Added`, `.Modified`, and `.Deleted` available. A default body is used when it is absent.
+
+4. An optional `secret` on a source names a docs repo secret to use for that checkout instead of the App token.
 
 ## Secrets and the App
 

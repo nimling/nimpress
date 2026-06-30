@@ -17,9 +17,15 @@ outputs:
   changed:
     description: Whether the sync produced any change
     value: ${{ steps.sync.outputs.changed }}
-  auto:
-    description: Whether this source may publish automatically
-    value: ${{ steps.sync.outputs.auto }}
+  publish:
+    description: The publish approach for this source, auto or pr
+    value: ${{ steps.sync.outputs.publish }}
+  branch:
+    description: The branch the auto approach commits to
+    value: ${{ steps.sync.outputs.branch }}
+  prbody:
+    description: The rendered pull request body
+    value: ${{ steps.sync.outputs.prbody }}
   target:
     description: Target subtree the docs landed in
     value: ${{ steps.sync.outputs.target }}

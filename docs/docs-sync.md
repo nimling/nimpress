@@ -3,7 +3,7 @@ title: Publishing a repo's docs to the central site
 description: How any nimling repo ships its own docs into the central docs site through the nimpress actions on a version tag.
 ---
 
-A repo keeps its documentation next to its code in a `.nimpress` folder. On a version tag the nimpress pipeline mirrors that folder into the central docs site under a mapped path and opens a review pull request. Merging that pull request ships a new docs version. The same `docs-sync` and `docs-notify` actions serve every repo, so onboarding a new app is a small amount of config.
+A repo keeps its documentation next to its code in a `.nimpress` folder. On a version tag the nimpress pipeline mirrors that folder into the central docs site under a mapped path. Each source chooses its publish approach in the mapping, either a direct commit or a pull request. The same `docs-sync` and `docs-notify` actions serve every repo, so onboarding a new app is a small amount of config.
 
 ## How the flow runs
 
@@ -15,7 +15,7 @@ A repo keeps its documentation next to its code in a `.nimpress` folder. On a ve
 
 4. The docs site receiver checks out the source repo at that commit, runs `docs-sync` to mirror `.nimpress` into the mapped subtree, then runs `nimpress lint` over the content.
 
-5. If the source is listed in `autoPublish` the receiver commits to main and ships a new version. Otherwise it opens a review pull request on a `docs-sync/<owner>/<repo>` branch.
+5. The source `publish` approach decides the rest. With `auto` the receiver commits to the configured branch and ships a new version. With `pr` it opens a pull request on a `docs-sync/<owner>/<repo>` branch, with a body rendered from the source's Go template.
 
 ## The GitHub App
 
@@ -23,9 +23,9 @@ A single organization GitHub App carries the cross repo trust. It is installed o
 
 1. The notify mints a token scoped to the docs repo to send the dispatch.
 
-2. The receiver mints an organization token to check out the source repo and to open the pull request.
+2. The receiver mints an organization token to check out the source repo, commit, and open the pull request.
 
-The pull request must be opened with the App token, not the default token, because an organization setting can forbid the default Actions token from creating pull requests. The App token is not subject to that restriction.
+A pull request must be opened with the App token, not the default token, because an organization setting can forbid the default Actions token from creating pull requests. The App token is not subject to that restriction.
 
 ## Secrets
 
@@ -41,28 +41,31 @@ The pull request must be opened with the App token, not the default token, becau
 
 3. Set `APP_ID` and `APP_PRIVATE_KEY` on the repo and install the App on it.
 
-4. In the docs repo, add a mapping entry to `nimpress.sources.json` that points the source repo at a target subtree, with `mode` set to `mirror` or `overlay`. Add the source to `autoPublish` only when it may ship without review.
+4. In the docs repo, add a mapping entry to `nimpress.sources.json` that points the source at a target subtree, a sync `mode`, and a `publish` approach.
 
-The first version tag after that runs the whole chain and produces the pull request.
+The first version tag after that runs the whole chain.
 
 ## The mapping file
 
-The docs site owns `nimpress.sources.json` at its repo root.
+The docs site owns `nimpress.sources.json` at its repo root. Each source carries:
 
 ```json
 {
   "sources": {
-    "nimling/nimpress": { "target": "tools/nimpress", "mode": "mirror" }
-  },
-  "autoPublish": []
+    "nimling/nimpress": { "target": "tools/nimpress", "mode": "mirror", "publish": "auto", "branch": "main" }
+  }
 }
 ```
 
-1. `target` is a path under the docs content root. `mirror` makes the source the single owner of that subtree and removes files it no longer ships. `overlay` only adds and updates.
+1. `target` is a path under the docs content root.
 
-2. `secret` is optional and names a docs repo secret to check out that source instead of the App token.
+2. `mode` is `mirror` or `overlay`. Mirror makes the source the single owner of that subtree and removes files it no longer ships. Overlay only adds and updates.
 
-3. `autoPublish` lists sources that ship straight to main. Anything else lands as a review pull request.
+3. `publish` is `auto` or `pr`. `auto` commits to `branch`, which defaults to main, and ships a version. `pr` opens a review pull request.
+
+4. `prTemplate` is an optional Go template for the pull request body. It receives `.Repo`, `.Target`, and the `.Added`, `.Modified`, and `.Deleted` path lists. A default body is used when it is absent.
+
+5. `secret` is optional and names a docs repo secret to check out that source instead of the App token.
 
 ## What not to do
 
