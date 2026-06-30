@@ -48,6 +48,15 @@ The action accepts a `defaults` json object, and `nimpress.sources.json` holds t
 
 4. `version.files` lists files to patch bump in the sbump path form. `version.tag` is the tag template. The action bumps each file, commits with the sync, and pushes the tag, which triggers the deploy on its own.
 
+5. `target` is the short form for a single location. To split one repo across several docs paths, use `targets`, an array of `{ from, to, mode }`, where `from` is a subfolder of `.nimpress`. A repo can send its generated api to `api/<name>` and its prose to `solutions/<name>` in one run.
+
+```json
+"targets": [
+  { "from": "api", "to": "api/bookable" },
+  { "from": "docs", "to": "solutions/bookable" }
+]
+```
+
 ## The GitHub App
 
 A single organization GitHub App carries the cross repo trust, installed on the source repos and the docs repo with Contents read and write, Pull requests read and write, and Metadata read. Both workflows mint a token from it with `actions/create-github-app-token`. The action pushes and opens pull requests with that token. The pull request must use the App token, since an organization setting can forbid the default Actions token from creating pull requests, and the version tag must be pushed by the App token so the deploy fires.

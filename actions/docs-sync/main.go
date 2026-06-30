@@ -42,25 +42,32 @@ func main() {
 			}
 		}
 	}
-	if cfg.Mode == "" {
-		cfg.Mode = "mirror"
-	}
 	if cfg.Publish == "" {
 		cfg.Publish = "pr"
 	}
 	if cfg.Branch == "" {
 		cfg.Branch = "main"
 	}
-	if cfg.Target == "" {
+	targets := cfg.ResolvedTargets()
+	if len(targets) == 0 {
 		fail("no target configured for " + sourceRepo)
 	}
 
-	dest := filepath.Join(contentRoot, filepath.FromSlash(cfg.Target))
-	res, err := docssync.Sync(source, dest, cfg.Mode)
-	if err != nil {
-		fail("sync: " + err.Error())
+	var added, modified, deleted, tos, paths []string
+	for _, t := range targets {
+		src := filepath.Join(source, filepath.FromSlash(t.From))
+		dest := filepath.Join(contentRoot, filepath.FromSlash(t.To))
+		res, err := docssync.Sync(src, dest, t.Mode)
+		if err != nil {
+			fail("sync " + t.To + ": " + err.Error())
+		}
+		added = append(added, res.Added...)
+		modified = append(modified, res.Modified...)
+		deleted = append(deleted, res.Deleted...)
+		tos = append(tos, t.To)
+		paths = append(paths, dest)
 	}
-	if !res.Changed() {
+	if len(added)+len(modified)+len(deleted) == 0 {
 		fmt.Printf("no change for %s, nothing to publish\n", sourceRepo)
 		writeOutput("result", "none")
 		return
@@ -75,12 +82,11 @@ func main() {
 	}
 
 	data := docssync.TemplateData{
-		Repo: sourceRepo, Target: cfg.Target, Branch: cfg.Branch, Version: version,
-		Added: res.Added, Modified: res.Modified, Deleted: res.Deleted,
+		Repo: sourceRepo, Target: strings.Join(tos, ", "), Branch: cfg.Branch, Version: version,
+		Added: added, Modified: modified, Deleted: deleted,
 	}
 	commitMsg := render(orDefault(cfg.Commit.Message, "Sync docs from {{.Repo}}"), data)
 
-	paths := []string{dest}
 	for _, spec := range cfg.Version.Files {
 		if at := strings.LastIndex(spec, "@"); at > 0 {
 			paths = append(paths, filepath.Join(docsDir, filepath.FromSlash(spec[:at])))
@@ -108,7 +114,7 @@ func main() {
 					fail("push tag: " + err.Error())
 				}
 			}
-			fmt.Printf("committed %s to %s\n", cfg.Target, cfg.Branch)
+			fmt.Printf("committed %s to %s\n", data.Target, cfg.Branch)
 			writeOutput("result", "pushed")
 			return
 		}

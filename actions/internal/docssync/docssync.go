@@ -27,8 +27,15 @@ type VersionConfig struct {
 	Tag   string   `json:"tag"`
 }
 
+type Target struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	Mode string `json:"mode"`
+}
+
 type Config struct {
 	Target      string        `json:"target"`
+	Targets     []Target      `json:"targets"`
 	Mode        string        `json:"mode"`
 	Publish     string        `json:"publish"`
 	Branch      string        `json:"branch"`
@@ -36,6 +43,27 @@ type Config struct {
 	Commit      CommitConfig  `json:"commit"`
 	PullRequest PRConfig      `json:"pullRequest"`
 	Version     VersionConfig `json:"version"`
+}
+
+func (c Config) ResolvedTargets() []Target {
+	mode := c.Mode
+	if mode == "" {
+		mode = "mirror"
+	}
+	if len(c.Targets) > 0 {
+		out := make([]Target, 0, len(c.Targets))
+		for _, t := range c.Targets {
+			if t.Mode == "" {
+				t.Mode = mode
+			}
+			out = append(out, t)
+		}
+		return out
+	}
+	if c.Target != "" {
+		return []Target{{From: "", To: c.Target, Mode: mode}}
+	}
+	return nil
 }
 
 type Mapping struct {
@@ -46,6 +74,9 @@ func Merge(base, over Config) Config {
 	out := base
 	if over.Target != "" {
 		out.Target = over.Target
+	}
+	if len(over.Targets) > 0 {
+		out.Targets = over.Targets
 	}
 	if over.Mode != "" {
 		out.Mode = over.Mode
