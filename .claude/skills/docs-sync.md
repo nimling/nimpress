@@ -84,13 +84,21 @@ gh secret set APP_ID -R <owner>/<repo> -b "<id>"
 gh secret set APP_PRIVATE_KEY -R <owner>/<repo> < github.pem
 ```
 
-3. Add a mapping entry to `nimpress.sources.json` at the docs repo root:
+3. Add a source to `nimpress.sources.json` at the docs repo root, or pass the same object as the receiver's `defaults` input:
 
 ```json
-"<owner>/<repo>": { "target": "<section>/<name>", "mode": "mirror", "publish": "pr" }
+"<owner>/<repo>": {
+  "target": "<section>/<name>",
+  "mode": "mirror",
+  "publish": "auto",
+  "branch": "main",
+  "commit": { "message": "Sync docs from {{.Repo}}" },
+  "pullRequest": { "title": "Docs from {{.Repo}}", "body": "{{len .Added}} added", "labels": ["documentation"] },
+  "version": { "files": ["package.json@.version"], "tag": "v{{.Version}}" }
+}
 ```
 
-Set `publish` to `auto` to commit to `branch`, default main, and ship a version, or `pr` to open a review pull request. An optional `prTemplate` is a Go template for the pull request body with `.Repo`, `.Target`, `.Added`, `.Modified`, and `.Deleted`.
+`publish` is `auto`, commit to `branch` and on conflict open a pull request, or `pr`, always a pull request. Text fields are Go templates with `.Repo`, `.Target`, `.Branch`, `.Version`, `.Added`, `.Modified`, `.Deleted`. `version.files` are patch bumped and `version.tag` triggers the deploy.
 
 ## 5. Trigger and verify
 

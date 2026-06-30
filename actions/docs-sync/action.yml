@@ -1,34 +1,36 @@
 name: Sync nimpress docs
-description: Sync a source repo .nimpress folder into the docs tree and report the change set
+description: Mirror a source repo .nimpress folder into the docs tree and commit, tag, or open a pull request
 inputs:
-  source-path:
-    description: Absolute path to the checked out .nimpress folder
+  token:
+    description: A token that can push to the docs repo and open pull requests
     required: true
-  mapping:
-    description: Absolute path to the docs sources mapping json
+  docs-repo:
+    description: Full name of the docs repo
     required: true
-  content-root:
-    description: Absolute path to the docs content root the targets resolve under
+  docs-dir:
+    description: Absolute path to the checked out docs repo
     required: true
   source-repo:
     description: Full name of the source repo
     required: true
+  source-path:
+    description: Absolute path to the checked out .nimpress folder
+    required: true
+  content-root:
+    description: Absolute path to the docs content root the targets resolve under
+    required: true
+  mapping:
+    description: Absolute path to nimpress.sources.json, optional
+    required: false
+    default: ""
+  defaults:
+    description: A json config object applied under each source, optional
+    required: false
+    default: ""
 outputs:
-  changed:
-    description: Whether the sync produced any change
-    value: ${{ steps.sync.outputs.changed }}
-  publish:
-    description: The publish approach for this source, auto or pr
-    value: ${{ steps.sync.outputs.publish }}
-  branch:
-    description: The branch the auto approach commits to
-    value: ${{ steps.sync.outputs.branch }}
-  prbody:
-    description: The rendered pull request body
-    value: ${{ steps.sync.outputs.prbody }}
-  target:
-    description: Target subtree the docs landed in
-    value: ${{ steps.sync.outputs.target }}
+  result:
+    description: The outcome, one of pushed, pr, or none
+    value: ${{ steps.sync.outputs.result }}
 runs:
   using: composite
   steps:
@@ -39,8 +41,12 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
+        NIMPRESS_TOKEN: ${{ inputs.token }}
+        NIMPRESS_DOCS_REPO: ${{ inputs.docs-repo }}
+        NIMPRESS_DOCS_DIR: ${{ inputs.docs-dir }}
+        NIMPRESS_SOURCE_REPO: ${{ inputs.source-repo }}
         NIMPRESS_SOURCE: ${{ inputs.source-path }}
-        NIMPRESS_MAPPING: ${{ inputs.mapping }}
         NIMPRESS_CONTENT_ROOT: ${{ inputs.content-root }}
-        NIMPRESS_REPO: ${{ inputs.source-repo }}
+        NIMPRESS_MAPPING: ${{ inputs.mapping }}
+        NIMPRESS_DEFAULTS: ${{ inputs.defaults }}
       run: go run .

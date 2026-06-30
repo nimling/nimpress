@@ -100,20 +100,41 @@ func TestLoadMappingAndAuto(t *testing.T) {
 	}
 }
 
-func TestRenderPRBody(t *testing.T) {
-	data := TemplateData{Repo: "nimling/x", Target: "solutions/x", Added: []string{"a.md"}}
-	out, err := RenderPRBody("", data)
+func TestRender(t *testing.T) {
+	data := TemplateData{Repo: "nimling/x", Target: "solutions/x", Version: "1.2.4", Added: []string{"a.md"}}
+	out, err := Render("Sync {{.Repo}} to {{.Target}} v{{.Version}} {{len .Added}}", data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "nimling/x") || !strings.Contains(out, "1 added") {
-		t.Fatalf("default body = %q", out)
+	if !strings.Contains(out, "nimling/x") || !strings.Contains(out, "v1.2.4") || !strings.Contains(out, "1") {
+		t.Fatalf("rendered = %q", out)
 	}
-	custom, err := RenderPRBody("Sync {{.Repo}} to {{.Target}}", data)
+}
+
+func TestMerge(t *testing.T) {
+	base := Config{Mode: "mirror", Publish: "pr", Branch: "main", PullRequest: PRConfig{Labels: []string{"docs"}}}
+	over := Config{Publish: "auto", Target: "tools/x", PullRequest: PRConfig{Title: "T"}}
+	got := Merge(base, over)
+	if got.Mode != "mirror" || got.Publish != "auto" || got.Branch != "main" || got.Target != "tools/x" {
+		t.Fatalf("merged = %+v", got)
+	}
+	if got.PullRequest.Title != "T" || len(got.PullRequest.Labels) != 1 || got.PullRequest.Labels[0] != "docs" {
+		t.Fatalf("pr merge = %+v", got.PullRequest)
+	}
+}
+
+func TestBumpFiles(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "package.json", `{"name":"x","version":"1.2.9","meta":{"version":"1.2.9"}}`)
+	v, err := BumpFiles(dir, []string{"package.json@.version", "package.json@.meta.version"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if custom != "Sync nimling/x to solutions/x" {
-		t.Fatalf("custom body = %q", custom)
+	if v != "1.2.10" {
+		t.Fatalf("version = %q", v)
+	}
+	data, _ := os.ReadFile(filepath.Join(dir, "package.json"))
+	if strings.Contains(string(data), `"1.2.9"`) {
+		t.Fatalf("file not fully bumped: %s", string(data))
 	}
 }

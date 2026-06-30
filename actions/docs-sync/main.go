@@ -3,63 +3,151 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nimling/nimpress/actions/internal/docssync"
 )
 
 func main() {
+	token := os.Getenv("NIMPRESS_TOKEN")
+	docsRepo := os.Getenv("NIMPRESS_DOCS_REPO")
+	docsDir := os.Getenv("NIMPRESS_DOCS_DIR")
+	sourceRepo := os.Getenv("NIMPRESS_SOURCE_REPO")
 	source := os.Getenv("NIMPRESS_SOURCE")
-	mappingPath := os.Getenv("NIMPRESS_MAPPING")
 	contentRoot := os.Getenv("NIMPRESS_CONTENT_ROOT")
-	repo := os.Getenv("NIMPRESS_REPO")
-	if source == "" || mappingPath == "" || contentRoot == "" || repo == "" {
-		fail("NIMPRESS_SOURCE, NIMPRESS_MAPPING, NIMPRESS_CONTENT_ROOT and NIMPRESS_REPO are required")
+	mappingPath := os.Getenv("NIMPRESS_MAPPING")
+	defaultsRaw := os.Getenv("NIMPRESS_DEFAULTS")
+
+	for k, v := range map[string]string{
+		"NIMPRESS_TOKEN": token, "NIMPRESS_DOCS_REPO": docsRepo, "NIMPRESS_DOCS_DIR": docsDir,
+		"NIMPRESS_SOURCE_REPO": sourceRepo, "NIMPRESS_SOURCE": source, "NIMPRESS_CONTENT_ROOT": contentRoot,
+	} {
+		if v == "" {
+			fail(k + " is required")
+		}
 	}
 	if info, err := os.Stat(source); err != nil || !info.IsDir() {
 		fail("no .nimpress folder at " + source)
 	}
-	mapping, err := docssync.LoadMapping(mappingPath)
+
+	cfg, err := docssync.ParseConfig(defaultsRaw)
 	if err != nil {
-		fail("read mapping: " + err.Error())
+		fail("parse defaults: " + err.Error())
 	}
-	entry, ok := mapping.Sources[repo]
-	if !ok {
-		fail("no mapping entry for " + repo)
+	if mappingPath != "" {
+		if m, err := docssync.LoadMapping(mappingPath); err == nil {
+			if src, ok := m.Sources[sourceRepo]; ok {
+				cfg = docssync.Merge(cfg, src)
+			}
+		}
 	}
-	mode := entry.Mode
-	if mode == "" {
-		mode = "mirror"
+	if cfg.Mode == "" {
+		cfg.Mode = "mirror"
 	}
-	publish := entry.Publish
-	if publish == "" {
-		publish = "pr"
+	if cfg.Publish == "" {
+		cfg.Publish = "pr"
 	}
-	branch := entry.Branch
-	if branch == "" {
-		branch = "main"
+	if cfg.Branch == "" {
+		cfg.Branch = "main"
 	}
-	dest := strings.TrimRight(contentRoot, "/") + "/" + strings.Trim(entry.Target, "/")
-	res, err := docssync.Sync(source, dest, mode)
+	if cfg.Target == "" {
+		fail("no target configured for " + sourceRepo)
+	}
+
+	dest := filepath.Join(contentRoot, filepath.FromSlash(cfg.Target))
+	res, err := docssync.Sync(source, dest, cfg.Mode)
 	if err != nil {
 		fail("sync: " + err.Error())
 	}
-	body, err := docssync.RenderPRBody(entry.PRTemplate, docssync.TemplateData{
-		Repo:     repo,
-		Target:   entry.Target,
-		Added:    res.Added,
-		Modified: res.Modified,
-		Deleted:  res.Deleted,
-	})
-	if err != nil {
-		fail("render pr body: " + err.Error())
+	if !res.Changed() {
+		fmt.Printf("no change for %s, nothing to publish\n", sourceRepo)
+		writeOutput("result", "none")
+		return
 	}
-	writeOutputs(res, publish, branch, body)
-	fmt.Printf("synced %s into %s as %s on %s: %d added, %d modified, %d deleted\n",
-		repo, dest, publish, branch, len(res.Added), len(res.Modified), len(res.Deleted))
+
+	version := ""
+	if len(cfg.Version.Files) > 0 {
+		version, err = docssync.BumpFiles(docsDir, cfg.Version.Files)
+		if err != nil {
+			fail("bump version: " + err.Error())
+		}
+	}
+
+	data := docssync.TemplateData{
+		Repo: sourceRepo, Target: cfg.Target, Branch: cfg.Branch, Version: version,
+		Added: res.Added, Modified: res.Modified, Deleted: res.Deleted,
+	}
+	commitMsg := render(orDefault(cfg.Commit.Message, "Sync docs from {{.Repo}}"), data)
+
+	paths := []string{dest}
+	for _, spec := range cfg.Version.Files {
+		if at := strings.LastIndex(spec, "@"); at > 0 {
+			paths = append(paths, filepath.Join(docsDir, filepath.FromSlash(spec[:at])))
+		}
+	}
+
+	git := docssync.Git{Dir: docsDir, Repo: docsRepo, Token: token}
+	if err := git.Configure(); err != nil {
+		fail(err.Error())
+	}
+	if err := git.Commit(commitMsg, paths); err != nil {
+		fail(err.Error())
+	}
+
+	if cfg.Publish == "auto" {
+		pushed := git.PushBranch(cfg.Branch) == nil
+		if !pushed {
+			if git.RebaseOnto(cfg.Branch) == nil {
+				pushed = git.PushBranch(cfg.Branch) == nil
+			}
+		}
+		if pushed {
+			if cfg.Version.Tag != "" && version != "" {
+				if err := git.PushTag(render(cfg.Version.Tag, data)); err != nil {
+					fail("push tag: " + err.Error())
+				}
+			}
+			fmt.Printf("committed %s to %s\n", cfg.Target, cfg.Branch)
+			writeOutput("result", "pushed")
+			return
+		}
+	}
+
+	prBranch := "docs-sync/" + sourceRepo
+	if err := git.PushBranchForce(prBranch); err != nil {
+		fail("push pr branch: " + err.Error())
+	}
+	title := render(orDefault(cfg.PullRequest.Title, "Docs sync from {{.Repo}}"), data)
+	body := render(orDefault(cfg.PullRequest.Body, "Docs sync from {{.Repo}} into {{.Target}}."), data)
+	labels, err := docssync.RenderAll(cfg.PullRequest.Labels, data)
+	if err != nil {
+		fail("render labels: " + err.Error())
+	}
+	gh := docssync.GitHub{Repo: docsRepo, Token: token}
+	if err := gh.CreatePR(prBranch, cfg.Branch, title, body, labels); err != nil {
+		fail(err.Error())
+	}
+	fmt.Printf("opened pull request from %s into %s\n", prBranch, cfg.Branch)
+	writeOutput("result", "pr")
 }
 
-func writeOutputs(res docssync.Result, publish, branch, body string) {
+func render(tmpl string, data docssync.TemplateData) string {
+	out, err := docssync.Render(tmpl, data)
+	if err != nil {
+		fail("render: " + err.Error())
+	}
+	return out
+}
+
+func orDefault(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
+}
+
+func writeOutput(key, value string) {
 	out := os.Getenv("GITHUB_OUTPUT")
 	if out == "" {
 		return
@@ -69,14 +157,7 @@ func writeOutputs(res docssync.Result, publish, branch, body string) {
 		return
 	}
 	defer f.Close()
-	fmt.Fprintf(f, "changed=%t\n", res.Changed())
-	fmt.Fprintf(f, "target=%s\n", res.Target)
-	fmt.Fprintf(f, "publish=%s\n", publish)
-	fmt.Fprintf(f, "branch=%s\n", branch)
-	fmt.Fprintf(f, "added=%d\n", len(res.Added))
-	fmt.Fprintf(f, "modified=%d\n", len(res.Modified))
-	fmt.Fprintf(f, "deleted=%d\n", len(res.Deleted))
-	fmt.Fprintf(f, "prbody<<NIMPRESS_EOF\n%s\nNIMPRESS_EOF\n", body)
+	fmt.Fprintf(f, "%s=%s\n", key, value)
 }
 
 func fail(msg string) {
