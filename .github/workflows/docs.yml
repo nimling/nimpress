@@ -2,8 +2,7 @@ name: Publish docs
 
 on:
   push:
-    branches: [main]
-    paths: ['.nimpress/**']
+    tags: ['v*']
   workflow_dispatch:
 
 jobs:
