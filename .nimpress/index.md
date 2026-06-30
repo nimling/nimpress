@@ -15,27 +15,27 @@ data:
 :::
 
 ::::features
-:::feature {"icon":"📁","title":"Content driven routing"}
+:::feature {"title":"Content driven routing"}
 A folder of markdown becomes the site. Files are pages, folders are sidebar groups, and frontmatter sets the rest.
 :::
 
-:::feature {"icon":"⚡","title":"The CLI owns the build"}
+:::feature {"title":"The CLI owns the build"}
 nimpress dev, build, and preview run Vite for you. Write a config, never a Vite file.
 :::
 
-:::feature {"icon":"🔌","title":"OpenAPI renderer"}
+:::feature {"title":"OpenAPI renderer"}
 Point a page at an OpenAPI spec and get per operation deep links rendered through the same markdown pipeline.
 :::
 
-:::feature {"icon":"🗂️","title":"Changelogs and roadmaps"}
+:::feature {"title":"Changelogs and roadmaps"}
 Release notes collapse into one scrollable page, and a roadmap plots epics, features, and bugs on a timeline.
 :::
 
-:::feature {"icon":"🔎","title":"Instant search"}
+:::feature {"title":"Instant search"}
 A search index ships with the build, with tag and folder scoped queries.
 :::
 
-:::feature {"icon":"🔁","title":"Docs sync"}
+:::feature {"title":"Docs sync"}
 Keep docs beside the code in a .nimpress folder. On a version tag they mirror into the central site.
 :::
 ::::
