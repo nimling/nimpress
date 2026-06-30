@@ -13,4 +13,4 @@ Write markdown under the content folder. Each file becomes a page, and folders b
 
 ## Distribution
 
-A repo keeps its docs in a `.nimpress` folder. On change it notifies the docs site, which mirrors the folder into its own tree and publishes.
+A repo keeps its docs in a `.nimpress` folder. On a version tag it notifies the docs site, which mirrors the folder into its own tree under a mapped path and publishes through the configured approach, either a direct commit or a review pull request.
