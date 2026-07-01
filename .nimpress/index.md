@@ -1,6 +1,7 @@
 ---
 title: Nimpress
 type: hero
+collapsed: true
 description: A Svelte 5 docs framework that turns a folder of markdown into a full documentation site.
 data:
   eyebrow: Documentation framework
