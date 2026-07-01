@@ -135,7 +135,7 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Theming and overriding styles | [docs/theming.md](./docs/theming.md) |
 | Auth, scope, and claim guards | [docs/auth.md](./docs/auth.md) |
 | Search index | [docs/search.md](./docs/search.md) |
-| Publishing docs to the central site | [docs/docs-sync.md](./docs/docs-sync.md) |
+| Publishing docs to the central site, the sync actions, and their secrets | [docs/actions.md](./docs/actions.md) |
 
 ## Authoring docs with Claude
 

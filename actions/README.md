@@ -1,43 +1,8 @@
 # nimpress docs actions
 
-Two GitHub Actions that move a repo's docs into the central docs site and gate the publish.
+Two GitHub Actions that publish a repo's `.nimpress` docs into the central docs site. `docs-notify` fires from a source repo on a version tag and dispatches the docs repo. `docs-sync` runs in the docs repo, mirrors the folder into the mapped subtree, then commits and tags or opens a pull request.
 
-## docs-notify
-
-Runs in a source repo. On a change under `.nimpress` it sends a repository dispatch to the docs site repo with the source repo name and commit sha. Copy `consumer-workflow.example.yml` into the source repo at `.github/workflows/docs.yml` and set the `NIMPRESS_DOCS_TOKEN` secret to a token with dispatch access to the docs site.
-
-Inputs:
-
-1. `docs-repo` is the full name of the docs site repo.
-
-2. `token` is the dispatch token.
-
-3. `event-type` defaults to `nimpress-docs-sync`.
-
-## docs-sync
-
-Runs in the docs site repo, driven by `repository_dispatch`. It checks out the source repo at the dispatched sha, mirrors `.nimpress` into the mapped subtree under the docs content root, and reports the change set. The receiver workflow then lints the frontmatter and publishes.
-
-Inputs are absolute paths: `source-path`, `mapping`, `content-root`, and `source-repo`. Outputs are `changed`, `auto`, and `target`.
-
-## Mapping
-
-The docs site owns `nimpress.sources.json` at its repo root:
-
-```json
-{
-  "sources": {
-    "nimling/samna-bookable-server": { "target": "solutions/bookable", "mode": "mirror", "secret": "NIMPRESS_SYNC_TOKEN" }
-  },
-  "autoPublish": ["nimling/samna-bookable-server"]
-}
-```
-
-1. `target` is a path under the docs content root. `mode` is `mirror` or `overlay`. Mirror makes the source the single owner of that subtree and removes files it no longer ships. Overlay only adds and updates.
-
-2. `secret` is optional and names the docs repo secret used to check out that source. When absent the receiver falls back to `NIMPRESS_SYNC_TOKEN`.
-
-3. `autoPublish` lists sources allowed to ship without a pull request. A source not listed lands as a pull request for review.
+The full guide lives in the docs at [../docs/actions.md](../docs/actions.md): the flow, the action inputs and outputs, the mapping in `nimpress.sources.json`, the GitHub App, the secrets each repo needs, the deploy, and the token only alternative.
 
 ## Layout
 
