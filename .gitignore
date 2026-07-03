@@ -9,3 +9,4 @@ dist
 .env.*.local
 github.pem
 *.pem
+pnpm-workspace.yaml
