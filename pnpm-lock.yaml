@@ -39,8 +39,8 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@nimling/samna-auth-middleware':
-        specifier: ^1.0.90
-        version: 1.0.90
+        specifier: 1.1.0-alpha0020
+        version: 1.1.0-alpha0020
       '@sveltejs/vite-plugin-svelte':
         specifier: ^5.1.0
         version: 5.1.1(svelte@5.56.3)(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0))
@@ -415,8 +415,8 @@ packages:
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
-  '@nimling/samna-auth-middleware@1.0.90':
-    resolution: {integrity: sha512-o5hIvaiSVKT9LIEgOIIRMJE49VBoPZwbB76YXVQraFSHSrOf4fO/I0iq0X++Y/yB4eIjK3O4pEeWqpJWFSmkmQ==, tarball: https://npm.pkg.github.com/download/@nimling/samna-auth-middleware/1.0.90/fca981f434178d1f74845b56dd9bb82125f81a6d}
+  '@nimling/samna-auth-middleware@1.1.0-alpha0020':
+    resolution: {integrity: sha512-C8wZO2aj7dMh12kU0ORctxaoYAiL+o2SNLAw5FQ22Ps24aS1OYTfTRj7MaSM3dGdQWDD7h/GCpDCi0dvJctY5w==, tarball: https://npm.pkg.github.com/download/@nimling/samna-auth-middleware/1.1.0-alpha0020/c251720e1bb5a9793bb1a069f2fa5ce9085290ca}
 
   '@rollup/pluginutils@5.4.0':
     resolution: {integrity: sha512-MfPp06CjRLfXQ3wY0R8vJDYBy/MvVcc9OulEfR0B8Iv9ko+GCNaRZ+EpJYFl27LhKsZK0o420sYCRHCjfCgeUg==}
@@ -2193,7 +2193,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0': {}
 
-  '@nimling/samna-auth-middleware@1.0.90':
+  '@nimling/samna-auth-middleware@1.1.0-alpha0020':
     dependencies:
       jose: 5.10.0
 
