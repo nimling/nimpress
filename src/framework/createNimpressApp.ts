@@ -30,10 +30,13 @@ export function createNimpressApp(options: NimpressConfig): NimpressAppInstance 
       setConfig(options)
       applyBrand(options.brand)
       setAccessChecker(options.accessChecker)
-      if (options.authEndpoint && options.clientSlug) {
+      if (options.authMode === 'bff' || (options.authEndpoint && options.clientSlug)) {
         configureEdge({
-          endpoint: options.authEndpoint,
-          clientSlug: options.clientSlug
+          endpoint: options.authEndpoint ?? '',
+          clientSlug: options.clientSlug ?? '',
+          mode: options.authMode,
+          bffPath: options.bffPath,
+          callbacks: options.authCallbacks
         })
       }
       applyInitialTheme()

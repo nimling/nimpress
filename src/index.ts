@@ -65,6 +65,7 @@ export type {
   NavRoute,
   NimpressConfig,
   NimpressBrandConfig,
+  NimpressAuthCallbacks,
   Viewer,
   AccessRequirement,
   AccessChecker,

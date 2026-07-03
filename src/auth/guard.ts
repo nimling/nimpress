@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { startLogin } from '@nimling/samna-auth-middleware'
+import { handleUnauthenticated } from '@nimling/samna-auth-middleware'
 import { viewer, viewerReady } from '../framework/stores/viewer'
 import type { AccessChecker, AccessRequirement, Viewer } from '../types'
 
@@ -36,7 +36,7 @@ export function pageGuard(required: AccessRequirement) {
     }
     if (viewerCanAccess(required, get(viewer))) return undefined
     const returnTo = window.location.pathname + window.location.search
-    startLogin(undefined, returnTo)
+    handleUnauthenticated(returnTo)
     return undefined
   }
 }

@@ -62,6 +62,8 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     navRoutes: resolved.navRoutes,
     authEndpoint: resolved.authEndpoint,
     clientSlug: resolved.clientSlug,
+    authMode: resolved.authMode,
+    bffPath: resolved.bffPath,
     site: resolved.site,
     footer: resolved.footer
   }

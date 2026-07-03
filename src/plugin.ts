@@ -1759,6 +1759,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         const cssImports = resolved.css
           .map((href) => `import ${JSON.stringify(href.startsWith('/') ? href : '/' + href)}`)
           .join('\n')
+        const hooksPath = resolved.authHooks
+          ? (resolved.authHooks.startsWith('/') ? resolved.authHooks : '/' + resolved.authHooks.replace(/^\.\//, ''))
+          : null
+        const hooksImport = hooksPath ? `import authHooks from ${JSON.stringify(hooksPath)}` : ''
+        const hooksArg = hooksPath ? ', authCallbacks: authHooks' : ''
         return `import '@nimling/nimpress/app.css'
 ${cssImports}
 import { createNimpressApp } from '@nimling/nimpress'
@@ -1766,7 +1771,8 @@ import config from 'virtual:nimpress/config'
 import manifest from 'virtual:nimpress/manifest'
 import searchIndex from 'virtual:nimpress/search'
 import pages from 'virtual:nimpress/pages'
-const app = createNimpressApp({ ...config, manifest, searchIndex, pageLoader: pages })
+${hooksImport}
+const app = createNimpressApp({ ...config, manifest, searchIndex, pageLoader: pages${hooksArg} })
 const target = document.getElementById('app')
 if (!target) throw new Error('Mount target #app missing')
 app.mount(target)

@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { startLogin } from '@nimling/samna-auth-middleware'
+import { handleUnauthenticated } from '@nimling/samna-auth-middleware'
 import { viewer, viewerReady } from './stores/viewer'
 import { viewerCanAccess } from '../auth/guard'
 import type { AccessRequirement } from '../types'
@@ -21,5 +21,5 @@ export function viewerCanReach(required: AccessRequirement): boolean {
 }
 
 export function redirectToLogin(returnTo: string) {
-  startLogin(undefined, returnTo)
+  handleUnauthenticated(returnTo)
 }

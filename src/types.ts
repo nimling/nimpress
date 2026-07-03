@@ -217,6 +217,13 @@ export interface NimpressBrandConfig {
   primaryHover?: string
 }
 
+export interface NimpressAuthCallbacks {
+  onSession?: (user: unknown) => void | Promise<void>
+  onLogin?: (url: string, returnTo?: string) => void
+  onLogout?: (url: string, returnTo?: string) => void | Promise<void>
+  onUnauthenticated?: (returnTo?: string) => void
+}
+
 export interface NimpressConfig {
   title: string
   logo?: string
@@ -226,6 +233,9 @@ export interface NimpressConfig {
   navRoutes?: NavRoute[]
   authEndpoint?: string
   clientSlug?: string
+  authMode?: 'edge' | 'bff'
+  bffPath?: string
+  authCallbacks?: NimpressAuthCallbacks
   site?: SiteMeta
   footer?: string
   manifest?: Manifest
@@ -251,6 +261,9 @@ export interface NimpressUserConfig {
   navRoutes?: NavRoute[]
   authEndpoint?: string
   clientSlug?: string
+  authMode?: 'edge' | 'bff'
+  bffPath?: string
+  authHooks?: string
   site?: SiteMeta
   contentDir?: string
   assetsDir?: string
@@ -273,6 +286,9 @@ export interface ResolvedNimpressConfig {
   navRoutes?: NavRoute[]
   authEndpoint?: string
   clientSlug?: string
+  authMode?: 'edge' | 'bff'
+  bffPath?: string
+  authHooks?: string
   site?: SiteMeta
   contentDir: string
   assetsDir: string
