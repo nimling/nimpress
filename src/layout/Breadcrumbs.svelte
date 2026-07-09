@@ -1,19 +1,20 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
 
-  let { slug = '' }: { slug?: string } = $props()
+  let { path = '' }: { path?: string } = $props()
 
   const trail = $derived.by(() => {
     const config = $configStore
-    const segments = slug.split('/').filter(Boolean)
+    const segments = path.split('/').filter(Boolean)
     const result: { text: string; link?: string }[] = []
-    let path = ''
+    let current = ''
     for (let i = 0; i < segments.length; i++) {
-      path += '/' + segments[i]
-      const meta = config.manifest?.pages[path.replace(/^\//, '')]
+      current += '/' + segments[i]
+      const pageSlug = config.manifest?.byPath?.[current]
+      const meta = pageSlug === undefined ? undefined : config.manifest?.pages[pageSlug]
       result.push({
         text: meta?.title ?? segments[i],
-        link: i === segments.length - 1 ? undefined : path
+        link: i === segments.length - 1 ? undefined : current
       })
     }
     return result

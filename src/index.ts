@@ -29,6 +29,7 @@ export { default as CalloutInfo } from './markdown/CalloutInfo.svelte'
 export { default as CalloutCheck } from './markdown/CalloutCheck.svelte'
 export { default as Card } from './markdown/Card.svelte'
 export { default as CardGroup } from './markdown/CardGroup.svelte'
+export { default as SubscribeDialog } from './markdown/SubscribeDialog.svelte'
 
 export { default as OpenApiRoot } from './api/OpenApiRoot.svelte'
 export { default as Operation } from './api/Operation.svelte'
@@ -66,6 +67,8 @@ export type {
   NimpressConfig,
   NimpressBrandConfig,
   NimpressAuthCallbacks,
+  NimpressSubscribeInput,
+  NimpressSubscribeConfig,
   Viewer,
   AccessRequirement,
   AccessChecker,

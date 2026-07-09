@@ -104,6 +104,16 @@ export function applyPageMeta(
   if (meta.themeColor) upsert('meta[name="theme-color"]', () => tag('meta', { name: 'theme-color', content: meta.themeColor }))
   if (canonical) upsert('link[rel="canonical"]', () => tag('link', { rel: 'canonical', href: canonical }))
 
+  if (fm.type === 'changelog' && (fm.rss === true || fm.subscribe === true)) {
+    const prefix = fm.scope !== undefined || fm.claim !== undefined ? '/_gated' : ''
+    const cleanPath = pagePath === '/' ? '' : pagePath.replace(/\/$/, '')
+    const feedPath = `${prefix}${cleanPath}/rss.xml`
+    const feedHref = absoluteUrl(feedPath, site) ?? feedPath
+    upsert('link[rel="alternate"][type="application/rss+xml"]', () =>
+      tag('link', { rel: 'alternate', type: 'application/rss+xml', title: fm.title, href: feedHref })
+    )
+  }
+
   upsert('meta[property="og:title"]', () => tag('meta', { property: 'og:title', content: ogTitle }))
   if (ogDescription) upsert('meta[property="og:description"]', () => tag('meta', { property: 'og:description', content: ogDescription }))
   upsert('meta[property="og:type"]', () => tag('meta', { property: 'og:type', content: ogType }))

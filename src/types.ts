@@ -95,6 +95,8 @@ export interface Frontmatter {
   footer?: string
   background?: string
   tags?: string | string[]
+  rss?: boolean
+  subscribe?: boolean
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }
@@ -222,6 +224,48 @@ export interface NimpressAuthCallbacks {
   onLogin?: (url: string, returnTo?: string) => void
   onLogout?: (url: string, returnTo?: string) => void | Promise<void>
   onUnauthenticated?: (returnTo?: string) => void
+  onSubscribe?: (input: NimpressSubscribeInput) => void | Promise<void>
+}
+
+export interface NimpressSubscribeInput {
+  title: string
+  feedUrl: string
+  xml: string
+  email?: string
+}
+
+export interface NimpressSubscribeConfig {
+  endpoint?: string
+  appSlug?: string
+}
+
+export interface NimpressMetaConfig {
+  keywords?: string[]
+  localeAlternates?: string[]
+  organization?: Record<string, unknown>
+  robots?: {
+    block?: string[]
+    append?: string
+    custom?: string
+  }
+  llms?: {
+    summary?: string
+    append?: string
+    full?: boolean
+  }
+  og?: {
+    width?: number
+    height?: number
+  }
+  webmanifest?: Record<string, unknown>
+  humans?: string
+  security?: {
+    contact?: string
+    policy?: string
+    languages?: string
+    canonical?: string
+    expires?: string
+  }
 }
 
 export interface NimpressConfig {
@@ -236,6 +280,7 @@ export interface NimpressConfig {
   authMode?: 'edge' | 'bff'
   bffPath?: string
   authCallbacks?: NimpressAuthCallbacks
+  subscribe?: NimpressSubscribeConfig
   site?: SiteMeta
   footer?: string
   manifest?: Manifest
@@ -264,6 +309,8 @@ export interface NimpressUserConfig {
   authMode?: 'edge' | 'bff'
   bffPath?: string
   authHooks?: string
+  subscribe?: NimpressSubscribeConfig
+  meta?: NimpressMetaConfig
   site?: SiteMeta
   contentDir?: string
   assetsDir?: string
@@ -289,6 +336,8 @@ export interface ResolvedNimpressConfig {
   authMode?: 'edge' | 'bff'
   bffPath?: string
   authHooks?: string
+  subscribe?: NimpressSubscribeConfig
+  meta?: NimpressMetaConfig
   site?: SiteMeta
   contentDir: string
   assetsDir: string
