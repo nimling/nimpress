@@ -9,6 +9,7 @@
   const route = $derived($resolvedRoute)
 
   let PageComponent = $state<any>(null)
+  let pageProps = $state<Record<string, unknown>>({})
   let blockedPath = $state<string | null>(null)
   let loadToken = 0
 
@@ -88,8 +89,9 @@
       handleUnresolved(path)
       return
     }
-    const resolved = await loader() as { default: any }
+    const resolved = await loader() as { default: any; props?: Record<string, unknown> }
     if (token !== loadToken) return
+    pageProps = resolved.props ?? {}
     PageComponent = resolved.default
   }
 
@@ -103,7 +105,7 @@
 </script>
 
 {#if PageComponent}
-  <PageComponent />
+  <PageComponent {...pageProps} />
 {:else if blockedPath}
   <div class="np-block">
     <p>Sign-in required for {blockedPath}.</p>

@@ -3,6 +3,7 @@ import {
   readSessionFromDocument,
   endSession
 } from '@nimling/samna-auth-middleware'
+import { loadGatedContent } from '../gated'
 import type { Viewer } from '../../types'
 
 const empty: Viewer = {
@@ -34,6 +35,7 @@ export async function refreshViewer(): Promise<Viewer> {
     }
     viewer.set(v)
     viewerReady.set(true)
+    void loadGatedContent()
     return v
   } catch {
     viewer.set(empty)

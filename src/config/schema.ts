@@ -41,6 +41,38 @@ export const userConfigSchema = z.object({
   authMode: z.enum(['edge', 'bff']).optional(),
   bffPath: z.string().optional(),
   authHooks: z.string().optional(),
+  subscribe: z.object({
+    endpoint: z.string().optional(),
+    appSlug: z.string().optional()
+  }).passthrough().optional(),
+  meta: z.object({
+    keywords: z.array(z.string()).optional(),
+    localeAlternates: z.array(z.string()).optional(),
+    organization: z.record(z.unknown()).optional(),
+    robots: z.object({
+      block: z.array(z.string()).optional(),
+      append: z.string().optional(),
+      custom: z.string().optional()
+    }).passthrough().optional(),
+    llms: z.object({
+      summary: z.string().optional(),
+      append: z.string().optional(),
+      full: z.boolean().optional()
+    }).passthrough().optional(),
+    og: z.object({
+      width: z.number().optional(),
+      height: z.number().optional()
+    }).passthrough().optional(),
+    webmanifest: z.record(z.unknown()).optional(),
+    humans: z.string().optional(),
+    security: z.object({
+      contact: z.string().optional(),
+      policy: z.string().optional(),
+      languages: z.string().optional(),
+      canonical: z.string().optional(),
+      expires: z.string().optional()
+    }).passthrough().optional()
+  }).passthrough().optional(),
   site: siteSchema.optional(),
   contentDir: z.string().optional(),
   assetsDir: z.string().optional(),

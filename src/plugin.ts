@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
-import { readFile, readdir, copyFile, cp } from 'node:fs/promises'
+import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
 import { createReadStream, existsSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
 import { createHash } from 'node:crypto'
 import matter from 'gray-matter'
@@ -41,6 +42,38 @@ const VIRTUAL_CONFIG = 'virtual:nimpress/config'
 const VIRTUAL_MAIN = 'virtual:nimpress/main'
 const PAGE_COMPONENT_PREFIX = 'virtual:nimpress/page-component/'
 const PAGE_BODY_PREFIX = 'virtual:nimpress/page-body/'
+const FEED_PAGE_SIZE = 20
+const FEED_NAMESPACE = 'https://github.com/nimling/nimpress'
+
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function cdata(value: string): string {
+  return `<![CDATA[${value.replace(/\]\]>/g, ']]]]><![CDATA[>')}]]>`
+}
+
+function feedFileName(index: number): string {
+  return index === 0 ? 'rss.xml' : `rss-${index + 1}.xml`
+}
+
+const CRAWL_AGENTS = [
+  'Google-Extended', 'Applebot-Extended', 'OAI-SearchBot', 'ChatGPT-User', 'GPTBot',
+  'Claude-SearchBot', 'Claude-User', 'ClaudeBot', 'anthropic-ai', 'PerplexityBot',
+  'Perplexity-User', 'MistralAI-User', 'Amazonbot', 'cohere-ai', 'cohere-training-data-crawler',
+  'CCBot', 'Bytespider', 'Diffbot', 'img2dataset', 'PetalBot', 'YouBot', 'Quora-Bot',
+  'TikTokSpider', 'Webzio-Extended', 'AI2Bot', 'Ai2Bot-Dolma', 'omgili', 'omgilibot',
+  'aiHitBot', 'Timpibot', 'Kagibot', 'ZoomBot', 'AhrefsBot', 'SemrushBot', 'DotBot', 'MJ12bot'
+]
+
+function jsonLdScript(data: unknown): string {
+  const json = (typeof data === 'string' ? data : JSON.stringify(data)).replace(/</g, '\\u003c')
+  return `<script type="application/ld+json">${json}</script>`
+}
 
 const openGraphSchema = z.object({
   title: z.string().optional(),
@@ -104,6 +137,8 @@ const frontmatterSchema = z.object({
   footer: z.string().optional(),
   background: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
+  rss: z.boolean().optional(),
+  subscribe: z.boolean().optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -891,7 +926,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       allProcessed.push(p)
       if (p.type === 'changelog') {
         const parent = parentSlug(p.slug)
-        const groupKey = `${parent} ${p.frontmatter.title}`
+        const groupKey = `${parent}\u0000${p.frontmatter.title}`
         const list = changelogGroups.get(groupKey) ?? []
         list.push(p)
         changelogGroups.set(groupKey, list)
@@ -912,7 +947,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     for (const [groupKey, entries] of changelogGroups) {
-      const parent = groupKey.split(' ', 1)[0]
+      const parent = groupKey.split('\u0000', 1)[0]
       const path = normalizePath(parent ? '/' + parent : '/')
       if (pathToFile.has(path)) {
         throw new Error(
@@ -970,7 +1005,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         frontmatter: {
           ...top.frontmatter,
           path,
-          type: 'changelog'
+          type: 'changelog',
+          rss: visible.some((e) => e.frontmatter.rss === true) ? true : undefined,
+          subscribe: visible.some((e) => e.frontmatter.subscribe === true) ? true : undefined
         },
         html: '',
         headings: mergedHeadings,
@@ -983,7 +1020,481 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     attachRoadmapEntries(roadmapGroups, allProcessed)
 
+    buildChangelogFeeds(result)
+
     pages = result
+  }
+
+  const feedFiles = new Map<string, string>()
+
+  function buildChangelogFeeds(result: Map<string, ProcessedPage>): void {
+    feedFiles.clear()
+    const siteUrl = resolved.site?.url?.replace(/\/$/, '')
+    for (const p of result.values()) {
+      if (p.type !== 'changelog') continue
+      if (!(p.frontmatter.rss === true || p.frontmatter.subscribe === true)) continue
+      if (!siteUrl) {
+        console.warn(`[nimpress] changelog feed for ${p.effectivePath} needs site.url in the config, skipping`)
+        continue
+      }
+      const entries = (p.changelogEntries ?? []).filter((e) => !e.hidden)
+      if (entries.length === 0) continue
+      const basePath = p.effectivePath === '/' ? '' : p.effectivePath
+      const pageUrl = `${siteUrl}${basePath || '/'}`
+      const gatedPrefix = isGated(p) ? '/_gated' : ''
+      const feedPath = (index: number) => `${gatedPrefix}${basePath}/${feedFileName(index)}`
+      const dates = entries
+        .map((e) => (e.releaseDate ? new Date(e.releaseDate).getTime() : Number.NaN))
+        .filter((t) => !Number.isNaN(t))
+        .sort((a, b) => b - a)
+      const deltas: number[] = []
+      for (let i = 0; i + 1 < dates.length; i++) deltas.push(dates[i] - dates[i + 1])
+      const cadenceSeconds = deltas.length
+        ? Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length / 1000)
+        : undefined
+      const ttlMinutes = cadenceSeconds
+        ? Math.min(43200, Math.max(60, Math.round(cadenceSeconds / 60)))
+        : 1440
+      const updatePeriod = !cadenceSeconds
+        ? 'weekly'
+        : cadenceSeconds <= 172800
+          ? 'daily'
+          : cadenceSeconds <= 1209600
+            ? 'weekly'
+            : cadenceSeconds <= 5184000
+              ? 'monthly'
+              : 'yearly'
+      const lastBuild = dates.length ? new Date(dates[0]).toUTCString() : undefined
+      const channelTitle = xmlEscape(p.frontmatter.title)
+      const channelDescription = xmlEscape(
+        p.frontmatter.description ?? resolved.site?.description ?? p.frontmatter.title
+      )
+      const language = resolved.site?.locale?.replace('_', '-').toLowerCase()
+      const pageCount = Math.max(1, Math.ceil(entries.length / FEED_PAGE_SIZE))
+      for (let index = 0; index < pageCount; index++) {
+        const slice = entries.slice(index * FEED_PAGE_SIZE, (index + 1) * FEED_PAGE_SIZE)
+        const links: string[] = [
+          `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index)}`)}" rel="self" type="application/rss+xml"/>`
+        ]
+        if (index > 0) {
+          links.push(
+            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(0)}`)}" rel="current" type="application/rss+xml"/>`
+          )
+        }
+        if (index + 1 < pageCount) {
+          links.push(
+            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index + 1)}`)}" rel="prev-archive" type="application/rss+xml"/>`
+          )
+        }
+        if (index > 1) {
+          links.push(
+            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index - 1)}`)}" rel="next-archive" type="application/rss+xml"/>`
+          )
+        }
+        const items = slice.map((e) => {
+          const itemUrl = `${pageUrl}#${e.slug}`
+          const parts = [
+            `<title>${xmlEscape(e.version ? `v${e.version} ${e.title}` : e.title)}</title>`,
+            `<link>${xmlEscape(itemUrl)}</link>`,
+            `<guid isPermaLink="true">${xmlEscape(itemUrl)}</guid>`
+          ]
+          if (e.releaseDate) parts.push(`<pubDate>${new Date(e.releaseDate).toUTCString()}</pubDate>`)
+          if (e.description) parts.push(`<description>${xmlEscape(e.description)}</description>`)
+          if (e.html) parts.push(`<content:encoded>${cdata(e.html)}</content:encoded>`)
+          return `    <item>\n      ${parts.join('\n      ')}\n    </item>`
+        })
+        const channelParts = [
+          `<title>${channelTitle}</title>`,
+          `<link>${xmlEscape(pageUrl)}</link>`,
+          `<description>${channelDescription}</description>`,
+          ...links
+        ]
+        if (language) channelParts.push(`<language>${xmlEscape(language)}</language>`)
+        if (lastBuild) channelParts.push(`<lastBuildDate>${lastBuild}</lastBuildDate>`)
+        channelParts.push(`<ttl>${ttlMinutes}</ttl>`)
+        channelParts.push(`<sy:updatePeriod>${updatePeriod}</sy:updatePeriod>`)
+        channelParts.push('<sy:updateFrequency>1</sy:updateFrequency>')
+        if (cadenceSeconds !== undefined) {
+          channelParts.push(`<nimpress:releaseCadence>${cadenceSeconds}</nimpress:releaseCadence>`)
+        }
+        channelParts.push(`<nimpress:latestVersion>${xmlEscape(entries[0].version)}</nimpress:latestVersion>`)
+        channelParts.push(`<nimpress:releaseCount>${entries.length}</nimpress:releaseCount>`)
+        if (index > 0) channelParts.push('<fh:archive/>')
+        const xml = [
+          '<?xml version="1.0" encoding="UTF-8"?>',
+          `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:fh="http://purl.org/syndication/history/1.0" xmlns:nimpress="${FEED_NAMESPACE}">`,
+          '  <channel>',
+          `    ${channelParts.join('\n    ')}`,
+          items.join('\n'),
+          '  </channel>',
+          '</rss>'
+        ].join('\n')
+        feedFiles.set(feedPath(index), xml)
+      }
+    }
+  }
+
+  const gitDateCache = new Map<string, string | undefined>()
+
+  function isGated(p: ProcessedPage): boolean {
+    return p.frontmatter.scope !== undefined || p.frontmatter.claim !== undefined
+  }
+
+  function publicPages(): ProcessedPage[] {
+    const out: ProcessedPage[] = []
+    for (const p of pages.values()) {
+      if (p.frontmatter.hidden) continue
+      if (isGated(p)) continue
+      out.push(p)
+    }
+    return out
+  }
+
+  function siteAbsolute(path: string): string | undefined {
+    const base = resolved.site?.url?.replace(/\/$/, '')
+    if (!base) return undefined
+    return base + (path.startsWith('/') ? path : '/' + path)
+  }
+
+  function gitLastModified(filePath: string): string | undefined {
+    if (gitDateCache.has(filePath)) return gitDateCache.get(filePath)
+    let value: string | undefined
+    try {
+      const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', filePath], {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      }).trim()
+      value = out || undefined
+    } catch {
+      value = undefined
+    }
+    gitDateCache.set(filePath, value)
+    return value
+  }
+
+  function jsonLdTypeFor(type: PageType): string {
+    if (type === 'changelog' || type === 'roadmap') return 'CollectionPage'
+    if (type === 'openapi') return 'APIReference'
+    if (type === 'hero') return 'WebPage'
+    return 'TechArticle'
+  }
+
+  function buildPageHead(p: ProcessedPage): string {
+    const metaCfg = resolved.meta ?? {}
+    const site = resolved.site
+    const fm = p.frontmatter
+    const fmMeta = fm.meta ?? {}
+    const og = fmMeta.og ?? {}
+    const tw = fmMeta.twitter ?? {}
+    const title = fm.title
+    const fullTitle = site?.title && site.title !== title ? `${title} · ${site.title}` : title
+    const description = fmMeta.description ?? fm.description ?? site?.description
+    const canonical = fmMeta.canonical ?? siteAbsolute(p.effectivePath)
+    const keywordList = (() => {
+      if (fmMeta.keywords) return Array.isArray(fmMeta.keywords) ? fmMeta.keywords : [fmMeta.keywords]
+      const tags = normalizeTags(fm.tags)
+      if (tags.length) return tags
+      return metaCfg.keywords ?? []
+    })()
+    const robots = fmMeta.robots ?? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+    const ogTitle = og.title ?? title
+    const ogDescription = og.description ?? description
+    const ogImage = og.image ?? site?.ogImage
+    const ogImageAbs = ogImage ? (siteAbsolute(ogImage) ?? ogImage) : undefined
+    const ogType = og.type ?? (fm.type === 'hero' || p.effectivePath === '/' ? 'website' : 'article')
+    const ogWidth = metaCfg.og?.width ?? 1200
+    const ogHeight = metaCfg.og?.height ?? 600
+    const twCard = tw.card ?? (ogImageAbs ? 'summary_large_image' : 'summary')
+    const twSite = tw.site ?? site?.twitterSite
+
+    const attr = encodeAttr
+    const tags: string[] = []
+    tags.push(`<title>${attr(fullTitle)}</title>`)
+    if (description) tags.push(`<meta name="description" content="${attr(description)}">`)
+    if (keywordList.length) tags.push(`<meta name="keywords" content="${attr(keywordList.join(', '))}">`)
+    tags.push(`<meta name="robots" content="${attr(robots)}">`)
+    tags.push(`<meta name="googlebot" content="${attr(robots)}">`)
+    if (canonical) {
+      tags.push(`<link rel="canonical" href="${attr(canonical)}">`)
+      const locales = metaCfg.localeAlternates ?? []
+      for (const locale of locales) {
+        tags.push(`<link rel="alternate" hreflang="${attr(locale)}" href="${attr(canonical)}">`)
+      }
+      if (locales.length) tags.push(`<link rel="alternate" hreflang="x-default" href="${attr(canonical)}">`)
+    }
+    tags.push(`<meta property="og:title" content="${attr(ogTitle)}">`)
+    if (ogDescription) tags.push(`<meta property="og:description" content="${attr(ogDescription)}">`)
+    tags.push(`<meta property="og:type" content="${attr(ogType)}">`)
+    if (canonical) tags.push(`<meta property="og:url" content="${attr(canonical)}">`)
+    if (ogImageAbs) {
+      tags.push(`<meta property="og:image" content="${attr(ogImageAbs)}">`)
+      tags.push(`<meta property="og:image:width" content="${ogWidth}">`)
+      tags.push(`<meta property="og:image:height" content="${ogHeight}">`)
+      if (og.imageAlt) tags.push(`<meta property="og:image:alt" content="${attr(og.imageAlt)}">`)
+    }
+    if (site?.title) tags.push(`<meta property="og:site_name" content="${attr(site.title)}">`)
+    if (site?.locale) tags.push(`<meta property="og:locale" content="${attr(site.locale)}">`)
+    tags.push(`<meta name="twitter:card" content="${attr(twCard)}">`)
+    if (twSite) tags.push(`<meta name="twitter:site" content="${attr(twSite)}">`)
+    tags.push(`<meta name="twitter:title" content="${attr(tw.title ?? ogTitle)}">`)
+    if (tw.description ?? ogDescription) {
+      tags.push(`<meta name="twitter:description" content="${attr(tw.description ?? ogDescription ?? '')}">`)
+    }
+    if (tw.image ?? ogImageAbs) tags.push(`<meta name="twitter:image" content="${attr(tw.image ?? ogImageAbs ?? '')}">`)
+    if (description) tags.push(`<meta name="dc.description" content="${attr(description)}">`)
+    tags.push(`<meta name="dc.title" content="${attr(fullTitle)}">`)
+    if (site?.locale) tags.push(`<meta name="dc.language" content="${attr(site.locale)}">`)
+    if (fm.type === 'changelog' && (fm.rss === true || fm.subscribe === true)) {
+      const feedPath = p.effectivePath === '/' ? '/rss.xml' : `${p.effectivePath}/rss.xml`
+      const feedHref = siteAbsolute(feedPath) ?? feedPath
+      tags.push(`<link rel="alternate" type="application/rss+xml" title="${attr(title)}" href="${attr(feedHref)}">`)
+    }
+
+    const siteUrl = resolved.site?.url?.replace(/\/$/, '')
+    const graph: unknown[] = []
+    if (metaCfg.organization) {
+      graph.push({ '@context': 'https://schema.org', ...metaCfg.organization })
+    }
+    if (siteUrl && site?.title) {
+      graph.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        '@id': `${siteUrl}/#website`,
+        name: site.title,
+        url: `${siteUrl}/`,
+        description: site.description
+      })
+    }
+    if (canonical && p.effectivePath !== '/') {
+      const crumbs: { name: string; item?: string }[] = [
+        { name: site?.title ?? 'Home', item: siteUrl ? `${siteUrl}/` : undefined }
+      ]
+      const segments = p.effectivePath.split('/').filter(Boolean)
+      let acc = ''
+      for (const seg of segments) {
+        acc += '/' + seg
+        const target = [...pages.values()].find((c) => c.effectivePath === acc)
+        crumbs.push({ name: target?.frontmatter.title ?? prettyDirName(seg), item: siteAbsolute(acc) })
+      }
+      graph.push({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: crumbs.map((c, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: c.name,
+          item: c.item
+        }))
+      })
+    }
+    graph.push({
+      '@context': 'https://schema.org',
+      '@type': jsonLdTypeFor(p.type),
+      name: fullTitle,
+      headline: title,
+      description,
+      url: canonical,
+      isPartOf: siteUrl ? `${siteUrl}/#website` : undefined,
+      dateModified: gitLastModified(p.filePath)
+    })
+    if (fmMeta.jsonLd) graph.push(fmMeta.jsonLd)
+    for (const entry of graph) tags.push(jsonLdScript(entry))
+
+    return `\n    ${tags.join('\n    ')}\n  `
+  }
+
+  function buildRobots(): string {
+    const metaCfg = resolved.meta ?? {}
+    if (metaCfg.robots?.custom) return metaCfg.robots.custom
+    const blocked = new Set(metaCfg.robots?.block ?? [])
+    const lines: string[] = ['User-agent: *', 'Allow: /', '']
+    for (const agent of CRAWL_AGENTS) {
+      lines.push(`User-agent: ${agent}`)
+      lines.push(blocked.has(agent) ? 'Disallow: /' : 'Allow: /')
+      lines.push('')
+    }
+    for (const agent of blocked) {
+      if (CRAWL_AGENTS.includes(agent)) continue
+      lines.push(`User-agent: ${agent}`)
+      lines.push('Disallow: /')
+      lines.push('')
+    }
+    if (metaCfg.robots?.append) lines.push(metaCfg.robots.append, '')
+    const sitemap = siteAbsolute('/sitemap.xml')
+    if (sitemap) lines.push(`Sitemap: ${sitemap}`)
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
+  }
+
+  function buildSitemap(list: ProcessedPage[]): string | undefined {
+    const siteUrl = resolved.site?.url?.replace(/\/$/, '')
+    if (!siteUrl) return undefined
+    const locales = resolved.meta?.localeAlternates ?? []
+    const urls = list.map((p) => {
+      const loc = `${siteUrl}${p.effectivePath === '/' ? '/' : p.effectivePath}`
+      const depth = p.effectivePath.split('/').filter(Boolean).length
+      const priority = depth === 0 ? '1.0' : depth === 1 ? '0.8' : '0.6'
+      const changefreq = depth === 0 ? 'weekly' : 'monthly'
+      const lastmod = gitLastModified(p.filePath)
+      const parts = [`    <loc>${xmlEscape(loc)}</loc>`]
+      if (lastmod) parts.push(`    <lastmod>${xmlEscape(lastmod)}</lastmod>`)
+      parts.push(`    <changefreq>${changefreq}</changefreq>`)
+      parts.push(`    <priority>${priority}</priority>`)
+      for (const locale of locales) {
+        parts.push(`    <xhtml:link rel="alternate" hreflang="${xmlEscape(locale)}" href="${xmlEscape(loc)}"/>`)
+      }
+      return `  <url>\n${parts.join('\n')}\n  </url>`
+    })
+    return [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+      urls.join('\n'),
+      '</urlset>',
+      ''
+    ].join('\n')
+  }
+
+  function buildLlms(list: ProcessedPage[]): string {
+    const metaCfg = resolved.meta ?? {}
+    const site = resolved.site
+    const lines: string[] = [`# ${site?.title ?? resolved.title}`, '']
+    const summary = metaCfg.llms?.summary ?? site?.description
+    if (summary) lines.push(`> ${summary}`, '')
+    const sections = new Map<string, ProcessedPage[]>()
+    const rootPages: ProcessedPage[] = []
+    for (const p of list) {
+      const segments = p.effectivePath.split('/').filter(Boolean)
+      if (segments.length === 0) {
+        rootPages.push(p)
+        continue
+      }
+      const key = segments[0]
+      const group = sections.get(key) ?? []
+      group.push(p)
+      sections.set(key, group)
+    }
+    const lineFor = (p: ProcessedPage): string => {
+      const url = siteAbsolute(p.effectivePath) ?? p.effectivePath
+      return p.frontmatter.description
+        ? `- [${p.frontmatter.title}](${url}): ${p.frontmatter.description}`
+        : `- [${p.frontmatter.title}](${url})`
+    }
+    for (const p of rootPages) lines.push(lineFor(p))
+    if (rootPages.length) lines.push('')
+    for (const [segment, group] of [...sections.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const index = group.find((p) => p.effectivePath === `/${segment}`)
+      lines.push(`## ${index?.frontmatter.title ?? prettyDirName(segment)}`, '')
+      group.sort((a, b) => a.effectivePath.localeCompare(b.effectivePath))
+      for (const p of group) lines.push(lineFor(p))
+      lines.push('')
+    }
+    const keywords = new Set<string>(resolved.meta?.keywords ?? [])
+    for (const p of list) for (const t of normalizeTags(p.frontmatter.tags)) keywords.add(t)
+    if (keywords.size) {
+      lines.push('## Keywords', '', [...keywords].join(', '), '')
+    }
+    const sitemap = siteAbsolute('/sitemap.xml')
+    const robots = siteAbsolute('/robots.txt')
+    if (sitemap || robots) {
+      lines.push('## Optional', '')
+      if (sitemap) lines.push(`- [Sitemap](${sitemap})`)
+      if (robots) lines.push(`- [Robots](${robots})`)
+      lines.push('')
+    }
+    if (metaCfg.llms?.append) lines.push(metaCfg.llms.append, '')
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n')
+  }
+
+  function buildLlmsFull(list: ProcessedPage[]): string {
+    const site = resolved.site
+    const lines: string[] = [`# ${site?.title ?? resolved.title}`, '']
+    for (const p of list) {
+      lines.push(`## ${p.frontmatter.title}`, '')
+      const url = siteAbsolute(p.effectivePath)
+      if (url) lines.push(`URL: ${url}`, '')
+      lines.push(p.rawText.trim(), '')
+    }
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n')
+  }
+
+  async function writeStaticArtifacts(): Promise<void> {
+    const metaCfg = resolved.meta ?? {}
+    const list = publicPages().sort((a, b) => a.effectivePath.localeCompare(b.effectivePath))
+    const shellPath = join(resolvedOutDir, 'index.html')
+    const shell = await readFile(shellPath, 'utf-8')
+    for (const p of list) {
+      const head = buildPageHead(p)
+      const html = shell.replace('</head>', `${head}</head>`)
+      const target = p.effectivePath === '/'
+        ? shellPath
+        : join(resolvedOutDir, p.effectivePath.replace(/^\//, ''), 'index.html')
+      await mkdir(dirname(target), { recursive: true })
+      await writeFile(target, html)
+    }
+    await writeFile(join(resolvedOutDir, 'robots.txt'), buildRobots())
+    const sitemap = buildSitemap(list)
+    if (sitemap) await writeFile(join(resolvedOutDir, 'sitemap.xml'), sitemap)
+    await writeFile(join(resolvedOutDir, 'llms.txt'), buildLlms(list))
+    if (metaCfg.llms?.full) {
+      await writeFile(join(resolvedOutDir, 'llms-full.txt'), buildLlmsFull(list))
+    }
+    if (metaCfg.webmanifest) {
+      await writeFile(join(resolvedOutDir, 'site.webmanifest'), JSON.stringify(metaCfg.webmanifest, null, 2) + '\n')
+    }
+    if (metaCfg.humans) {
+      await writeFile(join(resolvedOutDir, 'humans.txt'), metaCfg.humans.trim() + '\n')
+    }
+    if (metaCfg.security) {
+      const s = metaCfg.security
+      const lines: string[] = []
+      if (s.contact) lines.push(`Contact: ${s.contact}`)
+      if (s.policy) lines.push(`Policy: ${s.policy}`)
+      if (s.languages) lines.push(`Preferred-Languages: ${s.languages}`)
+      if (s.canonical) lines.push(`Canonical: ${s.canonical}`)
+      if (s.expires) lines.push(`Expires: ${s.expires}`)
+      if (lines.length) {
+        await mkdir(join(resolvedOutDir, '.well-known'), { recursive: true })
+        await writeFile(join(resolvedOutDir, '.well-known', 'security.txt'), lines.join('\n') + '\n')
+      }
+    }
+  }
+
+  async function writeGatedArtifacts(): Promise<void> {
+    const gated = [...pages.values()].filter((p) => !p.frontmatter.hidden && isGated(p))
+    const accessRoutes: Record<string, { scope?: string; claim?: string }> = {}
+    for (const p of gated) {
+      accessRoutes[p.effectivePath] = { scope: p.frontmatter.scope, claim: p.frontmatter.claim }
+    }
+    await writeFile(
+      join(resolvedOutDir, 'access.json'),
+      JSON.stringify({ prefix: '/_gated/', routes: accessRoutes }, null, 2) + '\n'
+    )
+    if (gated.length === 0) return
+    const dir = join(resolvedOutDir, '_gated')
+    await mkdir(join(dir, 'body'), { recursive: true })
+    const styles: Record<string, string> = {}
+    const shells = gated.map((p) => ({
+      slug: p.slug,
+      path: p.effectivePath,
+      type: p.type,
+      frontmatter: p.frontmatter
+    }))
+    for (const p of gated) {
+      if (p.pageCss) styles[p.effectivePath] = p.pageCss
+      const body = {
+        html: p.html,
+        headings: p.headings,
+        openApiSpec: p.openApiSpec,
+        changelogEntries: p.changelogEntries,
+        roadmapEntries: p.roadmapEntries
+      }
+      await writeFile(join(dir, 'body', `${urlSlug(p.slug)}.json`), JSON.stringify(body))
+    }
+    await writeFile(
+      join(dir, 'manifest.json'),
+      JSON.stringify({ shells, styles, sidebar: buildSidebar(true) })
+    )
+    await writeFile(join(dir, 'search.json'), JSON.stringify(buildSearch(true)))
   }
 
   function attachRoadmapEntries(
@@ -1158,7 +1669,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return undefined
   }
 
-  function buildSidebar(): SidebarNode[] {
+  function buildSidebar(includeGated = false): SidebarNode[] {
     interface TreeNode {
       segment: string
       fullPath: string
@@ -1169,7 +1680,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
 
     for (const p of pages.values()) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (isBuildCommand && (p.frontmatter.hidden || (!includeGated && isGated(p)))) continue
       if (p.effectivePath === '/') continue
       const segments = p.effectivePath.split('/').filter(Boolean)
       let cursor = root
@@ -1290,7 +1801,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const byPath: Record<string, string> = {}
 
     for (const [slug, p] of pages) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
       const meta: PageMeta = {
         slug,
         path: p.effectivePath,
@@ -1310,17 +1821,19 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const styles: Record<string, string> = {}
     for (const p of pages.values()) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
       if (p.pageCss) styles[p.effectivePath] = p.pageCss
     }
 
     return { pages: pageMap, byPath, sidebar: buildSidebar(), styles }
   }
 
-  function buildSearch(): SearchEntry[] {
+  function buildSearch(gatedOnly = false): SearchEntry[] {
     const out: SearchEntry[] = []
     for (const [slug, p] of pages) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (gatedOnly) {
+        if (p.frontmatter.hidden || !isGated(p)) continue
+      } else if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
       const baseBody = p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' ')
       const specBody = p.type === 'openapi' ? extractOpenApiText(p.openApiSpec) : ''
       const roadmapBody = p.type === 'roadmap' ? extractRoadmapText(p.roadmapEntries ?? []) : ''
@@ -1471,7 +1984,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildPagesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
       const id = `${PAGE_COMPONENT_PREFIX}${urlSlug(slug)}.svelte`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
@@ -1481,7 +1994,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildBodiesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
-      if (isBuildCommand && p.frontmatter.hidden) continue
+      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
       const id = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
@@ -1584,6 +2097,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         const target = join(resolvedOutDir, resolved.assetUrlBase.replace(/^\//, ''))
         await cp(assetsRoot, target, { recursive: true })
       }
+      for (const [urlPath, xml] of feedFiles) {
+        const target = join(resolvedOutDir, urlPath.replace(/^\//, ''))
+        await mkdir(dirname(target), { recursive: true })
+        await writeFile(target, xml)
+      }
+      await writeStaticArtifacts()
+      await writeGatedArtifacts()
     },
 
     configureServer(devServer) {
@@ -1672,6 +2192,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       devServer.middlewares.use((req, res, next) => {
         const url = (req.url ?? '').split('?')[0]
         if (url.startsWith('/@') || url.startsWith('/node_modules/')) return next()
+        const feed = feedFiles.get(url)
+        if (feed !== undefined) {
+          res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')
+          res.end(feed)
+          return
+        }
         const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
         if (baseMatch) {
           const stripped = base === '/' ? url : url.slice(base.length)

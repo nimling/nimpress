@@ -18,13 +18,10 @@
   const config = $derived($configStore)
   const isDark = $derived($theme === 'dark')
   const route = $derived($resolvedRoute)
-  const slug = $derived.by(() => {
+  const crumbPath = $derived.by(() => {
     const path = route?.path ?? '/'
     if (path === '/' || path === '') return ''
-    const cleaned = path.replace(/\/$/, '')
-    const byPath = config.manifest?.byPath
-    if (byPath && byPath[cleaned] !== undefined) return byPath[cleaned]
-    return cleaned.replace(/^\//, '')
+    return path.replace(/\/$/, '')
   })
 </script>
 
@@ -50,8 +47,8 @@
   </a>
 
   <div class="np-crumbs-slot">
-    {#if slug}
-      <Breadcrumbs {slug} />
+    {#if crumbPath}
+      <Breadcrumbs path={crumbPath} />
     {/if}
   </div>
 

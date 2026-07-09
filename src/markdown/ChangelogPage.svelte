@@ -10,6 +10,7 @@
   import CodeGroup from './CodeGroup.svelte'
   import Actions from './Actions.svelte'
   import Feature from './Feature.svelte'
+  import SubscribeDialog from './SubscribeDialog.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -19,11 +20,24 @@
   const background = $derived(page.frontmatter.background)
   const renderBackground = $derived(!!background)
   const tocHeadings = $derived(page.headings ?? [])
+  const feedEnabled = $derived(page.frontmatter.rss === true || page.frontmatter.subscribe === true)
+  const feedPath = $derived.by(() => {
+    const gated = page.frontmatter.scope !== undefined || page.frontmatter.claim !== undefined
+    const prefix = gated ? '/_gated' : ''
+    return page.path === '/' ? `${prefix}/rss.xml` : `${prefix}${page.path}/rss.xml`
+  })
+
+  $effect(() => {
+    if (!feedEnabled) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('format') === 'rss') window.location.replace(feedPath)
+  })
 
   let container: HTMLElement
   let mounted: Array<{ destroy: () => void }> = []
   let openMap = $state<Record<string, boolean>>({})
   let hashSlug = $state<string>('')
+  let subscribeOpen = $state(false)
 
   function keyOf(e: ChangelogEntry, i: number): string {
     return e.slug || e.version || `entry-${i}`
@@ -210,7 +224,17 @@
 <div class="np-page-shell" class:has-rail={!page.frontmatter.noToc && tocHeadings.length > 0}>
   <div class="np-page">
     <article class="np-prose np-changelog" bind:this={container}>
-      <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
+      <div class="np-changelog-head">
+        <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
+        {#if feedEnabled}
+          <button type="button" class="np-changelog-subscribe" onclick={() => (subscribeOpen = true)}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 8.73v3.09c5.72 0 10.36 4.64 10.36 10.36h3.09c0-7.43-6.02-13.45-13.45-13.45zM1.82 2.18v3.09c10.34 0 18.73 8.39 18.73 18.73h3.09C23.64 11.95 13.87 2.18 1.82 2.18z"/>
+            </svg>
+            Subscribe
+          </button>
+        {/if}
+      </div>
       {#each entries as e, i (keyOf(e, i))}
         {@const open = isOpen(e, i)}
         <section class="np-changelog-section" class:open>
@@ -264,6 +288,15 @@
 
 <BackToTop />
 
+{#if subscribeOpen}
+  <SubscribeDialog
+    title={page.frontmatter.title}
+    {feedPath}
+    emailEnabled={page.frontmatter.subscribe === true}
+    onClose={() => (subscribeOpen = false)}
+  />
+{/if}
+
 <style>
   .np-page-shell {
     position: relative;
@@ -310,19 +343,48 @@
     }
   }
 
-  .np-changelog-title {
+  .np-changelog-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
     margin: 0 -8px 32px;
+  }
+
+  .np-changelog-title {
+    margin: 0;
     font-size: 48px;
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -0.02em;
     color: var(--np-text-primary);
   }
+
+  .np-changelog-subscribe {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-pill);
+    background: none;
+    color: var(--np-text-muted);
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .np-changelog-subscribe:hover {
+    color: var(--np-text-primary);
+    border-color: var(--np-brand);
+  }
+
   @media (max-width: 720px) {
-    .np-changelog-title {
-      font-size: 36px;
+    .np-changelog-head {
       margin-left: 0;
       margin-right: 0;
+    }
+    .np-changelog-title {
+      font-size: 36px;
     }
   }
 
