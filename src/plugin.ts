@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
 import { createReadStream, existsSync, statSync } from 'node:fs'
+import { request as httpRequest } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -17,6 +18,7 @@ import { createHighlighter, type Highlighter } from 'shiki'
 import { buildBanner, readConsumerPackage } from './banner'
 import type {
   ChangelogEntry,
+  ComponentPageData,
   Frontmatter,
   Heading,
   NimpressUserConfig,
@@ -30,6 +32,8 @@ import type {
   SearchEntry,
   SidebarNode
 } from './types'
+import { buildComponentPageData } from './modules/componentData'
+import { harnessPort } from './modules/harness'
 import { defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig } from './config/load'
 import { indexHtml } from './config/html'
@@ -120,7 +124,8 @@ const frontmatterSchema = z.object({
     z.literal('milestone'),
     z.literal('epic'),
     z.literal('feature'),
-    z.literal('bug')
+    z.literal('bug'),
+    z.literal('component')
   ]).optional(),
   path: z.string().optional(),
   spec: z.string().optional(),
@@ -176,6 +181,10 @@ function frontmatterIssues(data: unknown): string[] {
       issues.push(`type ${fm.type} requires a valid data.date`)
     }
   }
+  if (fm.type === 'component') {
+    if (d.system === undefined || String(d.system).trim() === '') issues.push('type component requires data.system')
+    if (d.component === undefined || String(d.component).trim() === '') issues.push('type component requires data.component')
+  }
   return issues
 }
 
@@ -192,6 +201,7 @@ interface ProcessedPage {
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
+  componentData?: ComponentPageData
 }
 
 function compareVersions(a: string, b: string): number {
@@ -512,6 +522,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   const fileCache = new Map<string, { hash: string; processed: ProcessedPage }>()
   const specToMd = new Map<string, string>()
   const trackedSpecs = new Set<string>()
+  const componentToMd = new Map<string, string>()
+  const trackedComponents = new Set<string>()
 
   function hashContent(text: string): string {
     return createHash('sha1').update(text).digest('hex')
@@ -835,6 +847,21 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     rememberSpecBinding(file, specPath)
 
+    let componentData: ComponentPageData | undefined
+    let componentWatch: string[] = []
+    if (type === 'component') {
+      const built = await buildComponentPageData({
+        cwd: process.cwd(),
+        modules: resolved.modules,
+        pageFile: file,
+        data: (fm.data ?? {}) as Record<string, unknown>,
+        editable: !isBuildCommand
+      })
+      componentData = built.data
+      componentWatch = built.watchFiles
+    }
+    rememberComponentBinding(file, componentWatch)
+
     const cssFile = file.replace(/\.md$/, '.css')
     let pageCss: string | undefined
     if (cssFile !== file && existsSync(cssFile)) {
@@ -851,7 +878,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       headings,
       rawText: content,
       pageCss,
-      openApiSpec
+      openApiSpec,
+      componentData
     }
   }
 
@@ -864,6 +892,19 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (server && !trackedSpecs.has(specPath)) {
         server.watcher.add(specPath)
         trackedSpecs.add(specPath)
+      }
+    }
+  }
+
+  function rememberComponentBinding(mdFile: string, watchFiles: string[]): void {
+    for (const [s, m] of componentToMd) {
+      if (m === mdFile) componentToMd.delete(s)
+    }
+    for (const wf of watchFiles) {
+      componentToMd.set(wf, mdFile)
+      if (server && !trackedComponents.has(wf)) {
+        server.watcher.add(wf)
+        trackedComponents.add(wf)
       }
     }
   }
@@ -1486,7 +1527,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         headings: p.headings,
         openApiSpec: p.openApiSpec,
         changelogEntries: p.changelogEntries,
-        roadmapEntries: p.roadmapEntries
+        roadmapEntries: p.roadmapEntries,
+        componentData: p.componentData
       }
       await writeFile(join(dir, 'body', `${urlSlug(p.slug)}.json`), JSON.stringify(body))
     }
@@ -2009,7 +2051,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       headings: p.headings,
       openApiSpec: p.openApiSpec,
       changelogEntries: p.changelogEntries,
-      roadmapEntries: p.roadmapEntries
+      roadmapEntries: p.roadmapEntries,
+      componentData: p.componentData
     }
     return `export default ${JSON.stringify(payload)}\n`
   }
@@ -2026,7 +2069,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
   import type { PageBody } from '@nimling/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -2046,6 +2089,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       <ChangelogPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'roadmap'}
       <RoadmapPage page={{ ...shell, ...mod.default }} />
+    {:else if shell.type === 'component'}
+      <ComponentPage page={{ ...shell, ...mod.default }} />
     {:else}
       <Page page={{ ...shell, ...mod.default }} />
     {/if}
@@ -2111,11 +2156,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       devServer.watcher.add(contentRoot)
       devServer.watcher.add(assetsRoot)
       for (const specPath of trackedSpecs) devServer.watcher.add(specPath)
+      for (const componentPath of trackedComponents) devServer.watcher.add(componentPath)
 
       const onAdd = async (file: string) => {
         const underContent = file.startsWith(contentRoot)
-        if (!underContent || !(file.endsWith('.md') || file.endsWith('.css'))) return
+        if (!underContent || !(file.endsWith('.md') || file.endsWith('.css') || file.endsWith('.story.ts'))) return
         if (file.endsWith('.css')) dropFileCache(file.replace(/\.css$/, '.md'))
+        if (file.endsWith('.story.ts')) dropFileCache(join(dirname(file), 'index.md'))
         try {
           await processAll()
         } catch (err) {
@@ -2128,8 +2175,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       const onUnlink = async (file: string) => {
         const underContent = file.startsWith(contentRoot)
-        if (underContent && (file.endsWith('.md') || file.endsWith('.css'))) {
-          dropFileCache(file.endsWith('.css') ? file.replace(/\.css$/, '.md') : file)
+        if (underContent && (file.endsWith('.md') || file.endsWith('.css') || file.endsWith('.story.ts'))) {
+          if (file.endsWith('.story.ts')) dropFileCache(join(dirname(file), 'index.md'))
+          else dropFileCache(file.endsWith('.css') ? file.replace(/\.css$/, '.md') : file)
           try {
             await processAll()
           } catch (err) {
@@ -2144,6 +2192,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         if (specToMd.has(file)) {
           const mdFile = specToMd.get(file)!
           dropFileCache(mdFile)
+        }
+        if (componentToMd.has(file)) {
+          dropFileCache(componentToMd.get(file)!)
         }
       }
       devServer.watcher.on('add', onAdd)
@@ -2192,10 +2243,75 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       devServer.middlewares.use((req, res, next) => {
         const url = (req.url ?? '').split('?')[0]
         if (url.startsWith('/@') || url.startsWith('/node_modules/')) return next()
+        if (url === '/__nimpress/claude-md' && req.method === 'PUT') {
+          const chunks: Buffer[] = []
+          req.on('data', (chunk) => chunks.push(chunk))
+          req.on('end', async () => {
+            try {
+              const body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as { path?: string; content?: string }
+              const rel = String(body.path ?? '')
+              const content = String(body.content ?? '')
+              const target = resolve(process.cwd(), rel)
+              const roots = Object.values(resolved.modules.systems)
+                .filter((s) => s.source)
+                .map((s) => resolve(process.cwd(), s.source!))
+              const inRoot = roots.some((r) => target.startsWith(r + sep))
+              if (!inRoot || !target.endsWith(`${sep}CLAUDE.md`) || !existsSync(target)) {
+                res.statusCode = 403
+                res.end('invalid claude-md target')
+                return
+              }
+              await writeFile(target, content)
+              dropFileCache(componentToMd.get(target) ?? '')
+              res.statusCode = 204
+              res.end()
+            } catch (err) {
+              res.statusCode = 400
+              res.end(String(err))
+            }
+          })
+          return
+        }
         const feed = feedFiles.get(url)
         if (feed !== undefined) {
           res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')
           res.end(feed)
+          return
+        }
+        const modulesRoute = resolved.modules.route.replace(/\/$/, '')
+        if (url === modulesRoute || url.startsWith(modulesRoute + '/')) {
+          const rest = url.slice(modulesRoute.length).replace(/^\/+/, '')
+          const system = decodeURIComponent(rest.split('/')[0] ?? '')
+          const systemConfig = resolved.modules.systems[system]
+          if (!systemConfig) {
+            res.statusCode = 404
+            res.end(`unknown module system: ${system}`)
+            return
+          }
+          const query = (req.url ?? '').split('?')[1]
+          const upstreamPath =
+            '/' + rest.split('/').slice(1).join('/') + (query ? `?${query}` : '')
+          const upstream = httpRequest(
+            {
+              host: '127.0.0.1',
+              port: harnessPort(resolved.modules, system),
+              path: upstreamPath,
+              method: req.method,
+              headers: req.headers
+            },
+            (upstreamRes) => {
+              res.writeHead(upstreamRes.statusCode ?? 502, upstreamRes.headers)
+              upstreamRes.pipe(res)
+            }
+          )
+          upstream.on('error', () => {
+            res.statusCode = 503
+            res.setHeader('Content-Type', 'text/html')
+            res.end(
+              `<!doctype html><html><body style="font-family:monospace;padding:2rem"><p>module harness for <b>${system}</b> is not running.</p><p>start it with: <code>nimpress modules dev ${system}</code></p></body></html>`
+            )
+          })
+          req.pipe(upstream)
           return
         }
         const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
@@ -2230,7 +2346,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const file = ctx.file
       const isMd = file.endsWith('.md') && file.startsWith(contentRoot)
       const isPageCss = file.endsWith('.css') && file.startsWith(contentRoot)
+      const isStory = file.endsWith('.story.ts') && file.startsWith(contentRoot)
       const ownsSpec = specToMd.get(file)
+      const ownsComponent = componentToMd.get(file)
       if (isPageCss) {
         dropFileCache(file.replace(/\.css$/, '.md'))
         try {
@@ -2243,8 +2361,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         ctx.server.ws.send({ type: 'full-reload' })
         return []
       }
-      if (!isMd && !ownsSpec) return
-      const targetMd = isMd ? file : ownsSpec!
+      if (!isMd && !isStory && !ownsSpec && !ownsComponent) return
+      const targetMd = isMd ? file : isStory ? join(dirname(file), 'index.md') : (ownsSpec ?? ownsComponent)!
       dropFileCache(targetMd)
       try {
         await processAll()

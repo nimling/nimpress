@@ -11,5 +11,10 @@ export const defaultConfig: ResolvedNimpressConfig = {
   defaultFrontmatterExclude: [],
   banner: {},
   css: [],
-  vite: {}
+  vite: {},
+  modules: {
+    dir: 'modules',
+    route: '/_components',
+    systems: {}
+  }
 }

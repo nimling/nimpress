@@ -8,6 +8,72 @@ export type PageType =
   | 'epic'
   | 'feature'
   | 'bug'
+  | 'component'
+
+export type ModuleFramework = 'vue' | 'svelte'
+
+export interface ModuleSystemConfig {
+  framework: ModuleFramework
+  source?: string
+  package?: string
+  version?: string
+  css?: string[]
+  port?: number
+  scope?: string
+  claim?: string
+  devOnly?: boolean
+}
+
+export interface ModulesConfig {
+  dir: string
+  route: string
+  systems: Record<string, ModuleSystemConfig>
+}
+
+export type ControlKind =
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'select'
+  | 'json'
+  | 'slot'
+
+export interface ControlSpec {
+  name: string
+  kind: ControlKind
+  type: string
+  default?: unknown
+  options?: string[]
+  required?: boolean
+}
+
+export interface ControlSchema {
+  component: string
+  props: ControlSpec[]
+  slots: ControlSpec[]
+  emits: string[]
+}
+
+export interface ComponentStory {
+  name: string
+  file: string
+  description?: string
+  props?: Record<string, unknown>
+  slots?: Record<string, string>
+}
+
+export interface ComponentPageData {
+  system: string
+  component: string
+  package?: string
+  version?: string
+  claudeMd?: string
+  claudeMdPath?: string
+  editable?: boolean
+  harnessPath: string
+  schema?: ControlSchema
+  stories: ComponentStory[]
+}
 
 export type RoadmapKind = 'milestone' | 'epic' | 'feature' | 'bug'
 
@@ -132,6 +198,7 @@ export interface PageBody {
   openApiSpec?: unknown
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
+  componentData?: ComponentPageData
 }
 
 export interface PageModule extends PageShell, PageBody {}
@@ -322,6 +389,7 @@ export interface NimpressUserConfig {
   banner?: NimpressBannerConfig | false
   css?: string | string[]
   vite?: Record<string, unknown>
+  modules?: Partial<ModulesConfig>
 }
 
 export interface ResolvedNimpressConfig {
@@ -349,6 +417,7 @@ export interface ResolvedNimpressConfig {
   banner: NimpressBannerConfig | false
   css: string[]
   vite: Record<string, unknown>
+  modules: ModulesConfig
 }
 
 export interface NavRoute {

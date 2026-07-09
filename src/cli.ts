@@ -2,11 +2,13 @@ import { join, relative, extname, dirname } from 'node:path'
 import { writeFileSync, existsSync, readdirSync, rmSync, mkdirSync, readFileSync, statSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { createServer, build, preview } from 'vite'
+import type { ResolvedNimpressConfig } from './types'
 import { loadNimpressConfig } from './config/load'
 import { buildViteConfig } from './config/viteConfig'
 import { indexHtml } from './config/html'
 import { defaultConfig } from './config/defaults'
 import { lintContent } from './plugin'
+import { harnessViteConfig, harnessPort } from './modules/harness'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -33,6 +35,7 @@ export async function run(argv: string[]): Promise<void> {
   if (cmd === 'dev') {
     const server = await createServer(buildViteConfig({ cwd, command: 'serve', resolved }))
     await server.listen()
+    await startHarnessServers(cwd, resolved, Object.keys(resolved.modules.systems))
     server.printUrls()
     server.bindCLIShortcuts({ print: true })
     return
@@ -46,6 +49,7 @@ export async function run(argv: string[]): Promise<void> {
     } finally {
       if (created) rmSync(htmlPath, { force: true })
     }
+    await buildHarnesses(cwd, resolved, deployableSystems(resolved))
     return
   }
   if (cmd === 'preview') {
@@ -57,7 +61,79 @@ export async function run(argv: string[]): Promise<void> {
     runGuard(cwd, resolved.outDir, argv.slice(1))
     return
   }
+  if (cmd === 'modules') {
+    await runModules(cwd, resolved, argv.slice(1))
+    return
+  }
   throw new Error(`[nimpress] unknown command: ${cmd}`)
+}
+
+function deployableSystems(resolved: ResolvedNimpressConfig): string[] {
+  return Object.entries(resolved.modules.systems)
+    .filter(([, systemConfig]) => !systemConfig.devOnly)
+    .map(([name]) => name)
+}
+
+async function startHarnessServers(cwd: string, resolved: ResolvedNimpressConfig, systems: string[]): Promise<void> {
+  for (const system of systems) {
+    try {
+      const server = await createServer(await harnessViteConfig(cwd, resolved, system, 'serve'))
+      await server.listen()
+      console.log(`nimpress modules: ${system} harness on port ${harnessPort(resolved.modules, system)}`)
+    } catch (err) {
+      console.warn(`nimpress modules: harness for ${system} failed to start: ${String(err)}`)
+    }
+  }
+}
+
+async function buildHarnesses(cwd: string, resolved: ResolvedNimpressConfig, systems: string[]): Promise<void> {
+  for (const system of systems) {
+    await build(await harnessViteConfig(cwd, resolved, system, 'build'))
+    console.log(`nimpress modules: built ${system}`)
+  }
+}
+
+async function runModules(cwd: string, resolved: ResolvedNimpressConfig, args: string[]): Promise<void> {
+  const sub = args[0]
+  const configured = Object.keys(resolved.modules.systems)
+  const named = args[1] && !args[1].startsWith('--') ? [args[1]] : null
+  if (named && !configured.includes(named[0])) {
+    throw new Error(`[nimpress] modules: unknown system ${named[0]}, configured: ${configured.join(', ') || 'none'}`)
+  }
+  if (sub === 'init') {
+    runModulesInit(cwd, resolved)
+    return
+  }
+  if (sub === 'dev') {
+    const systems = named ?? configured
+    if (!systems.length) throw new Error('[nimpress] modules dev: no systems configured')
+    await startHarnessServers(cwd, resolved, systems)
+    await new Promise(() => {})
+  }
+  if (sub === 'build') {
+    const systems = named ?? deployableSystems(resolved)
+    if (!systems.length) throw new Error('[nimpress] modules build: no systems configured')
+    await buildHarnesses(cwd, resolved, systems)
+    return
+  }
+  throw new Error('[nimpress] modules expects init, dev or build')
+}
+
+function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {
+  const dir = join(cwd, resolved.modules.dir)
+  mkdirSync(dir, { recursive: true })
+  const configPath = join(cwd, 'nimpress.config.json')
+  if (existsSync(configPath)) {
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as Record<string, unknown>
+    if (!raw.modules) {
+      raw.modules = { dir: resolved.modules.dir, route: resolved.modules.route, systems: {} }
+      writeFileSync(configPath, JSON.stringify(raw, null, 2) + '\n')
+      console.log(`nimpress modules: modules block added to ${configPath}`)
+    }
+  } else {
+    console.log('nimpress modules: add a modules block with systems entries to your nimpress config')
+  }
+  console.log(`nimpress modules: folder ready at ${dir}`)
 }
 
 const guardMimes: Record<string, string> = {

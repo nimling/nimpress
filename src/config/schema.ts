@@ -29,6 +29,24 @@ const bannerSchema = z.object({
   version: z.string().optional()
 }).passthrough()
 
+const moduleSystemSchema = z.object({
+  framework: z.enum(['vue', 'svelte']),
+  source: z.string().optional(),
+  package: z.string().optional(),
+  version: z.string().optional(),
+  css: z.array(z.string()).optional(),
+  port: z.number().optional(),
+  scope: z.string().optional(),
+  claim: z.string().optional(),
+  devOnly: z.boolean().optional()
+})
+
+const modulesSchema = z.object({
+  dir: z.string().optional(),
+  route: z.string().optional(),
+  systems: z.record(moduleSystemSchema).optional()
+}).passthrough()
+
 export const userConfigSchema = z.object({
   title: z.string().optional(),
   logo: z.string().optional(),
@@ -83,7 +101,8 @@ export const userConfigSchema = z.object({
   defaultFrontmatterExclude: z.array(z.string()).optional(),
   banner: z.union([bannerSchema, z.literal(false)]).optional(),
   css: z.union([z.string(), z.array(z.string())]).optional(),
-  vite: z.record(z.unknown()).optional()
+  vite: z.record(z.unknown()).optional(),
+  modules: modulesSchema.optional()
 }).passthrough()
 
 export function parseUserConfig(input: unknown, source: string): NimpressUserConfig {
