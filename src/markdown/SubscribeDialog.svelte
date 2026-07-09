@@ -1,7 +1,7 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
-  import { startLogin } from '@nimling/samna-auth-middleware'
+  import { startLogin, getAuthEndpoint, getAppSlug } from '@nimling/samna-auth-middleware'
 
   let {
     title,
@@ -51,8 +51,8 @@
 
   function subscribeUrl(): string {
     if (config.subscribe?.endpoint) return config.subscribe.endpoint
-    const slug = config.subscribe?.appSlug ?? config.clientSlug ?? ''
-    return `${(config.authEndpoint ?? '').replace(/\/$/, '')}/api/app/${slug}/subscription`
+    const slug = config.subscribe?.appSlug ?? getAppSlug()
+    return `${getAuthEndpoint().replace(/\/$/, '')}/api/app/${slug}/subscription`
   }
 
   async function subscribe() {
