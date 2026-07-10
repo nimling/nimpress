@@ -60,13 +60,17 @@ export async function generateAutoStory(
   const slotsBlock = Object.keys(slots).length ? `,\n  slots: ${JSON.stringify(slots, null, 2)}` : ''
   const content = `import { ${helper} } from '@nimling/nimpress/story'
 
-// story: Preview
+// story: ${component}
 export default ${helper}({
-  name: 'Preview',
+  name: ${JSON.stringify(component)},
   props: ${JSON.stringify(props, null, 2)}${slotsBlock}
 })
 `
-  const target = join(dirname(page.pageFile), 'preview.story.ts')
+  const fileBase = component
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+  const target = join(dirname(page.pageFile), `${fileBase}.story.ts`)
   if (existsSync(target)) {
     console.warn(`[nimpress] modules story: ${target} exists, not overwriting`)
     return null

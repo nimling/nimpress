@@ -3,7 +3,6 @@ import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { readBalanced } from './parse/typeMembers'
-import { generateAutoStories } from './autoStory'
 
 export interface ImportOptions {
   source?: string
@@ -231,7 +230,9 @@ export async function importStorybook(
       const [group, name] = module.title.split('/')
       groupByComponent.set(name, group.replace(/\s+/g, ''))
     }
-    const target = module.metaComponent ?? basename(csf, '.stories.ts')
+    const fileBase = basename(csf, '.stories.ts')
+    const coLocated = existsSync(join(dirname(csf), `${fileBase}${ext}`))
+    const target = coLocated ? fileBase : module.metaComponent ?? fileBase
     const canonical = packageNames?.get(target.toLowerCase()) ?? target
     const list = modulesByComponent.get(canonical) ?? []
     list.push(module)
@@ -280,10 +281,7 @@ export async function importStorybook(
       }
     }
   }
-  const auto = await generateAutoStories(cwd, resolved, system)
-  console.log(
-    `nimpress modules: imported ${pages} components with ${stories} stories and ${auto} auto stories for ${system}`
-  )
+  console.log(`nimpress modules: imported ${pages} components with ${stories} stories for ${system}`)
 }
 
 function pageMarkdown(system: string, name: string, pkg: string | undefined, fileRel?: string): string {
