@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 import type { ResolvedNimpressConfig } from '../types'
 import nimpress from '../plugin'
 
-function mergeDeep<T>(base: T, override: Partial<T> | undefined): T {
+export function mergeDeep<T>(base: T, override: Partial<T> | undefined): T {
   if (!override) return base
   const out: Record<string, unknown> = { ...(base as Record<string, unknown>) }
   for (const [key, value] of Object.entries(override as Record<string, unknown>)) {

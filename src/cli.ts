@@ -9,6 +9,8 @@ import { indexHtml } from './config/html'
 import { defaultConfig } from './config/defaults'
 import { lintContent } from './plugin'
 import { harnessViteConfig, harnessPort } from './modules/harness'
+import { generateAutoStory, generateAutoStories } from './modules/autoStory'
+import { importStorybook } from './modules/importStorybook'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -116,7 +118,34 @@ async function runModules(cwd: string, resolved: ResolvedNimpressConfig, args: s
     await buildHarnesses(cwd, resolved, systems)
     return
   }
-  throw new Error('[nimpress] modules expects init, dev or build')
+  if (sub === 'story') {
+    const system = named?.[0]
+    if (!system) throw new Error('[nimpress] modules story expects a system: nimpress modules story <system> [component]')
+    const component = args[2] && !args[2].startsWith('--') ? args[2] : null
+    const framework = guardFlag(args, 'framework') as 'vue' | 'svelte' | undefined
+    if (component) {
+      const target = await generateAutoStory(cwd, resolved, system, component, framework)
+      if (target) console.log(`nimpress modules: story written to ${target}`)
+      return
+    }
+    const written = await generateAutoStories(cwd, resolved, system)
+    console.log(`nimpress modules: ${written} auto stories written for ${system}`)
+    return
+  }
+  if (sub === 'import') {
+    const system = named?.[0]
+    if (!system) throw new Error('[nimpress] modules import expects a system: nimpress modules import <system> [file]')
+    const file = args[2] && !args[2].startsWith('--') ? args[2] : undefined
+    await importStorybook(cwd, resolved, system, {
+      file,
+      name: guardFlag(args, 'name'),
+      source: guardFlag(args, 'source'),
+      stories: guardFlag(args, 'stories'),
+      match: guardFlag(args, 'match')
+    })
+    return
+  }
+  throw new Error('[nimpress] modules expects init, dev, build, story or import')
 }
 
 function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {

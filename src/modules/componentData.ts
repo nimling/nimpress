@@ -1,6 +1,6 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
@@ -11,6 +11,25 @@ import { resolveComponentSource } from './resolve'
 export interface BuiltComponentData {
   data: ComponentPageData
   watchFiles: string[]
+}
+
+export async function parseComponentSchema(
+  componentDir: string,
+  componentFile: string,
+  framework: 'vue' | 'svelte',
+  component: string
+) {
+  const text = await readFile(componentFile, 'utf-8')
+  let extraTypes = ''
+  for (const entry of readdirSync(componentDir)) {
+    if (!entry.endsWith('.ts')) continue
+    if (entry.endsWith('.stories.ts') || entry.endsWith('.story.ts')) continue
+    extraTypes += await readFile(join(componentDir, entry), 'utf-8')
+    extraTypes += '\n'
+  }
+  return framework === 'vue'
+    ? parseVueComponent(text, component, extraTypes)
+    : parseSvelteComponent(text, component, extraTypes)
 }
 
 export async function buildComponentPageData(opts: {
@@ -32,10 +51,12 @@ export async function buildComponentPageData(opts: {
   let claudeMd: string | undefined
   let claudeMdPath: string | undefined
   if (source) {
-    const text = await readFile(source.componentFile, 'utf-8')
-    schema = source.systemConfig.framework === 'vue'
-      ? parseVueComponent(text, component)
-      : parseSvelteComponent(text, component)
+    schema = await parseComponentSchema(
+      source.componentDir,
+      source.componentFile,
+      source.systemConfig.framework,
+      component
+    )
     watchFiles.push(source.componentFile)
     if (existsSync(source.claudeMdPath)) {
       claudeMd = await readFile(source.claudeMdPath, 'utf-8')
@@ -66,7 +87,7 @@ export async function buildComponentPageData(opts: {
       claudeMd,
       claudeMdPath,
       editable: editable && !!source,
-      harnessPath: `${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}`,
+      harnessPath: `${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}/`,
       schema,
       stories
     },

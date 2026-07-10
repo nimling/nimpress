@@ -25,7 +25,12 @@ function walkDts(dir: string, out: string[] = []): string[] {
 export function findComponentDts(cwd: string, pkg: string, component: string): string | null {
   const root = join(cwd, 'node_modules', pkg)
   if (!existsSync(root) || !statSync(root).isDirectory()) return null
-  const names = [`${component}.vue.d.ts`, `${component}.svelte.d.ts`, `${component}.d.ts`]
+  const names = [
+    `${component}.vue.d.ts`,
+    `${component}.svelte.d.ts`,
+    `${component}.d.ts`,
+    `${component.toLowerCase()}/index.d.ts`
+  ]
   const files = walkDts(root)
   for (const name of names) {
     const hit = files.find((f) => f.endsWith(`/${name}`))

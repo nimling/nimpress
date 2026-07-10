@@ -8,9 +8,10 @@ import {
   extractTypeBody
 } from './typeMembers'
 
-export function parseVueComponent(source: string, component: string): ControlSchema {
+export function parseVueComponent(source: string, component: string, extraTypes = ''): ControlSchema {
   const script = source.match(/<script[^>]*\bsetup\b[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? ''
   const template = source.match(/<template>([\s\S]*)<\/template>/)?.[1] ?? ''
+  const typeContext = `${script}\n${extraTypes}`
 
   let propsBody: string | null = null
   const inline = /defineProps<\s*\{/.exec(script)
@@ -18,7 +19,7 @@ export function parseVueComponent(source: string, component: string): ControlSch
     propsBody = readBalanced(script, inline.index + inline[0].length)
   } else {
     const named = script.match(/defineProps<\s*([A-Za-z_$][\w$]*)\s*>/)
-    if (named) propsBody = extractTypeBody(script, named[1])
+    if (named) propsBody = extractTypeBody(typeContext, named[1])
   }
 
   const defaults = new Map<string, unknown>()
@@ -33,7 +34,7 @@ export function parseVueComponent(source: string, component: string): ControlSch
   const props: ControlSpec[] = []
   if (propsBody) {
     for (const member of splitTypeMembers(propsBody)) {
-      const spec = controlFromType(member.name, member.type, member.optional)
+      const spec = controlFromType(member.name, member.type, member.optional, typeContext)
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
       props.push(spec)
     }
