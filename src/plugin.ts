@@ -144,8 +144,6 @@ const frontmatterSchema = z.object({
   tags: z.union([z.string(), z.array(z.string())]).optional(),
   rss: z.boolean().optional(),
   subscribe: z.boolean().optional(),
-  groupIcon: z.string().optional(),
-  groupStyle: z.string().optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -1759,12 +1757,18 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         cursor = next
       }
       cursor.page = p
-      if (p.frontmatter.groupIcon !== undefined || p.frontmatter.groupStyle !== undefined) {
-        const parent = '/' + segments.slice(0, -1).join('/')
-        dirMeta.set(parent, {
-          icon: p.frontmatter.groupIcon ?? dirMeta.get(parent)?.icon,
-          style: p.frontmatter.groupStyle ?? dirMeta.get(parent)?.style
-        })
+      if (p.type === 'component') {
+        const d = (p.frontmatter.data ?? {}) as Record<string, unknown>
+        if (typeof d.groupIcon === 'string' || typeof d.groupStyle === 'string') {
+          const target =
+            typeof d.group === 'string'
+              ? normalizePath(d.group)
+              : '/' + segments.slice(0, -1).join('/')
+          dirMeta.set(target, {
+            icon: typeof d.groupIcon === 'string' ? d.groupIcon : dirMeta.get(target)?.icon,
+            style: typeof d.groupStyle === 'string' ? d.groupStyle : dirMeta.get(target)?.style
+          })
+        }
       }
     }
 

@@ -163,8 +163,6 @@ export interface Frontmatter {
   tags?: string | string[]
   rss?: boolean
   subscribe?: boolean
-  groupIcon?: string
-  groupStyle?: string
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }

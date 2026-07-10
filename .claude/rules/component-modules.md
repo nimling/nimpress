@@ -38,6 +38,8 @@ modules: {
 
 3. Grouping is physical: the group folder above the component folder. Move the folder to regroup.
 
+3.1. Group presentation lives in `data` on member pages: `data.groupIcon` for an ascii icon, `data.groupStyle` for inline css on the group row, optional `data.group` naming the target group path. Latest definition wins.
+
 4. A CLAUDE.md in the component source folder renders on the page and is editable in local dev only.
 
 ## Stories
