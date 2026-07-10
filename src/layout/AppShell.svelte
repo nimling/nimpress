@@ -141,6 +141,9 @@
     padding: 32px;
     min-width: 0;
   }
+  .np-main:has(:global(.np-ws)) {
+    padding: 0;
+  }
   .np-drawer-backdrop {
     display: none;
   }
