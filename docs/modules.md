@@ -73,9 +73,19 @@ data:
 
 2. Grouping is physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Move folders to regroup.
 
-3. The component's CLAUDE.md renders on the page, editable in place during local dev, readonly everywhere else.
+3. Group icon and styling come from the `data` block of any member page, latest definition wins. `data.groupIcon` is an ascii icon rendered before the group label, `data.groupStyle` is inline css applied to the group row, and `data.group` optionally names the target group path when it differs from the page's own folder:
 
-4. The overview page keeps the standard content width. Stories open the full workshop screen.
+```yaml
+data:
+  system: nimtech
+  component: MarTextInput
+  groupIcon: "▤"
+  groupStyle: "color: var(--np-brand)"
+```
+
+4. The component's CLAUDE.md renders on the page, editable in place during local dev, readonly everywhere else.
+
+5. The overview page keeps the standard content width. Stories open the full workshop screen.
 
 ## Stories
 
