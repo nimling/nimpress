@@ -24,7 +24,7 @@ export function resolveComponentSource(
     ? [resolve(root, fileOverride)]
     : [join(root, component, component + ext), join(root, component + ext)]
   for (const file of candidates) {
-    if (!file.startsWith(root)) continue
+    if (!fileOverride && !file.startsWith(root)) continue
     if (!existsSync(file)) continue
     const componentDir = dirname(file)
     return {

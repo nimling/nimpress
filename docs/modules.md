@@ -1,0 +1,165 @@
+# Component modules
+
+The component workshop: present a component library inside a nimpress site with live rendering, controls, stories, and docs per component. One system per library, vue and svelte both first class, each system rendered through an isolated iframe harness so the docs app and the components never share a runtime.
+
+## Mental model
+
+1. A system is one component library: a framework, a source tree or a released package, and the css it needs.
+
+2. A component page is a folder holding one `type: component` md file. The folder is the sidebar parent; the docs page and the stories are its children.
+
+3. A story is a `.story.ts` file beside the page: either a value story, props the controls can drive, or an executable story carrying its own render function.
+
+4. The harness is a per system vite server in dev and a static bundle in build, always reached same origin under `/_components/<system>/<Component>/`.
+
+## Configure a system
+
+```ts
+import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from '@nimling/nimpress/plugin'
+
+export default defineConfig({
+  title: 'Nimtech Components',
+  contentDir: 'docs',
+  vite: {
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      }
+    }
+  },
+  modules: {
+    systems: {
+      nimtech: {
+        framework: 'vue',
+        source: './src/components',
+        package: '@nimling/components-nimtech',
+        port: 6161,
+        css: ['./src/assets/style.css']
+      }
+    }
+  }
+})
+```
+
+1. `framework`: `vue` or `svelte`. Vue systems need `@vitejs/plugin-vue` installed in the consumer; the svelte plugin ships with nimpress.
+
+2. `source`: local component tree. Components resolve as `<source>/<Name>/<Name>.<ext>` or `<source>/<Name>.<ext>`, with `data.file` in the page frontmatter as the explicit override for any other layout, including paths outside the source root.
+
+3. `package`: the released npm package. When a component does not resolve from source, the harness imports it as a named export from this package and the props schema parses from the package `d.ts`. A page can override with its own `data.package`, which is how a showcase system presents components from several packages, `primevue` beside your own.
+
+4. `css`: sheets loaded inside the harness iframe, token sheets and theme sheets. The postcss config of the consumer applies, so tailwind pipelines work.
+
+5. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
+
+## The component page
+
+```markdown
+---
+title: MarButton
+type: component
+data:
+  system: nimtech
+  component: MarButton
+  package: "@nimling/components-nimtech"
+---
+
+## Usage
+
+...any prose, code, mermaid, callouts, everything nimpress markdown supports...
+```
+
+1. One `type: component` per folder, enforced at build.
+
+2. Grouping is physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Move folders to regroup.
+
+3. The component's CLAUDE.md renders on the page, editable in place during local dev, readonly everywhere else.
+
+4. The overview page keeps the standard content width. Stories open the full workshop screen.
+
+## Stories
+
+A value story, controls seed from the props and drive the component live:
+
+```ts
+import { vueStory } from '@nimling/nimpress/story'
+
+// story: Primary
+export default vueStory({
+  name: 'Primary',
+  props: { label: 'Save', severity: 'primary' }
+})
+```
+
+An executable story, the render function mounts verbatim inside the harness:
+
+```ts
+import { vueStory } from '@nimling/nimpress/story'
+import { ref } from 'vue'
+import MarBlockEditor from '@/components/MarBlockEditor'
+
+// story: Basic
+export default vueStory({
+  name: 'Basic',
+  render: () => ({
+    components: { MarBlockEditor },
+    setup() {
+      const value = ref('<p>Hello.</p>')
+      return { value }
+    },
+    template: `<MarBlockEditor v-model="value" content-type="html" />`
+  })
+})
+```
+
+1. Name resolution: `// story: <name>` comment, then the `name` field, then the file name.
+
+2. Svelte stories use `svelteStory` and can override `component` for wrapper demos.
+
+3. Shared fixtures live in `docs/components/_shared/` and import as `../../_shared/<name>`.
+
+4. Props travel base64 encoded in the harness url, so any control state is a shareable link, and the same channel updates the component live without reloads.
+
+## The workshop screen
+
+Selecting a story in the sidebar opens the workshop: toolbar, stage, and props panel in a css grid filling the content area.
+
+1. Toolbar: theme toggle, zoom, vision simulation filters, dock switch for the props panel, reload, and open, which loads the bare harness in a new tab.
+
+2. Stage: the component in its iframe on a checkered surface, theme synced with the docs app.
+
+3. Props panel: one control per parsed prop, selects for string literal unions, checkboxes, numbers, text, json editors, plus slot inputs, an emits log, and a mock fill. Dock it bottom or right and drag the divider to resize.
+
+## Schema parsing
+
+Controls derive from the component source without executing it.
+
+1. Vue: `defineProps` destructure or generic, defaults from the destructure, type aliases resolved from the script and sibling `.types.ts` files, slots from the template, emits from `defineEmits`.
+
+2. Svelte 5: `$props()` destructure with `$bindable` defaults, `Snippet` members as slots, `on*` function members as emits.
+
+3. Package mode: the props interface parses from the package `d.ts`, `<Component>Props` or `Props`.
+
+## CLI
+
+```bash
+nimpress modules import nimtech --stories=../lib/src/scenarios --match='^Mar'
+nimpress modules import nimtech ../elsewhere/Special.vue --name=Special
+nimpress modules story nimtech MarButton
+nimpress modules dev nimtech
+nimpress modules build
+```
+
+1. `import <system>` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers and shared data modules, then fills storyless components with typed auto stories. `--match` filters component names by regex.
+
+2. `import <system> <file>` registers a single external component into the system.
+
+3. `story <system> [component]` writes typed mock auto stories, framework autodetected from the file extension with `--framework=` as the override.
+
+4. `dev` and `build` run the harness servers and emit the static bundles. `nimpress dev` and `nimpress build` include them automatically.
+
+## Hosting and guard
+
+1. Build output is fully static: the site plus `dist/_components/<system>/` per system, same paths as dev, no server required.
+
+2. Component pages gate like any page: `scope` or `claim` in frontmatter moves the page into the gated artifact flow, and the harness bundles deploy with the site.

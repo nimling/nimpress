@@ -1,9 +1,11 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
+import { readdirSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
-import { join, resolve, isAbsolute } from 'node:path'
-import type { InlineConfig, PluginOption, ViteDevServer } from 'vite'
+import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
+import type { InlineConfig, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
+import { mergeDeep } from '../config/viteConfig'
 import { resolveComponentSource } from './resolve'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
@@ -26,13 +28,20 @@ function messageBridge(): string {
 function parseParam(name) {
   const raw = params.get(name)
   if (!raw) return undefined
-  try { return JSON.parse(raw) } catch { return undefined }
+  try { return JSON.parse(decodeURIComponent(escape(atob(raw)))) } catch { return undefined }
 }
 const state = {
   props: parseParam('props') ?? {},
   slots: parseParam('slots') ?? {},
   emits: parseParam('emits') ?? []
 }
+function applyTheme(mode) {
+  if (mode !== 'light' && mode !== 'dark') return
+  document.documentElement.classList.toggle('dark', mode === 'dark')
+  document.documentElement.dataset.theme = mode
+  document.documentElement.style.colorScheme = mode
+}
+applyTheme(params.get('theme'))
 function safeArgs(args) {
   try { return JSON.parse(JSON.stringify(args)) } catch { return [] }
 }
@@ -45,6 +54,7 @@ window.addEventListener('message', (event) => {
   if (d.props !== undefined) state.props = d.props
   if (d.slots !== undefined) state.slots = d.slots
   if (d.emits !== undefined) state.emits = d.emits
+  if (d.theme !== undefined) applyTheme(d.theme)
   render()
 })`
 }
@@ -56,6 +66,20 @@ function componentImport(target: HarnessTarget): string {
   return `import Component from ${JSON.stringify(target.importSpec)}`
 }
 
+function storyRegistry(target: HarnessTarget): string {
+  const imports = (target.storyFiles ?? [])
+    .map((file, i) => `import story${i} from ${JSON.stringify(file.path)}`)
+    .join('\n')
+  const entries = (target.storyFiles ?? [])
+    .map((file, i) => `  ${JSON.stringify(file.base)}: story${i}`)
+    .join(',\n')
+  return `${imports}
+const storyRegistry = {
+${entries}
+}
+const activeStoryDef = storyRegistry[params.get('story') ?? ''] ?? null`
+}
+
 function vueEntry(target: HarnessTarget, css: string[]): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   return `import { createApp, h } from 'vue'
@@ -63,10 +87,16 @@ ${cssImports}
 ${componentImport(target)}
 
 ${messageBridge()}
+${storyRegistry(target)}
 
 let app = null
 function render() {
   if (app) app.unmount()
+  if (activeStoryDef && typeof activeStoryDef.render === 'function') {
+    app = createApp(activeStoryDef.render())
+    app.mount('#host')
+    return
+  }
   const props = { ...state.props }
   for (const name of state.emits) {
     const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
@@ -91,6 +121,7 @@ ${cssImports}
 ${componentImport(target)}
 
 ${messageBridge()}
+${storyRegistry(target)}
 
 let instance = null
 function render() {
@@ -102,7 +133,8 @@ function render() {
   for (const [name, html] of Object.entries(state.slots)) {
     props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
   }
-  instance = mount(Component, { target: document.getElementById('host'), props })
+  const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : Component
+  instance = mount(override, { target: document.getElementById('host'), props })
 }
 render()
 parent.postMessage({ type: 'nimpress:ready' }, '*')
@@ -123,6 +155,8 @@ export function harnessHtml(component: string): string {
     <title>${component}</title>
     <style>
       html, body { margin: 0; padding: 0; background: transparent; }
+      body { color: #18181b; }
+      html.dark body { color: #e4e4e7; }
       #host { display: flow-root; padding: 1rem; }
     </style>
   </head>
@@ -155,6 +189,7 @@ export interface HarnessTarget {
   component: string
   importSpec: string
   named?: boolean
+  storyFiles?: Array<{ base: string; path: string }>
 }
 
 export function resolveHarnessTargets(
@@ -168,19 +203,36 @@ export function resolveHarnessTargets(
   const targets: HarnessTarget[] = []
   for (const page of pages) {
     if (page.system !== system) continue
+    const storyFiles = collectStoryFiles(page.pageFile)
+    const source = systemConfig.source
+      ? resolveComponentSource(cwd, modules, system, page.component, page.file)
+      : null
+    if (source) {
+      targets.push({ component: page.component, importSpec: source.componentFile, storyFiles })
+      continue
+    }
     const pkg = page.package ?? systemConfig.package
-    if (!systemConfig.source && pkg) {
-      targets.push({ component: page.component, importSpec: pkg, named: true })
+    if (pkg) {
+      targets.push({ component: page.component, importSpec: pkg, named: true, storyFiles })
       continue
     }
-    const source = resolveComponentSource(cwd, modules, system, page.component, page.file)
-    if (!source) {
-      console.warn(`[nimpress] modules: no source found for ${system}/${page.component}`)
-      continue
-    }
-    targets.push({ component: page.component, importSpec: source.componentFile })
+    console.warn(`[nimpress] modules: no source found for ${system}/${page.component}`)
   }
   return targets
+}
+
+function collectStoryFiles(pageFile: string): Array<{ base: string; path: string }> {
+  const dir = dirname(pageFile)
+  let entries: string[]
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return []
+  }
+  return entries
+    .filter((name) => name.endsWith('.story.ts'))
+    .sort()
+    .map((name) => ({ base: basename(name, '.story.ts'), path: join(dir, name) }))
 }
 
 export async function writeHarnessFiles(
@@ -229,9 +281,14 @@ export async function harnessViteConfig(
     appType: 'mpa',
     plugins: [framework],
     server: {
+      host: '127.0.0.1',
       port: harnessPort(modules, system),
       strictPort: true,
-      fs: { allow: [cwd, sourceRoot] }
+      fs: { allow: [cwd, sourceRoot] },
+      hmr: {
+        host: '127.0.0.1',
+        clientPort: harnessPort(modules, system)
+      }
     },
     build: {
       outDir: resolve(cwd, resolvedConfig.outDir, routeBase.replace(/^\//, ''), system),
@@ -241,7 +298,7 @@ export async function harnessViteConfig(
         input: Object.fromEntries(targets.map((t) => [t.component, join(root, t.component, 'index.html')]))
       }
     },
-    base: command === 'build' ? `${routeBase}/${system}/` : '/'
+    base: `${routeBase}/${system}/`
   }
-  return config
+  return mergeDeep(config, resolvedConfig.vite as Partial<InlineConfig>)
 }

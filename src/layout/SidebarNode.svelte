@@ -57,7 +57,14 @@
     {:else}
       <div class="np-subgroup-row" class:active>
         {#if node.link}
-          <a class="np-link np-subgroup-link" href={node.link} class:active>{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+          <a
+            class="np-link np-subgroup-link"
+            href={node.link}
+            class:active
+            onclick={() => {
+              if (!open) toggleGroup(groupKey, open)
+            }}
+          >{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
           <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{node.text}</button>
         {/if}
@@ -148,8 +155,8 @@
   .np-subgroup-button {
     flex: 1;
     min-width: 0;
-    padding: 6px 8px;
-    font-size: 14px;
+    padding: 4px 8px;
+    font-size: 13px;
     color: var(--np-text-secondary);
     text-decoration: none;
     background: transparent;
@@ -193,20 +200,21 @@
   .np-items,
   .np-subitems { list-style: none; margin: 0; padding: 0; }
   .np-subitems {
-    padding-left: 12px;
+    padding-left: 10px;
     border-left: 1px solid var(--np-divider);
     margin-left: 8px;
   }
+  .np-subitems > li { margin: 1px 0; }
 
   .np-link {
     display: flex;
     align-items: center;
-    padding: 6px 8px;
+    padding: 4px 8px;
     padding-right: 28px;
     border-radius: var(--np-radius-md);
     color: var(--np-text-secondary);
     text-decoration: none;
-    font-size: 14px;
+    font-size: 13px;
   }
   .np-link:hover {
     background-color: var(--np-bg-surface);

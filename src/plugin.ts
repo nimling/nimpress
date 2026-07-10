@@ -270,6 +270,14 @@ function slugify(text: string): string {
     .replace(/\s+/g, '-')
 }
 
+function storyAnchor(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 type ContainerOpts = {
   render: (tokens: { nesting: number; info: string }[], idx: number) => string
   validate?: (params: string) => boolean
@@ -948,6 +956,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const pathToFile = new Map<string, string>()
     const changelogGroups = new Map<string, ProcessedPage[]>()
     const roadmapGroups = new Map<string, ProcessedPage[]>()
+    const componentDirs = new Map<string, string>()
     const allProcessed: ProcessedPage[] = []
 
     const fileSet = new Set(files)
@@ -976,6 +985,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (p.type === 'roadmap') {
         const groupKey = String(p.filePath)
         roadmapGroups.set(groupKey, [p])
+      }
+      if (p.type === 'component') {
+        const dir = dirname(p.filePath)
+        const other = componentDirs.get(dir)
+        if (other) {
+          throw new Error(
+            `[nimpress] one type component page per folder: ${dir} holds ${other} and ${p.filePath}`
+          )
+        }
+        componentDirs.set(dir, p.filePath)
       }
       const seen = pathToFile.get(p.effectivePath)
       if (seen) {
@@ -1805,6 +1824,22 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           const entryNodes = roots.map((e, idx) => buildEntryNode(e, idx))
           const filteredItems = items.filter((it) => !it.slug || !entries.some((e) => e.slug === it.slug))
           node.items = filteredItems.length ? [...entryNodes, ...filteredItems] : entryNodes
+        } else if (t.page.type === 'component') {
+          const docNode: SidebarNode = {
+            text: t.page.frontmatter.title,
+            link: t.page.effectivePath,
+            slug: `${t.page.slug}__doc`,
+            order: -1
+          }
+          const storyNodes: SidebarNode[] = (t.page.componentData?.stories ?? []).map((story, idx) => ({
+            text: story.name,
+            link: `${t.page!.effectivePath}#story-${storyAnchor(story.name)}`,
+            slug: `${t.page!.slug}__story__${storyAnchor(story.name)}`,
+            order: idx
+          }))
+          node.text = prettyDirName(t.segment)
+          node.items = [docNode, ...storyNodes, ...items]
+          node.collapsed = true
         } else if (items.length) {
           node.items = items
         }
@@ -2288,14 +2323,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             res.end(`unknown module system: ${system}`)
             return
           }
-          const query = (req.url ?? '').split('?')[1]
-          const upstreamPath =
-            '/' + rest.split('/').slice(1).join('/') + (query ? `?${query}` : '')
           const upstream = httpRequest(
             {
               host: '127.0.0.1',
               port: harnessPort(resolved.modules, system),
-              path: upstreamPath,
+              path: req.url ?? '/',
               method: req.method,
               headers: req.headers
             },

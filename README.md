@@ -97,10 +97,14 @@ Wire the CLI into `package.json`:
 | Command | Description |
 |---------|-------------|
 | `nimpress init` | Scaffold a config and content folder |
-| `nimpress dev` | Start the dev server |
-| `nimpress build` | Build the static site into `outDir`, default `dist` |
+| `nimpress dev` | Start the dev server, component harnesses included |
+| `nimpress build` | Build the static site into `outDir`, default `dist`, harness bundles included |
 | `nimpress preview` | Serve the built site |
 | `nimpress lint` | Validate frontmatter across the content |
+| `nimpress modules import <system> [file]` | Import a component library or a single component, storybook stories included |
+| `nimpress modules story <system> [component]` | Write typed mock auto stories |
+| `nimpress modules dev [system]` | Run component harness servers |
+| `nimpress modules build [system]` | Build static harness bundles |
 
 ## Working on Nimpress itself
 
@@ -120,7 +124,8 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 
 | Topic | Guide |
 |-------|-------|
-| Page types: `doc`, `openapi`, `changelog`, `hero`, `roadmap` | [docs/page-types.md](./docs/page-types.md) |
+| Page types: `doc`, `openapi`, `changelog`, `hero`, `roadmap`, `component` | [docs/page-types.md](./docs/page-types.md) |
+| Component workshop: systems, stories, harness, controls, import CLI | [docs/modules.md](./docs/modules.md) |
 | Markdown support, callouts, actions, features | [docs/markdown.md](./docs/markdown.md) |
 | Definition lists for compact term references | [docs/definition-lists.md](./docs/definition-lists.md) |
 | Mermaid diagrams | [docs/mermaid.md](./docs/mermaid.md) |
@@ -151,6 +156,7 @@ When writing or editing markdown under the docs content directory, follow the Ni
 - `docs-authoring.md`, `doc-pages.md`, `page-types.md`, `frontmatter.md`, `file-layout.md` for general pages
 - `changelog-entries.md` for changelog entries
 - `roadmap-entries.md` for roadmap pages and issue pages
+- `component-modules.md` for component pages, stories, and the workshop
 - `style.md` for theming and overrides
 ```
 

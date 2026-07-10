@@ -1,16 +1,34 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, basename } from 'node:path'
 import type { ComponentStory } from '../types'
+import { readBalanced } from './parse/typeMembers'
 
-function evaluateStoryModule(code: string): unknown {
-  const body = code
-    .split('\n')
-    .filter((line) => !/^\s*import\b/.test(line))
-    .join('\n')
-    .replace(/\bsatisfies\s+[A-Za-z_$][\w$.]*(?:<[^>]*>)?/g, '')
-    .replace(/\bas\s+const\b/g, '')
-    .replace(/export\s+default\b/, 'return')
-  return new Function(body)()
+function parseObjectLiteral(source: string, key: string): Record<string, unknown> | undefined {
+  const at = source.search(new RegExp(`\\b${key}\\s*:`))
+  if (at < 0) return undefined
+  const brace = source.indexOf('{', at)
+  if (brace < 0) return undefined
+  const body = readBalanced(source, brace + 1)
+  try {
+    return new Function(`return {${body}}`)() as Record<string, unknown>
+  } catch {
+    return undefined
+  }
+}
+
+export function parseStorySource(raw: string, fileName: string): ComponentStory {
+  const commentName = raw.match(/^\s*\/\/\s*story:\s*(.+)$/m)?.[1]?.trim()
+  const fieldName = raw.match(/\bname\s*:\s*['"]([^'"]+)['"]/)?.[1]
+  const description = raw.match(/\bdescription\s*:\s*['"]([^'"]+)['"]/)?.[1]
+  const props = parseObjectLiteral(raw, 'props')
+  const slots = parseObjectLiteral(raw, 'slots') as Record<string, string> | undefined
+  return {
+    name: commentName ?? fieldName ?? basename(fileName, '.story.ts'),
+    file: fileName,
+    description,
+    props,
+    slots
+  }
 }
 
 export async function readComponentStories(dir: string): Promise<ComponentStory[]> {
@@ -23,32 +41,13 @@ export async function readComponentStories(dir: string): Promise<ComponentStory[
   const out: ComponentStory[] = []
   for (const e of entries) {
     if (!e.isFile() || !e.name.endsWith('.story.ts')) continue
-    const file = join(dir, e.name)
     let raw: string
     try {
-      raw = await readFile(file, 'utf-8')
+      raw = await readFile(join(dir, e.name), 'utf-8')
     } catch {
       continue
     }
-    let data: unknown
-    try {
-      data = evaluateStoryModule(raw)
-    } catch (err) {
-      console.warn(`[nimpress] failed to evaluate story ${file}:`, err)
-      continue
-    }
-    if (typeof data !== 'object' || data === null) {
-      console.warn(`[nimpress] story ${file} has no default export object`)
-      continue
-    }
-    const story = data as Partial<ComponentStory>
-    out.push({
-      name: story.name ?? basename(e.name, '.story.ts'),
-      file: e.name,
-      description: story.description,
-      props: story.props,
-      slots: story.slots
-    })
+    out.push(parseStorySource(raw, e.name))
   }
   out.sort((a, b) => a.name.localeCompare(b.name))
   return out

@@ -8,8 +8,9 @@ import {
   extractTypeBody
 } from './typeMembers'
 
-export function parseSvelteComponent(source: string, component: string): ControlSchema {
+export function parseSvelteComponent(source: string, component: string, extraTypes = ''): ControlSchema {
   const script = source.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? ''
+  const typeContext = `${script}\n${extraTypes}`
 
   const propsCall = script.match(/(?:let|const)\s*\{([\s\S]*?)\}\s*(?::\s*([\s\S]*?))?=\s*\$props\(\)/)
 
@@ -30,7 +31,7 @@ export function parseSvelteComponent(source: string, component: string): Control
       propsBody = readBalanced(annotation, 1)
     } else {
       const named = annotation.match(/^([A-Za-z_$][\w$]*)/)
-      if (named) propsBody = extractTypeBody(script, named[1])
+      if (named) propsBody = extractTypeBody(typeContext, named[1])
     }
   }
 
@@ -48,7 +49,7 @@ export function parseSvelteComponent(source: string, component: string): Control
         emits.push(member.name)
         continue
       }
-      const spec = controlFromType(member.name, member.type, member.optional)
+      const spec = controlFromType(member.name, member.type, member.optional, typeContext)
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
       props.push(spec)
     }

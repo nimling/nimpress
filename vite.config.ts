@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
             index: path.resolve(dirname, 'src/index.ts'),
             plugin: path.resolve(dirname, 'src/plugin.ts'),
             cli: path.resolve(dirname, 'src/cli.ts'),
+            story: path.resolve(dirname, 'src/story/index.ts'),
             'tailwind.preset': path.resolve(dirname, 'tailwind.preset.ts')
           },
           formats: ['es'],

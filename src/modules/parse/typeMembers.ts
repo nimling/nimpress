@@ -55,7 +55,10 @@ export function splitTopLevel(text: string): string[] {
 }
 
 export function stringLiteralUnion(type: string): string[] | null {
-  const parts = type.split('|').map((p) => p.trim()).filter((p) => p !== 'undefined' && p !== 'null')
+  const parts = type
+    .split('|')
+    .map((p) => p.trim())
+    .filter((p) => p !== '' && p !== 'undefined' && p !== 'null')
   if (!parts.length) return null
   const out: string[] = []
   for (const p of parts) {
@@ -66,8 +69,18 @@ export function stringLiteralUnion(type: string): string[] | null {
   return out
 }
 
-export function controlFromType(name: string, type: string, optional: boolean): ControlSpec {
-  const t = type.replace(/\s+/g, ' ').trim()
+export function resolveTypeAlias(type: string, typeContext: string): string {
+  const t = type.trim()
+  if (!/^[A-Za-z_$][\w$]*$/.test(t)) return type
+  const re = new RegExp(`(?:export\\s+)?type\\s+${t}\\s*=\\s*([^\\n;]*(?:\\n\\s*\\|[^\\n;]+)*)`)
+  const m = typeContext.match(re)
+  const body = m?.[1]?.replace(/\s+/g, ' ').trim()
+  return body ? body : type
+}
+
+export function controlFromType(name: string, type: string, optional: boolean, typeContext = ''): ControlSpec {
+  const resolved = resolveTypeAlias(type, typeContext)
+  const t = resolved.replace(/\s+/g, ' ').trim()
   const options = stringLiteralUnion(t)
   if (options) return { name, kind: 'select', type: t, options, required: !optional }
   const bare = t.replace(/\s*\|\s*(undefined|null)\s*/g, '').trim()

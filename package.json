@@ -34,6 +34,10 @@
       "types": "./dist/cli.d.ts",
       "import": "./dist/cli.es.js"
     },
+    "./story": {
+      "types": "./dist/story/index.d.ts",
+      "import": "./dist/story.es.js"
+    },
     "./tailwind": {
       "types": "./dist/tailwind.preset.d.ts",
       "import": "./dist/tailwind.preset.es.js"
