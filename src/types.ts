@@ -163,6 +163,8 @@ export interface Frontmatter {
   tags?: string | string[]
   rss?: boolean
   subscribe?: boolean
+  groupIcon?: string
+  groupStyle?: string
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }
@@ -210,6 +212,7 @@ export interface SidebarNode {
   scope?: string
   claim?: string
   icon?: string
+  style?: string
   order?: number
   collapsed?: boolean
   hidden?: boolean

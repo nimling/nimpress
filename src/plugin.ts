@@ -144,6 +144,8 @@ const frontmatterSchema = z.object({
   tags: z.union([z.string(), z.array(z.string())]).optional(),
   rss: z.boolean().optional(),
   subscribe: z.boolean().optional(),
+  groupIcon: z.string().optional(),
+  groupStyle: z.string().optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -1739,6 +1741,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
+    const dirMeta = new Map<string, { icon?: string; style?: string }>()
 
     for (const p of pages.values()) {
       if (isBuildCommand && (p.frontmatter.hidden || (!includeGated && isGated(p)))) continue
@@ -1756,6 +1759,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         cursor = next
       }
       cursor.page = p
+      if (p.frontmatter.groupIcon !== undefined || p.frontmatter.groupStyle !== undefined) {
+        const parent = '/' + segments.slice(0, -1).join('/')
+        dirMeta.set(parent, {
+          icon: p.frontmatter.groupIcon ?? dirMeta.get(parent)?.icon,
+          style: p.frontmatter.groupStyle ?? dirMeta.get(parent)?.style
+        })
+      }
     }
 
     function emit(t: TreeNode): SidebarNode {
@@ -1853,6 +1863,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         text: prettyDirName(t.segment),
         slug: t.fullPath.replace(/^\//, '')
       }
+      const meta = dirMeta.get(t.fullPath)
+      if (meta?.icon) node.icon = meta.icon
+      if (meta?.style) node.style = meta.style
       if (items.length) {
         node.items = items
         let minOrder = Number.MAX_SAFE_INTEGER
