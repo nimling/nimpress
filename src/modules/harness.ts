@@ -91,23 +91,29 @@ ${storyRegistry(target)}
 
 let app = null
 function render() {
-  if (app) app.unmount()
-  if (activeStoryDef && typeof activeStoryDef.render === 'function') {
-    app = createApp(activeStoryDef.render())
+  try {
+    if (app) app.unmount()
+    if (activeStoryDef && typeof activeStoryDef.render === 'function') {
+      app = createApp(activeStoryDef.render())
+      app.mount('#host')
+      return
+    }
+    const props = { ...state.props }
+    for (const name of state.emits) {
+      const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
+      props[key] = (...args) => emitOut(name, args)
+    }
+    const slots = {}
+    for (const [name, html] of Object.entries(state.slots)) {
+      slots[name] = () => h('span', { innerHTML: String(html) })
+    }
+    app = createApp({ render: () => h(Component, props, slots) })
     app.mount('#host')
-    return
+  } catch (err) {
+    console.error(err)
+    document.getElementById('host').innerText = String(err)
+    parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
   }
-  const props = { ...state.props }
-  for (const name of state.emits) {
-    const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
-    props[key] = (...args) => emitOut(name, args)
-  }
-  const slots = {}
-  for (const [name, html] of Object.entries(state.slots)) {
-    slots[name] = () => h('span', { innerHTML: String(html) })
-  }
-  app = createApp({ render: () => h(Component, props, slots) })
-  app.mount('#host')
 }
 render()
 parent.postMessage({ type: 'nimpress:ready' }, '*')
@@ -125,16 +131,22 @@ ${storyRegistry(target)}
 
 let instance = null
 function render() {
-  if (instance) unmount(instance)
-  const props = { ...state.props }
-  for (const name of state.emits) {
-    props[name] = (...args) => emitOut(name, args)
+  try {
+    if (instance) unmount(instance)
+    const props = { ...state.props }
+    for (const name of state.emits) {
+      props[name] = (...args) => emitOut(name, args)
+    }
+    for (const [name, html] of Object.entries(state.slots)) {
+      props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
+    }
+    const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : Component
+    instance = mount(override, { target: document.getElementById('host'), props })
+  } catch (err) {
+    console.error(err)
+    document.getElementById('host').innerText = String(err)
+    parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
   }
-  for (const [name, html] of Object.entries(state.slots)) {
-    props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
-  }
-  const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : Component
-  instance = mount(override, { target: document.getElementById('host'), props })
 }
 render()
 parent.postMessage({ type: 'nimpress:ready' }, '*')

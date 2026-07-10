@@ -90,12 +90,36 @@ function parseStoryModule(file: string): StoryModule {
     }
     break
   }
-  const dataModules = importStatements
-    .map((s) => s.match(/from\s+["']\.\/([\w-]+)["']/)?.[1])
-    .filter((s): s is string => !!s)
+  const csfDir = dirname(file)
+  const dataModules: string[] = []
+  const classifyRelative = (spec: string): { kind: 'data' | 'source'; abs: string } | null => {
+    const abs = resolve(csfDir, spec)
+    if (/\.(vue|svelte)$/.test(spec)) return { kind: 'source', abs }
+    if (spec.endsWith('.ts')) return existsSync(abs) ? { kind: 'data', abs } : null
+    if (existsSync(`${abs}.ts`)) return { kind: 'data', abs: `${abs}.ts` }
+    if (existsSync(`${abs}.vue`) || existsSync(`${abs}.svelte`) || existsSync(join(abs, 'index.ts'))) {
+      return { kind: 'source', abs }
+    }
+    return null
+  }
+  for (const statement of importStatements) {
+    const spec = statement.match(/from\s+["'](\.\.?\/[^"']+)["']/)?.[1]
+    if (!spec) continue
+    const classified = classifyRelative(spec)
+    if (classified?.kind === 'data') dataModules.push(classified.abs)
+  }
   const imports = importStatements
     .filter((s) => !s.includes('@storybook'))
-    .map((s) => s.replace(/from\s+["']\.\/([\w-]+)["']/g, 'from "../../_shared/$1"'))
+    .map((s) =>
+      s.replace(/from\s+["'](\.\.?\/[^"']+)["']/g, (full, spec: string) => {
+        const classified = classifyRelative(spec)
+        if (classified?.kind === 'source') {
+          return `from ${JSON.stringify(classified.abs)}`
+        }
+        const base = basename(spec).replace(/\.ts$/, '')
+        return `from "../../_shared/${base}"`
+      })
+    )
     .join('\n')
   let rest = text.slice(lines.slice(0, i).join('\n').length)
   const removeBlock = (startRe: RegExp) => {
@@ -113,7 +137,12 @@ function parseStoryModule(file: string): StoryModule {
   }
   removeBlock(/^const meta\b[^\n]*/m)
   rest = rest.replace(/^export default meta;?\s*$/m, '')
-  rest = rest.replace(/^type \w+[^\n]*$/gm, '')
+  rest = rest.replace(/^(?:export )?type \w+[^\n]*\n(?:[ \t]+[^\n]*\n?)*/gm, '')
+  let interfaceGuard = 0
+  while (/^(?:export )?interface \w+/m.test(rest) && interfaceGuard < 50) {
+    removeBlock(/^(?:export )?interface \w+[^\n]*/m)
+    interfaceGuard++
+  }
   let guard = 0
   while (/^export const \w+/m.test(rest) && guard < 200) {
     removeBlock(/^export const \w+[^\n]*/m)
@@ -130,6 +159,36 @@ function parseStoryModule(file: string): StoryModule {
   }
 }
 
+function readPropertyValue(body: string, keyIndex: number): string {
+  const start = body.indexOf(':', keyIndex) + 1
+  let depth = 0
+  let inString: string | null = null
+  for (let i = start; i < body.length; i++) {
+    const ch = body[i]
+    const prev = body[i - 1]
+    if (inString) {
+      if (ch === inString && prev !== '\\') inString = null
+      continue
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      inString = ch
+      continue
+    }
+    if (ch === '{' || ch === '(' || ch === '[') depth++
+    else if (ch === '}' || ch === ')' || ch === ']') depth--
+    else if (ch === ',' && depth === 0) return body.slice(start, i).trim()
+  }
+  return body.slice(start).trim()
+}
+
+function cleanForEval(source: string): string {
+  return source
+    .replace(/\bsatisfies\s+[A-Za-z_$][\w$.]*(?:<[^>]*>)?/g, '')
+    .replace(/\bas\s+const\b/g, '')
+    .replace(/\)\s*:\s*[A-Za-z_$][\w$<>\[\], .|&]*\s*=>/g, ') =>')
+    .replace(/\(\s*([A-Za-z_$][\w$]*)\s*:\s*[A-Za-z_$][\w$<>\[\], .|&]*\)/g, '($1)')
+}
+
 function mineStories(module: StoryModule): MinedStory[] {
   const out: MinedStory[] = []
   const re = /export const (\w+)(?::[^=]*)?=\s*\{/g
@@ -140,12 +199,9 @@ function mineStories(module: StoryModule): MinedStory[] {
     const body = readBalanced(module.text, re.lastIndex)
     const renderAt = body.search(/\brender\s*:/)
     if (renderAt >= 0) {
-      const value = body.slice(body.indexOf(':', renderAt) + 1).trim()
-      const parenIdx = value.indexOf('({')
-      if (parenIdx >= 0) {
-        const innerStart = value.indexOf('{', parenIdx)
-        const inner = readBalanced(value, innerStart + 1)
-        out.push({ name, renderFn: `() => ({${inner}})` })
+      const renderFn = readPropertyValue(body, renderAt)
+      if (renderFn) {
+        out.push({ name, renderFn })
         continue
       }
     }
@@ -156,9 +212,13 @@ function mineStories(module: StoryModule): MinedStory[] {
       if (braceIdx >= 0) {
         const argsBody = readBalanced(body, braceIdx + 1)
         try {
-          props = jsonSafe(new Function(`return {${argsBody}}`)())
+          props = jsonSafe(new Function(`${cleanForEval(module.declarations)}\nreturn {${argsBody}}`)())
         } catch {
-          props = {}
+          try {
+            props = jsonSafe(new Function(`return {${argsBody}}`)())
+          } catch {
+            props = {}
+          }
         }
       }
     }
@@ -238,11 +298,8 @@ export async function importStorybook(
     list.push(module)
     modulesByComponent.set(canonical, list)
     for (const dataModule of module.dataModules) {
-      const from = join(dirname(csf), `${dataModule}.ts`)
-      if (existsSync(from)) {
-        await mkdir(sharedDir, { recursive: true })
-        await copyFile(from, join(sharedDir, `${dataModule}.ts`))
-      }
+      await mkdir(sharedDir, { recursive: true })
+      await copyFile(dataModule, join(sharedDir, basename(dataModule)))
     }
   }
 
