@@ -141,7 +141,8 @@ async function runModules(cwd: string, resolved: ResolvedNimpressConfig, args: s
       name: guardFlag(args, 'name'),
       source: guardFlag(args, 'source'),
       stories: guardFlag(args, 'stories'),
-      match: guardFlag(args, 'match')
+      match: guardFlag(args, 'match'),
+      fromStories: args.includes('--from-stories')
     })
     return
   }
@@ -233,7 +234,8 @@ function runGuard(cwd: string, outDir: string, args: string[]): void {
         claim: requirement.claim
       }
     })
-    const out = join(cwd, guardFlag(args, 'out') ?? join(dist, 'guard-map.json'))
+    const outFlag = guardFlag(args, 'out')
+    const out = outFlag ? join(cwd, outFlag) : join(dist, 'guard-map.json')
     writeFileSync(
       out,
       JSON.stringify({ prefix, routes: access.routes, files: entries }, null, 2) + '\n'
