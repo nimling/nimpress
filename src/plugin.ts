@@ -2308,7 +2308,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
                 .filter((s) => s.source)
                 .map((s) => resolve(process.cwd(), s.source!))
               const inRoot = roots.some((r) => target.startsWith(r + sep))
-              if (!inRoot || !target.endsWith(`${sep}CLAUDE.md`) || !existsSync(target)) {
+              if (!inRoot || !target.endsWith(`${sep}CLAUDE.md`) || !existsSync(dirname(target))) {
                 res.statusCode = 403
                 res.end('invalid claude-md target')
                 return
