@@ -1549,7 +1549,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         roadmapEntries: p.roadmapEntries,
         componentData: p.componentData
       }
-      await writeFile(join(dir, 'body', `${urlSlug(p.slug)}.json`), JSON.stringify(body))
+      const bodyFile = join(dir, 'body', `${urlSlug(p.slug)}.json`)
+      await mkdir(dirname(bodyFile), { recursive: true })
+      await writeFile(bodyFile, JSON.stringify(body))
     }
     await writeFile(
       join(dir, 'manifest.json'),
