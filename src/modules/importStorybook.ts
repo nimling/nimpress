@@ -10,6 +10,7 @@ export interface ImportOptions {
   match?: string
   file?: string
   name?: string
+  fromStories?: boolean
 }
 
 interface MinedStory {
@@ -269,6 +270,11 @@ export async function importStorybook(
     return
   }
 
+  if (opts.fromStories) {
+    await importFromStories(cwd, resolved, system, opts)
+    return
+  }
+
   const sourceRoot = resolve(cwd, opts.source ?? systemConfig.source ?? '')
   if (!existsSync(sourceRoot)) {
     throw new Error(`[nimpress] modules import: source ${sourceRoot} not found`)
@@ -283,6 +289,10 @@ export async function importStorybook(
       if (f.endsWith('.stories.ts')) csfFiles.push(f)
     }
   }
+  const componentFiles = files.filter(
+    (f) => f.endsWith(ext) && /^[A-Z][A-Za-z0-9]*$/.test(basename(f, ext))
+  )
+  const componentNames = new Set(componentFiles.map((f) => basename(f, ext)))
   const packageNames = pkg && !systemConfig.source ? packageExportNames(cwd, pkg) : null
   for (const csf of csfFiles) {
     const module = parseStoryModule(csf)
@@ -292,7 +302,15 @@ export async function importStorybook(
     }
     const fileBase = basename(csf, '.stories.ts')
     const coLocated = existsSync(join(dirname(csf), `${fileBase}${ext}`))
-    const target = coLocated ? fileBase : module.metaComponent ?? fileBase
+    let target = coLocated ? fileBase : module.metaComponent ?? fileBase
+    if (!componentNames.has(target)) {
+      let longest = ''
+      for (const name of componentNames) {
+        if (fileBase.startsWith(name) && name.length > longest.length) longest = name
+      }
+      if (longest) target = longest
+      else console.warn(`nimpress modules: ${basename(csf)} targets ${target} which has no component page`)
+    }
     const canonical = packageNames?.get(target.toLowerCase()) ?? target
     const list = modulesByComponent.get(canonical) ?? []
     list.push(module)
@@ -302,10 +320,6 @@ export async function importStorybook(
       await copyFile(dataModule, join(sharedDir, basename(dataModule)))
     }
   }
-
-  const componentFiles = files.filter(
-    (f) => f.endsWith(ext) && /^[A-Z][A-Za-z0-9]*$/.test(basename(f, ext))
-  )
   const seen = new Map<string, string>()
   let pages = 0
   let stories = 0
@@ -327,7 +341,11 @@ export async function importStorybook(
     const modules = modulesByComponent.get(name) ?? []
     for (const module of modules) {
       const scenario = basename(module.file, '.stories.ts')
-      for (const story of mineStories(module)) {
+      const mined = mineStories(module)
+      if (!mined.length) {
+        console.warn(`nimpress modules: no stories mined from ${basename(module.file)}`)
+      }
+      for (const story of mined) {
         const displayName = scenario === name ? story.name : `${scenario} ${story.name}`
         let base = storyFileName(story.name)
         if (existsSync(join(dir, `${base}.story.ts`))) base = storyFileName(`${scenario}-${story.name}`)
@@ -339,6 +357,77 @@ export async function importStorybook(
     }
   }
   console.log(`nimpress modules: imported ${pages} components with ${stories} stories for ${system}`)
+}
+
+async function importFromStories(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  system: string,
+  opts: ImportOptions
+): Promise<void> {
+  const systemConfig = resolved.modules.systems[system]!
+  const framework: ModuleFramework = systemConfig.framework
+  const docsRoot = join(cwd, resolved.contentDir, 'components')
+  const sharedDir = join(docsRoot, '_shared')
+  const storiesDir = resolve(cwd, opts.stories ?? '')
+  if (!opts.stories || !existsSync(storiesDir)) {
+    throw new Error('[nimpress] modules import --from-stories requires --stories=<csf dir>')
+  }
+  const sourceRoot = systemConfig.source ? resolve(cwd, systemConfig.source) : cwd
+  const matcher = opts.match ? new RegExp(opts.match) : null
+  const seen = new Set<string>()
+  let pages = 0
+  let stories = 0
+  for (const csf of walk(storiesDir).filter((f) => f.endsWith('.stories.ts'))) {
+    const module = parseStoryModule(csf)
+    const fileBase = basename(csf, '.stories.ts')
+    const name = module.metaComponent ?? fileBase
+    const importSpec = module.text.match(
+      new RegExp(`import\\s+(?:\\{\\s*)?${name}(?:\\s*\\})?\\s+from\\s+["']([^"']+)["']`)
+    )?.[1]
+    let component = name
+    let pagePkg = systemConfig.package
+    let fileRel: string | undefined
+    if (importSpec && !importSpec.startsWith('.') && !importSpec.startsWith('@/')) {
+      const packageRoot = importSpec.split('/')[0].startsWith('@')
+        ? importSpec.split('/').slice(0, 2).join('/')
+        : importSpec.split('/')[0]
+      pagePkg = packageRoot
+      component = packageExportNames(cwd, packageRoot).get(name.toLowerCase()) ?? name
+    } else if (importSpec?.startsWith('@/components/')) {
+      const rel = importSpec.slice('@/components/'.length)
+      const canonical = rel === component || rel === `${component}/${component}.vue`
+      if (!canonical) fileRel = rel.endsWith('.vue') || rel.endsWith('.svelte') ? rel : `${rel}/${component}.vue`
+    } else if (importSpec?.startsWith('.')) {
+      const abs = resolve(dirname(csf), importSpec)
+      fileRel = relative(sourceRoot, abs)
+    }
+    if (matcher && !matcher.test(component)) continue
+    if (seen.has(component)) {
+      console.warn(`nimpress modules: skip duplicate ${component} from ${basename(csf)}`)
+      continue
+    }
+    seen.add(component)
+    const group = module.title?.includes('/')
+      ? module.title.split('/')[0].replace(/\s+/g, '')
+      : 'Components'
+    const dir = join(docsRoot, group, component)
+    await mkdir(dir, { recursive: true })
+    await writeFile(join(dir, 'index.md'), pageMarkdown(system, component, pagePkg, fileRel))
+    pages++
+    for (const dataModule of module.dataModules) {
+      await mkdir(sharedDir, { recursive: true })
+      await copyFile(dataModule, join(sharedDir, basename(dataModule)))
+    }
+    for (const story of mineStories(module)) {
+      const base = storyFileName(story.name)
+      const target = join(dir, `${base}.story.ts`)
+      if (existsSync(target)) continue
+      await writeFile(target, storySource(framework, story.name, fileBase, story, module))
+      stories++
+    }
+  }
+  console.log(`nimpress modules: imported ${pages} components with ${stories} stories for ${system} from stories`)
 }
 
 function pageMarkdown(system: string, name: string, pkg: string | undefined, fileRel?: string): string {
