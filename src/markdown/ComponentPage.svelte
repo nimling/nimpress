@@ -230,6 +230,14 @@
       }
       if (d.type === 'nimpress:emit') {
         emitLog = [{ name: String(d.name), args: (d.args ?? []) as unknown[] }, ...emitLog].slice(0, 50)
+        return
+      }
+      if (d.type === 'nimpress:zoom') {
+        zoom = Math.min(3, Math.max(0.25, Math.round(zoom * (1 - Number(d.delta) * 0.002) * 100) / 100))
+        return
+      }
+      if (d.type === 'nimpress:zoomscale') {
+        zoom = Math.min(3, Math.max(0.25, Math.round(zoom * Number(d.scale) * 100) / 100))
       }
     }
     const onHashChange = () => {
@@ -270,10 +278,14 @@
         {@html page.html}
       </article>
 
-      {#if data?.claudeMd !== undefined}
+      {#if data?.claudeMdPath !== undefined || data?.claudeMd !== undefined}
         <section class="np-component-claude">
           <div class="np-component-claude-head">
-            <h2>CLAUDE.md</h2>
+            <h2>
+              CLAUDE.md
+              {#if data.claudeMdPath}<code class="np-component-claude-path">{data.claudeMdPath}</code>{/if}
+              {#if data.claudeMd === undefined}<span class="np-component-claude-missing">missing</span>{/if}
+            </h2>
             {#if data.editable}
               <button
                 type="button"
@@ -320,7 +332,14 @@
       </span>
     </div>
 
-    <div class="np-ws-stage">
+    <div
+      class="np-ws-stage"
+      onwheel={(e) => {
+        if (!e.ctrlKey) return
+        e.preventDefault()
+        zoom = Math.min(3, Math.max(0.25, Math.round(zoom * (1 - e.deltaY * 0.002) * 100) / 100))
+      }}
+    >
       <div class="np-ws-frame-wrap">
         <iframe bind:this={iframeEl} class="np-ws-frame" src={storySrc} title={data.component}></iframe>
       </div>
@@ -341,10 +360,12 @@
       {#if schema && (schema.props.length || schema.slots.length)}
         <div class="np-ws-controls">
           {#each schema.props as spec (spec.name)}
-            <label class="np-control">
+            <label class="np-control np-control-kind-{spec.kind}">
               <span class="np-control-name">
-                {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
-                <code class="np-control-type">{spec.type}</code>
+                <span class="np-control-label">
+                  {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
+                </span>
+                <code class="np-control-type" title={spec.type}>{spec.type}</code>
               </span>
               {#if spec.kind === 'boolean'}
                 <input
@@ -385,9 +406,9 @@
             </label>
           {/each}
           {#each schema.slots as spec (spec.name)}
-            <label class="np-control">
+            <label class="np-control np-control-kind-slot">
               <span class="np-control-name">
-                {spec.name}
+                <span class="np-control-label">{spec.name}</span>
                 <code class="np-control-type">slot</code>
               </span>
               <input
@@ -507,6 +528,27 @@
     margin: 0;
     font-size: 18px;
     color: var(--np-text-primary);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .np-component-claude-path {
+    font-size: 11px;
+    font-family: var(--np-font-mono);
+    color: var(--np-text-faint);
+    font-weight: 400;
+  }
+
+  .np-component-claude-missing {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: var(--np-radius-pill);
+    border: 1px solid var(--np-danger);
+    color: var(--np-danger);
   }
 
   .np-component-claude-save {
@@ -721,8 +763,10 @@
 
   .np-ws-controls {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px 14px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+    justify-content: start;
+    align-items: start;
+    gap: 14px 20px;
   }
 
   .np-ws-dock-right .np-ws-controls {
@@ -732,37 +776,55 @@
   .np-control {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     min-width: 0;
+  }
+
+  .np-control-kind-json {
+    grid-column: span 2;
+  }
+
+  .np-control-kind-boolean {
+    max-width: 140px;
+  }
+
+  .np-ws-dock-right .np-control-kind-json {
+    grid-column: auto;
   }
 
   .np-control-name {
     display: flex;
-    align-items: baseline;
-    gap: 6px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .np-control-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--np-text-secondary);
+    color: var(--np-text-primary);
   }
 
   .np-control-required {
     color: var(--np-danger);
+    margin-left: 2px;
   }
 
   .np-control-type {
     font-size: 10px;
+    line-height: 1.4;
     color: var(--np-text-faint);
     font-family: var(--np-font-mono);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 140px;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .np-control input[type='text'],
   .np-control input[type='number'],
   .np-control select,
   .np-control-json {
+    width: 100%;
+    box-sizing: border-box;
     font-size: 13px;
     padding: 5px 8px;
     border-radius: 6px;
@@ -772,10 +834,18 @@
     font-family: inherit;
   }
 
+  .np-control input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    margin: 2px 0 0;
+    align-self: flex-start;
+    accent-color: var(--np-brand);
+  }
+
   .np-control-json {
     font-family: var(--np-font-mono);
     font-size: 12px;
-    min-height: 60px;
+    min-height: 84px;
     resize: vertical;
   }
 

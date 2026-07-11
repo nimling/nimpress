@@ -56,41 +56,59 @@ window.addEventListener('message', (event) => {
   if (d.emits !== undefined) state.emits = d.emits
   if (d.theme !== undefined) applyTheme(d.theme)
   render()
+})
+window.addEventListener('wheel', (event) => {
+  if (!event.ctrlKey) return
+  event.preventDefault()
+  parent.postMessage({ type: 'nimpress:zoom', delta: event.deltaY }, '*')
+}, { passive: false })
+let gestureBase = 1
+window.addEventListener('gesturestart', (event) => {
+  event.preventDefault()
+  gestureBase = event.scale ?? 1
+})
+window.addEventListener('gesturechange', (event) => {
+  event.preventDefault()
+  const scale = event.scale ?? 1
+  parent.postMessage({ type: 'nimpress:zoomscale', scale: scale / gestureBase }, '*')
+  gestureBase = scale
 })`
 }
 
-function componentImport(target: HarnessTarget): string {
-  if (target.named) {
-    return `import { ${target.component} as Component } from ${JSON.stringify(target.importSpec)}`
+function componentLoader(target: HarnessTarget): string {
+  const pick = target.named ? `mod[${JSON.stringify(target.component)}]` : 'mod.default ?? mod'
+  return `let ComponentRef = null
+async function ensureComponent() {
+  if (!ComponentRef) {
+    const mod = await import(${JSON.stringify(target.importSpec)})
+    ComponentRef = ${pick}
   }
-  return `import Component from ${JSON.stringify(target.importSpec)}`
+  return ComponentRef
+}`
 }
 
 function storyRegistry(target: HarnessTarget): string {
-  const imports = (target.storyFiles ?? [])
-    .map((file, i) => `import story${i} from ${JSON.stringify(file.path)}`)
-    .join('\n')
   const entries = (target.storyFiles ?? [])
-    .map((file, i) => `  ${JSON.stringify(file.base)}: story${i}`)
+    .map((file) => `  ${JSON.stringify(file.base)}: () => import(${JSON.stringify(file.path)})`)
     .join(',\n')
-  return `${imports}
-const storyRegistry = {
+  return `const storyLoaders = {
 ${entries}
 }
-const activeStoryDef = storyRegistry[params.get('story') ?? ''] ?? null`
+const activeLoader = storyLoaders[params.get('story') ?? '']
+const activeStoryDef = activeLoader ? (await activeLoader()).default : null`
 }
 
 function vueEntry(target: HarnessTarget, css: string[]): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   return `import { createApp, h } from 'vue'
 ${cssImports}
-${componentImport(target)}
 
 ${messageBridge()}
 ${storyRegistry(target)}
+${componentLoader(target)}
 
 let app = null
-function render() {
+async function render() {
   try {
     if (app) app.unmount()
     if (activeStoryDef && typeof activeStoryDef.render === 'function') {
@@ -98,6 +116,7 @@ function render() {
       app.mount('#host')
       return
     }
+    const Component = await ensureComponent()
     const props = { ...state.props }
     for (const name of state.emits) {
       const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
@@ -115,7 +134,7 @@ function render() {
     parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
   }
 }
-render()
+await render()
 parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
@@ -124,13 +143,13 @@ function svelteEntry(target: HarnessTarget, css: string[]): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   return `import { mount, unmount, createRawSnippet } from 'svelte'
 ${cssImports}
-${componentImport(target)}
 
 ${messageBridge()}
 ${storyRegistry(target)}
+${componentLoader(target)}
 
 let instance = null
-function render() {
+async function render() {
   try {
     if (instance) unmount(instance)
     const props = { ...state.props }
@@ -140,7 +159,7 @@ function render() {
     for (const [name, html] of Object.entries(state.slots)) {
       props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
     }
-    const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : Component
+    const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : await ensureComponent()
     instance = mount(override, { target: document.getElementById('host'), props })
   } catch (err) {
     console.error(err)
@@ -148,7 +167,7 @@ function render() {
     parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
   }
 }
-render()
+await render()
 parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
@@ -293,6 +312,7 @@ export async function harnessViteConfig(
     appType: 'mpa',
     cacheDir: join(cwd, 'node_modules', '.vite-nimpress', system),
     plugins: [framework],
+    resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
     server: {
       host: '127.0.0.1',
       port: harnessPort(modules, system),

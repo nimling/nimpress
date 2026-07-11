@@ -58,9 +58,9 @@ export async function buildComponentPageData(opts: {
       component
     )
     watchFiles.push(source.componentFile)
+    claudeMdPath = relative(cwd, source.claudeMdPath)
     if (existsSync(source.claudeMdPath)) {
       claudeMd = await readFile(source.claudeMdPath, 'utf-8')
-      claudeMdPath = relative(cwd, source.claudeMdPath)
       watchFiles.push(source.claudeMdPath)
     }
   } else {
