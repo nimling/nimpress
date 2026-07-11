@@ -291,6 +291,7 @@ export async function harnessViteConfig(
     configFile: false,
     publicDir: false,
     appType: 'mpa',
+    cacheDir: join(cwd, 'node_modules', '.vite-nimpress', system),
     plugins: [framework],
     server: {
       host: '127.0.0.1',
