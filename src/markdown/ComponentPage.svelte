@@ -3,6 +3,7 @@
   import type { ComponentStory, ControlSpec, PageModule } from '../types'
   import { theme, toggleTheme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
+  import ControlNode from './ControlNode.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -15,8 +16,6 @@
   let propValues = $state<Record<string, unknown>>({})
   let slotValues = $state<Record<string, string>>({})
   let emitLog = $state<Array<{ name: string; args: unknown[] }>>([])
-  let jsonDrafts = $state<Record<string, string>>({})
-  let jsonErrors = $state<Record<string, boolean>>({})
   let ready = $state(false)
   let claudeDraft = $state('')
   let claudeSaved = $state(true)
@@ -72,13 +71,6 @@
   function seedControls(story: ComponentStory | null) {
     propValues = { ...defaultValues(), ...(story?.props ?? {}) }
     slotValues = { ...(story?.slots ?? {}) }
-    jsonDrafts = {}
-    jsonErrors = {}
-    for (const spec of schema?.props ?? []) {
-      if (spec.kind === 'json') {
-        jsonDrafts[spec.name] = propValues[spec.name] === undefined ? '' : JSON.stringify(propValues[spec.name], null, 2)
-      }
-    }
   }
 
   const storySrc = $derived.by(() => {
@@ -112,27 +104,11 @@
   })
 
   function setProp(name: string, value: unknown) {
-    propValues = { ...propValues, [name]: value }
+    const next = { ...propValues }
+    if (value === undefined) delete next[name]
+    else next[name] = value
+    propValues = next
     push()
-  }
-
-  function setJsonProp(spec: ControlSpec, text: string) {
-    jsonDrafts = { ...jsonDrafts, [spec.name]: text }
-    if (text.trim() === '') {
-      jsonErrors = { ...jsonErrors, [spec.name]: false }
-      const next = { ...propValues }
-      delete next[spec.name]
-      propValues = next
-      push()
-      return
-    }
-    try {
-      const parsed = JSON.parse(text)
-      jsonErrors = { ...jsonErrors, [spec.name]: false }
-      setProp(spec.name, parsed)
-    } catch {
-      jsonErrors = { ...jsonErrors, [spec.name]: true }
-    }
   }
 
   function setSlot(name: string, value: string) {
@@ -150,7 +126,19 @@
     if (spec.kind === 'select') return spec.options?.[0]
     if (spec.kind === 'boolean') return true
     if (spec.kind === 'number') return 42
-    if (spec.kind === 'text') return `Sample ${spec.name}`
+    if (spec.kind === 'text' || spec.kind === 'slot') return `Sample ${spec.name}`
+    if (spec.kind === 'object') {
+      const out: Record<string, unknown> = {}
+      for (const member of spec.members ?? []) {
+        const v = mockValue(member)
+        if (v !== undefined) out[member.name] = v
+      }
+      return Object.keys(out).length ? out : undefined
+    }
+    if (spec.kind === 'array') {
+      const v = spec.item ? mockValue({ ...spec.item, name: spec.name }) : undefined
+      return v === undefined ? undefined : [v]
+    }
     return undefined
   }
 
@@ -366,74 +354,20 @@
         >mock</button>
       </div>
       {#if schema && (schema.props.length || schema.slots.length)}
-        <div class="np-ws-controls">
-          {#each schema.props as spec (spec.name)}
-            <label class="np-control np-control-kind-{spec.kind}">
-              <span class="np-control-name">
-                <span class="np-control-label">
-                  {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
-                </span>
-                <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
-              </span>
-              {#if spec.description}
-                <span class="np-control-desc">{spec.description}</span>
-              {/if}
-              {#if spec.kind === 'boolean'}
-                <input
-                  type="checkbox"
-                  checked={!!propValues[spec.name]}
-                  onchange={(e) => setProp(spec.name, e.currentTarget.checked)}
-                />
-              {:else if spec.kind === 'number'}
-                <input
-                  type="number"
-                  value={propValues[spec.name] ?? ''}
-                  oninput={(e) => setProp(spec.name, e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
-                />
-              {:else if spec.kind === 'select'}
-                <select
-                  value={String(propValues[spec.name] ?? '')}
-                  onchange={(e) => setProp(spec.name, e.currentTarget.value)}
-                >
-                  <option value=""></option>
-                  {#each spec.options ?? [] as option (option)}
-                    <option value={option}>{option}</option>
-                  {/each}
-                </select>
-              {:else if spec.kind === 'json'}
-                <textarea
-                  class="np-control-json"
-                  class:invalid={jsonErrors[spec.name]}
-                  value={jsonDrafts[spec.name] ?? ''}
-                  placeholder={spec.shape ?? spec.type}
-                  oninput={(e) => setJsonProp(spec, e.currentTarget.value)}
-                ></textarea>
-                {#if jsonErrors[spec.name]}
-                  <span class="np-control-error">invalid json, value not applied</span>
-                {/if}
-              {:else}
-                <input
-                  type="text"
-                  value={String(propValues[spec.name] ?? '')}
-                  oninput={(e) => setProp(spec.name, e.currentTarget.value === '' ? undefined : e.currentTarget.value)}
-                />
-              {/if}
-            </label>
-          {/each}
-          {#each schema.slots as spec (spec.name)}
-            <label class="np-control np-control-kind-slot">
-              <span class="np-control-name">
-                <span class="np-control-label">{spec.name}</span>
-                <code class="np-control-type">slot</code>
-              </span>
-              <input
-                type="text"
-                value={slotValues[spec.name] ?? ''}
-                oninput={(e) => setSlot(spec.name, e.currentTarget.value)}
+        {#key activeStory.name}
+          <div class="np-ws-controls">
+            {#each schema.props as spec (spec.name)}
+              <ControlNode {spec} value={propValues[spec.name]} onchange={(v) => setProp(spec.name, v)} />
+            {/each}
+            {#each schema.slots as spec (spec.name)}
+              <ControlNode
+                spec={{ ...spec, kind: 'slot', type: 'slot' }}
+                value={slotValues[spec.name]}
+                onchange={(v) => setSlot(spec.name, typeof v === 'string' ? v : '')}
               />
-            </label>
-          {/each}
-        </div>
+            {/each}
+          </div>
+        {/key}
       {:else}
         <p class="np-ws-props-empty">no parsed props for this component</p>
       {/if}
@@ -797,95 +731,20 @@
     grid-template-columns: 1fr;
   }
 
-  .np-control {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .np-control-kind-json {
+  .np-ws-controls > :global(.np-control-kind-json),
+  .np-ws-controls > :global(.np-control-kind-object),
+  .np-ws-controls > :global(.np-control-kind-array) {
     grid-column: span 2;
   }
 
-  .np-control-kind-boolean {
+  .np-ws-controls > :global(.np-control-kind-boolean) {
     max-width: 140px;
   }
 
-  .np-ws-dock-right .np-control-kind-json {
+  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-json),
+  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-object),
+  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-array) {
     grid-column: auto;
-  }
-
-  .np-control-name {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .np-control-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--np-text-primary);
-  }
-
-  .np-control-required {
-    color: var(--np-danger);
-    margin-left: 2px;
-  }
-
-  .np-control-type {
-    font-size: 10px;
-    line-height: 1.4;
-    color: var(--np-text-faint);
-    font-family: var(--np-font-mono);
-    white-space: normal;
-    word-break: break-word;
-  }
-
-  .np-control input[type='text'],
-  .np-control input[type='number'],
-  .np-control select,
-  .np-control-json {
-    width: 100%;
-    box-sizing: border-box;
-    font-size: 13px;
-    padding: 5px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--np-border);
-    background-color: var(--np-bg-surface);
-    color: var(--np-text-primary);
-    font-family: inherit;
-  }
-
-  .np-control input[type='checkbox'] {
-    width: 15px;
-    height: 15px;
-    margin: 2px 0 0;
-    align-self: flex-start;
-    accent-color: var(--np-brand);
-  }
-
-  .np-control-json {
-    font-family: var(--np-font-mono);
-    font-size: 12px;
-    min-height: 84px;
-    resize: vertical;
-  }
-
-  .np-control-json.invalid {
-    border-color: var(--np-danger);
-  }
-
-  .np-control-desc {
-    font-size: 11px;
-    line-height: 1.4;
-    color: var(--np-text-muted);
-  }
-
-  .np-control-error {
-    font-size: 11px;
-    color: var(--np-danger);
   }
 
   .np-ws-emits {

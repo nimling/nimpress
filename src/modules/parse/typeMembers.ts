@@ -117,18 +117,11 @@ export function resolveTypeAlias(type: string, typeContext: string): string {
   return body ? body : type
 }
 
-export function typeShape(type: string, typeContext: string): string | undefined {
-  const ident = type.replace(/\s*\|\s*(undefined|null)\s*/g, '').trim()
-  if (!/^[A-Za-z_$][\w$]*(\[\])?$/.test(ident)) return undefined
-  const bare = ident.replace(/\[\]$/, '')
-  const body = extractTypeBody(typeContext, bare)
-  if (!body) return undefined
-  const members = splitTypeMembers(body)
-  if (!members.length) return undefined
+function shapeOfMembers(members: ControlSpec[]): string {
   const compact = members
-    .map((m) => `${m.name}${m.optional ? '?' : ''}: ${m.type.replace(/\s+/g, ' ')}`)
+    .map((m) => `${m.name}${m.required ? '' : '?'}: ${m.shape ?? m.type}`)
     .join('; ')
-  return ident.endsWith('[]') ? `{ ${compact} }[]` : `{ ${compact} }`
+  return `{ ${compact} }`
 }
 
 export function controlFromType(
@@ -136,7 +129,9 @@ export function controlFromType(
   type: string,
   optional: boolean,
   typeContext = '',
-  description?: string
+  description?: string,
+  depth = 0,
+  seen: string[] = []
 ): ControlSpec {
   const resolved = resolveTypeAlias(type, typeContext)
   const t = resolved.replace(/\s+/g, ' ').trim()
@@ -146,8 +141,49 @@ export function controlFromType(
   if (bare === 'boolean') return { name, kind: 'boolean', type: t, required: !optional, description }
   if (bare === 'number') return { name, kind: 'number', type: t, required: !optional, description }
   if (bare === 'string') return { name, kind: 'text', type: t, required: !optional, description }
-  const shape = typeShape(type, typeContext)
-  return { name, kind: 'json', type: t, required: !optional, description, shape }
+  if (depth < 4) {
+    const itemType = bare.match(/^(.*\S)\[\]$/)?.[1] ?? bare.match(/^Array<(.+)>$/)?.[1]
+    if (itemType) {
+      const item = controlFromType('', itemType, false, typeContext, undefined, depth + 1, seen)
+      if (item.kind !== 'json') {
+        return {
+          name,
+          kind: 'array',
+          type: t,
+          item,
+          required: !optional,
+          description,
+          shape: `${item.shape ?? item.type}[]`
+        }
+      }
+    }
+    let body: string | null = null
+    let alias = ''
+    if (bare.startsWith('{') && bare.endsWith('}')) {
+      body = bare.slice(1, -1)
+    } else if (/^[A-Za-z_$][\w$]*$/.test(bare) && !seen.includes(bare)) {
+      alias = bare
+      body = extractTypeBody(typeContext, bare)
+    }
+    if (body !== null) {
+      const nextSeen = alias ? [...seen, alias] : seen
+      const members = splitTypeMembers(body).map((m) =>
+        controlFromType(m.name, m.type, m.optional, typeContext, m.description, depth + 1, nextSeen)
+      )
+      if (members.length) {
+        return {
+          name,
+          kind: 'object',
+          type: t,
+          members,
+          required: !optional,
+          description,
+          shape: shapeOfMembers(members)
+        }
+      }
+    }
+  }
+  return { name, kind: 'json', type: t, required: !optional, description }
 }
 
 export function parseLiteral(text: string): unknown {
