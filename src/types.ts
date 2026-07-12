@@ -35,6 +35,8 @@ export type ControlKind =
   | 'number'
   | 'boolean'
   | 'select'
+  | 'object'
+  | 'array'
   | 'json'
   | 'slot'
 
@@ -47,6 +49,8 @@ export interface ControlSpec {
   required?: boolean
   description?: string
   shape?: string
+  members?: ControlSpec[]
+  item?: ControlSpec
 }
 
 export interface ControlSchema {

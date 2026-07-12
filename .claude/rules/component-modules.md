@@ -54,6 +54,10 @@ modules: {
 
 5. Shared story data modules live in `docs/components/_shared/` and are imported with `../../_shared/<name>`.
 
+6. Props and controls are one structure. Controls are the component's types projected onto inputs: object types resolve into nested member controls, arrays into row editors, string literal unions into selects, four levels deep with cycle protection. Story `props` are plain data destructured into that tree; a story never defines controls.
+
+7. Prop descriptions come from JSDoc blocks or line comments directly above the type member in the component source, at every nesting level. Document props where they are typed, never in stories.
+
 ## CLI
 
 1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`.

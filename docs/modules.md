@@ -138,17 +138,23 @@ Selecting a story in the sidebar opens the workshop: toolbar, stage, and props p
 
 2. Stage: the component in its iframe on a checkered surface, theme synced with the docs app.
 
-3. Props panel: one control per parsed prop, selects for string literal unions, checkboxes, numbers, text, json editors, plus slot inputs, an emits log, and a mock fill. Dock it bottom or right and drag the divider to resize.
+3. Props panel: one control per parsed prop, selects for string literal unions, checkboxes, numbers, text, nested groups for object types, row editors for arrays, json editors only for opaque types, plus slot inputs, an emits log, and a mock fill. Dock it bottom or right and drag the divider to resize.
 
 ## Schema parsing
 
-Controls derive from the component source without executing it.
+Controls derive from the component source without executing it. A prop and its control are one structure: the control tree is the type projected onto inputs, the value is plain data at every level.
 
 1. Vue: `defineProps` destructure or generic, defaults from the destructure, type aliases resolved from the script and sibling `.types.ts` files, slots from the template, emits from `defineEmits`.
 
 2. Svelte 5: `$props()` destructure with `$bindable` defaults, `Snippet` members as slots, `on*` function members as emits.
 
 3. Package mode: the props interface parses from the package `d.ts`, `<Component>Props` or `Props`.
+
+4. Recursion: an object typed prop resolves its interface or type alias into member controls, an array typed prop gets an item control per row, four levels deep with cycle protection. Types that stay opaque, functions and unresolvable externals, fall back to a json editor.
+
+5. Descriptions: a JSDoc block or a line comment directly above a type member becomes the description under its control, at every nesting level. Document the prop where it is typed and the panel picks it up.
+
+6. Stories never carry control definitions. A story is values only, plain data destructured into the control tree by shape; the component source stays the single source of truth for what the controls are.
 
 ## CLI
 
