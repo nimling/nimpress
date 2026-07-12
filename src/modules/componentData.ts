@@ -5,6 +5,7 @@ import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
 import { findComponentDts, parseDtsSchema } from './parse/dts'
+import { controlFromJsonSchema, type ControlJsonSchema } from './parse/typeMembers'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
 
@@ -75,6 +76,21 @@ export async function buildComponentPageData(opts: {
         }
       }
     }
+  }
+
+  const controls =
+    data.controls && typeof data.controls === 'object' && !Array.isArray(data.controls)
+      ? (data.controls as Record<string, ControlJsonSchema>)
+      : undefined
+  if (controls) {
+    schema = schema ?? { component, props: [], slots: [], emits: [] }
+    const props = schema.props.map((p) =>
+      controls[p.name] ? controlFromJsonSchema(p.name, controls[p.name], !!p.required) : p
+    )
+    for (const [key, member] of Object.entries(controls)) {
+      if (!props.some((p) => p.name === key)) props.push(controlFromJsonSchema(key, member))
+    }
+    schema = { ...schema, props }
   }
 
   const route = modules.route.replace(/\/$/, '')

@@ -124,6 +124,77 @@ function shapeOfMembers(members: ControlSpec[]): string {
   return `{ ${compact} }`
 }
 
+export interface ControlJsonSchema {
+  type?: string
+  title?: string
+  description?: string
+  enum?: unknown[]
+  properties?: Record<string, ControlJsonSchema>
+  required?: string[]
+  items?: ControlJsonSchema
+  default?: unknown
+}
+
+export function controlFromJsonSchema(
+  name: string,
+  schema: ControlJsonSchema,
+  required = false,
+  depth = 0
+): ControlSpec {
+  const description = schema.description
+  if (schema.enum) {
+    const options = schema.enum.map(String)
+    return {
+      name,
+      kind: 'select',
+      type: schema.enum.map((v) => JSON.stringify(v)).join(' | '),
+      options,
+      required,
+      description,
+      default: schema.default
+    }
+  }
+  if (schema.type === 'boolean') {
+    return { name, kind: 'boolean', type: 'boolean', required, description, default: schema.default }
+  }
+  if (schema.type === 'number' || schema.type === 'integer') {
+    return { name, kind: 'number', type: 'number', required, description, default: schema.default }
+  }
+  if (schema.type === 'string') {
+    return { name, kind: 'text', type: 'string', required, description, default: schema.default }
+  }
+  if (schema.type === 'array' && schema.items && depth < 6) {
+    const item = controlFromJsonSchema('', schema.items, false, depth + 1)
+    return {
+      name,
+      kind: 'array',
+      type: schema.title ?? `${item.type}[]`,
+      item,
+      required,
+      description,
+      default: schema.default,
+      shape: `${item.shape ?? item.type}[]`
+    }
+  }
+  if (schema.type === 'object' && schema.properties && depth < 6) {
+    const requiredNames = schema.required ?? []
+    const members = Object.entries(schema.properties).map(([key, member]) =>
+      controlFromJsonSchema(key, member, requiredNames.includes(key), depth + 1)
+    )
+    return {
+      name,
+      kind: 'object',
+      type: schema.title ?? 'object',
+      members,
+      required,
+      description,
+      default: schema.default,
+      shape: shapeOfMembers(members)
+    }
+  }
+  return { name, kind: 'json', type: schema.type ?? 'unknown', required, description, default: schema.default }
+}
+
 export function controlFromType(
   name: string,
   type: string,

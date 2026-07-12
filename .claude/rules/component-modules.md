@@ -58,6 +58,10 @@ modules: {
 
 7. Prop descriptions come from JSDoc blocks or line comments directly above the type member in the component source, at every nesting level. Document props where they are typed, never in stories.
 
+8. `data.controls` in the page frontmatter maps a prop name to a json schema (`type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`) that replaces or adds the control for that prop through the same form generator.
+
+9. The page `title` is the human readable display name; `data.component` is the technical identifier the harness resolves. They may differ freely.
+
 ## CLI
 
 1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`.

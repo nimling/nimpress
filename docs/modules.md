@@ -134,11 +134,15 @@ export default vueStory({
 
 Selecting a story in the sidebar opens the workshop: toolbar, stage, and props panel in a css grid filling the content area.
 
-1. Toolbar: theme toggle, zoom, vision simulation filters, dock switch for the props panel, reload, and open, which loads the bare harness in a new tab.
+1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, vision simulation filters, dock switch for the props panel, reload, and open, which loads the bare harness in a new tab.
 
-2. Stage: the component in its iframe on a checkered surface, theme synced with the docs app.
+2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle.
 
-3. Props panel: one control per parsed prop, selects for string literal unions, checkboxes, numbers, text, nested groups for object types, row editors for arrays, json editors only for opaque types, plus slot inputs, an emits log, and a mock fill. Dock it bottom or right and drag the divider to resize.
+3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and an actions cell. Object types render nested member rows, arrays render item rows with add and remove, string literal unions render selects, json editors remain only for opaque types. Slot inputs, event pills with fired counters, and a payload log sit below. Dock it bottom or right and drag the divider to resize.
+
+4. Mock: every row's actions cell has a mock button, sample data for that prop alone, an added sample item on arrays. The panel header mock button fills every empty control at once.
+
+5. Events: interact with the component in the stage; each firing counts up on its event pill and logs its payload below, which is how emits are tested.
 
 ## Schema parsing
 
@@ -155,6 +159,26 @@ Controls derive from the component source without executing it. A prop and its c
 5. Descriptions: a JSDoc block or a line comment directly above a type member becomes the description under its control, at every nesting level. Document the prop where it is typed and the panel picks it up.
 
 6. Stories never carry control definitions. A story is values only, plain data destructured into the control tree by shape; the component source stays the single source of truth for what the controls are.
+
+7. JSON Schema override: `data.controls` in the page frontmatter maps a prop name to a json schema, `type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`. A matching schema replaces the parsed control for that prop, an unmatched key adds one, and the same generated form set renders it: objects become member rows, arrays become item rows, enums become selects. One reusable form generator for both sources.
+
+```yaml
+data:
+  controls:
+    state:
+      type: object
+      required: [items, selectedIndex]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string, description: Row label }
+        selectedIndex: { type: integer }
+```
+
+8. Display name: the page `title` is the human readable name shown in the sidebar, crumb, and overview heading. `data.component` stays the technical component identifier and shows as a badge on the overview when the two differ. Rename the title freely, the harness resolves by `data.component`.
 
 ## CLI
 
