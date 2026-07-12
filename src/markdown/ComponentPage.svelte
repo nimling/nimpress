@@ -15,7 +15,9 @@
   let view = $state('overview')
   let propValues = $state<Record<string, unknown>>({})
   let slotValues = $state<Record<string, string>>({})
-  let emitLog = $state<Array<{ name: string; args: unknown[] }>>([])
+  let emitLog = $state<Array<{ name: string; args: unknown[]; at: string }>>([])
+  let subscribedEmits = $state<string[]>([])
+  let emitFilter = $state('')
   let ready = $state(false)
   let claudeDraft = $state('')
   let claudeSaved = $state(true)
@@ -47,6 +49,21 @@
     for (const entry of emitLog) counts[entry.name] = (counts[entry.name] ?? 0) + 1
     return counts
   })
+
+  const filteredEmitLog = $derived.by(() => {
+    const q = emitFilter.trim().toLowerCase()
+    if (!q) return emitLog
+    return emitLog.filter(
+      (entry) => entry.name.toLowerCase().includes(q) || JSON.stringify(entry.args).toLowerCase().includes(q)
+    )
+  })
+
+  function toggleEmit(name: string) {
+    subscribedEmits = subscribedEmits.includes(name)
+      ? subscribedEmits.filter((n) => n !== name)
+      : [...subscribedEmits, name]
+    push()
+  }
 
   function storyAnchor(name: string): string {
     return name
@@ -80,6 +97,8 @@
   function seedControls(story: ComponentStory | null) {
     propValues = { ...defaultValues(), ...(story?.props ?? {}) }
     slotValues = { ...(story?.slots ?? {}) }
+    subscribedEmits = [...(schema?.emits ?? [])]
+    emitFilter = ''
   }
 
   const storySrc = $derived.by(() => {
@@ -100,7 +119,7 @@
         type: 'nimpress:props',
         props: $state.snapshot(propValues),
         slots: $state.snapshot(slotValues),
-        emits: $state.snapshot(emits),
+        emits: $state.snapshot(subscribedEmits),
         theme: frameTheme
       },
       '*'
@@ -219,7 +238,8 @@
         return
       }
       if (d.type === 'nimpress:emit') {
-        emitLog = [{ name: String(d.name), args: (d.args ?? []) as unknown[] }, ...emitLog].slice(0, 50)
+        const at = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
+        emitLog = [{ name: String(d.name), args: (d.args ?? []) as unknown[], at }, ...emitLog].slice(0, 200)
         return
       }
       if (d.type === 'nimpress:zoom') {
@@ -383,19 +403,45 @@
       {#if emits.length}
         <div class="np-ws-emits">
           <span class="np-ws-emits-title">events</span>
-          <span class="np-ws-emits-caption">interact with the component in the stage to fire events, each firing counts on its pill and logs below with its payload</span>
-          {#each emits as name (name)}
-            <code class="np-ws-emit" class:np-ws-emit-fired={emitCounts[name]}>
-              {name}{#if emitCounts[name]}<span class="np-ws-emit-count">{emitCounts[name]}</span>{/if}
-            </code>
-          {/each}
-          {#if emitLog.length}
-            <ol class="np-ws-emit-log">
-              {#each emitLog as entry, i (i)}
-                <li><code>{entry.name}</code> {JSON.stringify(entry.args)}</li>
-              {/each}
-            </ol>
-          {/if}
+          <span class="np-ws-emits-caption">click a pill to subscribe or unsubscribe, interact with the component in the stage to fire subscribed events, firings count on the pill and stream to the console</span>
+          <div class="np-ws-emit-pills">
+            {#each emits as name (name)}
+              <button
+                type="button"
+                class="np-ws-emit"
+                class:np-ws-emit-fired={emitCounts[name]}
+                class:np-ws-emit-off={!subscribedEmits.includes(name)}
+                title={subscribedEmits.includes(name) ? 'subscribed, click to unsubscribe' : 'unsubscribed, click to subscribe'}
+                onclick={() => toggleEmit(name)}
+              >
+                {name}{#if emitCounts[name]}<span class="np-ws-emit-count">{emitCounts[name]}</span>{/if}
+              </button>
+            {/each}
+          </div>
+          <div class="np-ws-console">
+            <div class="np-ws-console-bar">
+              <input
+                type="text"
+                class="np-ws-console-filter"
+                placeholder="filter by event name or payload"
+                bind:value={emitFilter}
+              />
+              <button type="button" class="np-ws-tool" title="clear the event console" onclick={() => (emitLog = [])}>clear</button>
+            </div>
+            {#if filteredEmitLog.length}
+              <ol class="np-ws-console-log">
+                {#each filteredEmitLog as entry, i (i)}
+                  <li>
+                    <span class="np-ws-console-time">{entry.at}</span>
+                    <code class="np-ws-console-name">{entry.name}</code>
+                    <span class="np-ws-console-args">{JSON.stringify(entry.args)}</span>
+                  </li>
+                {/each}
+              </ol>
+            {:else}
+              <p class="np-ws-console-empty">{emitLog.length ? 'no events match the filter' : 'no events fired yet'}</p>
+            {/if}
+          </div>
         </div>
       {/if}
     </div>
@@ -730,11 +776,19 @@
     color: var(--np-text-faint);
   }
 
+  .np-ws-props-head,
+  .np-ws-controls,
+  .np-ws-emits {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
   .np-ws-controls {
     --np-ws-cols: minmax(180px, 280px) minmax(0, 1fr) auto;
     display: flex;
     flex-direction: column;
-    max-width: 960px;
   }
 
   .np-ws-dock-right .np-ws-controls {
@@ -743,14 +797,12 @@
 
   .np-ws-emits {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 6px;
-    align-items: center;
-    margin: 14px 0 0;
+    margin: 18px auto 0;
   }
 
   .np-ws-emits-title {
-    flex-basis: 100%;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -759,9 +811,15 @@
   }
 
   .np-ws-emits-caption {
-    flex-basis: 100%;
     font-size: 11px;
     color: var(--np-text-muted);
+  }
+
+  .np-ws-emit-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
   }
 
   .np-ws-emit {
@@ -769,12 +827,18 @@
     font-size: 11px;
     padding: 2px 8px;
     border-radius: var(--np-radius-pill);
-    border: 1px solid var(--np-border);
+    border: 1px solid var(--np-brand);
+    background-color: transparent;
     color: var(--np-text-secondary);
+    cursor: pointer;
+  }
+
+  .np-ws-emit-off {
+    border-color: var(--np-border);
+    color: var(--np-text-faint);
   }
 
   .np-ws-emit-fired {
-    border-color: var(--np-brand);
     color: var(--np-text-primary);
   }
 
@@ -787,13 +851,65 @@
     font-weight: 700;
   }
 
-  .np-ws-emit-log {
-    flex-basis: 100%;
-    margin: 6px 0 0;
-    padding: 0 0 0 18px;
+  .np-ws-console {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--np-border);
+    border-radius: 8px;
+    padding: 8px;
+    background-color: var(--np-bg-surface);
+  }
+
+  .np-ws-console-bar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .np-ws-console-filter {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
     font-size: 12px;
-    color: var(--np-text-muted);
-    max-height: 140px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--np-border);
+    background-color: var(--np-bg);
+    color: var(--np-text-primary);
+    font-family: var(--np-font-mono);
+  }
+
+  .np-ws-console-log {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--np-font-mono);
+    font-size: 11px;
+    line-height: 1.7;
+    max-height: 180px;
     overflow-y: auto;
+  }
+
+  .np-ws-console-time {
+    color: var(--np-text-faint);
+    margin-right: 8px;
+  }
+
+  .np-ws-console-name {
+    color: var(--np-brand);
+    margin-right: 8px;
+  }
+
+  .np-ws-console-args {
+    color: var(--np-text-muted);
+    word-break: break-all;
+  }
+
+  .np-ws-console-empty {
+    margin: 0;
+    font-size: 11px;
+    color: var(--np-text-faint);
+    font-family: var(--np-font-mono);
   }
 </style>
