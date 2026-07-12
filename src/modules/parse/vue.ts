@@ -34,7 +34,7 @@ export function parseVueComponent(source: string, component: string, extraTypes 
   const props: ControlSpec[] = []
   if (propsBody) {
     for (const member of splitTypeMembers(propsBody)) {
-      const spec = controlFromType(member.name, member.type, member.optional, typeContext)
+      const spec = controlFromType(member.name, member.type, member.optional, typeContext, member.description)
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
       props.push(spec)
     }
