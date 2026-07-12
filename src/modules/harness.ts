@@ -188,7 +188,8 @@ export function harnessHtml(component: string): string {
       html, body { margin: 0; padding: 0; background: transparent; height: 100%; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { display: flow-root; min-height: 100%; box-sizing: border-box; }
+      #host { display: grid; min-height: 100%; box-sizing: border-box; }
+      #host > * { margin: auto; max-width: 100%; min-width: 0; }
     </style>
   </head>
   <body>
