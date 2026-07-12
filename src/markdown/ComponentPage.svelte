@@ -364,15 +364,13 @@
       </div>
     </div>
 
-    <div
-      class="np-ws-divider"
-      class:np-ws-divider-dragging={dragging}
-      role="separator"
-      aria-orientation={dock === 'bottom' ? 'horizontal' : 'vertical'}
-      onpointerdown={dragDown}
-    ></div>
-
     <div class="np-ws-props">
+      <div
+        class="np-ws-divider"
+        role="separator"
+        aria-orientation={dock === 'bottom' ? 'horizontal' : 'vertical'}
+        onpointerdown={dragDown}
+      ></div>
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
         <button
@@ -603,9 +601,8 @@
     grid-template-areas:
       'toolbar'
       'stage'
-      'divider'
       'props';
-    grid-template-rows: auto 1fr 6px var(--np-ws-props);
+    grid-template-rows: auto 1fr var(--np-ws-props);
     grid-template-columns: 1fr;
     height: calc(100vh - var(--np-header-height));
     width: 100%;
@@ -615,10 +612,10 @@
 
   .np-ws-dock-right {
     grid-template-areas:
-      'toolbar toolbar toolbar'
-      'stage divider props';
+      'toolbar toolbar'
+      'stage props';
     grid-template-rows: auto 1fr;
-    grid-template-columns: 1fr 6px var(--np-ws-props);
+    grid-template-columns: 1fr var(--np-ws-props);
   }
 
   .np-ws-toolbar {
@@ -728,13 +725,22 @@
   }
 
   .np-ws-divider {
-    grid-area: divider;
+    grid-area: props;
+    align-self: start;
+    height: 10px;
+    margin-top: -5px;
+    z-index: 2;
     cursor: row-resize;
     touch-action: none;
-    background: transparent;
   }
 
   .np-ws-dock-right .np-ws-divider {
+    align-self: stretch;
+    justify-self: start;
+    width: 10px;
+    height: auto;
+    margin-top: 0;
+    margin-left: -5px;
     cursor: col-resize;
   }
 
