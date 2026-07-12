@@ -21,8 +21,10 @@
   let claudeSaved = $state(true)
   let claudeSaving = $state(false)
   let iframeEl: HTMLIFrameElement | undefined = $state()
+  let wsEl: HTMLDivElement | undefined = $state()
 
   let dock = $state<'bottom' | 'right'>('bottom')
+  let dragging = $state(false)
   let propsSize = $state(300)
   let zoom = $state(1)
   let vision = $state('none')
@@ -158,21 +160,33 @@
     push()
   }
 
-  function startDrag(event: PointerEvent) {
-    event.preventDefault()
-    const move = (ev: PointerEvent) => {
-      if (dock === 'bottom') {
-        propsSize = Math.min(Math.max(window.innerHeight - ev.clientY, 140), window.innerHeight * 0.7)
-      } else {
-        propsSize = Math.min(Math.max(window.innerWidth - ev.clientX, 240), window.innerWidth * 0.7)
-      }
+  function dragMove(e: PointerEvent) {
+    if (!wsEl) return
+    const rect = wsEl.getBoundingClientRect()
+    if (dock === 'bottom') {
+      propsSize = Math.min(Math.max(rect.bottom - e.clientY, 140), rect.height * 0.7)
+    } else {
+      propsSize = Math.min(Math.max(rect.right - e.clientX, 240), rect.width * 0.7)
     }
-    const up = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
+  }
+
+  function dragUp() {
+    dragging = false
+    window.removeEventListener('pointermove', dragMove)
+    window.removeEventListener('pointerup', dragUp)
+    window.removeEventListener('pointercancel', dragUp)
+    document.body.style.removeProperty('user-select')
+    document.body.style.removeProperty('cursor')
+  }
+
+  function dragDown(e: PointerEvent) {
+    e.preventDefault()
+    dragging = true
+    document.body.style.setProperty('user-select', 'none')
+    document.body.style.setProperty('cursor', dock === 'bottom' ? 'row-resize' : 'col-resize')
+    window.addEventListener('pointermove', dragMove)
+    window.addEventListener('pointerup', dragUp)
+    window.addEventListener('pointercancel', dragUp)
   }
 
   function toggleDock() {
@@ -241,6 +255,7 @@
     return () => {
       window.removeEventListener('message', onMessage)
       window.removeEventListener('hashchange', onHashChange)
+      dragUp()
     }
   })
 </script>
@@ -292,8 +307,10 @@
   </div>
 {:else if data && activeStory}
   <div
+    bind:this={wsEl}
     class="np-ws"
     class:np-ws-dock-right={dock === 'right'}
+    class:np-ws-dragging={dragging}
     style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilters[vision]};"
   >
     <div class="np-ws-toolbar">
@@ -338,9 +355,10 @@
 
     <div
       class="np-ws-divider"
+      class:np-ws-divider-dragging={dragging}
       role="separator"
       aria-orientation={dock === 'bottom' ? 'horizontal' : 'vertical'}
-      onpointerdown={startDrag}
+      onpointerdown={dragDown}
     ></div>
 
     <div class="np-ws-props">
@@ -673,6 +691,7 @@
   .np-ws-divider {
     grid-area: divider;
     cursor: row-resize;
+    touch-action: none;
     background-color: var(--np-divider);
     transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -681,8 +700,13 @@
     cursor: col-resize;
   }
 
-  .np-ws-divider:hover {
+  .np-ws-divider:hover,
+  .np-ws-divider-dragging {
     background-color: var(--np-brand);
+  }
+
+  .np-ws-dragging .np-ws-frame {
+    pointer-events: none;
   }
 
   .np-ws-props {
