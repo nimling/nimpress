@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import type { ComponentStory, ControlSpec, PageModule } from '../types'
-  import { theme, toggleTheme } from '../framework/stores/theme'
+  import { onMount, untrack } from 'svelte'
+  import type { ComponentStory, PageModule } from '../types'
+  import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
-  import ControlNode from './ControlNode.svelte'
+  import ControlNode, { mockValue } from './ControlNode.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -28,6 +28,7 @@
   let propsSize = $state(300)
   let zoom = $state(1)
   let vision = $state('none')
+  let frameTheme = $state<'light' | 'dark'>('light')
 
   const visionFilters: Record<string, string> = {
     none: 'none',
@@ -40,6 +41,12 @@
   const activeStory = $derived(
     view === 'overview' ? null : stories.find((s) => storyAnchor(s.name) === view) ?? null
   )
+
+  const emitCounts = $derived.by(() => {
+    const counts: Record<string, number> = {}
+    for (const entry of emitLog) counts[entry.name] = (counts[entry.name] ?? 0) + 1
+    return counts
+  })
 
   function storyAnchor(name: string): string {
     return name
@@ -82,7 +89,7 @@
     params.set('props', encodeParam({ ...defaultValues(), ...(activeStory.props ?? {}) }))
     params.set('slots', encodeParam({ ...(activeStory.slots ?? {}) }))
     params.set('emits', encodeParam(schema?.emits ?? []))
-    params.set('theme', $theme)
+    params.set('theme', untrack(() => frameTheme))
     return `${data.harnessPath}?${params.toString()}`
   })
 
@@ -94,16 +101,16 @@
         props: $state.snapshot(propValues),
         slots: $state.snapshot(slotValues),
         emits: $state.snapshot(emits),
-        theme: $theme
+        theme: frameTheme
       },
       '*'
     )
   }
 
-  $effect(() => {
-    $theme
+  function toggleFrameTheme() {
+    frameTheme = frameTheme === 'dark' ? 'light' : 'dark'
     push()
-  })
+  }
 
   function setProp(name: string, value: unknown) {
     const next = { ...propValues }
@@ -122,26 +129,6 @@
       slotValues = { ...slotValues, [name]: value }
     }
     push()
-  }
-
-  function mockValue(spec: ControlSpec): unknown {
-    if (spec.kind === 'select') return spec.options?.[0]
-    if (spec.kind === 'boolean') return true
-    if (spec.kind === 'number') return 42
-    if (spec.kind === 'text' || spec.kind === 'slot') return `Sample ${spec.name}`
-    if (spec.kind === 'object') {
-      const out: Record<string, unknown> = {}
-      for (const member of spec.members ?? []) {
-        const v = mockValue(member)
-        if (v !== undefined) out[member.name] = v
-      }
-      return Object.keys(out).length ? out : undefined
-    }
-    if (spec.kind === 'array') {
-      const v = spec.item ? mockValue({ ...spec.item, name: spec.name }) : undefined
-      return v === undefined ? undefined : [v]
-    }
-    return undefined
   }
 
   function fillMock() {
@@ -220,6 +207,7 @@
 
   onMount(() => {
     claudeDraft = data?.claudeMd ?? ''
+    frameTheme = $theme === 'dark' ? 'dark' : 'light'
     view = viewFromHash()
     if (view !== 'overview') seedControls(activeStory)
     const onMessage = (event: MessageEvent) => {
@@ -267,6 +255,9 @@
       <header class="np-component-head">
         <div class="np-component-badges">
           <span class="np-component-system">{data?.system}</span>
+          {#if data?.component && data.component !== page.frontmatter.title}
+            <span class="np-component-package">{data.component}</span>
+          {/if}
           {#if data?.package}
             <span class="np-component-package">{data.package}{data.version ? `@${data.version}` : ''}</span>
           {/if}
@@ -323,7 +314,7 @@
         {/if}
       </span>
       <span class="np-ws-tools">
-        <button type="button" class="np-ws-tool" title="toggle theme" onclick={toggleTheme}>{$theme === 'dark' ? 'light' : 'dark'}</button>
+        <button type="button" class="np-ws-tool" title="toggle the component theme inside the frame" onclick={toggleFrameTheme}>{frameTheme === 'dark' ? 'light' : 'dark'}</button>
         <span class="np-ws-tool-group">
           <button type="button" class="np-ws-tool" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}>-</button>
           <button type="button" class="np-ws-tool" title="reset zoom" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
@@ -392,9 +383,11 @@
       {#if emits.length}
         <div class="np-ws-emits">
           <span class="np-ws-emits-title">events</span>
-          <span class="np-ws-emits-caption">events the component can emit, fired ones log below</span>
+          <span class="np-ws-emits-caption">interact with the component in the stage to fire events, each firing counts on its pill and logs below with its payload</span>
           {#each emits as name (name)}
-            <code class="np-ws-emit">{name}</code>
+            <code class="np-ws-emit" class:np-ws-emit-fired={emitCounts[name]}>
+              {name}{#if emitCounts[name]}<span class="np-ws-emit-count">{emitCounts[name]}</span>{/if}
+            </code>
           {/each}
           {#if emitLog.length}
             <ol class="np-ws-emit-log">
@@ -692,17 +685,11 @@
     grid-area: divider;
     cursor: row-resize;
     touch-action: none;
-    background-color: var(--np-divider);
-    transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
   }
 
   .np-ws-dock-right .np-ws-divider {
     cursor: col-resize;
-  }
-
-  .np-ws-divider:hover,
-  .np-ws-divider-dragging {
-    background-color: var(--np-brand);
   }
 
   .np-ws-dragging .np-ws-frame {
@@ -744,31 +731,14 @@
   }
 
   .np-ws-controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
-    justify-content: start;
-    align-items: start;
-    gap: 14px 20px;
+    --np-ws-cols: minmax(180px, 280px) minmax(0, 1fr) auto;
+    display: flex;
+    flex-direction: column;
+    max-width: 960px;
   }
 
   .np-ws-dock-right .np-ws-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .np-ws-controls > :global(.np-control-kind-json),
-  .np-ws-controls > :global(.np-control-kind-object),
-  .np-ws-controls > :global(.np-control-kind-array) {
-    grid-column: span 2;
-  }
-
-  .np-ws-controls > :global(.np-control-kind-boolean) {
-    max-width: 140px;
-  }
-
-  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-json),
-  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-object),
-  .np-ws-dock-right .np-ws-controls > :global(.np-control-kind-array) {
-    grid-column: auto;
+    --np-ws-cols: minmax(110px, 40%) minmax(0, 1fr) auto;
   }
 
   .np-ws-emits {
@@ -801,6 +771,20 @@
     border-radius: var(--np-radius-pill);
     border: 1px solid var(--np-border);
     color: var(--np-text-secondary);
+  }
+
+  .np-ws-emit-fired {
+    border-color: var(--np-brand);
+    color: var(--np-text-primary);
+  }
+
+  .np-ws-emit-count {
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: var(--np-radius-pill);
+    background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
+    color: var(--np-brand);
+    font-weight: 700;
   }
 
   .np-ws-emit-log {
