@@ -313,6 +313,9 @@
         <a href={page.path}>{page.frontmatter.title}</a>
         <span class="np-ws-crumb-sep">/</span>
         <strong>{activeStory.name}</strong>
+        {#if activeStory.description}
+          <span class="np-ws-crumb-desc">{activeStory.description}</span>
+        {/if}
       </span>
       <span class="np-ws-tools">
         <button type="button" class="np-ws-tool" title="toggle theme" onclick={toggleTheme}>{$theme === 'dark' ? 'light' : 'dark'}</button>
@@ -355,7 +358,12 @@
     <div class="np-ws-props">
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
-        <button type="button" class="np-ws-tool" onclick={fillMock}>mock</button>
+        <button
+          type="button"
+          class="np-ws-tool"
+          title="fill every empty control with a sample value"
+          onclick={fillMock}
+        >mock</button>
       </div>
       {#if schema && (schema.props.length || schema.slots.length)}
         <div class="np-ws-controls">
@@ -365,8 +373,11 @@
                 <span class="np-control-label">
                   {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
                 </span>
-                <code class="np-control-type" title={spec.type}>{spec.type}</code>
+                <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
               </span>
+              {#if spec.description}
+                <span class="np-control-desc">{spec.description}</span>
+              {/if}
               {#if spec.kind === 'boolean'}
                 <input
                   type="checkbox"
@@ -394,8 +405,12 @@
                   class="np-control-json"
                   class:invalid={jsonErrors[spec.name]}
                   value={jsonDrafts[spec.name] ?? ''}
+                  placeholder={spec.shape ?? spec.type}
                   oninput={(e) => setJsonProp(spec, e.currentTarget.value)}
                 ></textarea>
+                {#if jsonErrors[spec.name]}
+                  <span class="np-control-error">invalid json, value not applied</span>
+                {/if}
               {:else}
                 <input
                   type="text"
@@ -424,6 +439,8 @@
       {/if}
       {#if emits.length}
         <div class="np-ws-emits">
+          <span class="np-ws-emits-title">events</span>
+          <span class="np-ws-emits-caption">events the component can emit, fired ones log below</span>
           {#each emits as name (name)}
             <code class="np-ws-emit">{name}</code>
           {/each}
@@ -652,6 +669,13 @@
     color: var(--np-text-faint);
   }
 
+  .np-ws-crumb-desc {
+    font-size: 12px;
+    color: var(--np-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .np-ws-tools {
     display: flex;
     align-items: center;
@@ -853,12 +877,38 @@
     border-color: var(--np-danger);
   }
 
+  .np-control-desc {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--np-text-muted);
+  }
+
+  .np-control-error {
+    font-size: 11px;
+    color: var(--np-danger);
+  }
+
   .np-ws-emits {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
     margin: 14px 0 0;
+  }
+
+  .np-ws-emits-title {
+    flex-basis: 100%;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--np-text-secondary);
+  }
+
+  .np-ws-emits-caption {
+    flex-basis: 100%;
+    font-size: 11px;
+    color: var(--np-text-muted);
   }
 
   .np-ws-emit {

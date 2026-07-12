@@ -45,6 +45,8 @@ export interface ControlSpec {
   default?: unknown
   options?: string[]
   required?: boolean
+  description?: string
+  shape?: string
 }
 
 export interface ControlSchema {

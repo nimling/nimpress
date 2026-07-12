@@ -4,6 +4,27 @@ export interface TypeMember {
   name: string
   type: string
   optional: boolean
+  description?: string
+}
+
+function splitLeadingComments(text: string): { description?: string; member: string } {
+  let description: string | undefined
+  let member = text
+  for (;;) {
+    const jsdoc = member.match(/^\/\*\*?([\s\S]*?)\*\/\s*/)
+    if (jsdoc) {
+      description = jsdoc[1].replace(/^\s*\*\s?/gm, '').trim()
+      member = member.slice(jsdoc[0].length)
+      continue
+    }
+    const line = member.match(/^\/\/\s*([^\n]*)(?:\n\s*|$)/)
+    if (line) {
+      description = line[1].trim()
+      member = member.slice(line[0].length)
+      continue
+    }
+    return { description, member }
+  }
 }
 
 export function splitTypeMembers(body: string): TypeMember[] {
@@ -15,19 +36,37 @@ export function splitTypeMembers(body: string): TypeMember[] {
     const text = current.trim()
     current = ''
     if (!text) return
-    const m = text.match(/^(?:readonly\s+)?([A-Za-z_$][\w$]*)(\?)?\s*:\s*([\s\S]+)$/)
+    const { description, member } = splitLeadingComments(text)
+    const m = member.match(/^(?:readonly\s+)?([A-Za-z_$][\w$]*)(\?)?\s*:\s*([\s\S]+)$/)
     if (!m) return
-    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim() })
+    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim(), description })
   }
-  for (const ch of body) {
-    if (ch === '{' || ch === '(' || ch === '[') depth++
-    else if (ch === '}' || ch === ')' || ch === ']') depth--
-    else if (ch === '<' && prev !== '=') depth++
-    else if (ch === '>' && prev !== '=') depth--
-    if ((ch === ';' || ch === '\n' || ch === ',') && depth === 0) {
-      flush()
-      prev = ch
-      continue
+  let inComment = false
+  const chars = [...body]
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i]
+    if (!inComment && ch === '/' && chars[i + 1] === '*') inComment = true
+    if (inComment && ch === '/' && chars[i - 1] === '*') inComment = false
+    if (!inComment) {
+      if (ch === '{' || ch === '(' || ch === '[') depth++
+      else if (ch === '}' || ch === ')' || ch === ']') depth--
+      else if (ch === '<' && prev !== '=') depth++
+      else if (ch === '>' && prev !== '=') depth--
+      if ((ch === ';' || ch === ',') && depth === 0) {
+        flush()
+        prev = ch
+        continue
+      }
+      if (ch === '\n' && depth === 0) {
+        if (splitLeadingComments(current.trim()).member === '') {
+          current += ch
+          prev = ch
+          continue
+        }
+        flush()
+        prev = ch
+        continue
+      }
     }
     current += ch
     prev = ch
@@ -78,16 +117,37 @@ export function resolveTypeAlias(type: string, typeContext: string): string {
   return body ? body : type
 }
 
-export function controlFromType(name: string, type: string, optional: boolean, typeContext = ''): ControlSpec {
+export function typeShape(type: string, typeContext: string): string | undefined {
+  const ident = type.replace(/\s*\|\s*(undefined|null)\s*/g, '').trim()
+  if (!/^[A-Za-z_$][\w$]*(\[\])?$/.test(ident)) return undefined
+  const bare = ident.replace(/\[\]$/, '')
+  const body = extractTypeBody(typeContext, bare)
+  if (!body) return undefined
+  const members = splitTypeMembers(body)
+  if (!members.length) return undefined
+  const compact = members
+    .map((m) => `${m.name}${m.optional ? '?' : ''}: ${m.type.replace(/\s+/g, ' ')}`)
+    .join('; ')
+  return ident.endsWith('[]') ? `{ ${compact} }[]` : `{ ${compact} }`
+}
+
+export function controlFromType(
+  name: string,
+  type: string,
+  optional: boolean,
+  typeContext = '',
+  description?: string
+): ControlSpec {
   const resolved = resolveTypeAlias(type, typeContext)
   const t = resolved.replace(/\s+/g, ' ').trim()
   const options = stringLiteralUnion(t)
-  if (options) return { name, kind: 'select', type: t, options, required: !optional }
+  if (options) return { name, kind: 'select', type: t, options, required: !optional, description }
   const bare = t.replace(/\s*\|\s*(undefined|null)\s*/g, '').trim()
-  if (bare === 'boolean') return { name, kind: 'boolean', type: t, required: !optional }
-  if (bare === 'number') return { name, kind: 'number', type: t, required: !optional }
-  if (bare === 'string') return { name, kind: 'text', type: t, required: !optional }
-  return { name, kind: 'json', type: t, required: !optional }
+  if (bare === 'boolean') return { name, kind: 'boolean', type: t, required: !optional, description }
+  if (bare === 'number') return { name, kind: 'number', type: t, required: !optional, description }
+  if (bare === 'string') return { name, kind: 'text', type: t, required: !optional, description }
+  const shape = typeShape(type, typeContext)
+  return { name, kind: 'json', type: t, required: !optional, description, shape }
 }
 
 export function parseLiteral(text: string): unknown {

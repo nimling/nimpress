@@ -55,7 +55,7 @@ export function parseDtsSchema(text: string, component: string): ControlSchema |
       emits.push(member.name)
       continue
     }
-    props.push(controlFromType(member.name, member.type, member.optional))
+    props.push(controlFromType(member.name, member.type, member.optional, text, member.description))
   }
   return { component, props, slots, emits }
 }

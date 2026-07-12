@@ -49,7 +49,7 @@ export function parseSvelteComponent(source: string, component: string, extraTyp
         emits.push(member.name)
         continue
       }
-      const spec = controlFromType(member.name, member.type, member.optional, typeContext)
+      const spec = controlFromType(member.name, member.type, member.optional, typeContext, member.description)
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
       props.push(spec)
     }
