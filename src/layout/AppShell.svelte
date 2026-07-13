@@ -103,7 +103,14 @@
     will-change: grid-template-columns;
   }
   .np-app:has(:global(.np-ws)) {
-    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
     overflow: hidden;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
