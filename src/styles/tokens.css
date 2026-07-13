@@ -93,9 +93,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-html {
-  scrollbar-gutter: stable;
-  overflow-y: scroll;
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 code, pre, kbd, samp {
