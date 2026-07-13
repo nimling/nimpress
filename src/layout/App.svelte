@@ -1,140 +1,206 @@
 <script lang="ts">
-  import { configStore } from '../framework/configStore'
-  import { resolvedRoute, navigate, erroneousRoute } from 'sly-svelte-location-router'
-  import { onMount } from 'svelte'
-  import HomePage from './HomePage.svelte'
-  import { viewerCanReach, waitForViewer, redirectToLogin } from '../framework/router'
+  import Header from './Header.svelte'
+  import Sidebar from './Sidebar.svelte'
+  import SearchModal from '../search/SearchModal.svelte'
+  import { resolvedRoute } from 'sly-svelte-location-router'
+  import type { Snippet } from 'svelte'
 
-  const config = $derived($configStore)
-  const route = $derived($resolvedRoute)
+  let { children }: { children: Snippet } = $props()
 
-  let PageComponent = $state<any>(null)
-  let pageProps = $state<Record<string, unknown>>({})
-  let blockedPath = $state<string | null>(null)
-  let loadToken = 0
+  let searchOpen = $state(false)
+  let drawerOpen = $state(false)
+  let collapsed = $state(loadCollapsed())
 
-  function resolveSlug(path: string): string | null {
-    const cleaned = path === '/' || path === '' ? '/' : path.replace(/\/$/, '')
-    const byPath = config.manifest?.byPath
-    if (byPath && byPath[cleaned]) return byPath[cleaned]
-    if (cleaned === '/') {
-      if (config.manifest?.pages['']) return ''
-      if (config.manifest?.pages['index']) return 'index'
-      return null
-    }
-    const candidate = cleaned.replace(/^\//, '')
-    if (config.manifest?.pages[candidate]) return candidate
-    if (config.manifest?.pages[candidate + '/index']) return candidate + '/index'
-    return null
+  function loadCollapsed(): boolean {
+    if (typeof localStorage === 'undefined') return false
+    return localStorage.getItem('np-sidebar-collapsed') === 'true'
   }
 
-  function nearestParentPath(path: string): string | null {
-    const byPath = config.manifest?.byPath
-    if (!byPath) return null
-    const segments = path.split('/').filter(Boolean)
-    for (let i = segments.length - 1; i > 0; i--) {
-      const candidate = '/' + segments.slice(0, i).join('/')
-      if (byPath[candidate]) return candidate
-    }
-    return null
+  function persistCollapsed(value: boolean) {
+    try {
+      localStorage.setItem('np-sidebar-collapsed', String(value))
+    } catch {}
   }
 
-  function handleUnresolved(path: string) {
-    const parent = nearestParentPath(path)
-    if (parent) {
-      navigate(parent, { replace: true })
+  function toggleSidebar() {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+    if (isMobile) {
+      drawerOpen = !drawerOpen
       return
     }
-    erroneousRoute.set({ error: 'not_found', path })
+    collapsed = !collapsed
+    persistCollapsed(collapsed)
   }
 
-  async function load(path: string) {
-    const token = ++loadToken
-    blockedPath = null
-    erroneousRoute.set(null)
-
-    const slug = resolveSlug(path)
-    if (slug === null && (path === '/' || path === '')) {
-      PageComponent = null
-      return
+  function onKey(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      searchOpen = true
     }
-    if (slug === null) {
-      PageComponent = null
-      handleUnresolved(path)
-      return
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+      e.preventDefault()
+      toggleSidebar()
     }
-    const meta = config.manifest?.pages[slug]
-    if (!meta) {
-      PageComponent = null
-      handleUnresolved(path)
-      return
+    if (e.key === 'Escape') {
+      searchOpen = false
+      drawerOpen = false
     }
-    if (meta.redirect) {
-      navigate(meta.redirect, { replace: true })
-      return
-    }
-
-    await waitForViewer()
-    if (token !== loadToken) return
-    if (!viewerCanReach({ scope: meta.scope, claim: meta.claim })) {
-      PageComponent = null
-      blockedPath = path
-      redirectToLogin(path)
-      return
-    }
-
-    const loader = config.pageLoader?.[slug]
-    if (!loader) {
-      PageComponent = null
-      handleUnresolved(path)
-      return
-    }
-    const resolved = await loader() as { default: any; props?: Record<string, unknown> }
-    if (token !== loadToken) return
-    pageProps = resolved.props ?? {}
-    PageComponent = resolved.default
   }
 
   $effect(() => {
-    if (route?.path) void load(route.path)
-  })
-
-  onMount(() => {
-    if (route?.path) void load(route.path)
+    $resolvedRoute
+    drawerOpen = false
   })
 </script>
 
-{#if PageComponent}
-  <PageComponent {...pageProps} />
-{:else if blockedPath}
-  <div class="np-block">
-    <p>Sign-in required for {blockedPath}.</p>
+<svelte:window onkeydown={onKey} />
+
+<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed}>
+  <Header
+    onOpenSearch={() => (searchOpen = true)}
+    onToggleDrawer={toggleSidebar}
+    drawerOpen={drawerOpen || !collapsed}
+  />
+  <div class="np-body">
+    <aside class="np-aside" class:open={drawerOpen}>
+      <Sidebar {collapsed} />
+    </aside>
+    {#if drawerOpen}
+      <button
+        class="np-drawer-backdrop"
+        aria-label="Close menu"
+        onclick={() => (drawerOpen = false)}
+      ></button>
+    {/if}
+    <main class="np-main">
+      {@render children()}
+    </main>
+    <div class="np-aside-mirror" aria-hidden="true"></div>
   </div>
-{:else if !route || route.path === '/' || route.path === ''}
-  <HomePage />
-{:else}
-  <div class="np-loading"><span class="np-spinner"></span></div>
-{/if}
+  {#if searchOpen}
+    <SearchModal onClose={() => (searchOpen = false)} />
+  {/if}
+</div>
 
 <style>
-  .np-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 64px 0;
+  .np-app {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    background-color: var(--np-bg);
+    color: var(--np-text-primary);
+    --np-sidebar-current: var(--np-sidebar-width);
   }
-  .np-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--np-border);
-    border-top-color: var(--np-brand);
-    border-radius: 9999px;
-    animation: np-spin 0.8s linear infinite;
+  .np-app.np-collapsed {
+    --np-sidebar-current: 0px;
   }
-  @keyframes np-spin { to { transform: rotate(360deg); } }
-  .np-block {
-    padding: 64px 24px;
-    text-align: center;
-    color: var(--np-text-secondary);
+  .np-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr);
+    min-height: 0;
+    transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: grid-template-columns;
+  }
+  .np-aside-mirror {
+    height: 0;
+    pointer-events: none;
+    display: none;
+  }
+  @media (min-width: 1536px) {
+    .np-body:has(:global(.np-page-shell.has-rail)) {
+      grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr) var(--np-sidebar-current);
+    }
+    .np-body:has(:global(.np-page-shell.has-rail)) .np-aside-mirror {
+      display: block;
+    }
+  }
+  .np-aside {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background-color: transparent;
+    z-index: 30;
+  }
+  .np-aside :global(.np-sidebar) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--np-sidebar-width);
+    overflow-y: auto;
+    background: none;
+    background-color: transparent;
+    border: 0;
+    border-right: 1px solid var(--np-border);
+    box-sizing: border-box;
+  }
+  .np-main {
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .np-drawer-backdrop {
+    display: none;
+  }
+  @media (max-width: 1024px) {
+    .np-body {
+      display: block;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .np-collapsed .np-body {
+      display: block;
+      grid-template-columns: none;
+    }
+    .np-main {
+      width: 100%;
+      height: auto;
+      box-sizing: border-box;
+      overflow-y: visible;
+    }
+    .np-aside {
+      position: fixed;
+      top: var(--np-header-height);
+      left: 0;
+      bottom: 0;
+      width: min(260px, 80vw);
+      height: calc(100vh - var(--np-header-height));
+      z-index: 40;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+      background-color: var(--np-bg);
+    }
+    .np-aside :global(.np-sidebar) {
+      width: 100%;
+      background-color: var(--np-bg);
+    }
+    .np-aside.open {
+      transform: translateX(0);
+    }
+    .np-drawer-backdrop {
+      display: block;
+      position: fixed;
+      top: var(--np-header-height);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.35);
+      z-index: 35;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+    }
   }
 </style>
