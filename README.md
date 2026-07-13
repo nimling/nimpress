@@ -96,15 +96,19 @@ Wire the CLI into `package.json`:
 
 | Command | Description |
 |---------|-------------|
-| `nimpress init` | Scaffold a config and content folder |
+| `nimpress init` | Scaffold config, content folder, and CLAUDE.md plus AGENTS.md pointing at the packaged AI rules |
 | `nimpress dev` | Start the dev server, component harnesses included |
 | `nimpress build` | Build the static site into `outDir`, default `dist`, harness bundles included |
 | `nimpress preview` | Serve the built site |
 | `nimpress lint` | Validate frontmatter across the content |
-| `nimpress modules import <system> [file]` | Import a component library or a single component, storybook stories included |
+| `nimpress export [--target=]` | Collect pages marked with the `export:` frontmatter header for the docs pipeline |
+| `nimpress modules import <system> [file]` | Import a component library or a single component, stories, argTypes, and schema.json included |
+| `nimpress modules create <system> <Component>` | Scaffold a new component page with story and schema.json |
 | `nimpress modules story <system> [component]` | Write typed mock auto stories |
 | `nimpress modules dev [system]` | Run component harness servers |
 | `nimpress modules build [system]` | Build static harness bundles |
+
+The packaged rules under `node_modules/@nimling/nimpress/.claude/rules/` are the working contract for AI agents in consumer repos; `nimpress init` links them from the project's `CLAUDE.md` and `AGENTS.md`.
 
 ## Working on Nimpress itself
 

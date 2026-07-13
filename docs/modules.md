@@ -132,21 +132,23 @@ export default vueStory({
 
 ## The workshop screen
 
-Selecting a story in the sidebar opens the workshop: toolbar, stage, and props panel in a css grid filling the content area.
+Selecting a story in the sidebar opens the workshop: toolbar, stage, and two panel slots, bottom and right, in a css grid filling the content area. The document never scrolls; every scrollbar lives inside a panel, the sidebar, or the component frame.
 
-1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, a vision simulator matching the storybook set, blurred vision, low contrast, grayscale, protanopia, protanomaly, deuteranopia, deuteranomaly, tritanopia, tritanomaly, achromatopsia, achromatomaly, each option carrying an inline svg icon, color blindness rendered through svg color matrices. Then dock switch, reload, and open.
+1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, a vision simulator matching the storybook set, blurred vision, low contrast, grayscale, protanopia, protanomaly, deuteranopia, deuteranomaly, tritanopia, tritanomaly, achromatopsia, achromatomaly, each option carrying an inline svg icon, color blindness rendered through svg color matrices. Then a props panel toggle, a console panel toggle, reload, and open. Every icon button shows a styled tooltip on hover.
 
-2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle.
+2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle. Small components take their natural size, full size components fill the frame exactly at any zoom.
 
-3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and an actions cell. Object types render nested member rows, arrays render item rows with add and remove, string literal unions render selects, json editors remain only for opaque types. Required fields left empty mark red. Slot inputs, event pills, and the event console sit below. Dock it bottom or right and drag the divider to resize.
+3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and inline actions. Object types render nested member rows, arrays render item rows with add and remove, records render key value entries with editable keys, string literal unions render selects, function props render their source in a code editor, json editors remain only for opaque types. Required fields left empty mark red. The panel head carries dock, mock, clear, the json dialog, and hide; the toolbar toggle brings it back.
 
-4. Mock: every row's actions cell has a mock button, sample data for that prop alone, an added sample item on arrays. The panel header carries mock for every empty control, reset restoring story defaults and forgetting stored edits, and clear emptying every input form.
+4. Console panel: the iframe's own console mirrored live, every level plus window errors and unhandled rejections, timestamped with level colors, filterable and clearable. It toggles from the toolbar and docks bottom or right exactly like the props panel; two panels in one slot split it.
 
-5. Persistence: edited values save to localStorage per system, component, and story, and restore on the next visit. Reset drops the stored entry.
+5. Mock: every row's actions cell has a mock button, hint driven star wars sample data for that prop alone, an added sample item on arrays, sample entries on records, a logging stub on functions. Reclicking regenerates fresh values. The panel header carries mock for every empty control and clear emptying every input form.
 
-6. Events: every pill is a subscribe toggle that binds and unbinds the listener live in the frame. Interacting with the component streams subscribed firings to the console below, timestamped with payloads, filterable by name or payload, clearable.
+6. Persistence: edited values, slots, and event handlers save to localStorage per system, component, and story, and restore on the next visit.
 
-7. The component's own sidebar entry is `Overview`; the stories list under it.
+7. Events: every event carries an editable handler function. The pill attaches or detaches it, the code editor below holds the exact source that runs in the frame on each firing, defaulting to a console log stub. Firings count on the pill and print in the console panel.
+
+8. The component's own sidebar entry is `Overview`; the stories are real router paths under the component path.
 
 ## Schema parsing
 
@@ -158,7 +160,7 @@ Controls derive from the component source without executing it. A prop and its c
 
 3. Package mode: the props interface parses from the package `d.ts`, `<Component>Props` or `Props`.
 
-4. Recursion: an object typed prop resolves its interface or type alias into member controls, an array typed prop gets an item control per row, four levels deep with cycle protection. Types that stay opaque, functions and unresolvable externals, fall back to a json editor.
+4. Recursion: an object typed prop resolves its interface or type alias into member controls, an array typed prop gets an item control per row, `Record<string, T>` and index signatures become key value entries, top level `(args) => ...` signatures become function controls, four levels deep with cycle protection. Types that stay opaque fall back to a json editor and log documentation warnings on import.
 
 5. Descriptions: a JSDoc block or a line comment directly above a type member becomes the description under its control, at every nesting level. Document the prop where it is typed and the panel picks it up.
 
