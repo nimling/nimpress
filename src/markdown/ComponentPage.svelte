@@ -801,7 +801,7 @@
               <ControlNode
                 spec={{
                   name,
-                  kind: 'function',
+                  kind: 'event',
                   type: '(...args) => void',
                   description: emitCounts[name] ? `runs in the frame on every firing, fired ${emitCounts[name]} times` : 'runs in the frame on every firing'
                 }}
