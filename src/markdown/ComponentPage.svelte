@@ -1271,7 +1271,8 @@
   .np-ws-props-scroll {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 12px 16px;
   }
 
