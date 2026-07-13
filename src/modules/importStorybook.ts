@@ -544,15 +544,22 @@ async function importFromStories(
       join(dir, 'index.md'),
       pageMarkdown(system, component, pagePkg, fileRel, mineArgTypes(module))
     )
-    if (fileRel) {
-      const abs = resolve(sourceRoot, fileRel)
-      if (existsSync(abs)) {
-        await writeComponentSchema(dir, component, await parseSourceSchema(abs, framework, component))
-      }
+    const sourceExt = framework === 'vue' ? '.vue' : '.svelte'
+    const sourceCandidates = fileRel
+      ? [resolve(sourceRoot, fileRel)]
+      : [
+          join(sourceRoot, component, `${component}${sourceExt}`),
+          join(sourceRoot, `${component}${sourceExt}`)
+        ]
+    const sourceFile = sourceCandidates.find((c) => existsSync(c))
+    if (sourceFile) {
+      await writeComponentSchema(dir, component, await parseSourceSchema(sourceFile, framework, component))
     } else if (pagePkg) {
       const dtsPath = findComponentDts(cwd, pagePkg, component)
       if (dtsPath) {
         await writeComponentSchema(dir, component, parseDtsSchema(readFileSync(dtsPath, 'utf-8'), component))
+      } else {
+        console.warn(`nimpress modules: no source or d.ts found for ${component}, schema.json skipped`)
       }
     }
     pages++
