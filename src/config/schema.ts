@@ -54,11 +54,22 @@ export const userConfigSchema = z.object({
   brand: brandSchema.optional(),
   footer: z.string().optional(),
   navRoutes: z.array(navRouteSchema).optional(),
-  authEndpoint: z.string().optional(),
-  clientSlug: z.string().optional(),
-  authMode: z.enum(['edge', 'bff']).optional(),
-  bffPath: z.string().optional(),
-  authHooks: z.string().optional(),
+  auth: z.object({
+    issuer: z.string(),
+    clientId: z.string(),
+    scopes: z.string().optional(),
+    redirectPath: z.string().optional(),
+    headers: z.record(z.string()).optional(),
+    endpoints: z.object({
+      discovery: z.string().optional(),
+      authorization: z.string().optional(),
+      token: z.string().optional(),
+      userinfo: z.string().optional(),
+      endSession: z.string().optional(),
+      jwks: z.string().optional()
+    }).passthrough().optional()
+  }).passthrough().optional(),
+  client: z.string().optional(),
   subscribe: z.object({
     endpoint: z.string().optional(),
     appSlug: z.string().optional()

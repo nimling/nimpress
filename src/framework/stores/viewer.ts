@@ -1,8 +1,5 @@
 import { writable } from 'svelte/store'
-import {
-  readSessionFromDocument,
-  endSession
-} from '@nimling/samna-auth-middleware'
+import { resolveViewer, endSession } from '../../auth/session'
 import { loadGatedContent } from '../gated'
 import type { Viewer } from '../../types'
 
@@ -15,27 +12,10 @@ export const viewerReady = writable<boolean>(false)
 
 export async function refreshViewer(): Promise<Viewer> {
   try {
-    const user = await readSessionFromDocument()
-    if (!user) {
-      viewer.set(empty)
-      viewerReady.set(true)
-      return empty
-    }
-
-    const v: Viewer = {
-      authenticated: true,
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      userName: user.userName,
-      phone: user.phone,
-      email: user.email,
-      location: user.location,
-      type: user.type
-    }
+    const v = await resolveViewer()
     viewer.set(v)
     viewerReady.set(true)
-    void loadGatedContent()
+    if (v.authenticated) void loadGatedContent()
     return v
   } catch {
     viewer.set(empty)

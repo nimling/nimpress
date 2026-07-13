@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { handleUnauthenticated } from '@nimling/samna-auth-middleware'
+import { handleUnauthenticated } from '../auth/session'
 import { viewer, viewerReady } from './stores/viewer'
 import { viewerCanAccess } from '../auth/guard'
 import type { AccessRequirement } from '../types'
