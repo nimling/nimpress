@@ -62,9 +62,31 @@ modules: {
 
 9. The page `title` is the human readable display name; `data.component` is the technical identifier the harness resolves. They may differ freely.
 
+## Controls and kinds
+
+1. Control kinds derive from the prop types: `text`, `number`, `boolean`, `select` from string literal unions, `object` with nested member rows, `array` with item rows, `record` from `Record<string, T>` and index signatures with key value entries, `function` from `(args) => ...` signatures, `json` only for opaque leaves.
+
+2. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, mirrored into the event pill counters and the console panel. The default mock stub logs its arguments.
+
+3. Every event from `defineEmits` or svelte `on*` members gets an attachable handler with the same editable source; a story starts with logging stubs attached to all events.
+
+4. Mock is hint driven star wars data: names and descriptions steer values, users get characters, urls get holonet links, numbers respect width, count, year style hints. Reclicking regenerates via a seed. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
+
+5. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header. The json dialog in the panel head shows the live values as one editable json object plus the generated json schema, with copy and populated counts.
+
+## The workshop layout
+
+1. The shell is the martin special: absolute inset zero root, `overflow: hidden` everywhere structural, one unconditional grid, top bar row then sidebar and page columns, the document never scrolls, scrolling lives only inside panels, the sidebar, and the component's own frame.
+
+2. The workshop grid has a bottom slot and a right slot that collapse to zero when empty. The props panel and the frame console panel each toggle from the toolbar and dock to either slot; sharing a slot splits it. Drag areas are unstyled divs straddling the panel borders.
+
+3. The console panel streams the iframe's own console, every level plus window errors and unhandled rejections, forwarded over the message bridge, filterable and clearable.
+
+4. The harness iframe document is locked, `#host` is absolute inset zero with `overflow: hidden`; components flow naturally, take the size they want, and one set to full width and height fills the frame exactly at any zoom.
+
 ## CLI
 
-1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking.
+1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
 
 2. `nimpress modules import <system> <file> --name=` registers one external component file into the system.
 
@@ -74,9 +96,11 @@ modules: {
 
 5. Every import and create writes `schema.json` beside `index.md`, the component props as a json schema from the parsed control tree. Opaque prop types log warnings naming the component, prop path, and type; fix them by documenting the type in the component file or a sibling `.types.ts`.
 
-4. `nimpress modules dev [system]` runs harness servers. `nimpress dev` starts them all beside the docs.
+6. `nimpress modules dev [system]` runs harness servers. `nimpress dev` starts them all beside the docs.
 
-5. `nimpress modules build [system]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every non devOnly system.
+7. `nimpress modules build [system]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every non devOnly system.
+
+8. `nimpress export [--target=] [--out=]` collects pages marked with the `export:` frontmatter header into a tree for the docs-sync pipeline, rewriting component pages to package mode. The `docs-export` action is the pipeline twin; see the docs-sync rule.
 
 ## Never
 
@@ -87,3 +111,7 @@ modules: {
 3. Never hand author `Default` stories. Storyless components get auto stories from the type parser.
 
 4. Never point `css` at files that import from the docs app; the harness is its own vite graph.
+
+5. Never define controls in stories. Stories are values only; controls derive from the component types or `data.controls` json schemas.
+
+6. Never add document level scroll or `scrollbar-gutter` rules; the layout contract forbids page scrolling.

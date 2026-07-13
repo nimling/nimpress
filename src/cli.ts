@@ -339,6 +339,39 @@ function runGuard(cwd: string, outDir: string, args: string[]): void {
   throw new Error('[nimpress] guard expects map or apply')
 }
 
+function agentGuide(contentDir: string): string {
+  return `# Nimpress project
+
+This site is built with @nimling/nimpress. Content lives in \`${contentDir}/\` as markdown with typed frontmatter.
+
+The authoritative AI working rules ship inside the package at \`node_modules/@nimling/nimpress/.claude/rules/\`. Read the relevant rule before writing:
+
+1. \`frontmatter.md\` and \`page-types.md\` before creating or editing any page.
+
+2. \`docs-authoring.md\` and \`style.md\` for prose, structure, and markdown surface.
+
+3. \`component-modules.md\` before touching component pages, stories, controls, or the modules CLI.
+
+4. \`changelog-entries.md\` and \`roadmap-entries.md\` for those page types.
+
+5. \`docs-sync.md\` and \`deploy.md\` for publishing flows and the export header.
+
+6. \`file-layout.md\` and \`doc-pages.md\` for where files go.
+
+## Commands
+
+1. \`nimpress dev\` runs the site and every component harness.
+
+2. \`nimpress lint\` validates all frontmatter; run it after content changes.
+
+3. \`nimpress build\` emits the static site plus harness bundles.
+
+4. \`nimpress modules import | create | story\` manage component pages; never hand roll importer scripts.
+
+5. \`nimpress export --target=<name>\` collects pages marked \`export: <name>\` for the docs pipeline.
+`
+}
+
 function runInit(cwd: string): void {
   const configPath = join(cwd, 'nimpress.config.json')
   if (!existsSync(configPath)) {
@@ -359,5 +392,13 @@ function runInit(cwd: string): void {
       join(contentDir, 'index.md'),
       '---\ntitle: Home\n---\n\nWelcome to your Nimpress site.\n'
     )
+  }
+  const guide = agentGuide(defaultConfig.contentDir)
+  for (const name of ['CLAUDE.md', 'AGENTS.md']) {
+    const target = join(cwd, name)
+    if (!existsSync(target)) {
+      writeFileSync(target, guide)
+      console.log(`nimpress init: ${name} written, pointing at the packaged rules in node_modules/@nimling/nimpress/.claude/rules/`)
+    }
   }
 }
