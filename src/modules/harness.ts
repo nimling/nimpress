@@ -48,6 +48,21 @@ function safeArgs(args) {
 function emitOut(name, args) {
   parent.postMessage({ type: 'nimpress:emit', name, args: safeArgs(args) }, '*')
 }
+const FN_SENTINEL = '__nimpress:fn:'
+function materializeFns(props) {
+  for (const [key, value] of Object.entries(props)) {
+    if (typeof value === 'string' && value.startsWith(FN_SENTINEL)) {
+      const label = value.slice(FN_SENTINEL.length) || key
+      props[key] = (...args) => {
+        console.log('nimpress mock fn ' + label, ...args)
+        emitOut(label, args)
+      }
+    } else if (value && typeof value === 'object') {
+      materializeFns(value)
+    }
+  }
+  return props
+}
 window.addEventListener('message', (event) => {
   const d = event.data
   if (!d || d.type !== 'nimpress:props') return
@@ -117,7 +132,7 @@ async function render() {
       return
     }
     const Component = await ensureComponent()
-    const props = { ...state.props }
+    const props = materializeFns(structuredClone(state.props))
     for (const name of state.emits) {
       const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
       props[key] = (...args) => emitOut(name, args)
@@ -152,7 +167,7 @@ let instance = null
 async function render() {
   try {
     if (instance) unmount(instance)
-    const props = { ...state.props }
+    const props = materializeFns(structuredClone(state.props))
     for (const name of state.emits) {
       props[name] = (...args) => emitOut(name, args)
     }

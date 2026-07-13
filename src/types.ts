@@ -38,6 +38,7 @@ export type ControlKind =
   | 'object'
   | 'array'
   | 'record'
+  | 'function'
   | 'json'
   | 'slot'
 
