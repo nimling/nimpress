@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
-  import type { ComponentStory, PageModule } from '../types'
+  import type { ComponentStory, ControlSpec, PageModule } from '../types'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
   import ControlNode, { mockValue } from './ControlNode.svelte'
@@ -14,6 +14,8 @@
   import IconDock from '../icons/IconDock.svelte'
   import IconReload from '../icons/IconReload.svelte'
   import IconOpen from '../icons/IconOpen.svelte'
+  import IconJson from '../icons/IconJson.svelte'
+  import IconRemove from '../icons/IconRemove.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -114,6 +116,76 @@
       : [...subscribedEmits, name]
     push()
   }
+
+  let jsonDialogOpen = $state(false)
+  let jsonDialogTab = $state<'input' | 'schema'>('input')
+  let jsonAllDraft = $state('')
+  let jsonAllError = $state(false)
+  let jsonTyping = $state(false)
+
+  $effect(() => {
+    const text = JSON.stringify(propValues, null, 2)
+    if (!jsonTyping) {
+      jsonAllDraft = text
+      jsonAllError = false
+    }
+  })
+
+  function setAllJson(text: string) {
+    jsonAllDraft = text
+    jsonTyping = true
+    try {
+      const parsed = JSON.parse(text) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        jsonAllError = true
+        return
+      }
+      jsonAllError = false
+      propValues = parsed as Record<string, unknown>
+      controlsEpoch++
+      persistControls()
+      push()
+    } catch {
+      jsonAllError = true
+    }
+  }
+
+  function specToJsonSchema(spec: ControlSpec): Record<string, unknown> {
+    const out: Record<string, unknown> = {}
+    if (spec.description) out.description = spec.description
+    if (spec.kind === 'select') out.enum = spec.options ?? []
+    else if (spec.kind === 'boolean') out.type = 'boolean'
+    else if (spec.kind === 'number') out.type = 'number'
+    else if (spec.kind === 'text' || spec.kind === 'slot') out.type = 'string'
+    else if (spec.kind === 'array') {
+      out.type = 'array'
+      out.items = spec.item ? specToJsonSchema(spec.item) : {}
+    } else if (spec.kind === 'record') {
+      out.type = 'object'
+      out.additionalProperties = spec.item ? specToJsonSchema(spec.item) : {}
+    } else if (spec.kind === 'object') {
+      out.type = 'object'
+      out.properties = Object.fromEntries((spec.members ?? []).map((m) => [m.name, specToJsonSchema(m)]))
+      const required = (spec.members ?? []).filter((m) => m.required).map((m) => m.name)
+      if (required.length) out.required = required
+    } else {
+      out.tsType = spec.type
+    }
+    return out
+  }
+
+  const propsJsonSchema = $derived.by(() => {
+    const props = schema?.props ?? []
+    return JSON.stringify(
+      {
+        type: 'object',
+        properties: Object.fromEntries(props.map((p) => [p.name, specToJsonSchema(p)])),
+        required: props.filter((p) => p.required).map((p) => p.name)
+      },
+      null,
+      2
+    )
+  })
 
   function storyAnchor(name: string): string {
     return name
@@ -575,8 +647,57 @@
             <IconClear />
             clear
           </button>
+          <button
+            type="button"
+            class="np-ws-tool np-ws-tool-icon"
+            title="props as json, view the schema or paste values for all props"
+            onclick={() => (jsonDialogOpen = true)}
+          >
+            <IconJson />
+            json
+          </button>
         </span>
       </div>
+      {#if jsonDialogOpen}
+        <button class="np-ws-dialog-backdrop" aria-label="close" onclick={() => (jsonDialogOpen = false)}></button>
+        <div class="np-ws-dialog" role="dialog" aria-label="props json">
+          <div class="np-ws-dialog-head">
+            <span class="np-ws-dialog-tabs">
+              <button
+                type="button"
+                class="np-ws-tool"
+                class:np-ws-tool-active={jsonDialogTab === 'input'}
+                title="edit the current prop values as one json object"
+                onclick={() => (jsonDialogTab = 'input')}
+              >input</button>
+              <button
+                type="button"
+                class="np-ws-tool"
+                class:np-ws-tool-active={jsonDialogTab === 'schema'}
+                title="json schema of the component props"
+                onclick={() => (jsonDialogTab = 'schema')}
+              >schema</button>
+            </span>
+            <button type="button" class="np-ws-tool np-ws-tool-icon" title="close" onclick={() => (jsonDialogOpen = false)}>
+              <IconRemove />
+            </button>
+          </div>
+          {#if jsonDialogTab === 'input'}
+            <textarea
+              class="np-ws-dialog-editor"
+              class:invalid={jsonAllError}
+              value={jsonAllDraft}
+              onblur={() => (jsonTyping = false)}
+              oninput={(e) => setAllJson(e.currentTarget.value)}
+            ></textarea>
+            {#if jsonAllError}
+              <span class="np-control-error">invalid json, values not applied</span>
+            {/if}
+          {:else}
+            <pre class="np-ws-dialog-editor np-ws-dialog-schema">{propsJsonSchema}</pre>
+          {/if}
+        </div>
+      {/if}
       {#if schema && (schema.props.length || schema.slots.length)}
         {#key `${activeStory.name}:${controlsEpoch}`}
           <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;">
@@ -1010,6 +1131,73 @@
   .np-ws-props-actions {
     display: inline-flex;
     gap: 6px;
+  }
+
+  .np-ws-tool-active {
+    color: var(--np-brand);
+    border-color: var(--np-brand);
+  }
+
+  .np-ws-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.35);
+    border: 0;
+    cursor: default;
+  }
+
+  .np-ws-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 61;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(680px, calc(100% - 48px));
+    height: min(520px, calc(100% - 48px));
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--np-border);
+    background-color: var(--np-bg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .np-ws-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .np-ws-dialog-tabs {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  .np-ws-dialog-editor {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    overflow: auto;
+    font-family: var(--np-font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--np-border);
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-primary);
+    resize: none;
+    white-space: pre;
+  }
+
+  .np-ws-dialog-editor.invalid {
+    border-color: var(--np-danger);
   }
 
   .np-ws-stage {
