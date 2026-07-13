@@ -693,6 +693,7 @@
                   (next) => setAllJson(next)
                 }
                 language="json"
+                noHeader
                 minHeight={360}
                 maxHeight={420}
               />
