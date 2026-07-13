@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
+import { createInterface } from 'node:readline/promises'
 import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { readBalanced } from './parse/typeMembers'
 
@@ -11,6 +12,7 @@ export interface ImportOptions {
   file?: string
   name?: string
   fromStories?: boolean
+  select?: boolean
 }
 
 interface MinedStory {
@@ -228,6 +230,72 @@ function mineStories(module: StoryModule): MinedStory[] {
   return out
 }
 
+function mineArgTypes(module: StoryModule): Record<string, unknown> | undefined {
+  const at = module.text.search(/\bargTypes\s*:\s*\{/)
+  if (at < 0) return undefined
+  const brace = module.text.indexOf('{', at)
+  const body = readBalanced(module.text, brace + 1)
+  let raw: Record<string, Record<string, unknown>>
+  try {
+    raw = jsonSafe(new Function(`return {${body}}`)()) as Record<string, Record<string, unknown>>
+  } catch {
+    try {
+      raw = jsonSafe(
+        new Function(`${cleanForEval(module.declarations)}\nreturn {${body}}`)()
+      ) as Record<string, Record<string, unknown>>
+    } catch {
+      return undefined
+    }
+  }
+  const out: Record<string, unknown> = {}
+  for (const [key, def] of Object.entries(raw)) {
+    if (!def || typeof def !== 'object') continue
+    const controlValue = def.control as string | Record<string, unknown> | undefined
+    const control = typeof controlValue === 'string' ? controlValue : String(controlValue?.type ?? '')
+    const options = def.options ?? (typeof controlValue === 'object' ? controlValue?.options : undefined)
+    const schema: Record<string, unknown> = {}
+    if (typeof def.description === 'string') schema.description = def.description
+    if (Array.isArray(options)) schema.enum = options
+    else if (control === 'boolean') schema.type = 'boolean'
+    else if (control === 'number' || control === 'range') schema.type = 'number'
+    else if (control === 'text' || control === 'color' || control === 'date') schema.type = 'string'
+    else if (control === 'object') schema.type = 'object'
+    if (def.defaultValue !== undefined) schema.default = def.defaultValue
+    if (Object.keys(schema).length) out[key] = schema
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
+async function selectComponents(names: string[]): Promise<Set<string>> {
+  const sorted = [...names].sort()
+  for (let i = 0; i < sorted.length; i++) {
+    console.log(`${String(i + 1).padStart(4)}  ${sorted[i]}`)
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  const answer = await rl.question(
+    'select components to import, comma separated numbers, names, or /regex/, empty imports all: '
+  )
+  rl.close()
+  const trimmed = answer.trim()
+  if (!trimmed) return new Set(sorted)
+  const out = new Set<string>()
+  for (const part of trimmed.split(',').map((p) => p.trim()).filter(Boolean)) {
+    const rx = part.match(/^\/(.+)\/$/)
+    if (rx) {
+      const re = new RegExp(rx[1])
+      for (const n of sorted) if (re.test(n)) out.add(n)
+      continue
+    }
+    if (/^\d+$/.test(part)) {
+      const n = sorted[Number(part) - 1]
+      if (n) out.add(n)
+      continue
+    }
+    for (const n of sorted) if (n === part) out.add(n)
+  }
+  return out
+}
+
 function packageExportNames(cwd: string, pkg: string): Map<string, string> {
   const map = new Map<string, string>()
   const index = join(cwd, 'node_modules', pkg, 'index.mjs')
@@ -323,9 +391,13 @@ export async function importStorybook(
   const seen = new Map<string, string>()
   let pages = 0
   let stories = 0
-  for (const file of componentFiles) {
+  const matched = componentFiles.filter((f) => !matcher || matcher.test(basename(f, ext)))
+  const selected = opts.select
+    ? await selectComponents(matched.map((f) => basename(f, ext)))
+    : null
+  for (const file of matched) {
     const name = basename(file, ext)
-    if (matcher && !matcher.test(name)) continue
+    if (selected && !selected.has(name)) continue
     if (seen.has(name)) {
       console.warn(`nimpress modules: skip duplicate ${name}, kept ${seen.get(name)}`)
       continue
@@ -336,7 +408,16 @@ export async function importStorybook(
     await mkdir(dir, { recursive: true })
     const rel = relative(sourceRoot, file)
     const canonical = rel === `${name}/${name}${ext}` || rel === `${name}${ext}`
-    await writeFile(join(dir, 'index.md'), pageMarkdown(system, name, pkg, canonical ? undefined : rel))
+    const argTypes = (modulesByComponent.get(name) ?? [])
+      .map((m) => mineArgTypes(m))
+      .reduce<Record<string, unknown> | undefined>(
+        (acc, m) => (m ? { ...(acc ?? {}), ...m } : acc),
+        undefined
+      )
+    await writeFile(
+      join(dir, 'index.md'),
+      pageMarkdown(system, name, pkg, canonical ? undefined : rel, argTypes)
+    )
     pages++
     const modules = modulesByComponent.get(name) ?? []
     for (const module of modules) {
@@ -378,10 +459,20 @@ async function importFromStories(
   const seen = new Set<string>()
   let pages = 0
   let stories = 0
-  for (const csf of walk(storiesDir).filter((f) => f.endsWith('.stories.ts'))) {
+  const csfList = walk(storiesDir).filter((f) => f.endsWith('.stories.ts'))
+  const selected = opts.select
+    ? await selectComponents(
+        csfList.map((f) => {
+          const m = parseStoryModule(f)
+          return m.metaComponent ?? basename(f, '.stories.ts')
+        })
+      )
+    : null
+  for (const csf of csfList) {
     const module = parseStoryModule(csf)
     const fileBase = basename(csf, '.stories.ts')
     const name = module.metaComponent ?? fileBase
+    if (selected && !selected.has(name)) continue
     const importSpec = module.text.match(
       new RegExp(`import\\s+(?:\\{\\s*)?${name}(?:\\s*\\})?\\s+from\\s+["']([^"']+)["']`)
     )?.[1]
@@ -413,7 +504,10 @@ async function importFromStories(
       : 'Components'
     const dir = join(docsRoot, group, component)
     await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.md'), pageMarkdown(system, component, pagePkg, fileRel))
+    await writeFile(
+      join(dir, 'index.md'),
+      pageMarkdown(system, component, pagePkg, fileRel, mineArgTypes(module))
+    )
     pages++
     for (const dataModule of module.dataModules) {
       await mkdir(sharedDir, { recursive: true })
@@ -430,15 +524,22 @@ async function importFromStories(
   console.log(`nimpress modules: imported ${pages} components with ${stories} stories for ${system} from stories`)
 }
 
-function pageMarkdown(system: string, name: string, pkg: string | undefined, fileRel?: string): string {
+function pageMarkdown(
+  system: string,
+  name: string,
+  pkg: string | undefined,
+  fileRel?: string,
+  controls?: Record<string, unknown>
+): string {
   const packageLine = pkg ? `\n  package: "${pkg}"` : ''
   const fileLine = fileRel ? `\n  file: ${JSON.stringify(fileRel)}` : ''
+  const controlsLine = controls ? `\n  controls: ${JSON.stringify(controls)}` : ''
   return `---
 title: ${name}
 type: component
 data:
   system: ${system}
-  component: ${name}${packageLine}${fileLine}
+  component: ${name}${packageLine}${fileLine}${controlsLine}
 ---
 
 ## Usage

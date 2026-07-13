@@ -46,6 +46,7 @@
     (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
   )
   const rows = $derived(Array.isArray(value) ? (value as unknown[]) : [])
+  const missing = $derived(!!spec.required && (value === undefined || value === ''))
 
   function setMember(memberName: string, memberValue: unknown) {
     const next = { ...record }
@@ -177,11 +178,13 @@
       {:else if spec.kind === 'number'}
         <input
           type="number"
+          class:invalid={missing}
           value={value ?? ''}
           oninput={(e) => onchange(e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
         />
       {:else if spec.kind === 'select'}
         <select
+          class:invalid={missing}
           value={String(value ?? '')}
           onchange={(e) => onchange(e.currentTarget.value === '' ? undefined : e.currentTarget.value)}
         >
@@ -193,7 +196,7 @@
       {:else if spec.kind === 'json'}
         <textarea
           class="np-control-json"
-          class:invalid={jsonError}
+          class:invalid={jsonError || missing}
           value={jsonDraft}
           placeholder={spec.shape ?? spec.type}
           oninput={(e) => setJson(e.currentTarget.value)}
@@ -204,9 +207,13 @@
       {:else}
         <input
           type="text"
+          class:invalid={missing}
           value={String(value ?? '')}
           oninput={(e) => onchange(e.currentTarget.value === '' ? undefined : e.currentTarget.value)}
         />
+      {/if}
+      {#if missing}
+        <span class="np-control-error">required</span>
       {/if}
     </div>
     {@render actions()}
@@ -301,6 +308,11 @@
 
   .np-control-act-remove:hover {
     color: var(--np-danger);
+    border-color: var(--np-danger);
+  }
+
+  .np-control-input input.invalid,
+  .np-control-input select.invalid {
     border-color: var(--np-danger);
   }
 

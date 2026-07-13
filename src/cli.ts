@@ -142,7 +142,8 @@ async function runModules(cwd: string, resolved: ResolvedNimpressConfig, args: s
       source: guardFlag(args, 'source'),
       stories: guardFlag(args, 'stories'),
       match: guardFlag(args, 'match'),
-      fromStories: args.includes('--from-stories')
+      fromStories: args.includes('--from-stories'),
+      select: args.includes('--select')
     })
     return
   }
