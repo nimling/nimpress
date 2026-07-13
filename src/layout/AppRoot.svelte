@@ -2,7 +2,7 @@
   import { get } from 'svelte/store'
   import { Router } from 'sly-svelte-location-router'
   import type { Routes } from 'sly-svelte-location-router'
-  import AppShell from './AppShell.svelte'
+  import App from './App.svelte'
   import HomePage from './HomePage.svelte'
   import { configStore } from '../framework/configStore'
   import { pageGuard } from '../auth/guard'
@@ -29,6 +29,20 @@
       }
     }
 
+    for (const [path, slug] of Object.entries(config.manifest?.byPath ?? {})) {
+      if (routes[path]) continue
+      const meta = pages[slug]
+      const loader = loaders[slug]
+      if (!meta || meta.redirect || !loader) continue
+      routes[path] = {
+        name: slug || 'index',
+        component: loader as () => Promise<{ default: unknown }>,
+        guard: meta.scope || meta.claim
+          ? pageGuard({ scope: meta.scope, claim: meta.claim })
+          : undefined
+      }
+    }
+
     if (!routes['/']) {
       routes['/'] = {
         name: 'home',
@@ -42,13 +56,13 @@
   const routes = buildRoutes()
 </script>
 
-<AppShell>
+<App>
   <Router {routes} fallback="/">
     <div class="np-loading">
       <span class="np-spinner"></span>
     </div>
   </Router>
-</AppShell>
+</App>
 
 <style>
   .np-loading {
