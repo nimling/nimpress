@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/nimling/nimpress/actions/internal/docssync"
 )
 
 func main() {
@@ -24,9 +26,22 @@ func main() {
 	if token == "" || docsRepo == "" || sourceRepo == "" || sha == "" {
 		fail("GITHUB_TOKEN, NIMPRESS_DOCS_REPO, NIMPRESS_SOURCE_REPO and NIMPRESS_SHA are required")
 	}
+	contentDir := os.Getenv("NIMPRESS_CONTENT_DIR")
+	if contentDir == "" {
+		contentDir = "docs"
+	}
+	mode := ""
 	nimpressDir := filepath.Join(workspace, ".nimpress")
-	if info, err := os.Stat(nimpressDir); err != nil || !info.IsDir() {
-		fail("no .nimpress folder at " + nimpressDir)
+	if info, err := os.Stat(nimpressDir); err == nil && info.IsDir() {
+		mode = "nimpress"
+	} else {
+		marked, err := docssync.FindExports(filepath.Join(workspace, contentDir), "")
+		if err == nil && len(marked) > 0 {
+			mode = "export"
+		}
+	}
+	if mode == "" {
+		fail("nothing to publish: no .nimpress folder at " + nimpressDir + " and no pages marked with the export frontmatter header under " + contentDir)
 	}
 	payload := map[string]any{
 		"event_type": eventType,
@@ -34,6 +49,7 @@ func main() {
 			"repo": sourceRepo,
 			"sha":  sha,
 			"ref":  ref,
+			"mode": mode,
 		},
 	}
 	body, err := json.Marshal(payload)

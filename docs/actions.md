@@ -3,7 +3,11 @@ title: Publishing a repo's docs to the central site
 description: How any nimling repo ships its own docs into the central docs site through the nimpress docs-sync action on a version tag.
 ---
 
-A repo keeps its documentation next to its code in a `.nimpress` folder. On a version tag the nimpress pipeline mirrors that folder into the central docs site under a mapped path. The `docs-sync` action owns the whole publish flow with no other dependencies, so a consumer pipeline is just checkout, token, run.
+A repo keeps its documentation next to its code in a `.nimpress` folder, or, in a nimpress repo, marks individual pages with an `export:` frontmatter header. On a version tag the nimpress pipeline mirrors the folder or the marked pages into the central docs site under a mapped path. The `docs-sync` action owns the whole publish flow with no other dependencies, so a consumer pipeline is just checkout, token, run.
+
+## The export header
+
+A nimpress repo needs no `.nimpress` folder. Any page whose frontmatter carries `export: <target>` is published, `export: true` matches every target. The `docs-export` action, or `nimpress export` locally, collects each marked page's folder, the page, its stories, its `schema.json`, into an output tree, dropping the `export:` and `data.file` lines and stamping `data.version` from the source package version so component pages land in package mode. That output tree is what `docs-sync` mirrors, so the rest of the flow is identical to the `.nimpress` folder path.
 
 ## How the flow runs
 
@@ -11,13 +15,13 @@ A repo keeps its documentation next to its code in a `.nimpress` folder. On a ve
 
 2. The consumer workflow checks whether `.nimpress` changed since the previous version tag. If nothing changed it stops.
 
-3. It mints a token from the shared GitHub App and calls `docs-notify`, which sends a repository dispatch to the docs site with the source repo and the tagged commit.
+3. It mints a token from the shared GitHub App and calls `docs-notify`, which sends a repository dispatch to the docs site with the source repo and the tagged commit. The notify guard accepts either a `.nimpress` folder or export marked pages, and the dispatch payload carries `mode: nimpress` or `mode: export`.
 
-4. The docs receiver checks out the docs and the source, then runs `docs-sync`. The action mirrors `.nimpress` into the mapped subtree, bumps any configured version files, then either commits and tags or opens a pull request.
+4. The docs receiver checks out the docs and the source, then runs `docs-sync`. When the payload mode is `export` it runs `docs-export` first and hands its output tree to `docs-sync` as the source path. The action mirrors into the mapped subtree, bumps any configured version files, then either commits and tags or opens a pull request.
 
 5. With `publish: auto` it commits to the configured branch and pushes the version tag, which triggers the deploy. On a push conflict it falls back to a pull request. With `publish: pr` it always opens a pull request, with a title, body, and labels from the source's Go templates.
 
-## The two actions
+## The three actions
 
 `docs-notify` runs in the source repo and dispatches the docs site.
 
@@ -26,6 +30,18 @@ A repo keeps its documentation next to its code in a `.nimpress` folder. On a ve
 | `docs-repo` | yes | Full name of the docs site repo, for example `nimling/samna` |
 | `token` | yes | A token with repository dispatch access to the docs site |
 | `event-type` | no | Dispatch type, defaults to `nimpress-docs-sync` |
+| `content-dir` | no | Content root scanned for export marked pages when no `.nimpress` folder exists, defaults to `docs` |
+
+`docs-export` runs in the docs site repo before `docs-sync` when the dispatch mode is `export`, against the checked out source repo.
+
+| Input | Required | Purpose |
+|-------|----------|---------|
+| `source-dir` | yes | Path to the checked out source repo |
+| `content-dir` | no | Content root inside the source repo, defaults to `docs` |
+| `target` | no | Export target name the header must match, empty accepts every marked page |
+| `out` | yes | Output folder handed to `docs-sync` as `source-path` |
+
+Its `count` output is the number of exported pages.
 
 `docs-sync` runs in the docs site repo, driven by the dispatch. The receiver workflow checks out the docs and the source first, then hands the paths to the action, which mirrors, renders the templates, bumps the version files, and commits and tags or opens a pull request.
 

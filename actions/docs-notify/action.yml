@@ -1,5 +1,5 @@
 name: Notify nimpress docs
-description: Trigger the docs site repo to sync this repo .nimpress folder
+description: Trigger the docs site repo to sync this repo, from its .nimpress folder or from pages marked with the export frontmatter header
 inputs:
   docs-repo:
     description: Full name of the docs site repo
@@ -11,6 +11,10 @@ inputs:
     description: Repository dispatch event type
     required: false
     default: nimpress-docs-sync
+  content-dir:
+    description: Content root scanned for export marked pages when no .nimpress folder exists
+    required: false
+    default: docs
 runs:
   using: composite
   steps:
@@ -23,6 +27,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
         NIMPRESS_DOCS_REPO: ${{ inputs.docs-repo }}
         NIMPRESS_EVENT_TYPE: ${{ inputs.event-type }}
+        NIMPRESS_CONTENT_DIR: ${{ inputs.content-dir }}
         NIMPRESS_SOURCE_REPO: ${{ github.repository }}
         NIMPRESS_SHA: ${{ github.sha }}
         NIMPRESS_REF: ${{ github.ref_name }}

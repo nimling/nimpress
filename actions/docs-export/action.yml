@@ -1,0 +1,36 @@
+name: Export nimpress pages
+description: Collect pages marked with the export frontmatter header from a checked out source repo into a folder docs-sync consumes
+inputs:
+  source-dir:
+    description: Absolute path to the checked out source repo
+    required: true
+  content-dir:
+    description: Content root inside the source repo, relative
+    required: false
+    default: docs
+  target:
+    description: Export target name the header must match, empty accepts every marked page
+    required: false
+    default: ""
+  out:
+    description: Absolute path for the collected export
+    required: true
+outputs:
+  count:
+    description: Number of exported pages
+    value: ${{ steps.export.outputs.count }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+    - id: export
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        NIMPRESS_SOURCE_DIR: ${{ inputs.source-dir }}
+        NIMPRESS_CONTENT_DIR: ${{ inputs.content-dir }}
+        NIMPRESS_TARGET: ${{ inputs.target }}
+        NIMPRESS_OUT: ${{ inputs.out }}
+      run: go run .
