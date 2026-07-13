@@ -71,6 +71,9 @@ importers:
       markdown-it-task-lists:
         specifier: ^2.1.1
         version: 2.1.1
+      mermaid:
+        specifier: ^11.4.1
+        version: 11.15.0
       minisearch:
         specifier: ^7.1.2
         version: 7.2.0
@@ -111,9 +114,6 @@ importers:
       autoprefixer:
         specifier: ^10.4.21
         version: 10.5.0(postcss@8.5.15)
-      mermaid:
-        specifier: ^11.4.1
-        version: 11.15.0
       playwright:
         specifier: ^1.60.0
         version: 1.60.0
