@@ -82,6 +82,14 @@
       if (first === undefined) return undefined
       return [first, mockValue(spec.item, seed + 1)]
     }
+    if (spec.kind === 'record') {
+      const out: Record<string, unknown> = {}
+      for (let i = 0; i < 2; i++) {
+        const key = pick(swWords, hint, seed + i)
+        out[key] = spec.item ? (mockValue(spec.item, seed + i) ?? pick(swSentences, key, seed + i)) : pick(swSentences, key, seed + i)
+      }
+      return out
+    }
     return undefined
   }
 </script>
@@ -98,13 +106,15 @@
     value,
     onchange,
     depth = 0,
-    onremove
+    onremove,
+    onrename
   }: {
     spec: ControlSpec
     value: unknown
     onchange: (value: unknown) => void
     depth?: number
     onremove?: () => void
+    onrename?: (next: string) => void
   } = $props()
 
   let jsonDraft = $state(value === undefined ? '' : JSON.stringify(value, null, 2))
@@ -156,12 +166,42 @@
     onchange([...rows, emptyValue(spec.item)])
   }
 
+  function nextKey(): string {
+    let n = Object.keys(record).length + 1
+    while (record[`key${n}`] !== undefined) n++
+    return `key${n}`
+  }
+
+  function addEntry() {
+    onchange({ ...record, [nextKey()]: spec.item ? emptyValue(spec.item) : '' })
+  }
+
+  function renameEntry(key: string, next: string) {
+    if (!next || next === key || record[next] !== undefined) return
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(record)) {
+      out[k === key ? next : k] = v
+    }
+    onchange(out)
+  }
+
+  function removeEntry(key: string) {
+    const next = { ...record }
+    delete next[key]
+    onchange(next)
+  }
+
   let mockSeed = 0
 
   function mockSelf() {
     mockSeed++
     if (spec.kind === 'array') {
       if (spec.item) onchange([...rows, mockValue(spec.item, mockSeed)])
+      return
+    }
+    if (spec.kind === 'record') {
+      const mocked = mockValue(spec, mockSeed)
+      if (mocked && typeof mocked === 'object') onchange({ ...record, ...(mocked as Record<string, unknown>) })
       return
     }
     const next = mockValue(spec, mockSeed)
@@ -197,15 +237,32 @@
 
 {#snippet info()}
   <div class="np-control-head" style="padding-left: {depth * 14}px">
-    <span class="np-control-label">
-      {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
-    </span>
+    {#if onrename}
+      <input
+        type="text"
+        class="np-control-key"
+        value={spec.name}
+        title="entry key, edit to rename"
+        onchange={(e) => onrename(e.currentTarget.value.trim())}
+      />
+    {:else}
+      <span class="np-control-label">
+        {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
+      </span>
+    {/if}
     <div class="np-control-actions">
       {#if spec.kind === 'array'}
         <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>
           <IconAdd />
         </button>
         <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>
+          <IconMock />
+        </button>
+      {:else if spec.kind === 'record'}
+        <button type="button" class="np-control-act" title="add an empty entry" onclick={addEntry}>
+          <IconAdd />
+        </button>
+        <button type="button" class="np-control-act" title="add sample entries" onclick={mockSelf}>
           <IconMock />
         </button>
       {:else if spec.kind !== 'json'}
@@ -258,6 +315,23 @@
         onremove={() => removeRow(i)}
       />
     {/if}
+  {/each}
+{:else if spec.kind === 'record'}
+  <div class="np-control np-control-kind-record">
+    {@render info()}
+    <div class="np-control-input">
+      <span class="np-control-note">{Object.keys(record).length} entries</span>
+    </div>
+  </div>
+  {#each Object.keys(record) as key (key)}
+    <ControlNode
+      spec={{ ...(spec.item ?? { name: '', kind: 'json', type: 'unknown' }), name: key }}
+      value={record[key]}
+      depth={depth + 1}
+      onchange={(v) => setMember(key, v)}
+      onremove={() => removeEntry(key)}
+      onrename={(next) => renameEntry(key, next)}
+    />
   {/each}
 {:else}
   <div class="np-control np-control-kind-{spec.kind}">
@@ -340,6 +414,19 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--np-text-primary);
+  }
+
+  .np-control-key {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--np-font-mono);
+    color: var(--np-text-primary);
+    background-color: var(--np-bg-surface);
+    border: 1px solid var(--np-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    min-width: 0;
+    width: 140px;
   }
 
   .np-control-required {

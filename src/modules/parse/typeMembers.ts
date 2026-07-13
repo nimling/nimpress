@@ -213,6 +213,21 @@ export function controlFromType(
   if (bare === 'number') return { name, kind: 'number', type: t, required: !optional, description }
   if (bare === 'string') return { name, kind: 'text', type: t, required: !optional, description }
   if (depth < 4) {
+    const valueType =
+      bare.match(/^Record<\s*string\s*,\s*(.+)>$/)?.[1] ??
+      bare.match(/^\{\s*\[\s*\w+\s*:\s*string\s*\]\s*:\s*(.+?);?\s*\}$/)?.[1]
+    if (valueType) {
+      const item = controlFromType('', valueType, false, typeContext, undefined, depth + 1, seen)
+      return {
+        name,
+        kind: 'record',
+        type: t,
+        item,
+        required: !optional,
+        description,
+        shape: `Record<string, ${item.shape ?? item.type}>`
+      }
+    }
     const itemType = bare.match(/^(.*\S)\[\]$/)?.[1] ?? bare.match(/^Array<(.+)>$/)?.[1]
     if (itemType) {
       const item = controlFromType('', itemType, false, typeContext, undefined, depth + 1, seen)

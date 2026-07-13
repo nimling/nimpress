@@ -37,6 +37,7 @@ export type ControlKind =
   | 'select'
   | 'object'
   | 'array'
+  | 'record'
   | 'json'
   | 'slot'
 
