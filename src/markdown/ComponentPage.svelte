@@ -31,6 +31,7 @@
   let zoom = $state(1)
   let vision = $state('none')
   let visionOpen = $state(false)
+  let toolsOpen = $state(false)
   let frameTheme = $state<'light' | 'dark'>('light')
   let controlsEpoch = $state(0)
 
@@ -419,6 +420,47 @@
     class:np-ws-dragging={dragging}
     style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilter};"
   >
+    {#snippet toolItems()}
+      <button type="button" class="np-ws-tool" title="toggle the component theme inside the frame" onclick={toggleFrameTheme}>{frameTheme === 'dark' ? 'light' : 'dark'}</button>
+      <span class="np-ws-tool-group">
+        <button type="button" class="np-ws-tool" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}>-</button>
+        <button type="button" class="np-ws-tool" title="reset zoom" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
+        <button type="button" class="np-ws-tool" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}>+</button>
+      </span>
+      <span class="np-ws-vision-wrap">
+        <button
+          type="button"
+          class="np-ws-tool np-ws-vision-btn"
+          title="vision simulation"
+          onclick={() => (visionOpen = !visionOpen)}
+        >
+          {@render visionIcon(visionOptions.find((o) => o.name === vision) ?? visionOptions[0])}
+          {vision}
+        </button>
+        {#if visionOpen}
+          <button class="np-ws-vision-backdrop" aria-label="close" onclick={() => (visionOpen = false)}></button>
+          <div class="np-ws-vision-panel">
+            {#each visionOptions as option (option.name)}
+              <button
+                type="button"
+                class="np-ws-vision-item"
+                class:active={vision === option.name}
+                onclick={() => {
+                  vision = option.name
+                  visionOpen = false
+                }}
+              >
+                {@render visionIcon(option)}
+                {option.name}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </span>
+      <button type="button" class="np-ws-tool" title="dock props" onclick={toggleDock}>{dock === 'bottom' ? 'dock right' : 'dock bottom'}</button>
+      <button type="button" class="np-ws-tool" title="reload" onclick={reloadFrame}>reload</button>
+      <a class="np-ws-tool" href={storySrc} target="_blank" rel="noreferrer" title="open harness directly">open</a>
+    {/snippet}
     <div class="np-ws-toolbar">
       <span class="np-ws-crumb">
         <a href={page.path}>{page.frontmatter.title}</a>
@@ -429,45 +471,16 @@
         {/if}
       </span>
       <span class="np-ws-tools">
-        <button type="button" class="np-ws-tool" title="toggle the component theme inside the frame" onclick={toggleFrameTheme}>{frameTheme === 'dark' ? 'light' : 'dark'}</button>
-        <span class="np-ws-tool-group">
-          <button type="button" class="np-ws-tool" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}>-</button>
-          <button type="button" class="np-ws-tool" title="reset zoom" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
-          <button type="button" class="np-ws-tool" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}>+</button>
-        </span>
-        <span class="np-ws-vision-wrap">
-          <button
-            type="button"
-            class="np-ws-tool np-ws-vision-btn"
-            title="vision simulation"
-            onclick={() => (visionOpen = !visionOpen)}
-          >
-            {@render visionIcon(visionOptions.find((o) => o.name === vision) ?? visionOptions[0])}
-            {vision}
-          </button>
-          {#if visionOpen}
-            <button class="np-ws-vision-backdrop" aria-label="close" onclick={() => (visionOpen = false)}></button>
-            <div class="np-ws-vision-panel">
-              {#each visionOptions as option (option.name)}
-                <button
-                  type="button"
-                  class="np-ws-vision-item"
-                  class:active={vision === option.name}
-                  onclick={() => {
-                    vision = option.name
-                    visionOpen = false
-                  }}
-                >
-                  {@render visionIcon(option)}
-                  {option.name}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </span>
-        <button type="button" class="np-ws-tool" title="dock props" onclick={toggleDock}>{dock === 'bottom' ? 'dock right' : 'dock bottom'}</button>
-        <button type="button" class="np-ws-tool" title="reload" onclick={reloadFrame}>reload</button>
-        <a class="np-ws-tool" href={storySrc} target="_blank" rel="noreferrer" title="open harness directly">open</a>
+        {@render toolItems()}
+      </span>
+      <span class="np-ws-tools-menu-wrap">
+        <button type="button" class="np-ws-tool" title="workshop actions" onclick={() => (toolsOpen = !toolsOpen)}>⋯</button>
+        {#if toolsOpen}
+          <button class="np-ws-vision-backdrop" aria-label="close" onclick={() => (toolsOpen = false)}></button>
+          <div class="np-ws-tools-panel">
+            {@render toolItems()}
+          </div>
+        {/if}
       </span>
     </div>
 
@@ -756,6 +769,7 @@
 
   .np-ws-toolbar {
     grid-area: toolbar;
+    container-type: inline-size;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -774,6 +788,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .np-ws-crumb a {
@@ -804,7 +820,41 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .np-ws-tools-menu-wrap {
+    position: relative;
+    display: none;
+    flex: 0 0 auto;
+  }
+
+  @container (max-width: 860px) {
+    .np-ws-tools {
+      display: none;
+    }
+
+    .np-ws-tools-menu-wrap {
+      display: inline-flex;
+    }
+  }
+
+  .np-ws-tools-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 41;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 180px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--np-border);
+    background-color: var(--np-bg-surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
   .np-ws-tool-group {
