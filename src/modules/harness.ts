@@ -185,10 +185,11 @@ export function harnessHtml(component: string): string {
     <meta name="robots" content="noindex" />
     <title>${component}</title>
     <style>
-      html, body { margin: 0; padding: 0; background: transparent; height: 100%; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: transparent; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { display: grid; min-height: 100%; box-sizing: border-box; }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: grid; }
       #host > * { margin: auto; max-width: 100%; min-width: 0; }
     </style>
   </head>
