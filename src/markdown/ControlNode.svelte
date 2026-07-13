@@ -156,12 +156,20 @@
     onchange([...rows, emptyValue(spec.item)])
   }
 
+  let mockSeed = 0
+
   function mockSelf() {
+    mockSeed++
     if (spec.kind === 'array') {
-      if (spec.item) onchange([...rows, mockValue(spec.item)])
+      if (spec.item) onchange([...rows, mockValue(spec.item, mockSeed)])
       return
     }
-    onchange(mockValue(spec))
+    const next = mockValue(spec, mockSeed)
+    if (spec.kind === 'json') {
+      jsonDraft = next === undefined ? '' : JSON.stringify(next, null, 2)
+      jsonError = false
+    }
+    onchange(next)
   }
 
   function setJson(text: string) {

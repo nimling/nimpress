@@ -186,7 +186,7 @@ export function harnessHtml(component: string): string {
     <title>${component}</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; background: transparent; }
+      html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
       #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: hidden; }
