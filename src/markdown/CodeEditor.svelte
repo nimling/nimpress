@@ -48,7 +48,8 @@
     fitContent = false,
     title = '',
     variant = 'default',
-    showLineNumbers = true
+    showLineNumbers = true,
+    noHeader = false
   }: {
     value?: string
     language?: string
@@ -59,6 +60,7 @@
     title?: string
     variant?: 'default' | 'try'
     showLineNumbers?: boolean
+    noHeader?: boolean
   } = $props()
 
   let host: HTMLDivElement
@@ -186,7 +188,7 @@
 </script>
 
 <div class="np-editor">
-  {#if title || !readonly}
+  {#if !noHeader && (title || !readonly)}
     <header class="np-editor-bar">
       <span class="np-editor-title">{title || language}</span>
       <button class="np-editor-copy" onclick={copy}>{copied ? '✓ Copied' : 'Copy'}</button>
