@@ -1,6 +1,6 @@
 <script lang="ts">
   import { viewer, clearViewer } from '../framework/stores/viewer'
-  import { startLogin, getLogoutUrl } from '@nimling/samna-auth-middleware'
+  import { startLogin, authConfigured } from './session'
 
   let open = $state(false)
   let root: HTMLDivElement
@@ -24,12 +24,10 @@
   async function logout() {
     open = false
     await clearViewer()
-    window.location.href = getLogoutUrl(window.location.pathname)
   }
 
   function login() {
-    const returnTo = window.location.pathname + window.location.search
-    startLogin(undefined, returnTo)
+    startLogin(window.location.pathname + window.location.search)
   }
 </script>
 
@@ -48,6 +46,8 @@
       </div>
     {/if}
   </div>
+{:else if authConfigured()}
+  <button class="np-signin" onclick={login}>Log in</button>
 {/if}
 
 <style>

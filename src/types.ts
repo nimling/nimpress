@@ -293,24 +293,21 @@ export interface NimpressBrandConfig {
   primaryHover?: string
 }
 
-export interface NimpressAuthCallbacks {
-  onSession?: (user: unknown) => void | Promise<void>
-  onLogin?: (url: string, returnTo?: string) => void
-  onLogout?: (url: string, returnTo?: string) => void | Promise<void>
-  onUnauthenticated?: (returnTo?: string) => void
-  onSubscribe?: (input: NimpressSubscribeInput) => void | Promise<void>
+export interface SubscribeContext {
+  endpoint: string
+  appSlug: string
+  headers: Record<string, string>
+  viewer: Viewer
 }
 
-export interface NimpressSubscribeInput {
-  title: string
-  feedUrl: string
-  xml: string
-  email?: string
+export interface SubscribeFunctions {
+  subscribe?: (ctx: SubscribeContext, feed: string) => Promise<void>
 }
 
-export interface NimpressSubscribeConfig {
+export interface SubscribeConfig {
   endpoint?: string
   appSlug?: string
+  functions?: SubscribeFunctions
 }
 
 export interface NimpressMetaConfig {
@@ -342,6 +339,42 @@ export interface NimpressMetaConfig {
   }
 }
 
+export interface OidcEndpoints {
+  discovery?: string
+  authorization?: string
+  token?: string
+  userinfo?: string
+  endSession?: string
+  jwks?: string
+}
+
+export interface RelyingParty {
+  clientId: string
+  scopes: string
+  redirectPath: string
+  headers: Record<string, string>
+  endpoints: OidcEndpoints
+  authorizeUrl: (returnTo: string) => Promise<string>
+  mapViewer: (raw: Record<string, unknown>) => Viewer
+}
+
+export interface AuthFunctions {
+  resolveViewer?: (rp: RelyingParty) => Promise<Viewer | null>
+  startLogin?: (rp: RelyingParty, returnTo: string) => void | Promise<void>
+  endSession?: (rp: RelyingParty, returnTo: string) => void | Promise<void>
+  checkAccess?: AccessChecker
+}
+
+export interface AuthConfig {
+  issuer: string
+  clientId: string
+  scopes?: string
+  redirectPath?: string
+  headers?: Record<string, string>
+  endpoints?: OidcEndpoints
+  functions?: AuthFunctions
+}
+
 export interface NimpressConfig {
   title: string
   logo?: string
@@ -349,12 +382,8 @@ export interface NimpressConfig {
   brand?: NimpressBrandConfig
   contentRoot: string
   navRoutes?: NavRoute[]
-  authEndpoint?: string
-  clientSlug?: string
-  authMode?: 'edge' | 'bff'
-  bffPath?: string
-  authCallbacks?: NimpressAuthCallbacks
-  subscribe?: NimpressSubscribeConfig
+  auth?: AuthConfig
+  subscribe?: SubscribeConfig
   site?: SiteMeta
   footer?: string
   manifest?: Manifest
@@ -378,12 +407,9 @@ export interface NimpressUserConfig {
   brand?: NimpressBrandConfig
   footer?: string
   navRoutes?: NavRoute[]
-  authEndpoint?: string
-  clientSlug?: string
-  authMode?: 'edge' | 'bff'
-  bffPath?: string
-  authHooks?: string
-  subscribe?: NimpressSubscribeConfig
+  auth?: AuthConfig
+  client?: string
+  subscribe?: SubscribeConfig
   meta?: NimpressMetaConfig
   site?: SiteMeta
   contentDir?: string
@@ -406,12 +432,9 @@ export interface ResolvedNimpressConfig {
   brand?: NimpressBrandConfig
   footer?: string
   navRoutes?: NavRoute[]
-  authEndpoint?: string
-  clientSlug?: string
-  authMode?: 'edge' | 'bff'
-  bffPath?: string
-  authHooks?: string
-  subscribe?: NimpressSubscribeConfig
+  auth?: AuthConfig
+  client?: string
+  subscribe?: SubscribeConfig
   meta?: NimpressMetaConfig
   site?: SiteMeta
   contentDir: string

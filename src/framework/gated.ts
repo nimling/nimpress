@@ -1,4 +1,4 @@
-import { handleUnauthenticated } from '@nimling/samna-auth-middleware'
+import { handleUnauthenticated } from '../auth/session'
 import { configStore } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
 import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'

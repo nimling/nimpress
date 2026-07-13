@@ -1,21 +1,3 @@
-<script module lang="ts">
-  import { writable } from 'svelte/store'
-
-  const currentHash = writable(typeof window === 'undefined' ? '' : window.location.hash)
-  let lastHash = typeof window === 'undefined' ? '' : window.location.hash
-
-  function syncHash() {
-    const h = window.location.hash
-    if (h === lastHash) return
-    lastHash = h
-    currentHash.set(h)
-  }
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('hashchange', syncHash)
-  }
-</script>
-
 <script lang="ts">
   import { sidebarState, toggleGroup } from '../framework/stores/sidebar'
   import { viewer } from '../framework/stores/viewer'
@@ -39,19 +21,9 @@
   const visible = $derived(
     viewerCanAccess({ scope: node.scope, claim: node.claim }, v)
   )
-
-  $effect(() => {
-    route
-    syncHash()
-  })
-
-  const active = $derived.by(() => {
-    if (!route || !node.link) return false
-    const [linkPath, linkHash] = node.link.split('#')
-    if (route.path !== linkPath) return false
-    if (linkHash) return $currentHash === `#${linkHash}`
-    return !$currentHash.startsWith('#story-')
-  })
+  const active = $derived(
+    !!route && !!node.link && route.path.replace(/\/$/, '') === node.link.replace(/\/$/, '')
+  )
 </script>
 
 {#if visible}

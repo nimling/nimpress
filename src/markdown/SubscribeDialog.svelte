@@ -1,7 +1,8 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
-  import { startLogin, getAuthEndpoint, getAppSlug } from '@nimling/samna-auth-middleware'
+  import { startLogin } from '../auth/session'
+  import { subscribeFeed, subscribeConfigured } from '../subscribe/subscribe'
 
   let {
     title,
@@ -22,12 +23,7 @@
     if (base) return `${base}${feedPath}`
     return new URL(feedPath, window.location.origin).href
   })
-  const emailReady = $derived(
-    emailEnabled &&
-      (typeof config.authCallbacks?.onSubscribe === 'function' ||
-        config.subscribe?.endpoint !== undefined ||
-        config.authEndpoint !== undefined)
-  )
+  const emailReady = $derived(emailEnabled && subscribeConfigured())
 
   let sendState = $state<'idle' | 'sending' | 'done' | 'failed'>('idle')
   let copied = $state(false)
@@ -46,13 +42,7 @@
   }
 
   function login() {
-    startLogin(undefined, window.location.pathname + window.location.search)
-  }
-
-  function subscribeUrl(): string {
-    if (config.subscribe?.endpoint) return config.subscribe.endpoint
-    const slug = config.subscribe?.appSlug ?? getAppSlug()
-    return `${getAuthEndpoint().replace(/\/$/, '')}/api/app/${slug}/subscription`
+    startLogin(window.location.pathname + window.location.search)
   }
 
   async function subscribe() {
@@ -62,21 +52,7 @@
       const feedRes = await fetch(feedPath)
       if (!feedRes.ok) throw new Error(`feed request returned ${feedRes.status}`)
       const xml = await feedRes.text()
-      const handler = config.authCallbacks?.onSubscribe
-      if (handler) {
-        await handler({ title, feedUrl, xml, email: v.email })
-      } else {
-        const res = await fetch(subscribeUrl(), {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/rss+xml',
-            'SAuth-App-Slug': config.subscribe?.appSlug ?? config.clientSlug ?? ''
-          },
-          body: xml
-        })
-        if (!res.ok) throw new Error(`subscription request returned ${res.status}`)
-      }
+      await subscribeFeed(v, xml)
       sendState = 'done'
     } catch (err) {
       sendState = 'failed'

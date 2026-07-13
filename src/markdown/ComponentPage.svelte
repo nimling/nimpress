@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import type { ComponentStory, PageModule } from '../types'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
@@ -12,7 +13,15 @@
   const stories = $derived(page.componentData?.stories ?? [])
   const emits = $derived(page.componentData?.schema?.emits ?? [])
 
-  let view = $state('overview')
+  const view = $derived.by(() => {
+    const path = ($resolvedRoute?.path ?? '').replace(/\/$/, '')
+    const base = page.path.replace(/\/$/, '')
+    if (path.startsWith(`${base}/`)) {
+      const anchor = path.slice(base.length + 1)
+      if (stories.some((s) => storyAnchor(s.name) === anchor)) return anchor
+    }
+    return 'overview'
+  })
   let propValues = $state<Record<string, unknown>>({})
   let slotValues = $state<Record<string, string>>({})
   let emitLog = $state<Array<{ name: string; args: unknown[]; at: string }>>([])
@@ -102,15 +111,6 @@
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
-  }
-
-  function viewFromHash(): string {
-    const h = window.location.hash
-    if (h.startsWith('#story-')) {
-      const anchor = h.slice('#story-'.length)
-      if (stories.some((s) => storyAnchor(s.name) === anchor)) return anchor
-    }
-    return 'overview'
   }
 
   function encodeParam(value: unknown): string {
@@ -300,11 +300,22 @@
     }
   }
 
+  let seededView = ''
+  $effect(() => {
+    if (view === 'overview') {
+      seededView = ''
+      return
+    }
+    if (view === seededView) return
+    seededView = view
+    ready = false
+    emitLog = []
+    seedControls(stories.find((s) => storyAnchor(s.name) === view) ?? null)
+  })
+
   onMount(() => {
     claudeDraft = data?.claudeMd ?? ''
     frameTheme = $theme === 'dark' ? 'dark' : 'light'
-    view = viewFromHash()
-    if (view !== 'overview') seedControls(activeStory)
     const onMessage = (event: MessageEvent) => {
       const d = event.data
       if (!d || typeof d !== 'object') return
@@ -326,19 +337,9 @@
         zoom = Math.min(3, Math.max(0.25, Math.round(zoom * Number(d.scale) * 100) / 100))
       }
     }
-    const onHashChange = () => {
-      const next = viewFromHash()
-      if (next === view) return
-      ready = false
-      view = next
-      emitLog = []
-      if (next !== 'overview') seedControls(stories.find((s) => storyAnchor(s.name) === next) ?? null)
-    }
     window.addEventListener('message', onMessage)
-    window.addEventListener('hashchange', onHashChange)
     return () => {
       window.removeEventListener('message', onMessage)
-      window.removeEventListener('hashchange', onHashChange)
       dragUp()
     }
   })
@@ -1030,6 +1031,10 @@
     padding: 12px 16px;
   }
 
+  .np-ws-dock-right .np-ws-props-scroll {
+    padding: 12px 0;
+  }
+
   .np-ws-props-head {
     display: flex;
     align-items: center;
@@ -1054,8 +1059,6 @@
   .np-ws-controls,
   .np-ws-emits {
     width: 100%;
-    max-width: 1200px;
-    margin-inline: auto;
     box-sizing: border-box;
   }
 

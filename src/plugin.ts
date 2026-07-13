@@ -1849,7 +1849,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           }
           const storyNodes: SidebarNode[] = (t.page.componentData?.stories ?? []).map((story, idx) => ({
             text: story.name,
-            link: `${t.page!.effectivePath}#story-${storyAnchor(story.name)}`,
+            link: `${t.page!.effectivePath}/${storyAnchor(story.name)}`,
             slug: `${t.page!.slug}__story__${storyAnchor(story.name)}`,
             order: idx
           }))
@@ -1913,6 +1913,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       pageMap[slug] = meta
       byPath[p.effectivePath] = slug
+      if (p.type === 'component') {
+        for (const story of p.componentData?.stories ?? []) {
+          byPath[`${p.effectivePath}/${storyAnchor(story.name)}`] = slug
+        }
+      }
     }
 
     const styles: Record<string, string> = {}
