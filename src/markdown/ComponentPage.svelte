@@ -5,6 +5,8 @@
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
   import ControlNode, { mockValue } from './ControlNode.svelte'
+  import IconMock from '../icons/IconMock.svelte'
+  import IconClear from '../icons/IconClear.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -37,6 +39,7 @@
   let dock = $state<'bottom' | 'right'>('bottom')
   let dragging = $state(false)
   let propsSize = $state(300)
+  let infoSize = $state(32)
   let zoom = $state(1)
   let vision = $state('none')
   let visionOpen = $state(false)
@@ -263,6 +266,33 @@
     window.addEventListener('pointermove', dragMove)
     window.addEventListener('pointerup', dragUp)
     window.addEventListener('pointercancel', dragUp)
+  }
+
+  let colDragEl: HTMLElement | null = null
+
+  function colDragMove(e: PointerEvent) {
+    if (!colDragEl) return
+    const rect = colDragEl.getBoundingClientRect()
+    infoSize = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 15), 60)
+  }
+
+  function colDragUp() {
+    colDragEl = null
+    window.removeEventListener('pointermove', colDragMove)
+    window.removeEventListener('pointerup', colDragUp)
+    window.removeEventListener('pointercancel', colDragUp)
+    document.body.style.removeProperty('user-select')
+    document.body.style.removeProperty('cursor')
+  }
+
+  function colDragDown(e: PointerEvent) {
+    e.preventDefault()
+    colDragEl = (e.currentTarget as HTMLElement).parentElement
+    document.body.style.setProperty('user-select', 'none')
+    document.body.style.setProperty('cursor', 'col-resize')
+    window.addEventListener('pointermove', colDragMove)
+    window.addEventListener('pointerup', colDragUp)
+    window.addEventListener('pointercancel', colDragUp)
   }
 
   function toggleDock() {
@@ -505,21 +535,33 @@
         <span class="np-ws-props-actions">
           <button
             type="button"
-            class="np-ws-tool"
+            class="np-ws-tool np-ws-tool-icon"
             title="fill every empty control with a sample value"
             onclick={fillMock}
-          >mock</button>
+          >
+            <IconMock />
+            mock
+          </button>
           <button
             type="button"
-            class="np-ws-tool"
+            class="np-ws-tool np-ws-tool-icon"
             title="empty every input form"
             onclick={clearControls}
-          >clear</button>
+          >
+            <IconClear />
+            clear
+          </button>
         </span>
       </div>
       {#if schema && (schema.props.length || schema.slots.length)}
         {#key `${activeStory.name}:${controlsEpoch}`}
-          <div class="np-ws-controls">
+          <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;">
+            <div
+              class="np-ws-col-divider"
+              role="separator"
+              aria-orientation="vertical"
+              onpointerdown={colDragDown}
+            ></div>
             {#each schema.props as spec (spec.name)}
               <ControlNode {spec} value={propValues[spec.name]} onchange={(v) => setProp(spec.name, v)} />
             {/each}
@@ -1051,13 +1093,30 @@
   }
 
   .np-ws-controls {
-    --np-ws-cols: minmax(180px, 280px) minmax(0, 1fr) auto;
+    position: relative;
     display: flex;
     flex-direction: column;
   }
 
   .np-ws-dock-right .np-ws-controls {
-    --np-ws-cols: minmax(110px, 40%) minmax(0, 1fr) auto;
+    --np-ws-row-pad: 12px;
+  }
+
+  .np-ws-col-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--np-ws-info, 32%) - 5px);
+    width: 10px;
+    z-index: 2;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .np-ws-tool-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
 
   .np-ws-emits {
