@@ -711,6 +711,14 @@
           <button
             type="button"
             class="np-ws-tool np-ws-tool-icon np-tip"
+            aria-label={dock === 'bottom' ? 'dock the props panel right' : 'dock the props panel bottom'}
+            onclick={toggleDock}
+          >
+            <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
+          </button>
+          <button
+            type="button"
+            class="np-ws-tool np-ws-tool-icon np-tip"
             aria-label="fill every empty control with a sample value"
             onclick={fillMock}
           >
