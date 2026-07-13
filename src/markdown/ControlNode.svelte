@@ -88,6 +88,10 @@
 
 <script lang="ts">
   import ControlNode from './ControlNode.svelte'
+  import IconMock from '../icons/IconMock.svelte'
+  import IconClear from '../icons/IconClear.svelte'
+  import IconAdd from '../icons/IconAdd.svelte'
+  import IconRemove from '../icons/IconRemove.svelte'
 
   let {
     spec,
@@ -185,27 +189,36 @@
 
 {#snippet info()}
   <div class="np-control-info" style="padding-left: {depth * 14}px">
-    <span class="np-control-label">
-      {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
-    </span>
+    <div class="np-control-head">
+      <span class="np-control-label">
+        {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
+      </span>
+      <div class="np-control-actions">
+        {#if spec.kind === 'array'}
+          <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>
+            <IconAdd />
+          </button>
+          <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>
+            <IconMock />
+          </button>
+        {:else if spec.kind !== 'json'}
+          <button type="button" class="np-control-act" title="fill with sample data" onclick={mockSelf}>
+            <IconMock />
+          </button>
+        {/if}
+        <button type="button" class="np-control-act" title="clear this input" onclick={clearSelf}>
+          <IconClear />
+        </button>
+        {#if onremove}
+          <button type="button" class="np-control-act np-control-act-remove" title="remove item" onclick={onremove}>
+            <IconRemove />
+          </button>
+        {/if}
+      </div>
+    </div>
     <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
     {#if spec.description}
       <span class="np-control-desc">{spec.description}</span>
-    {/if}
-  </div>
-{/snippet}
-
-{#snippet actions()}
-  <div class="np-control-actions">
-    {#if spec.kind === 'array'}
-      <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>add</button>
-      <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>mock</button>
-    {:else if spec.kind !== 'json'}
-      <button type="button" class="np-control-act" title="fill with sample data" onclick={mockSelf}>mock</button>
-    {/if}
-    <button type="button" class="np-control-act" title="clear this input" onclick={clearSelf}>clear</button>
-    {#if onremove}
-      <button type="button" class="np-control-act np-control-act-remove" title="remove item" onclick={onremove}>✕</button>
     {/if}
   </div>
 {/snippet}
@@ -216,7 +229,6 @@
     <div class="np-control-input">
       <span class="np-control-note">{(spec.members ?? []).length} fields</span>
     </div>
-    {@render actions()}
   </div>
   {#each spec.members ?? [] as member (member.name)}
     <ControlNode spec={member} value={record[member.name]} depth={depth + 1} onchange={(v) => setMember(member.name, v)} />
@@ -227,7 +239,6 @@
     <div class="np-control-input">
       <span class="np-control-note">{rows.length} items</span>
     </div>
-    {@render actions()}
   </div>
   {#each rows as row, i (i)}
     {#if spec.item}
@@ -287,18 +298,25 @@
         <span class="np-control-error">required</span>
       {/if}
     </div>
-    {@render actions()}
   </div>
 {/if}
 
 <style>
   .np-control {
     display: grid;
-    grid-template-columns: var(--np-ws-cols, minmax(160px, 240px) minmax(0, 1fr) auto);
+    grid-template-columns: var(--np-ws-info, 32%) minmax(0, 1fr);
     gap: 4px 12px;
     align-items: start;
-    padding: 6px 0;
+    padding: 6px var(--np-ws-row-pad, 0);
     border-bottom: 1px solid color-mix(in srgb, var(--np-border) 55%, transparent);
+    min-width: 0;
+  }
+
+  .np-control-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     min-width: 0;
   }
 
@@ -356,15 +374,15 @@
   .np-control-actions {
     display: flex;
     gap: 4px;
-    justify-content: flex-end;
-    padding: 3px 0;
+    flex: 0 0 auto;
   }
 
   .np-control-act {
-    font-size: 10px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
-    padding: 4px 8px;
+    padding: 4px;
     border-radius: var(--np-radius-pill);
     border: 1px solid var(--np-border);
     background-color: var(--np-bg-surface);
