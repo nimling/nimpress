@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@nimling/samna-auth-middleware': link:../samna_auth_middleware/ts
+
 importers:
 
   .:
@@ -38,9 +41,6 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
-      '@nimling/samna-auth-middleware':
-        specifier: 1.1.0-alpha0020
-        version: 1.1.0-alpha0020
       '@sveltejs/vite-plugin-svelte':
         specifier: ^5.1.0
         version: 5.1.1(svelte@5.56.3)(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0))
@@ -414,9 +414,6 @@ packages:
 
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
-
-  '@nimling/samna-auth-middleware@1.1.0-alpha0020':
-    resolution: {integrity: sha512-C8wZO2aj7dMh12kU0ORctxaoYAiL+o2SNLAw5FQ22Ps24aS1OYTfTRj7MaSM3dGdQWDD7h/GCpDCi0dvJctY5w==, tarball: https://npm.pkg.github.com/download/@nimling/samna-auth-middleware/1.1.0-alpha0020/c251720e1bb5a9793bb1a069f2fa5ce9085290ca}
 
   '@rollup/pluginutils@5.4.0':
     resolution: {integrity: sha512-MfPp06CjRLfXQ3wY0R8vJDYBy/MvVcc9OulEfR0B8Iv9ko+GCNaRZ+EpJYFl27LhKsZK0o420sYCRHCjfCgeUg==}
@@ -1381,9 +1378,6 @@ packages:
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
 
-  jose@5.10.0:
-    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
-
   js-yaml@3.14.2:
     resolution: {integrity: sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==}
     hasBin: true
@@ -2192,10 +2186,6 @@ snapshots:
       resolve: 1.22.12
 
   '@microsoft/tsdoc@0.16.0': {}
-
-  '@nimling/samna-auth-middleware@1.1.0-alpha0020':
-    dependencies:
-      jose: 5.10.0
 
   '@rollup/pluginutils@5.4.0(rollup@4.61.1)':
     dependencies:
@@ -3141,8 +3131,6 @@ snapshots:
   jiti@2.7.0: {}
 
   jju@1.4.0: {}
-
-  jose@5.10.0: {}
 
   js-yaml@3.14.2:
     dependencies:
