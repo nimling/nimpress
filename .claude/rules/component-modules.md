@@ -64,11 +64,15 @@ modules: {
 
 ## CLI
 
-1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`.
+1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking.
 
 2. `nimpress modules import <system> <file> --name=` registers one external component file into the system.
 
 3. `nimpress modules story <system> [component] [--framework=]` writes typed mock auto stories.
+
+4. `nimpress modules create <system> <Component>` scaffolds the dedicated component folder: Overview `index.md`, one typed auto story, and `schema.json`.
+
+5. Every import and create writes `schema.json` beside `index.md`, the component props as a json schema from the parsed control tree. Opaque prop types log warnings naming the component, prop path, and type; fix them by documenting the type in the component file or a sibling `.types.ts`.
 
 4. `nimpress modules dev [system]` runs harness servers. `nimpress dev` starts them all beside the docs.
 
