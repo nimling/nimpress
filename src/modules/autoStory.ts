@@ -99,3 +99,67 @@ export async function generateAutoStories(
   }
   return written
 }
+
+export async function createComponentPage(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  system: string,
+  component: string,
+  frameworkFlag?: ModuleFramework
+): Promise<string> {
+  const systemConfig = resolved.modules.systems[system]
+  if (!systemConfig) throw new Error(`[nimpress] modules create: unknown system ${system}`)
+  const dir = join(cwd, resolved.contentDir, 'components', 'Components', component)
+  const pageFile = join(dir, 'index.md')
+  if (existsSync(pageFile)) {
+    throw new Error(`[nimpress] modules create: ${pageFile} exists`)
+  }
+  const { mkdir } = await import('node:fs/promises')
+  await mkdir(dir, { recursive: true })
+  const pkg = systemConfig.package
+  await writeFile(
+    pageFile,
+    `---
+title: ${component}
+type: component
+data:
+  system: ${system}
+  component: ${component}${pkg ? `\n  package: "${pkg}"` : ''}
+---
+
+## Usage
+
+\`\`\`ts
+import { ${component} } from "${pkg ?? system}";
+\`\`\`
+`
+  )
+  const source = resolveComponentSource(cwd, resolved.modules, system, component)
+  if (source) {
+    const framework = frameworkFlag ?? detectFramework(source.componentFile) ?? systemConfig.framework
+    const { parseSourceSchema, writeComponentSchema } = await import('./importStorybook')
+    await writeComponentSchema(dir, component, await parseSourceSchema(source.componentFile, framework, component))
+    await generateAutoStory(cwd, resolved, system, component, frameworkFlag)
+  } else {
+    const helper = systemConfig.framework === 'vue' ? 'vueStory' : 'svelteStory'
+    const fileBase = component
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '')
+    await writeFile(
+      join(dir, `${fileBase}.story.ts`),
+      `import { ${helper} } from '@nimling/nimpress/story'
+
+// story: ${component}
+export default ${helper}({
+  name: ${JSON.stringify(component)},
+  props: {}
+})
+`
+    )
+    console.warn(
+      `nimpress modules: no source found for ${component}, wrote a stub story, schema.json follows once the component exists and import or create runs again`
+    )
+  }
+  return dir
+}

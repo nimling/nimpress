@@ -2,8 +2,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
-import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
-import { readBalanced } from './parse/typeMembers'
+import type { ControlSchema, ModuleFramework, ResolvedNimpressConfig } from '../types'
+import { opaqueControls, readBalanced, schemaToJsonSchema } from './parse/typeMembers'
+import { parseComponentSchema } from './componentData'
+import { findComponentDts, parseDtsSchema } from './parse/dts'
 
 export interface ImportOptions {
   source?: string
@@ -307,6 +309,36 @@ function packageExportNames(cwd: string, pkg: string): Map<string, string> {
   return map
 }
 
+export async function writeComponentSchema(
+  dir: string,
+  component: string,
+  schema: ControlSchema | undefined
+): Promise<void> {
+  if (!schema) return
+  await writeFile(
+    join(dir, 'schema.json'),
+    JSON.stringify(schemaToJsonSchema(component, schema.props), null, 2) + '\n'
+  )
+  for (const opaque of opaqueControls(schema.props)) {
+    console.warn(
+      `nimpress modules: ${component}.${opaque.path} type ${opaque.type} is opaque, document it in the component file or a sibling .types.ts so the parser resolves it`
+    )
+  }
+}
+
+export async function parseSourceSchema(
+  componentFile: string,
+  framework: ModuleFramework,
+  component: string
+): Promise<ControlSchema | undefined> {
+  try {
+    return await parseComponentSchema(dirname(componentFile), componentFile, framework, component)
+  } catch (err) {
+    console.warn(`nimpress modules: schema parse failed for ${component}: ${String(err)}`)
+    return undefined
+  }
+}
+
 export async function importStorybook(
   cwd: string,
   resolved: ResolvedNimpressConfig,
@@ -334,6 +366,7 @@ export async function importStorybook(
     await mkdir(dir, { recursive: true })
     const fileRel = relative(sourceRoot, abs)
     await writeFile(join(dir, 'index.md'), pageMarkdown(system, name, pkg, fileRel))
+    await writeComponentSchema(dir, name, await parseSourceSchema(abs, framework, name))
     console.log(`nimpress modules: imported ${name} at ${relative(cwd, dir)}`)
     return
   }
@@ -418,6 +451,7 @@ export async function importStorybook(
       join(dir, 'index.md'),
       pageMarkdown(system, name, pkg, canonical ? undefined : rel, argTypes)
     )
+    await writeComponentSchema(dir, name, await parseSourceSchema(file, framework, name))
     pages++
     const modules = modulesByComponent.get(name) ?? []
     for (const module of modules) {
@@ -508,6 +542,17 @@ async function importFromStories(
       join(dir, 'index.md'),
       pageMarkdown(system, component, pagePkg, fileRel, mineArgTypes(module))
     )
+    if (fileRel) {
+      const abs = resolve(sourceRoot, fileRel)
+      if (existsSync(abs)) {
+        await writeComponentSchema(dir, component, await parseSourceSchema(abs, framework, component))
+      }
+    } else if (pagePkg) {
+      const dtsPath = findComponentDts(cwd, pagePkg, component)
+      if (dtsPath) {
+        await writeComponentSchema(dir, component, parseDtsSchema(readFileSync(dtsPath, 'utf-8'), component))
+      }
+    }
     pages++
     for (const dataModule of module.dataModules) {
       await mkdir(sharedDir, { recursive: true })

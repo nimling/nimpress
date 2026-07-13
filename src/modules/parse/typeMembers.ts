@@ -135,6 +135,54 @@ export interface ControlJsonSchema {
   default?: unknown
 }
 
+export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  if (spec.description) out.description = spec.description
+  if (spec.default !== undefined) out.default = spec.default
+  if (spec.kind === 'select') out.enum = spec.options ?? []
+  else if (spec.kind === 'boolean') out.type = 'boolean'
+  else if (spec.kind === 'number') out.type = 'number'
+  else if (spec.kind === 'text' || spec.kind === 'slot') out.type = 'string'
+  else if (spec.kind === 'array') {
+    out.type = 'array'
+    out.items = spec.item ? controlToJsonSchema(spec.item) : {}
+  } else if (spec.kind === 'record') {
+    out.type = 'object'
+    out.additionalProperties = spec.item ? controlToJsonSchema(spec.item) : {}
+  } else if (spec.kind === 'object') {
+    out.type = 'object'
+    out.properties = Object.fromEntries((spec.members ?? []).map((m) => [m.name, controlToJsonSchema(m)]))
+    const required = (spec.members ?? []).filter((m) => m.required).map((m) => m.name)
+    if (required.length) out.required = required
+  } else {
+    out.tsType = spec.type
+  }
+  return out
+}
+
+export function schemaToJsonSchema(component: string, props: ControlSpec[]): Record<string, unknown> {
+  return {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    title: component,
+    type: 'object',
+    properties: Object.fromEntries(props.map((p) => [p.name, controlToJsonSchema(p)])),
+    required: props.filter((p) => p.required).map((p) => p.name)
+  }
+}
+
+export function opaqueControls(props: ControlSpec[], prefix = ''): Array<{ path: string; type: string }> {
+  const out: Array<{ path: string; type: string }> = []
+  for (const spec of props) {
+    const path = prefix ? `${prefix}.${spec.name || '[]'}` : spec.name || '[]'
+    if (spec.kind === 'json' && /^[A-Za-z_$][\w$]*(\[\])?$/.test(spec.type) && spec.type !== 'unknown') {
+      out.push({ path, type: spec.type })
+    }
+    if (spec.members) out.push(...opaqueControls(spec.members, path))
+    if (spec.item) out.push(...opaqueControls([spec.item], path))
+  }
+  return out
+}
+
 export function controlFromJsonSchema(
   name: string,
   schema: ControlJsonSchema,

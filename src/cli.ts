@@ -9,7 +9,7 @@ import { indexHtml } from './config/html'
 import { defaultConfig } from './config/defaults'
 import { lintContent } from './plugin'
 import { harnessViteConfig, harnessPort } from './modules/harness'
-import { generateAutoStory, generateAutoStories } from './modules/autoStory'
+import { generateAutoStory, generateAutoStories, createComponentPage } from './modules/autoStory'
 import { importStorybook } from './modules/importStorybook'
 
 export { loadNimpressConfig } from './config/load'
@@ -147,7 +147,18 @@ async function runModules(cwd: string, resolved: ResolvedNimpressConfig, args: s
     })
     return
   }
-  throw new Error('[nimpress] modules expects init, dev, build, story or import')
+  if (sub === 'create') {
+    const system = named?.[0]
+    const component = args[2] && !args[2].startsWith('--') ? args[2] : null
+    if (!system || !component) {
+      throw new Error('[nimpress] modules create expects: nimpress modules create <system> <Component>')
+    }
+    const framework = guardFlag(args, 'framework') as 'vue' | 'svelte' | undefined
+    const dir = await createComponentPage(cwd, resolved, system, component, framework)
+    console.log(`nimpress modules: created ${component} at ${relative(cwd, dir)}`)
+    return
+  }
+  throw new Error('[nimpress] modules expects init, dev, build, story, import or create')
 }
 
 function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {

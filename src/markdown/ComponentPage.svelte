@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
-  import type { ComponentStory, ControlSpec, PageModule } from '../types'
+  import type { ComponentStory, PageModule } from '../types'
+  import { schemaToJsonSchema } from '../modules/parse/typeMembers'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
   import ControlNode, { mockValue } from './ControlNode.svelte'
@@ -150,42 +151,27 @@
     }
   }
 
-  function specToJsonSchema(spec: ControlSpec): Record<string, unknown> {
-    const out: Record<string, unknown> = {}
-    if (spec.description) out.description = spec.description
-    if (spec.kind === 'select') out.enum = spec.options ?? []
-    else if (spec.kind === 'boolean') out.type = 'boolean'
-    else if (spec.kind === 'number') out.type = 'number'
-    else if (spec.kind === 'text' || spec.kind === 'slot') out.type = 'string'
-    else if (spec.kind === 'array') {
-      out.type = 'array'
-      out.items = spec.item ? specToJsonSchema(spec.item) : {}
-    } else if (spec.kind === 'record') {
-      out.type = 'object'
-      out.additionalProperties = spec.item ? specToJsonSchema(spec.item) : {}
-    } else if (spec.kind === 'object') {
-      out.type = 'object'
-      out.properties = Object.fromEntries((spec.members ?? []).map((m) => [m.name, specToJsonSchema(m)]))
-      const required = (spec.members ?? []).filter((m) => m.required).map((m) => m.name)
-      if (required.length) out.required = required
-    } else {
-      out.tsType = spec.type
-    }
-    return out
-  }
+  const propsJsonSchema = $derived(
+    JSON.stringify(schemaToJsonSchema(data?.component ?? '', schema?.props ?? []), null, 2)
+  )
 
-  const propsJsonSchema = $derived.by(() => {
+  const propCounts = $derived.by(() => {
     const props = schema?.props ?? []
-    return JSON.stringify(
-      {
-        type: 'object',
-        properties: Object.fromEntries(props.map((p) => [p.name, specToJsonSchema(p)])),
-        required: props.filter((p) => p.required).map((p) => p.name)
-      },
-      null,
-      2
-    )
+    const populated = props.filter((p) => propValues[p.name] !== undefined).length
+    return { total: props.length, populated }
   })
+
+  let copied = $state(false)
+
+  async function copyDialogJson() {
+    try {
+      await navigator.clipboard.writeText(jsonDialogTab === 'input' ? jsonAllDraft : propsJsonSchema)
+      copied = true
+      setTimeout(() => (copied = false), 1200)
+    } catch {
+      copied = false
+    }
+  }
 
   function storyAnchor(name: string): string {
     return name
@@ -651,7 +637,12 @@
             type="button"
             class="np-ws-tool np-ws-tool-icon"
             title="props as json, view the schema or paste values for all props"
-            onclick={() => (jsonDialogOpen = true)}
+            onclick={() => {
+              jsonTyping = false
+              jsonAllDraft = JSON.stringify(propValues, null, 2)
+              jsonAllError = false
+              jsonDialogOpen = true
+            }}
           >
             <IconJson />
             json
@@ -678,23 +669,41 @@
                 onclick={() => (jsonDialogTab = 'schema')}
               >schema</button>
             </span>
-            <button type="button" class="np-ws-tool np-ws-tool-icon" title="close" onclick={() => (jsonDialogOpen = false)}>
-              <IconRemove />
-            </button>
+            <span class="np-ws-dialog-tools">
+              {#if jsonDialogTab === 'input'}
+                <span class="np-ws-dialog-count" title="populated props of total props">
+                  {propCounts.populated}/{propCounts.total} props set
+                </span>
+              {:else}
+                <span class="np-ws-dialog-count" title="total props in the schema">{propCounts.total} props</span>
+              {/if}
+              <button type="button" class="np-ws-tool" title="copy this tab's json to the clipboard" onclick={copyDialogJson}>
+                {copied ? 'copied' : 'copy'}
+              </button>
+              <button type="button" class="np-ws-tool np-ws-tool-icon" title="close" onclick={() => (jsonDialogOpen = false)}>
+                <IconRemove />
+              </button>
+            </span>
           </div>
           {#if jsonDialogTab === 'input'}
-            <textarea
-              class="np-ws-dialog-editor"
-              class:invalid={jsonAllError}
-              value={jsonAllDraft}
-              onblur={() => (jsonTyping = false)}
-              oninput={(e) => setAllJson(e.currentTarget.value)}
-            ></textarea>
+            <div class="np-ws-dialog-body">
+              <CodeEditor
+                bind:value={
+                  () => jsonAllDraft,
+                  (next) => setAllJson(next)
+                }
+                language="json"
+                minHeight={360}
+                maxHeight={420}
+              />
+            </div>
             {#if jsonAllError}
               <span class="np-control-error">invalid json, values not applied</span>
             {/if}
           {:else}
-            <pre class="np-ws-dialog-editor np-ws-dialog-schema">{propsJsonSchema}</pre>
+            <div class="np-ws-dialog-body">
+              <CodeEditor value={propsJsonSchema} language="json" readonly minHeight={360} maxHeight={420} />
+            </div>
           {/if}
         </div>
       {/if}
@@ -1172,32 +1181,23 @@
     gap: 8px;
   }
 
-  .np-ws-dialog-tabs {
+  .np-ws-dialog-tabs,
+  .np-ws-dialog-tools {
     display: inline-flex;
+    align-items: center;
     gap: 6px;
   }
 
-  .np-ws-dialog-editor {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    overflow: auto;
+  .np-ws-dialog-count {
+    font-size: 11px;
     font-family: var(--np-font-mono);
-    font-size: 12px;
-    line-height: 1.6;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--np-border);
-    background-color: var(--np-bg-surface);
-    color: var(--np-text-primary);
-    resize: none;
-    white-space: pre;
+    color: var(--np-text-muted);
   }
 
-  .np-ws-dialog-editor.invalid {
-    border-color: var(--np-danger);
+  .np-ws-dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
   }
 
   .np-ws-stage {

@@ -200,7 +200,11 @@ nimpress modules build
 
 3. `story <system> [component]` writes typed mock auto stories, framework autodetected from the file extension with `--framework=` as the override.
 
-4. `dev` and `build` run the harness servers and emit the static bundles. `nimpress dev` and `nimpress build` include them automatically.
+4. `create <system> <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, one typed auto story when the source component exists or a stub story otherwise, and `schema.json`.
+
+5. Every component folder gets `schema.json` on import and create, the props as a json schema generated from the parsed control tree, the same generator behind the workshop's json dialog. Prop types the parser cannot resolve log warnings with the component, the prop path, and the type, the hint that the type should be documented where the parser sees it.
+
+6. `dev` and `build` run the harness servers and emit the static bundles. `nimpress dev` and `nimpress build` include them automatically.
 
 ## Hosting and guard
 
