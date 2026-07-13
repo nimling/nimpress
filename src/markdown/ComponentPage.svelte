@@ -39,7 +39,6 @@
   let slotValues = $state<Record<string, string>>({})
   let emitLog = $state<Array<{ name: string; args: unknown[]; at: string }>>([])
   let emitHandlers = $state<Record<string, string>>({})
-  let emitFilter = $state('')
   let consoleLog = $state<Array<{ level: string; args: unknown[]; at: string }>>([])
   let consoleFilter = $state('')
   let ready = $state(false)
@@ -50,6 +49,7 @@
   let wsEl: HTMLDivElement | undefined = $state()
 
   let dock = $state<'bottom' | 'right'>('bottom')
+  let propsOpen = $state(true)
   let consoleDock = $state<'bottom' | 'right'>('bottom')
   let consoleOpen = $state(false)
   let dragging = $state(false)
@@ -110,14 +110,6 @@
     return counts
   })
 
-  const filteredEmitLog = $derived.by(() => {
-    const q = emitFilter.trim().toLowerCase()
-    if (!q) return emitLog
-    return emitLog.filter(
-      (entry) => entry.name.toLowerCase().includes(q) || JSON.stringify(entry.args).toLowerCase().includes(q)
-    )
-  })
-
   function toggleEmit(name: string) {
     const next = { ...emitHandlers }
     if (next[name] !== undefined) delete next[name]
@@ -136,8 +128,8 @@
     push()
   }
 
-  const bottomOccupied = $derived(dock === 'bottom' || (consoleOpen && consoleDock === 'bottom'))
-  const rightOccupied = $derived(dock === 'right' || (consoleOpen && consoleDock === 'right'))
+  const bottomOccupied = $derived((propsOpen && dock === 'bottom') || (consoleOpen && consoleDock === 'bottom'))
+  const rightOccupied = $derived((propsOpen && dock === 'right') || (consoleOpen && consoleDock === 'right'))
 
   const filteredConsoleLog = $derived.by(() => {
     const q = consoleFilter.trim().toLowerCase()
@@ -226,7 +218,6 @@
     propValues = { ...defaultValues(), ...(story?.props ?? {}) }
     slotValues = { ...(story?.slots ?? {}) }
     emitHandlers = Object.fromEntries((schema?.emits ?? []).map((name) => [name, fnSource(name)]))
-    emitFilter = ''
     try {
       const stored = localStorage.getItem(storageKey(story))
       if (stored) {
@@ -612,10 +603,11 @@
       <button
         type="button"
         class="np-ws-tool np-ws-tool-icon np-tip"
-        aria-label={dock === 'bottom' ? 'dock the props panel right' : 'dock the props panel bottom'}
-        onclick={toggleDock}
+        class:np-ws-tool-active={propsOpen}
+        aria-label={propsOpen ? 'hide the props panel' : 'show the props panel'}
+        onclick={() => (propsOpen = !propsOpen)}
       >
-        <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
+        <IconDock side={dock} />
       </button>
       <button
         type="button"
@@ -715,6 +707,9 @@
             onclick={toggleDock}
           >
             <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
+          </button>
+          <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="hide the props panel" onclick={() => (propsOpen = false)}>
+            <IconRemove />
           </button>
           <button
             type="button"
@@ -836,7 +831,7 @@
       {#if emits.length}
         <div class="np-ws-emits">
           <span class="np-ws-emits-title">events</span>
-          <span class="np-ws-emits-caption">every event gets a handler function, edit its code below, detach via the pill, firings count on the pill, log to the event stream here, and print in the console panel</span>
+          <span class="np-ws-emits-caption">every event gets a handler function, edit its code below, detach via the pill, firings count on the pill and print in the console panel</span>
           <div class="np-ws-emit-pills">
             {#each emits as name (name)}
               <button
@@ -866,30 +861,6 @@
               />
             </div>
           {/each}
-          <div class="np-ws-console">
-            <div class="np-ws-console-bar">
-              <input
-                type="text"
-                class="np-ws-console-filter"
-                placeholder="filter by event name or payload"
-                bind:value={emitFilter}
-              />
-              <button type="button" class="np-ws-tool" title="clear the event console" onclick={() => (emitLog = [])}>clear</button>
-            </div>
-            {#if filteredEmitLog.length}
-              <ol class="np-ws-console-log">
-                {#each filteredEmitLog as entry, i (i)}
-                  <li>
-                    <span class="np-ws-console-time">{entry.at}</span>
-                    <code class="np-ws-console-name">{entry.name}</code>
-                    <span class="np-ws-console-args">{JSON.stringify(entry.args)}</span>
-                  </li>
-                {/each}
-              </ol>
-            {:else}
-              <p class="np-ws-console-empty">{emitLog.length ? 'no events match the filter' : 'no events fired yet'}</p>
-            {/if}
-          </div>
         </div>
       {/if}
     {/snippet}
@@ -903,7 +874,7 @@
           onpointerdown={(e) => dragDown(e, 'bottom')}
         ></div>
         <div class="np-ws-slot-panels np-ws-slot-panels-row">
-          {#if dock === 'bottom'}
+          {#if propsOpen && dock === 'bottom'}
             <div class="np-panel">{@render propsPanel()}</div>
           {/if}
           {#if consoleOpen && consoleDock === 'bottom'}
@@ -921,7 +892,7 @@
           onpointerdown={(e) => dragDown(e, 'right')}
         ></div>
         <div class="np-ws-slot-panels np-ws-slot-panels-column">
-          {#if dock === 'right'}
+          {#if propsOpen && dock === 'right'}
             <div class="np-panel">{@render propsPanel()}</div>
           {/if}
           {#if consoleOpen && consoleDock === 'right'}
