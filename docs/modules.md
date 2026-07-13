@@ -134,15 +134,19 @@ export default vueStory({
 
 Selecting a story in the sidebar opens the workshop: toolbar, stage, and props panel in a css grid filling the content area.
 
-1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, vision simulation filters, dock switch for the props panel, reload, and open, which loads the bare harness in a new tab.
+1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, a vision simulator matching the storybook set, blurred vision, low contrast, grayscale, protanopia, protanomaly, deuteranopia, deuteranomaly, tritanopia, tritanomaly, achromatopsia, achromatomaly, each option carrying an inline svg icon, color blindness rendered through svg color matrices. Then dock switch, reload, and open.
 
 2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle.
 
-3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and an actions cell. Object types render nested member rows, arrays render item rows with add and remove, string literal unions render selects, json editors remain only for opaque types. Slot inputs, event pills with fired counters, and a payload log sit below. Dock it bottom or right and drag the divider to resize.
+3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and an actions cell. Object types render nested member rows, arrays render item rows with add and remove, string literal unions render selects, json editors remain only for opaque types. Required fields left empty mark red. Slot inputs, event pills, and the event console sit below. Dock it bottom or right and drag the divider to resize.
 
-4. Mock: every row's actions cell has a mock button, sample data for that prop alone, an added sample item on arrays. The panel header mock button fills every empty control at once.
+4. Mock: every row's actions cell has a mock button, sample data for that prop alone, an added sample item on arrays. The panel header carries mock for every empty control, reset restoring story defaults and forgetting stored edits, and clear emptying every input form.
 
-5. Events: interact with the component in the stage; each firing counts up on its event pill and logs its payload below, which is how emits are tested.
+5. Persistence: edited values save to localStorage per system, component, and story, and restore on the next visit. Reset drops the stored entry.
+
+6. Events: every pill is a subscribe toggle that binds and unbinds the listener live in the frame. Interacting with the component streams subscribed firings to the console below, timestamped with payloads, filterable by name or payload, clearable.
+
+7. The component's own sidebar entry is `Overview`; the stories list under it.
 
 ## Schema parsing
 
@@ -190,7 +194,7 @@ nimpress modules dev nimtech
 nimpress modules build
 ```
 
-1. `import <system>` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers and shared data modules, then fills storyless components with typed auto stories. `--match` filters component names by regex.
+1. `import <system>` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers and shared data modules, then fills storyless components with typed auto stories. `--match` filters component names by regex, `--select` lists the matches and prompts interactively, comma separated numbers, names, or `/regex/`. Meta `argTypes` convert to `data.controls` json schemas on the generated page so storybook custom inputs survive the conversion.
 
 2. `import <system> <file>` registers a single external component into the system.
 

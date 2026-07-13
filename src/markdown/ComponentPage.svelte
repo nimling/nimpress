@@ -30,15 +30,45 @@
   let propsSize = $state(300)
   let zoom = $state(1)
   let vision = $state('none')
+  let visionOpen = $state(false)
   let frameTheme = $state<'light' | 'dark'>('light')
+  let controlsEpoch = $state(0)
 
-  const visionFilters: Record<string, string> = {
-    none: 'none',
-    grayscale: 'grayscale(1)',
-    invert: 'invert(1)',
-    blur: 'blur(2px)',
-    'low contrast': 'contrast(0.55)'
+  interface VisionOption {
+    name: string
+    filter: string
+    dots: [string, string, string]
+    blur?: boolean
+    dim?: boolean
   }
+
+  const visionOptions: VisionOption[] = [
+    { name: 'none', filter: 'none', dots: ['#e5484d', '#30a46c', '#3e63dd'] },
+    { name: 'blurred vision', filter: 'blur(2px)', dots: ['#e5484d', '#30a46c', '#3e63dd'], blur: true },
+    { name: 'low contrast', filter: 'contrast(0.55)', dots: ['#e5484d', '#30a46c', '#3e63dd'], dim: true },
+    { name: 'grayscale', filter: 'grayscale(1)', dots: ['#8a8a8a', '#8a8a8a', '#8a8a8a'] },
+    { name: 'protanopia', filter: 'url(#np-vf-protanopia)', dots: ['#8a8a8a', '#30a46c', '#3e63dd'] },
+    { name: 'protanomaly', filter: 'url(#np-vf-protanomaly)', dots: ['#b07a7c', '#30a46c', '#3e63dd'] },
+    { name: 'deuteranopia', filter: 'url(#np-vf-deuteranopia)', dots: ['#e5484d', '#8a8a8a', '#3e63dd'] },
+    { name: 'deuteranomaly', filter: 'url(#np-vf-deuteranomaly)', dots: ['#e5484d', '#7f9f8d', '#3e63dd'] },
+    { name: 'tritanopia', filter: 'url(#np-vf-tritanopia)', dots: ['#e5484d', '#30a46c', '#8a8a8a'] },
+    { name: 'tritanomaly', filter: 'url(#np-vf-tritanomaly)', dots: ['#e5484d', '#30a46c', '#7c88b0'] },
+    { name: 'achromatopsia', filter: 'url(#np-vf-achromatopsia)', dots: ['#6f6f6f', '#9a9a9a', '#5a5a5a'] },
+    { name: 'achromatomaly', filter: 'url(#np-vf-achromatomaly)', dots: ['#9c7f80', '#87988c', '#7d84a1'] }
+  ]
+
+  const visionMatrices: Record<string, string> = {
+    protanopia: '0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0',
+    protanomaly: '0.817 0.183 0 0 0 0.333 0.667 0 0 0 0 0.125 0.875 0 0 0 0 0 1 0',
+    deuteranopia: '0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0',
+    deuteranomaly: '0.8 0.2 0 0 0 0.258 0.742 0 0 0 0 0.142 0.858 0 0 0 0 0 1 0',
+    tritanopia: '0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0',
+    tritanomaly: '0.967 0.033 0 0 0 0 0.733 0.267 0 0 0 0.183 0.817 0 0 0 0 0 1 0',
+    achromatopsia: '0.299 0.587 0.114 0 0 0.299 0.587 0.114 0 0 0.299 0.587 0.114 0 0 0 0 0 1 0',
+    achromatomaly: '0.618 0.32 0.062 0 0 0.163 0.775 0.062 0 0 0.163 0.32 0.516 0 0 0 0 0 1 0'
+  }
+
+  const visionFilter = $derived(visionOptions.find((o) => o.name === vision)?.filter ?? 'none')
 
   const activeStory = $derived(
     view === 'overview' ? null : stories.find((s) => storyAnchor(s.name) === view) ?? null
@@ -99,6 +129,47 @@
     slotValues = { ...(story?.slots ?? {}) }
     subscribedEmits = [...(schema?.emits ?? [])]
     emitFilter = ''
+    try {
+      const stored = localStorage.getItem(storageKey(story))
+      if (stored) {
+        const parsed = JSON.parse(stored) as { props?: Record<string, unknown>; slots?: Record<string, string> }
+        if (parsed.props) propValues = parsed.props
+        if (parsed.slots) slotValues = parsed.slots
+      }
+    } catch {
+      localStorage.removeItem(storageKey(story))
+    }
+    controlsEpoch++
+  }
+
+  function storageKey(story: ComponentStory | null): string {
+    return `nimpress:controls:${data?.system}:${data?.component}:${story ? storyAnchor(story.name) : ''}`
+  }
+
+  function persistControls() {
+    if (!activeStory) return
+    try {
+      localStorage.setItem(
+        storageKey(activeStory),
+        JSON.stringify({ props: $state.snapshot(propValues), slots: $state.snapshot(slotValues) })
+      )
+    } catch {
+      return
+    }
+  }
+
+  function resetControls() {
+    if (activeStory) localStorage.removeItem(storageKey(activeStory))
+    seedControls(activeStory)
+    push()
+  }
+
+  function clearControls() {
+    propValues = {}
+    slotValues = {}
+    controlsEpoch++
+    persistControls()
+    push()
   }
 
   const storySrc = $derived.by(() => {
@@ -136,6 +207,7 @@
     if (value === undefined) delete next[name]
     else next[name] = value
     propValues = next
+    persistControls()
     push()
   }
 
@@ -147,6 +219,7 @@
     } else {
       slotValues = { ...slotValues, [name]: value }
     }
+    persistControls()
     push()
   }
 
@@ -163,6 +236,8 @@
       if (nextSlots[spec.name] === undefined) nextSlots[spec.name] = `Sample ${spec.name}`
     }
     slotValues = nextSlots
+    controlsEpoch++
+    persistControls()
     push()
   }
 
@@ -268,6 +343,26 @@
   })
 </script>
 
+{#snippet visionIcon(option: VisionOption)}
+  <svg class="np-ws-vision-icon" viewBox="0 0 24 10" aria-hidden="true">
+    <g opacity={option.dim ? 0.45 : 1} filter={option.blur ? 'blur(1px)' : undefined}>
+      <circle cx="4" cy="5" r="3.4" fill={option.dots[0]} />
+      <circle cx="12" cy="5" r="3.4" fill={option.dots[1]} />
+      <circle cx="20" cy="5" r="3.4" fill={option.dots[2]} />
+    </g>
+  </svg>
+{/snippet}
+
+<svg class="np-ws-vision-defs" aria-hidden="true" focusable="false">
+  <defs>
+    {#each Object.entries(visionMatrices) as [name, matrix] (name)}
+      <filter id="np-vf-{name}">
+        <feColorMatrix type="matrix" values={matrix} />
+      </filter>
+    {/each}
+  </defs>
+</svg>
+
 {#if view === 'overview'}
   <div class="np-page-backdrop np-page-backdrop-doc" aria-hidden="true"></div>
   <div class="np-page-shell">
@@ -322,7 +417,7 @@
     class="np-ws"
     class:np-ws-dock-right={dock === 'right'}
     class:np-ws-dragging={dragging}
-    style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilters[vision]};"
+    style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilter};"
   >
     <div class="np-ws-toolbar">
       <span class="np-ws-crumb">
@@ -340,11 +435,36 @@
           <button type="button" class="np-ws-tool" title="reset zoom" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
           <button type="button" class="np-ws-tool" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}>+</button>
         </span>
-        <select class="np-ws-tool np-ws-vision" bind:value={vision} title="vision simulation">
-          {#each Object.keys(visionFilters) as name (name)}
-            <option value={name}>{name}</option>
-          {/each}
-        </select>
+        <span class="np-ws-vision-wrap">
+          <button
+            type="button"
+            class="np-ws-tool np-ws-vision-btn"
+            title="vision simulation"
+            onclick={() => (visionOpen = !visionOpen)}
+          >
+            {@render visionIcon(visionOptions.find((o) => o.name === vision) ?? visionOptions[0])}
+            {vision}
+          </button>
+          {#if visionOpen}
+            <button class="np-ws-vision-backdrop" aria-label="close" onclick={() => (visionOpen = false)}></button>
+            <div class="np-ws-vision-panel">
+              {#each visionOptions as option (option.name)}
+                <button
+                  type="button"
+                  class="np-ws-vision-item"
+                  class:active={vision === option.name}
+                  onclick={() => {
+                    vision = option.name
+                    visionOpen = false
+                  }}
+                >
+                  {@render visionIcon(option)}
+                  {option.name}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </span>
         <button type="button" class="np-ws-tool" title="dock props" onclick={toggleDock}>{dock === 'bottom' ? 'dock right' : 'dock bottom'}</button>
         <button type="button" class="np-ws-tool" title="reload" onclick={reloadFrame}>reload</button>
         <a class="np-ws-tool" href={storySrc} target="_blank" rel="noreferrer" title="open harness directly">open</a>
@@ -374,15 +494,29 @@
       <div class="np-ws-props-scroll">
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
-        <button
-          type="button"
-          class="np-ws-tool"
-          title="fill every empty control with a sample value"
-          onclick={fillMock}
-        >mock</button>
+        <span class="np-ws-props-actions">
+          <button
+            type="button"
+            class="np-ws-tool"
+            title="fill every empty control with a sample value"
+            onclick={fillMock}
+          >mock</button>
+          <button
+            type="button"
+            class="np-ws-tool"
+            title="restore the story defaults and forget stored edits"
+            onclick={resetControls}
+          >reset</button>
+          <button
+            type="button"
+            class="np-ws-tool"
+            title="empty every input form"
+            onclick={clearControls}
+          >clear</button>
+        </span>
       </div>
       {#if schema && (schema.props.length || schema.slots.length)}
-        {#key activeStory.name}
+        {#key `${activeStory.name}:${controlsEpoch}`}
           <div class="np-ws-controls">
             {#each schema.props as spec (spec.name)}
               <ControlNode {spec} value={propValues[spec.name]} onchange={(v) => setProp(spec.name, v)} />
@@ -696,8 +830,81 @@
     border-color: var(--np-text-faint);
   }
 
-  .np-ws-vision {
-    appearance: auto;
+  .np-ws-vision-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .np-ws-vision-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .np-ws-vision-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .np-ws-vision-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+    border: 0;
+    cursor: default;
+  }
+
+  .np-ws-vision-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 41;
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--np-border);
+    background-color: var(--np-bg-surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .np-ws-vision-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    font-size: 12px;
+    text-align: left;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--np-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .np-ws-vision-item:hover {
+    background-color: color-mix(in srgb, var(--np-brand) 10%, transparent);
+    color: var(--np-text-primary);
+  }
+
+  .np-ws-vision-item.active {
+    color: var(--np-brand);
+  }
+
+  .np-ws-vision-icon {
+    width: 24px;
+    height: 10px;
+    flex: 0 0 auto;
+  }
+
+  .np-ws-props-actions {
+    display: inline-flex;
+    gap: 6px;
   }
 
   .np-ws-stage {
