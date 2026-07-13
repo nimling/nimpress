@@ -302,6 +302,7 @@
       if (typeof value === 'string') nextSlots[spec.name] = value
     }
     slotValues = nextSlots
+    subscribedEmits = [...(schema?.emits ?? [])]
     controlsEpoch++
     persistControls()
     push()
