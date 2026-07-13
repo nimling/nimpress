@@ -960,7 +960,7 @@
 
   .np-ws-stage {
     grid-area: stage;
-    overflow: auto;
+    overflow: hidden;
     min-height: 0;
     min-width: 0;
     background:

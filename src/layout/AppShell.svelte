@@ -115,7 +115,7 @@
   .np-app:has(:global(.np-ws)) .np-main {
     min-height: 0;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
   }
   @media (min-width: 1025px) {
     .np-app:has(:global(.np-ws)) .np-aside {
