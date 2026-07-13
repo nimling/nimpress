@@ -48,6 +48,44 @@ function safeArgs(args) {
 function emitOut(name, args) {
   parent.postMessage({ type: 'nimpress:emit', name, args: safeArgs(args) }, '*')
 }
+for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
+  const original = console[level].bind(console)
+  console[level] = (...args) => {
+    original(...args)
+    parent.postMessage({ type: 'nimpress:console', level, args: safeArgs(args) }, '*')
+  }
+}
+window.addEventListener('error', (event) => {
+  parent.postMessage({ type: 'nimpress:console', level: 'error', args: [String(event.message)] }, '*')
+})
+window.addEventListener('unhandledrejection', (event) => {
+  parent.postMessage({ type: 'nimpress:console', level: 'error', args: ['unhandled rejection: ' + String(event.reason)] }, '*')
+})
+function emitEntries(emits) {
+  if (Array.isArray(emits)) return emits.map((name) => [name, null])
+  if (emits && typeof emits === 'object') return Object.entries(emits)
+  return []
+}
+function bindEmit(name, source) {
+  let user = null
+  if (source) {
+    try {
+      user = new Function('return (' + source + ')')()
+    } catch (err) {
+      console.error('handler ' + name + ' failed to compile', err)
+    }
+  }
+  return (...args) => {
+    emitOut(name, args)
+    if (user) {
+      try {
+        user(...args)
+      } catch (err) {
+        console.error('handler ' + name + ' threw', err)
+      }
+    }
+  }
+}
 function materializeFns(props, path) {
   for (const [key, value] of Object.entries(props)) {
     const label = path ? path + '.' + key : key
@@ -139,9 +177,9 @@ async function render() {
     }
     const Component = await ensureComponent()
     const props = materializeFns(structuredClone(state.props))
-    for (const name of state.emits) {
+    for (const [name, source] of emitEntries(state.emits)) {
       const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
-      props[key] = (...args) => emitOut(name, args)
+      props[key] = bindEmit(name, source)
     }
     const slots = {}
     for (const [name, html] of Object.entries(state.slots)) {
@@ -174,8 +212,8 @@ async function render() {
   try {
     if (instance) unmount(instance)
     const props = materializeFns(structuredClone(state.props))
-    for (const name of state.emits) {
-      props[name] = (...args) => emitOut(name, args)
+    for (const [name, source] of emitEntries(state.emits)) {
+      props[name] = bindEmit(name, source)
     }
     for (const [name, html] of Object.entries(state.slots)) {
       props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))

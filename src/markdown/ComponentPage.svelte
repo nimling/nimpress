@@ -5,7 +5,7 @@
   import { schemaToJsonSchema } from '../modules/parse/typeMembers'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
-  import ControlNode, { mockValue } from './ControlNode.svelte'
+  import ControlNode, { mockValue, fnSource } from './ControlNode.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
   import IconAdd from '../icons/IconAdd.svelte'
@@ -16,6 +16,7 @@
   import IconReload from '../icons/IconReload.svelte'
   import IconOpen from '../icons/IconOpen.svelte'
   import IconJson from '../icons/IconJson.svelte'
+  import IconConsole from '../icons/IconConsole.svelte'
   import IconRemove from '../icons/IconRemove.svelte'
 
   let { page }: { page: PageModule } = $props()
@@ -37,8 +38,10 @@
   let propValues = $state<Record<string, unknown>>({})
   let slotValues = $state<Record<string, string>>({})
   let emitLog = $state<Array<{ name: string; args: unknown[]; at: string }>>([])
-  let subscribedEmits = $state<string[]>([])
+  let emitHandlers = $state<Record<string, string>>({})
   let emitFilter = $state('')
+  let consoleLog = $state<Array<{ level: string; args: unknown[]; at: string }>>([])
+  let consoleFilter = $state('')
   let ready = $state(false)
   let claudeDraft = $state('')
   let claudeSaved = $state(true)
@@ -47,8 +50,12 @@
   let wsEl: HTMLDivElement | undefined = $state()
 
   let dock = $state<'bottom' | 'right'>('bottom')
+  let consoleDock = $state<'bottom' | 'right'>('bottom')
+  let consoleOpen = $state(false)
   let dragging = $state(false)
-  let propsSize = $state(300)
+  let dragSlot: 'bottom' | 'right' = 'bottom'
+  let bottomSize = $state(300)
+  let rightSize = $state(380)
   let infoSize = $state(32)
   let zoom = $state(1)
   let vision = $state('none')
@@ -112,11 +119,33 @@
   })
 
   function toggleEmit(name: string) {
-    subscribedEmits = subscribedEmits.includes(name)
-      ? subscribedEmits.filter((n) => n !== name)
-      : [...subscribedEmits, name]
+    const next = { ...emitHandlers }
+    if (next[name] !== undefined) delete next[name]
+    else next[name] = fnSource(name)
+    emitHandlers = next
+    persistControls()
     push()
   }
+
+  function setEmitHandler(name: string, source: string) {
+    const next = { ...emitHandlers }
+    if (source.trim() === '') delete next[name]
+    else next[name] = source
+    emitHandlers = next
+    persistControls()
+    push()
+  }
+
+  const bottomOccupied = $derived(dock === 'bottom' || (consoleOpen && consoleDock === 'bottom'))
+  const rightOccupied = $derived(dock === 'right' || (consoleOpen && consoleDock === 'right'))
+
+  const filteredConsoleLog = $derived.by(() => {
+    const q = consoleFilter.trim().toLowerCase()
+    if (!q) return consoleLog
+    return consoleLog.filter(
+      (entry) => entry.level.includes(q) || JSON.stringify(entry.args).toLowerCase().includes(q)
+    )
+  })
 
   let jsonDialogOpen = $state(false)
   let jsonDialogTab = $state<'input' | 'schema'>('input')
@@ -196,14 +225,19 @@
   function seedControls(story: ComponentStory | null) {
     propValues = { ...defaultValues(), ...(story?.props ?? {}) }
     slotValues = { ...(story?.slots ?? {}) }
-    subscribedEmits = [...(schema?.emits ?? [])]
+    emitHandlers = Object.fromEntries((schema?.emits ?? []).map((name) => [name, fnSource(name)]))
     emitFilter = ''
     try {
       const stored = localStorage.getItem(storageKey(story))
       if (stored) {
-        const parsed = JSON.parse(stored) as { props?: Record<string, unknown>; slots?: Record<string, string> }
+        const parsed = JSON.parse(stored) as {
+          props?: Record<string, unknown>
+          slots?: Record<string, string>
+          handlers?: Record<string, string>
+        }
         if (parsed.props) propValues = parsed.props
         if (parsed.slots) slotValues = parsed.slots
+        if (parsed.handlers) emitHandlers = parsed.handlers
       }
     } catch {
       localStorage.removeItem(storageKey(story))
@@ -220,7 +254,11 @@
     try {
       localStorage.setItem(
         storageKey(activeStory),
-        JSON.stringify({ props: $state.snapshot(propValues), slots: $state.snapshot(slotValues) })
+        JSON.stringify({
+          props: $state.snapshot(propValues),
+          slots: $state.snapshot(slotValues),
+          handlers: $state.snapshot(emitHandlers)
+        })
       )
     } catch {
       return
@@ -230,6 +268,7 @@
   function clearControls() {
     propValues = {}
     slotValues = {}
+    emitHandlers = {}
     controlsEpoch++
     persistControls()
     push()
@@ -241,7 +280,7 @@
     params.set('story', activeStory.file.replace(/\.story\.ts$/, ''))
     params.set('props', encodeParam({ ...defaultValues(), ...(activeStory.props ?? {}) }))
     params.set('slots', encodeParam({ ...(activeStory.slots ?? {}) }))
-    params.set('emits', encodeParam(schema?.emits ?? []))
+    params.set('emits', encodeParam(untrack(() => $state.snapshot(emitHandlers))))
     params.set('theme', untrack(() => frameTheme))
     return `${data.harnessPath}?${params.toString()}`
   })
@@ -253,7 +292,7 @@
         type: 'nimpress:props',
         props: $state.snapshot(propValues),
         slots: $state.snapshot(slotValues),
-        emits: $state.snapshot(subscribedEmits),
+        emits: $state.snapshot(emitHandlers),
         theme: frameTheme
       },
       '*'
@@ -302,7 +341,11 @@
       if (typeof value === 'string') nextSlots[spec.name] = value
     }
     slotValues = nextSlots
-    subscribedEmits = [...(schema?.emits ?? [])]
+    const nextHandlers = { ...emitHandlers }
+    for (const name of schema?.emits ?? []) {
+      if (nextHandlers[name] === undefined) nextHandlers[name] = fnSource(name)
+    }
+    emitHandlers = nextHandlers
     controlsEpoch++
     persistControls()
     push()
@@ -311,10 +354,10 @@
   function dragMove(e: PointerEvent) {
     if (!wsEl) return
     const rect = wsEl.getBoundingClientRect()
-    if (dock === 'bottom') {
-      propsSize = Math.min(Math.max(rect.bottom - e.clientY, 140), rect.height * 0.7)
+    if (dragSlot === 'bottom') {
+      bottomSize = Math.min(Math.max(rect.bottom - e.clientY, 140), rect.height * 0.7)
     } else {
-      propsSize = Math.min(Math.max(rect.right - e.clientX, 240), rect.width * 0.7)
+      rightSize = Math.min(Math.max(rect.right - e.clientX, 240), rect.width * 0.7)
     }
   }
 
@@ -327,11 +370,12 @@
     document.body.style.removeProperty('cursor')
   }
 
-  function dragDown(e: PointerEvent) {
+  function dragDown(e: PointerEvent, slot: 'bottom' | 'right') {
     e.preventDefault()
     dragging = true
+    dragSlot = slot
     document.body.style.setProperty('user-select', 'none')
-    document.body.style.setProperty('cursor', dock === 'bottom' ? 'row-resize' : 'col-resize')
+    document.body.style.setProperty('cursor', slot === 'bottom' ? 'row-resize' : 'col-resize')
     window.addEventListener('pointermove', dragMove)
     window.addEventListener('pointerup', dragUp)
     window.addEventListener('pointercancel', dragUp)
@@ -366,7 +410,10 @@
 
   function toggleDock() {
     dock = dock === 'bottom' ? 'right' : 'bottom'
-    propsSize = dock === 'bottom' ? 300 : 340
+  }
+
+  function toggleConsoleDock() {
+    consoleDock = consoleDock === 'bottom' ? 'right' : 'bottom'
   }
 
   function reloadFrame() {
@@ -420,6 +467,11 @@
       if (d.type === 'nimpress:emit') {
         const at = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
         emitLog = [{ name: String(d.name), args: (d.args ?? []) as unknown[], at }, ...emitLog].slice(0, 200)
+        return
+      }
+      if (d.type === 'nimpress:console') {
+        const at = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
+        consoleLog = [{ level: String(d.level), args: (d.args ?? []) as unknown[], at }, ...consoleLog].slice(0, 300)
         return
       }
       if (d.type === 'nimpress:zoom') {
@@ -510,9 +562,8 @@
   <div
     bind:this={wsEl}
     class="np-ws"
-    class:np-ws-dock-right={dock === 'right'}
     class:np-ws-dragging={dragging}
-    style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilter};"
+    style="--np-ws-bottom: {bottomOccupied ? bottomSize + 'px' : '0px'}; --np-ws-right: {rightOccupied ? rightSize + 'px' : '0px'}; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilter};"
   >
     {#snippet toolItems()}
       <button
@@ -566,6 +617,15 @@
       >
         <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
       </button>
+      <button
+        type="button"
+        class="np-ws-tool np-ws-tool-icon np-tip"
+        class:np-ws-tool-active={consoleOpen}
+        aria-label={consoleOpen ? 'hide the frame console panel' : 'show the frame console panel'}
+        onclick={() => (consoleOpen = !consoleOpen)}
+      >
+        <IconConsole />
+      </button>
       <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="reload the component frame" onclick={reloadFrame}><IconReload /></button>
       <a class="np-ws-tool np-ws-tool-icon np-tip" href={storySrc} target="_blank" rel="noreferrer" aria-label="open the bare harness in a new tab"><IconOpen /></a>
     {/snippet}
@@ -605,14 +665,46 @@
       </div>
     </div>
 
-    <div class="np-ws-props">
-      <div
-        class="np-ws-divider"
-        role="separator"
-        aria-orientation={dock === 'bottom' ? 'horizontal' : 'vertical'}
-        onpointerdown={dragDown}
-      ></div>
-      <div class="np-ws-props-scroll">
+    {#snippet consolePanel()}
+      <div class="np-ws-props-head">
+        <span class="np-ws-props-title">console</span>
+        <span class="np-ws-props-actions">
+          <button
+            type="button"
+            class="np-ws-tool np-ws-tool-icon np-tip"
+            aria-label={consoleDock === 'bottom' ? 'dock the console right' : 'dock the console bottom'}
+            onclick={toggleConsoleDock}
+          >
+            <IconDock side={consoleDock === 'bottom' ? 'right' : 'bottom'} />
+          </button>
+          <button type="button" class="np-ws-tool np-tip" aria-label="clear the console" onclick={() => (consoleLog = [])}>clear</button>
+          <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="hide the console panel" onclick={() => (consoleOpen = false)}>
+            <IconRemove />
+          </button>
+        </span>
+      </div>
+      <input
+        type="text"
+        class="np-ws-console-filter"
+        placeholder="filter by level or content"
+        bind:value={consoleFilter}
+      />
+      {#if filteredConsoleLog.length}
+        <ol class="np-ws-console-log np-ws-console-log-frame">
+          {#each filteredConsoleLog as entry, i (i)}
+            <li class="np-console-{entry.level}">
+              <span class="np-ws-console-time">{entry.at}</span>
+              <code class="np-ws-console-level">{entry.level}</code>
+              <span class="np-ws-console-args">{entry.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}</span>
+            </li>
+          {/each}
+        </ol>
+      {:else}
+        <p class="np-ws-console-empty">{consoleLog.length ? 'nothing matches the filter' : 'console output from the component frame streams here'}</p>
+      {/if}
+    {/snippet}
+
+    {#snippet propsPanel()}
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
         <span class="np-ws-props-actions">
@@ -736,21 +828,36 @@
       {#if emits.length}
         <div class="np-ws-emits">
           <span class="np-ws-emits-title">events</span>
-          <span class="np-ws-emits-caption">click a pill to subscribe or unsubscribe, interact with the component in the stage to fire subscribed events, firings count on the pill and stream to the console</span>
+          <span class="np-ws-emits-caption">every event gets a handler function, edit its code below, detach via the pill, firings count on the pill, log to the event stream here, and print in the console panel</span>
           <div class="np-ws-emit-pills">
             {#each emits as name (name)}
               <button
                 type="button"
                 class="np-ws-emit"
                 class:np-ws-emit-fired={emitCounts[name]}
-                class:np-ws-emit-off={!subscribedEmits.includes(name)}
-                title={subscribedEmits.includes(name) ? 'subscribed, click to unsubscribe' : 'unsubscribed, click to subscribe'}
+                class:np-ws-emit-off={emitHandlers[name] === undefined}
+                title={emitHandlers[name] !== undefined ? 'handler attached, click to detach' : 'no handler, click to attach a logging handler'}
                 onclick={() => toggleEmit(name)}
               >
                 {name}{#if emitCounts[name]}<span class="np-ws-emit-count">{emitCounts[name]}</span>{/if}
               </button>
             {/each}
           </div>
+          {#each emits.filter((name) => emitHandlers[name] !== undefined) as name (name)}
+            <div class="np-ws-handler">
+              <span class="np-ws-handler-name"><code>{name}</code> handler, runs in the frame on every firing</span>
+              <CodeEditor
+                bind:value={
+                  () => emitHandlers[name] ?? '',
+                  (next) => setEmitHandler(name, next)
+                }
+                language="javascript"
+                noHeader
+                minHeight={64}
+                maxHeight={180}
+              />
+            </div>
+          {/each}
           <div class="np-ws-console">
             <div class="np-ws-console-bar">
               <input
@@ -777,8 +884,44 @@
           </div>
         </div>
       {/if}
+    {/snippet}
+
+    {#if bottomOccupied}
+      <div class="np-ws-slot np-ws-slot-bottom">
+        <div
+          class="np-ws-divider np-ws-divider-h"
+          role="separator"
+          aria-orientation="horizontal"
+          onpointerdown={(e) => dragDown(e, 'bottom')}
+        ></div>
+        <div class="np-ws-slot-panels np-ws-slot-panels-row">
+          {#if dock === 'bottom'}
+            <div class="np-panel">{@render propsPanel()}</div>
+          {/if}
+          {#if consoleOpen && consoleDock === 'bottom'}
+            <div class="np-panel np-panel-console">{@render consolePanel()}</div>
+          {/if}
+        </div>
       </div>
-    </div>
+    {/if}
+    {#if rightOccupied}
+      <div class="np-ws-slot np-ws-slot-right">
+        <div
+          class="np-ws-divider np-ws-divider-v"
+          role="separator"
+          aria-orientation="vertical"
+          onpointerdown={(e) => dragDown(e, 'right')}
+        ></div>
+        <div class="np-ws-slot-panels np-ws-slot-panels-column">
+          {#if dock === 'right'}
+            <div class="np-panel">{@render propsPanel()}</div>
+          {/if}
+          {#if consoleOpen && consoleDock === 'right'}
+            <div class="np-panel np-panel-console">{@render consolePanel()}</div>
+          {/if}
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -935,23 +1078,106 @@
   .np-ws {
     display: grid;
     grid-template-areas:
-      'toolbar'
-      'stage'
-      'props';
-    grid-template-rows: auto 1fr var(--np-ws-props);
-    grid-template-columns: 1fr;
+      'toolbar toolbar'
+      'stage right'
+      'bottom right';
+    grid-template-rows: auto minmax(0, 1fr) var(--np-ws-bottom, 0px);
+    grid-template-columns: minmax(0, 1fr) var(--np-ws-right, 0px);
     height: 100%;
     width: 100%;
     min-width: 0;
     background-color: var(--np-bg);
   }
 
-  .np-ws-dock-right {
-    grid-template-areas:
-      'toolbar toolbar'
-      'stage props';
-    grid-template-rows: auto 1fr;
-    grid-template-columns: 1fr var(--np-ws-props);
+  .np-ws-slot {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .np-ws-slot-bottom {
+    grid-area: bottom;
+    border-top: 1px solid var(--np-divider);
+  }
+
+  .np-ws-slot-right {
+    grid-area: right;
+    border-left: 1px solid var(--np-divider);
+  }
+
+  .np-ws-slot-panels {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .np-ws-slot-panels-row {
+    flex-direction: row;
+  }
+
+  .np-ws-slot-panels-column {
+    flex-direction: column;
+  }
+
+  .np-panel {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 16px;
+  }
+
+  .np-ws-slot-panels-row > .np-panel + .np-panel {
+    border-left: 1px solid var(--np-divider);
+  }
+
+  .np-ws-slot-panels-column > .np-panel + .np-panel {
+    border-top: 1px solid var(--np-divider);
+  }
+
+  .np-ws-slot-right .np-panel {
+    padding: 12px;
+    --np-ws-row-pad: 0px;
+  }
+
+  .np-ws-handler {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .np-ws-handler-name {
+    font-size: 11px;
+    color: var(--np-text-muted);
+  }
+
+  .np-ws-handler-name code {
+    color: var(--np-brand);
+  }
+
+  .np-ws-console-log-frame {
+    margin: 8px 0 0;
+    max-height: none;
+  }
+
+  .np-ws-console-level {
+    margin-right: 8px;
+    color: var(--np-text-secondary);
+  }
+
+  .np-console-warn .np-ws-console-level {
+    color: #e5a50a;
+  }
+
+  .np-console-error .np-ws-console-level {
+    color: var(--np-danger);
+  }
+
+  .np-panel > .np-ws-console-filter {
+    width: 100%;
+    margin: 4px 0 0;
   }
 
   .np-ws-toolbar {
@@ -1228,7 +1454,7 @@
     height: calc(100% / var(--np-ws-zoom));
   }
 
-  .np-ws-divider {
+  .np-ws-divider-h {
     position: absolute;
     top: -5px;
     left: 0;
@@ -1239,45 +1465,19 @@
     touch-action: none;
   }
 
-  .np-ws-dock-right .np-ws-divider {
+  .np-ws-divider-v {
+    position: absolute;
     top: 0;
     bottom: 0;
     left: -5px;
-    right: auto;
-    height: auto;
     width: 10px;
+    z-index: 2;
     cursor: col-resize;
+    touch-action: none;
   }
 
   .np-ws-dragging .np-ws-frame {
     pointer-events: none;
-  }
-
-  .np-ws-props {
-    grid-area: props;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    min-width: 0;
-    border-top: 1px solid var(--np-divider);
-  }
-
-  .np-ws-dock-right .np-ws-props {
-    border-top: 0;
-    border-left: 1px solid var(--np-divider);
-  }
-
-  .np-ws-props-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 12px 16px;
-  }
-
-  .np-ws-dock-right .np-ws-props-scroll {
-    padding: 12px 0;
   }
 
   .np-ws-props-head {
@@ -1312,14 +1512,6 @@
     position: relative;
     display: flex;
     flex-direction: column;
-  }
-
-  .np-ws-dock-right .np-ws-props-scroll {
-    --np-ws-row-pad: 12px;
-  }
-
-  .np-ws-dock-right .np-ws-emits {
-    padding: 0 var(--np-ws-row-pad, 0);
   }
 
   .np-ws-col-divider {
