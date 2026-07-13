@@ -517,22 +517,22 @@
     {#snippet toolItems()}
       <button
         type="button"
-        class="np-ws-tool np-ws-tool-icon"
-        title={frameTheme === 'dark' ? 'switch the component frame to light' : 'switch the component frame to dark'}
+        class="np-ws-tool np-ws-tool-icon np-tip"
+        aria-label={frameTheme === 'dark' ? 'switch the component frame to light' : 'switch the component frame to dark'}
         onclick={toggleFrameTheme}
       >
         {#if frameTheme === 'dark'}<IconSun />{:else}<IconMoon />{/if}
       </button>
       <span class="np-ws-tool-group">
-        <button type="button" class="np-ws-tool np-ws-tool-icon" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}><IconMinus /></button>
-        <button type="button" class="np-ws-tool" title="reset zoom to 100%" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
-        <button type="button" class="np-ws-tool np-ws-tool-icon" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}><IconAdd /></button>
+        <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}><IconMinus /></button>
+        <button type="button" class="np-ws-tool np-tip" aria-label="reset zoom to 100%" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
+        <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}><IconAdd /></button>
       </span>
       <span class="np-ws-vision-wrap">
         <button
           type="button"
-          class="np-ws-tool np-ws-vision-btn"
-          title="vision simulation"
+          class="np-ws-tool np-ws-vision-btn np-tip"
+          aria-label="vision simulation"
           onclick={() => (visionOpen = !visionOpen)}
         >
           {@render visionIcon(visionOptions.find((o) => o.name === vision) ?? visionOptions[0])}
@@ -560,14 +560,14 @@
       </span>
       <button
         type="button"
-        class="np-ws-tool np-ws-tool-icon"
-        title={dock === 'bottom' ? 'dock the props panel right' : 'dock the props panel bottom'}
+        class="np-ws-tool np-ws-tool-icon np-tip"
+        aria-label={dock === 'bottom' ? 'dock the props panel right' : 'dock the props panel bottom'}
         onclick={toggleDock}
       >
         <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
       </button>
-      <button type="button" class="np-ws-tool np-ws-tool-icon" title="reload the component frame" onclick={reloadFrame}><IconReload /></button>
-      <a class="np-ws-tool np-ws-tool-icon" href={storySrc} target="_blank" rel="noreferrer" title="open the bare harness in a new tab"><IconOpen /></a>
+      <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="reload the component frame" onclick={reloadFrame}><IconReload /></button>
+      <a class="np-ws-tool np-ws-tool-icon np-tip" href={storySrc} target="_blank" rel="noreferrer" aria-label="open the bare harness in a new tab"><IconOpen /></a>
     {/snippet}
     <div class="np-ws-toolbar">
       <span class="np-ws-crumb">
@@ -582,7 +582,7 @@
         {@render toolItems()}
       </span>
       <span class="np-ws-tools-menu-wrap">
-        <button type="button" class="np-ws-tool" title="workshop actions" onclick={() => (toolsOpen = !toolsOpen)}>⋯</button>
+        <button type="button" class="np-ws-tool np-tip" aria-label="workshop actions" onclick={() => (toolsOpen = !toolsOpen)}>⋯</button>
         {#if toolsOpen}
           <button class="np-ws-vision-backdrop" aria-label="close" onclick={() => (toolsOpen = false)}></button>
           <div class="np-ws-tools-panel">
@@ -618,8 +618,8 @@
         <span class="np-ws-props-actions">
           <button
             type="button"
-            class="np-ws-tool np-ws-tool-icon"
-            title="fill every empty control with a sample value"
+            class="np-ws-tool np-ws-tool-icon np-tip"
+            aria-label="fill every empty control with a sample value"
             onclick={fillMock}
           >
             <IconMock />
@@ -627,8 +627,8 @@
           </button>
           <button
             type="button"
-            class="np-ws-tool np-ws-tool-icon"
-            title="empty every input form"
+            class="np-ws-tool np-ws-tool-icon np-tip"
+            aria-label="empty every input form"
             onclick={clearControls}
           >
             <IconClear />
@@ -636,8 +636,8 @@
           </button>
           <button
             type="button"
-            class="np-ws-tool np-ws-tool-icon"
-            title="props as json, view the schema or paste values for all props"
+            class="np-ws-tool np-ws-tool-icon np-tip"
+            aria-label="props as json, view the schema or paste values for all props"
             onclick={() => {
               jsonTyping = false
               jsonAllDraft = JSON.stringify(propValues, null, 2)
@@ -681,7 +681,7 @@
               <button type="button" class="np-ws-tool" title="copy this tab's json to the clipboard" onclick={copyDialogJson}>
                 {copied ? 'copied' : 'copy'}
               </button>
-              <button type="button" class="np-ws-tool np-ws-tool-icon" title="close" onclick={() => (jsonDialogOpen = false)}>
+              <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="close" onclick={() => (jsonDialogOpen = false)}>
                 <IconRemove />
               </button>
             </span>

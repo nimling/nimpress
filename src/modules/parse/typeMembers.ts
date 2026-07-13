@@ -260,6 +260,9 @@ export function controlFromType(
   if (bare === 'boolean') return { name, kind: 'boolean', type: t, required: !optional, description }
   if (bare === 'number') return { name, kind: 'number', type: t, required: !optional, description }
   if (bare === 'string') return { name, kind: 'text', type: t, required: !optional, description }
+  if (/=>/.test(bare) && !/\[\]$/.test(bare)) {
+    return { name, kind: 'function', type: t, required: !optional, description }
+  }
   if (depth < 4) {
     const valueType =
       bare.match(/^Record<\s*string\s*,\s*(.+)>$/)?.[1] ??

@@ -62,12 +62,15 @@
     return pick(swThings, hint, seed)
   }
 
+  export const FN_SENTINEL = '__nimpress:fn:'
+
   export function mockValue(spec: ControlSpec, seed = 0): unknown {
     const hint = `${spec.name} ${spec.description ?? ''}`.toLowerCase()
     if (spec.kind === 'select') return spec.options?.[(hintHash(hint) + seed) % (spec.options.length || 1)]
     if (spec.kind === 'boolean') return true
     if (spec.kind === 'number') return mockNumber(hint)
     if (spec.kind === 'text' || spec.kind === 'slot') return mockText(hint, seed)
+    if (spec.kind === 'function') return `${FN_SENTINEL}${spec.name || 'fn'}`
     if (spec.kind === 'object') {
       const out: Record<string, unknown> = {}
       for (const member of spec.members ?? []) {
@@ -252,29 +255,33 @@
     {/if}
     <div class="np-control-actions">
       {#if spec.kind === 'array'}
-        <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>
+        <button type="button" class="np-control-act np-tip" aria-label="add an empty item" onclick={addRow}>
           <IconAdd />
         </button>
-        <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>
+        <button type="button" class="np-control-act np-tip" aria-label="add an item filled with sample data" onclick={mockSelf}>
           <IconMock />
         </button>
       {:else if spec.kind === 'record'}
-        <button type="button" class="np-control-act" title="add an empty entry" onclick={addEntry}>
+        <button type="button" class="np-control-act np-tip" aria-label="add an empty entry" onclick={addEntry}>
           <IconAdd />
         </button>
-        <button type="button" class="np-control-act" title="add sample entries" onclick={mockSelf}>
+        <button type="button" class="np-control-act np-tip" aria-label="add sample entries" onclick={mockSelf}>
+          <IconMock />
+        </button>
+      {:else if spec.kind === 'function'}
+        <button type="button" class="np-control-act np-tip" aria-label="create a stub function that logs its calls" onclick={mockSelf}>
           <IconMock />
         </button>
       {:else if spec.kind !== 'json'}
-        <button type="button" class="np-control-act" title="fill with sample data" onclick={mockSelf}>
+        <button type="button" class="np-control-act np-tip" aria-label="fill with sample data" onclick={mockSelf}>
           <IconMock />
         </button>
       {/if}
-      <button type="button" class="np-control-act" title="clear this input" onclick={clearSelf}>
+      <button type="button" class="np-control-act np-tip" aria-label="clear this input" onclick={clearSelf}>
         <IconClear />
       </button>
       {#if onremove}
-        <button type="button" class="np-control-act np-control-act-remove" title="remove item" onclick={onremove}>
+        <button type="button" class="np-control-act np-control-act-remove np-tip" aria-label="remove item" onclick={onremove}>
           <IconRemove />
         </button>
       {/if}
@@ -357,6 +364,10 @@
             <option value={option}>{option}</option>
           {/each}
         </select>
+      {:else if spec.kind === 'function'}
+        <span class="np-control-note" class:np-control-note-set={value !== undefined}>
+          {value === undefined ? 'no handler, mock creates a stub that logs its calls' : 'stub handler set, calls log to the event console'}
+        </span>
       {:else if spec.kind === 'json'}
         <textarea
           class="np-control-json"
@@ -460,6 +471,10 @@
     font-size: 11px;
     color: var(--np-text-faint);
     padding: 5px 0;
+  }
+
+  .np-control-note-set {
+    color: var(--np-brand);
   }
 
   .np-control-error {
