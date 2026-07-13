@@ -5,6 +5,7 @@
   import { schemaToJsonSchema } from '../modules/parse/typeMembers'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
+  import DragDivider from './DragDivider.svelte'
   import ControlNode, { mockValue, fnSource } from './ControlNode.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
@@ -53,9 +54,13 @@
   let consoleDock = $state<'bottom' | 'right'>('bottom')
   let consoleOpen = $state(false)
   let dragging = $state(false)
-  let dragSlot: 'bottom' | 'right' = 'bottom'
   let bottomSize = $state(300)
   let rightSize = $state(380)
+  let bottomSplit = $state(50)
+  let rightSplit = $state(50)
+  let bottomPanelsEl: HTMLDivElement | undefined = $state()
+  let rightPanelsEl: HTMLDivElement | undefined = $state()
+  let controlsEl: HTMLDivElement | undefined = $state()
   let infoSize = $state(32)
   let zoom = $state(1)
   let vision = $state('none')
@@ -130,6 +135,8 @@
 
   const bottomOccupied = $derived((propsOpen && dock === 'bottom') || (consoleOpen && consoleDock === 'bottom'))
   const rightOccupied = $derived((propsOpen && dock === 'right') || (consoleOpen && consoleDock === 'right'))
+  const bottomShared = $derived(propsOpen && dock === 'bottom' && consoleOpen && consoleDock === 'bottom')
+  const rightShared = $derived(propsOpen && dock === 'right' && consoleOpen && consoleDock === 'right')
 
   const filteredConsoleLog = $derived.by(() => {
     const q = consoleFilter.trim().toLowerCase()
@@ -342,61 +349,34 @@
     push()
   }
 
-  function dragMove(e: PointerEvent) {
+  function resizeBottom(e: PointerEvent) {
     if (!wsEl) return
     const rect = wsEl.getBoundingClientRect()
-    if (dragSlot === 'bottom') {
-      bottomSize = Math.min(Math.max(rect.bottom - e.clientY, 140), rect.height * 0.7)
-    } else {
-      rightSize = Math.min(Math.max(rect.right - e.clientX, 240), rect.width * 0.7)
-    }
+    bottomSize = Math.min(Math.max(rect.bottom - e.clientY, 140), rect.height * 0.7)
   }
 
-  function dragUp() {
-    dragging = false
-    window.removeEventListener('pointermove', dragMove)
-    window.removeEventListener('pointerup', dragUp)
-    window.removeEventListener('pointercancel', dragUp)
-    document.body.style.removeProperty('user-select')
-    document.body.style.removeProperty('cursor')
+  function resizeRight(e: PointerEvent) {
+    if (!wsEl) return
+    const rect = wsEl.getBoundingClientRect()
+    rightSize = Math.min(Math.max(rect.right - e.clientX, 240), rect.width * 0.7)
   }
 
-  function dragDown(e: PointerEvent, slot: 'bottom' | 'right') {
-    e.preventDefault()
-    dragging = true
-    dragSlot = slot
-    document.body.style.setProperty('user-select', 'none')
-    document.body.style.setProperty('cursor', slot === 'bottom' ? 'row-resize' : 'col-resize')
-    window.addEventListener('pointermove', dragMove)
-    window.addEventListener('pointerup', dragUp)
-    window.addEventListener('pointercancel', dragUp)
+  function resizeBottomSplit(e: PointerEvent) {
+    if (!bottomPanelsEl) return
+    const rect = bottomPanelsEl.getBoundingClientRect()
+    bottomSplit = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 20), 80)
   }
 
-  let colDragEl: HTMLElement | null = null
+  function resizeRightSplit(e: PointerEvent) {
+    if (!rightPanelsEl) return
+    const rect = rightPanelsEl.getBoundingClientRect()
+    rightSplit = Math.min(Math.max(((e.clientY - rect.top) / rect.height) * 100, 20), 80)
+  }
 
-  function colDragMove(e: PointerEvent) {
-    if (!colDragEl) return
-    const rect = colDragEl.getBoundingClientRect()
+  function resizeInfo(e: PointerEvent) {
+    if (!controlsEl) return
+    const rect = controlsEl.getBoundingClientRect()
     infoSize = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 15), 60)
-  }
-
-  function colDragUp() {
-    colDragEl = null
-    window.removeEventListener('pointermove', colDragMove)
-    window.removeEventListener('pointerup', colDragUp)
-    window.removeEventListener('pointercancel', colDragUp)
-    document.body.style.removeProperty('user-select')
-    document.body.style.removeProperty('cursor')
-  }
-
-  function colDragDown(e: PointerEvent) {
-    e.preventDefault()
-    colDragEl = (e.currentTarget as HTMLElement).parentElement
-    document.body.style.setProperty('user-select', 'none')
-    document.body.style.setProperty('cursor', 'col-resize')
-    window.addEventListener('pointermove', colDragMove)
-    window.addEventListener('pointerup', colDragUp)
-    window.addEventListener('pointercancel', colDragUp)
   }
 
   function toggleDock() {
@@ -476,7 +456,6 @@
     window.addEventListener('message', onMessage)
     return () => {
       window.removeEventListener('message', onMessage)
-      dragUp()
     }
   })
 </script>
@@ -806,13 +785,8 @@
       {/if}
       {#if schema && (schema.props.length || schema.slots.length)}
         {#key `${activeStory.name}:${controlsEpoch}`}
-          <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;">
-            <div
-              class="np-ws-col-divider"
-              role="separator"
-              aria-orientation="vertical"
-              onpointerdown={colDragDown}
-            ></div>
+          <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;" bind:this={controlsEl}>
+            <DragDivider orientation="vertical" at="calc(var(--np-ws-info, 32%) - 5px)" onmove={resizeInfo} />
             {#each schema.props as spec (spec.name)}
               <ControlNode {spec} value={propValues[spec.name]} onchange={(v) => setProp(spec.name, v)} />
             {/each}
@@ -867,15 +841,23 @@
 
     {#if bottomOccupied}
       <div class="np-ws-slot np-ws-slot-bottom">
+        <DragDivider orientation="horizontal" onmove={resizeBottom} ondragchange={(d) => (dragging = d)} />
         <div
-          class="np-ws-divider np-ws-divider-h"
-          role="separator"
-          aria-orientation="horizontal"
-          onpointerdown={(e) => dragDown(e, 'bottom')}
-        ></div>
-        <div class="np-ws-slot-panels np-ws-slot-panels-row">
+          class="np-ws-slot-panels np-ws-slot-panels-row"
+          class:np-ws-slot-panels-split={bottomShared}
+          style="--np-ws-split: {bottomSplit}%;"
+          bind:this={bottomPanelsEl}
+        >
           {#if propsOpen && dock === 'bottom'}
             <div class="np-panel">{@render propsPanel()}</div>
+          {/if}
+          {#if bottomShared}
+            <DragDivider
+              orientation="vertical"
+              at="calc(var(--np-ws-split, 50%) - 5px)"
+              onmove={resizeBottomSplit}
+              ondragchange={(d) => (dragging = d)}
+            />
           {/if}
           {#if consoleOpen && consoleDock === 'bottom'}
             <div class="np-panel np-panel-console">{@render consolePanel()}</div>
@@ -885,15 +867,23 @@
     {/if}
     {#if rightOccupied}
       <div class="np-ws-slot np-ws-slot-right">
+        <DragDivider orientation="vertical" onmove={resizeRight} ondragchange={(d) => (dragging = d)} />
         <div
-          class="np-ws-divider np-ws-divider-v"
-          role="separator"
-          aria-orientation="vertical"
-          onpointerdown={(e) => dragDown(e, 'right')}
-        ></div>
-        <div class="np-ws-slot-panels np-ws-slot-panels-column">
+          class="np-ws-slot-panels np-ws-slot-panels-column"
+          class:np-ws-slot-panels-split={rightShared}
+          style="--np-ws-split: {rightSplit}%;"
+          bind:this={rightPanelsEl}
+        >
           {#if propsOpen && dock === 'right'}
             <div class="np-panel">{@render propsPanel()}</div>
+          {/if}
+          {#if rightShared}
+            <DragDivider
+              orientation="horizontal"
+              at="calc(var(--np-ws-split, 50%) - 5px)"
+              onmove={resizeRightSplit}
+              ondragchange={(d) => (dragging = d)}
+            />
           {/if}
           {#if consoleOpen && consoleDock === 'right'}
             <div class="np-panel np-panel-console">{@render consolePanel()}</div>
@@ -1085,6 +1075,7 @@
   }
 
   .np-ws-slot-panels {
+    position: relative;
     display: flex;
     height: 100%;
     min-height: 0;
@@ -1108,11 +1099,15 @@
     padding: 12px 16px;
   }
 
-  .np-ws-slot-panels-row > .np-panel + .np-panel {
+  .np-ws-slot-panels-split > .np-panel:first-child {
+    flex: 0 0 var(--np-ws-split, 50%);
+  }
+
+  .np-ws-slot-panels-split.np-ws-slot-panels-row > .np-panel:last-child {
     border-left: 1px solid var(--np-divider);
   }
 
-  .np-ws-slot-panels-column > .np-panel + .np-panel {
+  .np-ws-slot-panels-split.np-ws-slot-panels-column > .np-panel:last-child {
     border-top: 1px solid var(--np-divider);
   }
 
@@ -1433,28 +1428,6 @@
     height: calc(100% / var(--np-ws-zoom));
   }
 
-  .np-ws-divider-h {
-    position: absolute;
-    top: -5px;
-    left: 0;
-    right: 0;
-    height: 10px;
-    z-index: 2;
-    cursor: row-resize;
-    touch-action: none;
-  }
-
-  .np-ws-divider-v {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -5px;
-    width: 10px;
-    z-index: 2;
-    cursor: col-resize;
-    touch-action: none;
-  }
-
   .np-ws-dragging .np-ws-frame {
     pointer-events: none;
   }
@@ -1491,17 +1464,6 @@
     position: relative;
     display: flex;
     flex-direction: column;
-  }
-
-  .np-ws-col-divider {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(var(--np-ws-info, 32%) - 5px);
-    width: 10px;
-    z-index: 2;
-    cursor: col-resize;
-    touch-action: none;
   }
 
   .np-ws-tool-icon {
