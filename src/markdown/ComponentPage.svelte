@@ -159,12 +159,6 @@
     }
   }
 
-  function resetControls() {
-    if (activeStory) localStorage.removeItem(storageKey(activeStory))
-    seedControls(activeStory)
-    push()
-  }
-
   function clearControls() {
     propValues = {}
     slotValues = {}
@@ -515,12 +509,6 @@
             title="fill every empty control with a sample value"
             onclick={fillMock}
           >mock</button>
-          <button
-            type="button"
-            class="np-ws-tool"
-            title="restore the story defaults and forget stored edits"
-            onclick={resetControls}
-          >reset</button>
           <button
             type="button"
             class="np-ws-tool"
