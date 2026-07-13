@@ -6,7 +6,7 @@
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
   import DragDivider from './DragDivider.svelte'
-  import ControlNode, { mockValue, fnSource } from './ControlNode.svelte'
+  import ControlNode, { mockValue, fnSource, isFnValue } from './ControlNode.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
   import IconAdd from '../icons/IconAdd.svelte'
@@ -114,15 +114,6 @@
     for (const entry of emitLog) counts[entry.name] = (counts[entry.name] ?? 0) + 1
     return counts
   })
-
-  function toggleEmit(name: string) {
-    const next = { ...emitHandlers }
-    if (next[name] !== undefined) delete next[name]
-    else next[name] = fnSource(name)
-    emitHandlers = next
-    persistControls()
-    push()
-  }
 
   function setEmitHandler(name: string, source: string) {
     const next = { ...emitHandlers }
@@ -805,36 +796,20 @@
       {#if emits.length}
         <div class="np-ws-emits">
           <span class="np-ws-emits-title">events</span>
-          <span class="np-ws-emits-caption">every event gets a handler function, edit its code below, detach via the pill, firings count on the pill and print in the console panel</span>
-          <div class="np-ws-emit-pills">
+          <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;">
             {#each emits as name (name)}
-              <button
-                type="button"
-                class="np-ws-emit"
-                class:np-ws-emit-fired={emitCounts[name]}
-                class:np-ws-emit-off={emitHandlers[name] === undefined}
-                title={emitHandlers[name] !== undefined ? 'handler attached, click to detach' : 'no handler, click to attach a logging handler'}
-                onclick={() => toggleEmit(name)}
-              >
-                {name}{#if emitCounts[name]}<span class="np-ws-emit-count">{emitCounts[name]}</span>{/if}
-              </button>
+              <ControlNode
+                spec={{
+                  name,
+                  kind: 'function',
+                  type: '(...args) => void',
+                  description: emitCounts[name] ? `runs in the frame on every firing, fired ${emitCounts[name]} times` : 'runs in the frame on every firing'
+                }}
+                value={emitHandlers[name] !== undefined ? { __nimpressFn: emitHandlers[name] } : undefined}
+                onchange={(v) => setEmitHandler(name, isFnValue(v) ? v.__nimpressFn : '')}
+              />
             {/each}
           </div>
-          {#each emits.filter((name) => emitHandlers[name] !== undefined) as name (name)}
-            <div class="np-ws-handler">
-              <span class="np-ws-handler-name"><code>{name}</code> handler, runs in the frame on every firing</span>
-              <CodeEditor
-                bind:value={
-                  () => emitHandlers[name] ?? '',
-                  (next) => setEmitHandler(name, next)
-                }
-                language="javascript"
-                noHeader
-                minHeight={64}
-                maxHeight={180}
-              />
-            </div>
-          {/each}
         </div>
       {/if}
     {/snippet}
@@ -1114,21 +1089,6 @@
   .np-ws-slot-right .np-panel {
     padding: 12px;
     --np-ws-row-pad: 0px;
-  }
-
-  .np-ws-handler {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .np-ws-handler-name {
-    font-size: 11px;
-    color: var(--np-text-muted);
-  }
-
-  .np-ws-handler-name code {
-    color: var(--np-brand);
   }
 
   .np-ws-console-log-frame {
@@ -1485,47 +1445,6 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--np-text-secondary);
-  }
-
-  .np-ws-emits-caption {
-    font-size: 11px;
-    color: var(--np-text-muted);
-  }
-
-  .np-ws-emit-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .np-ws-emit {
-    font-family: var(--np-font-mono);
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: var(--np-radius-pill);
-    border: 1px solid var(--np-brand);
-    background-color: transparent;
-    color: var(--np-text-secondary);
-    cursor: pointer;
-  }
-
-  .np-ws-emit-off {
-    border-color: var(--np-border);
-    color: var(--np-text-faint);
-  }
-
-  .np-ws-emit-fired {
-    color: var(--np-text-primary);
-  }
-
-  .np-ws-emit-count {
-    margin-left: 6px;
-    padding: 0 5px;
-    border-radius: var(--np-radius-pill);
-    background-color: color-mix(in srgb, var(--np-brand) 18%, transparent);
-    color: var(--np-brand);
-    font-weight: 700;
   }
 
   .np-ws-console {
