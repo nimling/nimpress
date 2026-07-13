@@ -228,17 +228,20 @@
     push()
   }
 
+  let mockSeed = 0
+
   function fillMock() {
+    mockSeed++
     const next = { ...propValues }
     for (const spec of schema?.props ?? []) {
-      if (next[spec.name] !== undefined) continue
-      const value = mockValue(spec)
+      const value = mockValue(spec, mockSeed)
       if (value !== undefined) next[spec.name] = value
     }
     propValues = next
     const nextSlots = { ...slotValues }
     for (const spec of schema?.slots ?? []) {
-      if (nextSlots[spec.name] === undefined) nextSlots[spec.name] = `Sample ${spec.name}`
+      const value = mockValue({ ...spec, kind: 'slot' }, mockSeed)
+      if (typeof value === 'string') nextSlots[spec.name] = value
     }
     slotValues = nextSlots
     controlsEpoch++
@@ -1091,6 +1094,7 @@
     align-items: center;
     justify-content: space-between;
     margin: 0 0 10px;
+    padding: 0 var(--np-ws-row-pad, 0);
   }
 
   .np-ws-props-title {
@@ -1119,8 +1123,12 @@
     flex-direction: column;
   }
 
-  .np-ws-dock-right .np-ws-controls {
+  .np-ws-dock-right .np-ws-props-scroll {
     --np-ws-row-pad: 12px;
+  }
+
+  .np-ws-dock-right .np-ws-emits {
+    padding: 0 var(--np-ws-row-pad, 0);
   }
 
   .np-ws-col-divider {
