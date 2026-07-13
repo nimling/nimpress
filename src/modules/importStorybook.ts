@@ -454,6 +454,7 @@ export async function importStorybook(
     await writeComponentSchema(dir, name, await parseSourceSchema(file, framework, name))
     pages++
     const modules = modulesByComponent.get(name) ?? []
+    const writtenThisRun = new Set<string>()
     for (const module of modules) {
       const scenario = basename(module.file, '.stories.ts')
       const mined = mineStories(module)
@@ -463,8 +464,9 @@ export async function importStorybook(
       for (const story of mined) {
         const displayName = scenario === name ? story.name : `${scenario} ${story.name}`
         let base = storyFileName(story.name)
-        if (existsSync(join(dir, `${base}.story.ts`))) base = storyFileName(`${scenario}-${story.name}`)
+        if (writtenThisRun.has(base)) base = storyFileName(`${scenario}-${story.name}`)
         const target = join(dir, `${base}.story.ts`)
+        writtenThisRun.add(base)
         if (existsSync(target)) continue
         await writeFile(target, storySource(framework, displayName, scenario, story, module))
         stories++
