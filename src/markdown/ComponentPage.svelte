@@ -7,6 +7,13 @@
   import ControlNode, { mockValue } from './ControlNode.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
+  import IconAdd from '../icons/IconAdd.svelte'
+  import IconMinus from '../icons/IconMinus.svelte'
+  import IconSun from '../icons/IconSun.svelte'
+  import IconMoon from '../icons/IconMoon.svelte'
+  import IconDock from '../icons/IconDock.svelte'
+  import IconReload from '../icons/IconReload.svelte'
+  import IconOpen from '../icons/IconOpen.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -446,11 +453,18 @@
     style="--np-ws-props: {propsSize}px; --np-ws-zoom: {zoom}; --np-ws-filter: {visionFilter};"
   >
     {#snippet toolItems()}
-      <button type="button" class="np-ws-tool" title="toggle the component theme inside the frame" onclick={toggleFrameTheme}>{frameTheme === 'dark' ? 'light' : 'dark'}</button>
+      <button
+        type="button"
+        class="np-ws-tool np-ws-tool-icon"
+        title={frameTheme === 'dark' ? 'switch the component frame to light' : 'switch the component frame to dark'}
+        onclick={toggleFrameTheme}
+      >
+        {#if frameTheme === 'dark'}<IconSun />{:else}<IconMoon />{/if}
+      </button>
       <span class="np-ws-tool-group">
-        <button type="button" class="np-ws-tool" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}>-</button>
-        <button type="button" class="np-ws-tool" title="reset zoom" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
-        <button type="button" class="np-ws-tool" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}>+</button>
+        <button type="button" class="np-ws-tool np-ws-tool-icon" title="zoom out" onclick={() => (zoom = Math.max(0.25, Math.round((zoom - 0.25) * 100) / 100))}><IconMinus /></button>
+        <button type="button" class="np-ws-tool" title="reset zoom to 100%" onclick={() => (zoom = 1)}>{Math.round(zoom * 100)}%</button>
+        <button type="button" class="np-ws-tool np-ws-tool-icon" title="zoom in" onclick={() => (zoom = Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}><IconAdd /></button>
       </span>
       <span class="np-ws-vision-wrap">
         <button
@@ -482,9 +496,16 @@
           </div>
         {/if}
       </span>
-      <button type="button" class="np-ws-tool" title="dock props" onclick={toggleDock}>{dock === 'bottom' ? 'dock right' : 'dock bottom'}</button>
-      <button type="button" class="np-ws-tool" title="reload" onclick={reloadFrame}>reload</button>
-      <a class="np-ws-tool" href={storySrc} target="_blank" rel="noreferrer" title="open harness directly">open</a>
+      <button
+        type="button"
+        class="np-ws-tool np-ws-tool-icon"
+        title={dock === 'bottom' ? 'dock the props panel right' : 'dock the props panel bottom'}
+        onclick={toggleDock}
+      >
+        <IconDock side={dock === 'bottom' ? 'right' : 'bottom'} />
+      </button>
+      <button type="button" class="np-ws-tool np-ws-tool-icon" title="reload the component frame" onclick={reloadFrame}><IconReload /></button>
+      <a class="np-ws-tool np-ws-tool-icon" href={storySrc} target="_blank" rel="noreferrer" title="open the bare harness in a new tab"><IconOpen /></a>
     {/snippet}
     <div class="np-ws-toolbar">
       <span class="np-ws-crumb">

@@ -188,34 +188,34 @@
 </script>
 
 {#snippet info()}
-  <div class="np-control-info" style="padding-left: {depth * 14}px">
-    <div class="np-control-head">
-      <span class="np-control-label">
-        {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
-      </span>
-      <div class="np-control-actions">
-        {#if spec.kind === 'array'}
-          <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>
-            <IconAdd />
-          </button>
-          <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>
-            <IconMock />
-          </button>
-        {:else if spec.kind !== 'json'}
-          <button type="button" class="np-control-act" title="fill with sample data" onclick={mockSelf}>
-            <IconMock />
-          </button>
-        {/if}
-        <button type="button" class="np-control-act" title="clear this input" onclick={clearSelf}>
-          <IconClear />
+  <div class="np-control-head" style="padding-left: {depth * 14}px">
+    <span class="np-control-label">
+      {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
+    </span>
+    <div class="np-control-actions">
+      {#if spec.kind === 'array'}
+        <button type="button" class="np-control-act" title="add an empty item" onclick={addRow}>
+          <IconAdd />
         </button>
-        {#if onremove}
-          <button type="button" class="np-control-act np-control-act-remove" title="remove item" onclick={onremove}>
-            <IconRemove />
-          </button>
-        {/if}
-      </div>
+        <button type="button" class="np-control-act" title="add an item filled with sample data" onclick={mockSelf}>
+          <IconMock />
+        </button>
+      {:else if spec.kind !== 'json'}
+        <button type="button" class="np-control-act" title="fill with sample data" onclick={mockSelf}>
+          <IconMock />
+        </button>
+      {/if}
+      <button type="button" class="np-control-act" title="clear this input" onclick={clearSelf}>
+        <IconClear />
+      </button>
+      {#if onremove}
+        <button type="button" class="np-control-act np-control-act-remove" title="remove item" onclick={onremove}>
+          <IconRemove />
+        </button>
+      {/if}
     </div>
+  </div>
+  <div class="np-control-info" style="padding-left: {depth * 14}px">
     <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
     {#if spec.description}
       <span class="np-control-desc">{spec.description}</span>
@@ -313,6 +313,7 @@
   }
 
   .np-control-head {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     justify-content: space-between;
