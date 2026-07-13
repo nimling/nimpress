@@ -371,6 +371,7 @@
         aria-orientation={dock === 'bottom' ? 'horizontal' : 'vertical'}
         onpointerdown={dragDown}
       ></div>
+      <div class="np-ws-props-scroll">
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
         <button
@@ -442,6 +443,7 @@
           </div>
         </div>
       {/if}
+      </div>
     </div>
   </div>
 {/if}
@@ -725,22 +727,23 @@
   }
 
   .np-ws-divider {
-    grid-area: props;
-    align-self: start;
+    position: absolute;
+    top: -5px;
+    left: 0;
+    right: 0;
     height: 10px;
-    margin-top: -5px;
     z-index: 2;
     cursor: row-resize;
     touch-action: none;
   }
 
   .np-ws-dock-right .np-ws-divider {
-    align-self: stretch;
-    justify-self: start;
-    width: 10px;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: auto;
     height: auto;
-    margin-top: 0;
-    margin-left: -5px;
+    width: 10px;
     cursor: col-resize;
   }
 
@@ -750,16 +753,24 @@
 
   .np-ws-props {
     grid-area: props;
-    overflow: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     min-height: 0;
     min-width: 0;
-    padding: 12px 16px;
     border-top: 1px solid var(--np-divider);
   }
 
   .np-ws-dock-right .np-ws-props {
     border-top: 0;
     border-left: 1px solid var(--np-divider);
+  }
+
+  .np-ws-props-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px 16px;
   }
 
   .np-ws-props-head {
