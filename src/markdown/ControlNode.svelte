@@ -82,7 +82,7 @@
     if (spec.kind === 'boolean') return true
     if (spec.kind === 'number') return mockNumber(hint)
     if (spec.kind === 'text' || spec.kind === 'slot') return mockText(hint, seed)
-    if (spec.kind === 'function') return { __nimpressFn: fnSource(spec.name) }
+    if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: fnSource(spec.name) }
     if (spec.kind === 'object') {
       const out: Record<string, unknown> = {}
       for (const member of spec.members ?? []) {
@@ -116,6 +116,7 @@
   import IconClear from '../icons/IconClear.svelte'
   import IconAdd from '../icons/IconAdd.svelte'
   import IconRemove from '../icons/IconRemove.svelte'
+  import IconChevron from '../icons/IconChevron.svelte'
 
   let {
     spec,
@@ -135,6 +136,7 @@
 
   let jsonDraft = $state(value === undefined ? '' : JSON.stringify(value, null, 2))
   let jsonError = $state(false)
+  let inputOpen = $state(true)
 
   const record = $derived(
     (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, unknown>
@@ -353,6 +355,48 @@
       onrename={(next) => renameEntry(key, next)}
     />
   {/each}
+{:else if spec.kind === 'event'}
+  <div class="np-control np-control-kind-event">
+    <div class="np-control-head">
+      <span class="np-control-label">{spec.name}</span>
+      <div class="np-control-actions">
+        <button type="button" class="np-control-act np-tip" aria-label="reset to a stub function that logs its calls" onclick={mockSelf}>
+          <IconMock />
+        </button>
+        <button type="button" class="np-control-act np-tip" aria-label="clear the handler, the event detaches" onclick={clearSelf}>
+          <IconClear />
+        </button>
+        <button
+          type="button"
+          class="np-control-act np-tip"
+          aria-label={inputOpen ? 'hide the handler code' : 'show the handler code'}
+          onclick={() => (inputOpen = !inputOpen)}
+        >
+          <IconChevron open={inputOpen} />
+        </button>
+      </div>
+    </div>
+    <div class="np-control-info np-control-wide">
+      <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
+      {#if spec.description}
+        <span class="np-control-desc">{spec.description}</span>
+      {/if}
+    </div>
+    {#if inputOpen}
+      <div class="np-control-input np-control-wide">
+        <CodeEditor
+          bind:value={
+            () => (isFnValue(value) ? value.__nimpressFn : ''),
+            (next) => onchange(next.trim() === '' ? undefined : { __nimpressFn: next })
+          }
+          language="javascript"
+          noHeader
+          minHeight={72}
+          maxHeight={220}
+        />
+      </div>
+    {/if}
+  </div>
 {:else}
   <div class="np-control np-control-kind-{spec.kind}">
     {@render info()}
@@ -444,6 +488,10 @@
     gap: 2px;
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+
+  .np-control-wide {
+    grid-column: 1 / -1;
   }
 
   .np-control-label {

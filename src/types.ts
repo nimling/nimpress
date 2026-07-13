@@ -39,6 +39,7 @@ export type ControlKind =
   | 'array'
   | 'record'
   | 'function'
+  | 'event'
   | 'json'
   | 'slot'
 
