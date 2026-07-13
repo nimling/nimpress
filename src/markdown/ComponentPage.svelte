@@ -754,7 +754,7 @@
       'props';
     grid-template-rows: auto 1fr var(--np-ws-props);
     grid-template-columns: 1fr;
-    height: calc(100vh - var(--np-header-height));
+    height: 100%;
     width: 100%;
     min-width: 0;
     background-color: var(--np-bg);

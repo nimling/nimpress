@@ -102,6 +102,29 @@
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: grid-template-columns;
   }
+  .np-app:has(:global(.np-ws)) {
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .np-app:has(:global(.np-ws)) .np-body {
+    min-height: 0;
+    align-items: stretch;
+  }
+  .np-app:has(:global(.np-ws)) .np-main {
+    min-height: 0;
+    height: 100%;
+    overflow: auto;
+  }
+  @media (min-width: 1025px) {
+    .np-app:has(:global(.np-ws)) .np-aside {
+      position: relative;
+      top: 0;
+      height: 100%;
+      min-height: 0;
+    }
+  }
   .np-aside-mirror {
     height: 0;
     pointer-events: none;
