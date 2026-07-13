@@ -62,7 +62,19 @@
     return pick(swThings, hint, seed)
   }
 
-  export const FN_SENTINEL = '__nimpress:fn:'
+  export interface FnValue {
+    __nimpressFn: string
+  }
+
+  export function isFnValue(value: unknown): value is FnValue {
+    return !!value && typeof value === 'object' && typeof (value as FnValue).__nimpressFn === 'string'
+  }
+
+  export function fnSource(name: string): string {
+    return `(...args) => {
+  console.log(${JSON.stringify(name || 'handler')}, ...args)
+}`
+  }
 
   export function mockValue(spec: ControlSpec, seed = 0): unknown {
     const hint = `${spec.name} ${spec.description ?? ''}`.toLowerCase()
@@ -70,7 +82,7 @@
     if (spec.kind === 'boolean') return true
     if (spec.kind === 'number') return mockNumber(hint)
     if (spec.kind === 'text' || spec.kind === 'slot') return mockText(hint, seed)
-    if (spec.kind === 'function') return `${FN_SENTINEL}${spec.name || 'fn'}`
+    if (spec.kind === 'function') return { __nimpressFn: fnSource(spec.name) }
     if (spec.kind === 'object') {
       const out: Record<string, unknown> = {}
       for (const member of spec.members ?? []) {
@@ -99,6 +111,7 @@
 
 <script lang="ts">
   import ControlNode from './ControlNode.svelte'
+  import CodeEditor from './CodeEditor.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
   import IconAdd from '../icons/IconAdd.svelte'
@@ -365,9 +378,20 @@
           {/each}
         </select>
       {:else if spec.kind === 'function'}
-        <span class="np-control-note" class:np-control-note-set={value !== undefined}>
-          {value === undefined ? 'no handler, mock creates a stub that logs its calls' : 'stub handler set, calls log to the event console'}
-        </span>
+        {#if isFnValue(value)}
+          <CodeEditor
+            bind:value={
+              () => (value as FnValue).__nimpressFn,
+              (next) => onchange(next.trim() === '' ? undefined : { __nimpressFn: next })
+            }
+            language="javascript"
+            noHeader
+            minHeight={72}
+            maxHeight={220}
+          />
+        {:else}
+          <span class="np-control-note">no handler, mock writes an editable function that logs its calls</span>
+        {/if}
       {:else if spec.kind === 'json'}
         <textarea
           class="np-control-json"
@@ -397,7 +421,7 @@
 <style>
   .np-control {
     display: grid;
-    grid-template-columns: var(--np-ws-info, 32%) minmax(0, 1fr);
+    grid-template-columns: minmax(140px, var(--np-ws-info, 32%)) minmax(0, 1fr);
     gap: 4px 12px;
     align-items: start;
     padding: 6px var(--np-ws-row-pad, 0);
@@ -419,6 +443,7 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .np-control-label {

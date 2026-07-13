@@ -48,17 +48,23 @@ function safeArgs(args) {
 function emitOut(name, args) {
   parent.postMessage({ type: 'nimpress:emit', name, args: safeArgs(args) }, '*')
 }
-const FN_SENTINEL = '__nimpress:fn:'
-function materializeFns(props) {
+function materializeFns(props, path) {
   for (const [key, value] of Object.entries(props)) {
-    if (typeof value === 'string' && value.startsWith(FN_SENTINEL)) {
-      const label = value.slice(FN_SENTINEL.length) || key
+    const label = path ? path + '.' + key : key
+    if (value && typeof value === 'object' && typeof value.__nimpressFn === 'string') {
+      let fn
+      try {
+        fn = new Function('return (' + value.__nimpressFn + ')')()
+      } catch (err) {
+        console.error('nimpress fn ' + label + ' failed to compile', err)
+        continue
+      }
       props[key] = (...args) => {
-        console.log('nimpress mock fn ' + label, ...args)
         emitOut(label, args)
+        return fn(...args)
       }
     } else if (value && typeof value === 'object') {
-      materializeFns(value)
+      materializeFns(value, label)
     }
   }
   return props
