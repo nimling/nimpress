@@ -196,23 +196,61 @@ function setupImport(setup: string | undefined): string {
   return setup ? `import harnessSetup from ${JSON.stringify(setup)}` : 'const harnessSetup = null'
 }
 
-function vueEntry(target: HarnessTarget, css: string[], setup?: string): string {
+export interface VueBaseline {
+  primevue: boolean
+  confirmation: boolean
+  overlay?: string
+}
+
+export function detectVueBaseline(cwd: string, systemConfig: ModuleSystemConfig): VueBaseline {
+  const req = createRequire(join(cwd, 'package.json'))
+  const has = (spec: string) => {
+    try {
+      req.resolve(spec)
+      return true
+    } catch {
+      return false
+    }
+  }
+  let overlay: string | undefined
+  if (systemConfig.source) {
+    const root = resolve(cwd, systemConfig.source)
+    overlay = [join(root, 'ModalsRoot', 'ModalsRoot.vue'), join(root, 'ModalsRoot.vue')].find((f) => existsSync(f))
+  }
+  return { primevue: has('primevue/config'), confirmation: has('primevue/confirmationservice'), overlay }
+}
+
+function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, baseline: VueBaseline): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
+  const baselineImports = [
+    baseline.primevue ? `import PrimeVue from 'primevue/config'` : 'const PrimeVue = null',
+    baseline.confirmation ? `import ConfirmationService from 'primevue/confirmationservice'` : 'const ConfirmationService = null',
+    baseline.overlay ? `import OverlayRoot from ${JSON.stringify(baseline.overlay)}` : 'const OverlayRoot = null'
+  ].join('\n')
   return `import { createApp, h } from 'vue'
 ${cssImports}
 ${setupImport(setup)}
+${baselineImports}
 
 ${messageBridge()}
 ${storyRegistry(target)}
 ${componentLoader(target)}
 
 const setupDef = typeof harnessSetup === 'function' ? await harnessSetup() : harnessSetup
-const installApp = setupDef && typeof setupDef.install === 'function' ? setupDef.install : null
-const Companion = setupDef && setupDef.companion ? setupDef.companion : null
+const Companion = setupDef ? (setupDef.companion ?? null) : OverlayRoot
+
+function installBaseline(app) {
+  if (setupDef && typeof setupDef.install === 'function') {
+    setupDef.install(app)
+    return
+  }
+  if (PrimeVue) app.use(PrimeVue, { ripple: true, theme: 'none' })
+  if (ConfirmationService) app.use(ConfirmationService)
+}
 
 function mountApp(root) {
   const app = createApp({ render: () => (Companion ? [h(root), h(Companion)] : h(root)) })
-  if (installApp) installApp(app)
+  installBaseline(app)
   app.mount('#host')
   return app
 }
@@ -283,8 +321,14 @@ parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
-export function harnessEntrySource(framework: ModuleFramework, target: HarnessTarget, css: string[], setup?: string): string {
-  return framework === 'vue' ? vueEntry(target, css, setup) : svelteEntry(target, css, setup)
+export function harnessEntrySource(
+  framework: ModuleFramework,
+  target: HarnessTarget,
+  css: string[],
+  setup: string | undefined,
+  baseline: VueBaseline
+): string {
+  return framework === 'vue' ? vueEntry(target, css, setup, baseline) : svelteEntry(target, css, setup)
 }
 
 export function harnessHtml(component: string): string {
@@ -381,18 +425,10 @@ function collectStoryFiles(pageFile: string): Array<{ base: string; path: string
 }
 
 export function resolveHarnessSetup(cwd: string, systemConfig: ModuleSystemConfig): string | undefined {
-  if (systemConfig.setup) {
-    return systemConfig.setup.startsWith('.') || isAbsolute(systemConfig.setup)
-      ? resolve(cwd, systemConfig.setup)
-      : systemConfig.setup
-  }
-  const sourceRoot = systemConfig.source ? resolve(cwd, systemConfig.source) : cwd
-  const candidates = [
-    join(sourceRoot, 'harness-setup.ts'),
-    join(dirname(sourceRoot), 'harness-setup.ts'),
-    join(cwd, 'harness-setup.ts')
-  ]
-  return candidates.find((candidate) => existsSync(candidate))
+  if (!systemConfig.setup) return undefined
+  return systemConfig.setup.startsWith('.') || isAbsolute(systemConfig.setup)
+    ? resolve(cwd, systemConfig.setup)
+    : systemConfig.setup
 }
 
 export async function writeHarnessFiles(
@@ -408,11 +444,12 @@ export async function writeHarnessFiles(
     c.startsWith('.') || isAbsolute(c) ? resolve(cwd, c) : c
   )
   const setup = resolveHarnessSetup(cwd, systemConfig)
+  const baseline = detectVueBaseline(cwd, systemConfig)
   for (const target of targets) {
     const dir = join(root, target.component)
     await mkdir(dir, { recursive: true })
     await writeFile(join(dir, 'index.html'), harnessHtml(target.component))
-    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup))
+    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup, baseline))
   }
   return root
 }
