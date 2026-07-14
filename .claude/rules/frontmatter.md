@@ -14,6 +14,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 3. `order: number` pins position inside the parent sidebar group. Use sparingly, the default alphabetical order is fine for most cases.
 
+3.1. `group` inserts the page under a named sidebar group without changing its URL: required `name` as the verbatim label, optional `icon` and `style` decorating the group row.
+
 4. `description` gets used as a meta description and a search excerpt. Add it for any page expected to land via search.
 
 5. `hidden: true` removes the page from sidebar, search, and direct routing. Use for drafts.

@@ -163,6 +163,7 @@ export interface Frontmatter {
   description?: string
   order?: number
   icon?: string
+  group?: { name: string; icon?: string; style?: string }
   hidden?: boolean
   lastUpdated?: boolean
   redirect?: string

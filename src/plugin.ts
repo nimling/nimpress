@@ -134,6 +134,11 @@ const frontmatterSchema = z.object({
   description: z.string().optional(),
   order: z.number().optional(),
   icon: z.string().optional(),
+  group: z.object({
+    name: z.string().min(1),
+    icon: z.string().optional(),
+    style: z.string().optional()
+  }).optional(),
   hidden: z.boolean().optional(),
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
@@ -1741,12 +1746,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
-    const dirMeta = new Map<string, { icon?: string; style?: string }>()
+    const dirMeta = new Map<string, { label?: string; icon?: string; style?: string }>()
 
     for (const p of pages.values()) {
       if (isBuildCommand && (p.frontmatter.hidden || (!includeGated && isGated(p)))) continue
       if (p.effectivePath === '/') continue
       const segments = p.effectivePath.split('/').filter(Boolean)
+      const group = p.frontmatter.group
+      if (group?.name && segments[segments.length - 2] !== group.name) {
+        segments.splice(segments.length - 1, 0, group.name)
+      }
       let cursor = root
       let acc = ''
       for (const seg of segments) {
@@ -1759,18 +1768,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         cursor = next
       }
       cursor.page = p
-      if (p.type === 'component') {
-        const d = (p.frontmatter.data ?? {}) as Record<string, unknown>
-        if (typeof d.groupIcon === 'string' || typeof d.groupStyle === 'string') {
-          const target =
-            typeof d.group === 'string'
-              ? normalizePath(d.group)
-              : '/' + segments.slice(0, -1).join('/')
-          dirMeta.set(target, {
-            icon: typeof d.groupIcon === 'string' ? d.groupIcon : dirMeta.get(target)?.icon,
-            style: typeof d.groupStyle === 'string' ? d.groupStyle : dirMeta.get(target)?.style
-          })
-        }
+      if (group?.name) {
+        const target = '/' + segments.slice(0, -1).join('/')
+        dirMeta.set(target, {
+          label: group.name,
+          icon: group.icon ?? dirMeta.get(target)?.icon,
+          style: group.style ?? dirMeta.get(target)?.style
+        })
       }
     }
 
@@ -1865,11 +1869,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         return node
       }
 
+      const meta = dirMeta.get(t.fullPath)
       const node: SidebarNode = {
-        text: prettyDirName(t.segment),
+        text: meta?.label ?? prettyDirName(t.segment),
         slug: t.fullPath.replace(/^\//, '')
       }
-      const meta = dirMeta.get(t.fullPath)
       if (meta?.icon) node.icon = meta.icon
       if (meta?.style) node.style = meta.style
       if (items.length) {
