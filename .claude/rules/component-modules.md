@@ -26,15 +26,38 @@ modules: {
 
 3. `css` entries load inside the harness iframe. Point them at the token and theme sheets the components need.
 
-4. `port` pins the harness dev server. Pin distinct ports when several repos run side by side.
+4. The system baseline is the harness twin of the library's real app bootstrap and of a storybook `preview.ts`. Nimpress discovers it automatically: `harness-setup.ts` in the source root, beside the source root, or at the repo root, first hit wins. One baseline per system, identical for every component, nothing to configure. The `setup` config key exists only as a rare explicit override for a nonstandard location.
 
-5. Consumer `vite` config in `nimpress.config.ts` flows into the harness, so aliases like `@` work inside components and stories.
+4.1. The default export is an object: `install(app)` runs on every created app before mount, plugin installs; `companion` is a component rendered beside every mounted story in the same app, the overlay root. A svelte system exports a function run once for side effects. The vue baseline for this library:
+
+```ts
+import type { App } from "vue";
+import PrimeVue from "primevue/config";
+import ConfirmationService from "primevue/confirmationservice";
+import ModalsRoot from "./components/ModalsRoot";
+
+export default {
+  install(app: App) {
+    app.use(PrimeVue, { ripple: true, theme: "none" });
+    app.use(ConfirmationService);
+  },
+  companion: ModalsRoot,
+};
+```
+
+4.2. When importing from a storybook, port the preview decorators and `setup` calls into `harness-setup.ts`. A harness without the baseline renders components missing their overlay layer and plugin services, which shows up as dead dropdowns, dialogs, tooltips, and broken token colors.
+
+5. `port` pins the harness dev server. Pin distinct ports when several repos run side by side.
+
+6. Consumer `vite` config in `nimpress.config.ts` flows into the harness, so aliases like `@` work inside components and stories.
 
 ## The component page
 
 1. A folder under `docs/components/<Group>/<Component>/` holds exactly one md file with `type: component`. The folder becomes the sidebar parent, the page appears inside it under its title, stories follow as siblings.
 
 2. Frontmatter contract: `title`, `type: component`, `data.system`, `data.component`, optional `data.package`, optional `data.file` when the source layout deviates from `<Component>/<Component>.<ext>`.
+
+2.1. The overview body opens with the `## Usage` import statement, then prose describing the component, what it is for, its behaviors, its slots and events. Import and create scaffold the usage section; the description is authored by hand and is expected on every component. The live preview frame renders below the body automatically, followed by the CLAUDE.md section; neither is written in the markdown.
 
 3. Grouping is physical: the group folder above the component folder. Move the folder to regroup.
 

@@ -50,7 +50,9 @@ export default defineConfig({
 
 4. `css`: sheets loaded inside the harness iframe, token sheets and theme sheets. The postcss config of the consumer applies, so tailwind pipelines work.
 
-5. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
+5. The system baseline, the harness twin of the library's real app bootstrap and of a storybook `preview.ts`, is discovered automatically: `harness-setup.ts` in the source root, beside the source root, or at the repo root. On vue the default export is an object, `install(app)` runs on every created app before mount for plugin installs, and `companion` names a component rendered beside every story in the same app, the overlay root. On svelte the default export is a function run once. One baseline per system, identical for every component; port storybook preview decorators and setup calls here when importing. The `setup` config key is only the rare override for a nonstandard location.
+
+6. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
 
 ## The component page
 
@@ -86,6 +88,8 @@ data:
 4. The component's CLAUDE.md renders on the page, editable in place during local dev, readonly everywhere else.
 
 5. The overview page keeps the standard content width. Stories open the full workshop screen.
+
+6. The overview body opens with the `## Usage` import, then prose describing the component, expected on every component page. The live preview frame renders below the body automatically with a link into the workshop, followed by the CLAUDE.md section; neither is authored in the markdown.
 
 ## Stories
 
