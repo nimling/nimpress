@@ -1754,7 +1754,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const segments = p.effectivePath.split('/').filter(Boolean)
       const group = p.frontmatter.group
       if (group?.name && segments[segments.length - 2] !== group.name) {
-        segments.splice(segments.length - 1, 0, group.name)
+        if (segments.length >= 3) segments.splice(segments.length - 2, 1, group.name)
+        else segments.splice(segments.length - 1, 0, group.name)
       }
       let cursor = root
       let acc = ''
