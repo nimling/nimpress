@@ -1938,7 +1938,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const baseBody = p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' ')
       const specBody = p.type === 'openapi' ? extractOpenApiText(p.openApiSpec) : ''
       const roadmapBody = p.type === 'roadmap' ? extractRoadmapText(p.roadmapEntries ?? []) : ''
-      const body = [baseBody, specBody, roadmapBody].filter(Boolean).join(' \n ')
+      const componentBody = p.componentData
+        ? [
+            p.componentData.component,
+            p.componentData.system,
+            ...(p.componentData.stories ?? []).flatMap((story) => [story.name, story.file])
+          ]
+            .filter(Boolean)
+            .join(' ')
+        : ''
+      const body = [baseBody, specBody, roadmapBody, componentBody].filter(Boolean).join(' \n ')
       out.push({
         slug,
         path: p.effectivePath,
@@ -1948,7 +1957,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         scope: p.frontmatter.scope,
         claim: p.frontmatter.claim,
         headings: p.headings.map((h) => h.text),
-        tags: normalizeTags(p.frontmatter.tags)
+        tags: [
+          ...normalizeTags(p.frontmatter.tags),
+          ...(p.componentData ? [p.componentData.component] : [])
+        ]
       })
     }
     return out

@@ -1476,7 +1476,13 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+
+  :global(html.dark) .np-ws-frame-inset::after {
+    box-shadow:
+      inset 0 6px 18px rgba(0, 0, 0, 0.7),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   }
 
   .np-ws-frame {

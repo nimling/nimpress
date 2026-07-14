@@ -46,7 +46,7 @@ let shadowStyle = null
 function applyShadow(on) {
   if (on && !shadowStyle) {
     shadowStyle = document.createElement('style')
-    shadowStyle.textContent = '#host > * { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); } [data-theme="dark"] #host > * { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }'
+    shadowStyle.textContent = '#host > * { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); } [data-theme="dark"] #host > * { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.09); }'
     document.head.appendChild(shadowStyle)
   } else if (!on && shadowStyle) {
     shadowStyle.remove()
@@ -282,7 +282,8 @@ export function harnessHtml(component: string): string {
       html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: hidden; }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; }
+      #host > * { margin: auto; flex-shrink: 0; }
     </style>
   </head>
   <body>
