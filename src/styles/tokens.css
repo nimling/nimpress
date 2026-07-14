@@ -103,17 +103,9 @@ code, pre, kbd, samp {
   font-family: var(--np-font-mono);
 }
 
-.np-tip {
-  position: relative;
-}
-
-.np-tip:hover::after {
-  content: attr(aria-label);
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 80;
+.np-tooltip {
+  position: fixed;
+  z-index: 9999;
   white-space: nowrap;
   font-size: 11px;
   font-weight: 500;
@@ -125,11 +117,6 @@ code, pre, kbd, samp {
   color: var(--np-text-primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   pointer-events: none;
-}
-
-.np-tip-up:hover::after {
-  top: auto;
-  bottom: calc(100% + 6px);
 }
 
 * {
