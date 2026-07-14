@@ -16,6 +16,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
 | `icon` | string | Optional icon next to the sidebar entry |
+| `group` | object | Sidebar group definition: required `name`, optional `icon` and `style`, groups the page without changing its URL |
 | `hidden` | boolean | Excludes the page from sidebar, search, and direct routing |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |

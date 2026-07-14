@@ -6,6 +6,19 @@ The sidebar is derived from the content tree. There is no separate config to mai
 
 The plugin walks every `.md` file under `contentDir`, computes the effective route, and inserts the page into a tree keyed by URL segments. Each segment becomes a sidebar node. If a node has a page directly assigned to it, that node is a clickable link. If it only has children, it is a synthetic group label derived from the segment name.
 
+## Frontmatter groups
+
+A page with a top level `group` block is inserted under a named group between its parent and itself, without changing its URL:
+
+```yaml
+group:
+  name: Inputs
+  icon: "▤"
+  style: "color: var(--np-brand)"
+```
+
+`name` is required and renders verbatim as the group label. `icon` and `style` are optional and decorate the group row, latest definition among members wins. Pages in the same parent sharing a `name` land in the same group. A `name` matching the page's own parent folder decorates that physical group instead of nesting a new one.
+
 ## Ordering
 
 Within a parent, children sort first by `order` from frontmatter, then alphabetically by sidebar text. Add `order: 1` to pin a child to the top of its group.
