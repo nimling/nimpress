@@ -73,9 +73,9 @@ data:
 
 1. One `type: component` per folder, enforced at build.
 
-2. Grouping comes from two sources. Physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Frontmatter: a top level `group` block inserts the page under a named group in the sidebar without changing its folder or its URL.
+2. Grouping comes from two sources. Physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Frontmatter: a top level `group` block places the page under a named group at the outer level, sibling to the physical group folders, standing in for the page's parent folder in the sidebar without changing its folder or its URL.
 
-3. The `group` block carries the group definition. `name` is required and is the sidebar label, rendered verbatim. `icon` is an optional ascii icon rendered before the group label. `style` is optional inline css applied to the group row. Pages sharing a `name` inside the same parent land in the same group, latest `icon` and `style` definition wins. A `name` matching the page's own folder decorates that physical group instead of nesting a new one:
+3. The `group` block carries the group definition. `name` is required and is the sidebar label, rendered verbatim. `icon` is an optional ascii icon rendered before the group label. `style` is optional inline css applied to the group row. Pages sharing a `name` land in the same group, latest `icon` and `style` definition wins. A `name` matching the page's own folder decorates that physical group instead of moving the page:
 
 ```yaml
 group:

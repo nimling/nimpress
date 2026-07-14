@@ -42,9 +42,9 @@ modules: {
 
 2.1. The overview body opens with the `## Usage` import statement, then prose describing the component, what it is for, its behaviors, its slots and events. Import and create scaffold the usage section; the description is authored by hand and is expected on every component. The live preview frame renders below the body automatically, followed by the CLAUDE.md section; neither is written in the markdown.
 
-3. Grouping is physical or declared: the group folder above the component folder groups by location, and a top level `group` frontmatter block groups by declaration without changing the folder or the URL.
+3. Grouping is physical or declared: the group folder above the component folder groups by location, and a top level `group` frontmatter block groups by declaration without changing the folder or the URL. A declared group sits at the outer level, sibling to the physical group folders, standing in for the page's parent folder in the sidebar.
 
-3.1. The `group` block: required `name` as the verbatim group label, optional `icon` for an ascii icon before the label, optional `style` for inline css on the group row. Latest definition among members wins. A `name` matching the page's own parent folder decorates that physical group.
+3.1. The `group` block: required `name` as the verbatim group label, optional `icon` for an ascii icon before the label, optional `style` for inline css on the group row. Latest definition among members wins. A `name` matching the page's own parent folder decorates that physical group instead.
 
 4. A CLAUDE.md in the component source folder renders on the page and is editable in local dev only.
 
