@@ -26,26 +26,9 @@ modules: {
 
 3. `css` entries load inside the harness iframe. Point them at the token and theme sheets the components need.
 
-4. The system baseline is the harness twin of the library's real app bootstrap and of a storybook `preview.ts`. Nimpress discovers it automatically: `harness-setup.ts` in the source root, beside the source root, or at the repo root, first hit wins. One baseline per system, identical for every component, nothing to configure. The `setup` config key exists only as a rare explicit override for a nonstandard location.
+4. The harness mounts every component the way its real app would, and that baseline is built into nimpress. On vue systems it installs PrimeVue with the confirmation service when the consumer has primevue installed, and it renders the system's `ModalsRoot` beside every story in the same app when the source tree holds one, so overlays, dialogs, dropdowns, tooltips, and notifications work in every frame with zero configuration. A repo needs only its markdown folder and `nimpress.config.ts`.
 
-4.1. The default export is an object: `install(app)` runs on every created app before mount, plugin installs; `companion` is a component rendered beside every mounted story in the same app, the overlay root. A svelte system exports a function run once for side effects. The vue baseline for this library:
-
-```ts
-import type { App } from "vue";
-import PrimeVue from "primevue/config";
-import ConfirmationService from "primevue/confirmationservice";
-import ModalsRoot from "./components/ModalsRoot";
-
-export default {
-  install(app: App) {
-    app.use(PrimeVue, { ripple: true, theme: "none" });
-    app.use(ConfirmationService);
-  },
-  companion: ModalsRoot,
-};
-```
-
-4.2. When importing from a storybook, port the preview decorators and `setup` calls into `harness-setup.ts`. A harness without the baseline renders components missing their overlay layer and plugin services, which shows up as dead dropdowns, dialogs, tooltips, and broken token colors.
+4.1. `setup` in the system config is the rare override: a path to a module replacing the built in baseline when a library bootstraps differently. Its default export is an object, `install(app)` runs on every created app before mount, `companion` is a component rendered beside every story. A svelte system exports a function run once.
 
 5. `port` pins the harness dev server. Pin distinct ports when several repos run side by side.
 

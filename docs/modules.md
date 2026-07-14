@@ -50,7 +50,7 @@ export default defineConfig({
 
 4. `css`: sheets loaded inside the harness iframe, token sheets and theme sheets. The postcss config of the consumer applies, so tailwind pipelines work.
 
-5. The system baseline, the harness twin of the library's real app bootstrap and of a storybook `preview.ts`, is discovered automatically: `harness-setup.ts` in the source root, beside the source root, or at the repo root. On vue the default export is an object, `install(app)` runs on every created app before mount for plugin installs, and `companion` names a component rendered beside every story in the same app, the overlay root. On svelte the default export is a function run once. One baseline per system, identical for every component; port storybook preview decorators and setup calls here when importing. The `setup` config key is only the rare override for a nonstandard location.
+5. The harness mounts every component the way its real app would, and that baseline is built in. Vue systems get PrimeVue with the confirmation service installed when the consumer depends on primevue, and the system's `ModalsRoot` rendered beside every story in the same app when the source tree holds one, so overlays, dialogs, dropdowns, tooltips, and notifications work in every frame without configuration. When a library bootstraps differently, `setup` points at a module replacing the baseline: the default export carries `install(app)`, run on every created app before mount, and `companion`, a component rendered beside every story; a svelte system exports a function run once.
 
 6. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
 
