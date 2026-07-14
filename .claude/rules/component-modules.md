@@ -72,9 +72,9 @@ modules: {
 
 1. Control kinds derive from the prop types: `text`, `number`, `boolean`, `select` from string literal unions, `object` with nested member rows, `array` with item rows, `record` from `Record<string, T>` and index signatures with key value entries, `function` from `(args) => ...` signatures, `json` only for opaque leaves.
 
-2. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, mirrored into the event pill counters and the console panel. The default mock stub logs its arguments.
+2. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, firings counting on the event row and printing in the console panel. The default mock stub logs its arguments.
 
-3. Every event from `defineEmits` or svelte `on*` members gets an attachable handler with the same editable source; a story starts with logging stubs attached to all events.
+3. Every event from `defineEmits` or svelte `on*` members renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events.
 
 4. Mock is hint driven star wars data: names and descriptions steer values, users get characters, urls get holonet links, numbers respect width, count, year style hints. Reclicking regenerates via a seed. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
 
@@ -86,9 +86,11 @@ modules: {
 
 2. The workshop grid has a bottom slot and a right slot that collapse to zero when empty. The props panel and the frame console panel each toggle from the toolbar and dock to either slot; sharing a slot splits it. Drag areas are unstyled divs straddling the panel borders.
 
-3. The console panel streams the iframe's own console, every level plus window errors and unhandled rejections, forwarded over the message bridge, filterable and clearable.
+3. The console panel streams the iframe's own console, every level plus window errors and unhandled rejections, forwarded over the message bridge, filterable and clearable. An input at the bottom evaluates js inside the frame console style, enter runs, arrows walk the history, input and result echo as `>` and `<` entries.
 
-4. The harness iframe document is locked, `#host` is absolute inset zero with `overflow: hidden`; components flow naturally, take the size they want, and one set to full width and height fills the frame exactly at any zoom.
+4. The harness iframe document is locked, `#host` is absolute inset zero with `overflow: auto`; a natural sized component centers on the checkered background, an oversized one scrolls inside the frame, and one set to full width and height fills the frame exactly at any zoom.
+
+5. The toolbar shadow toggle drops a shadow on the component inside the frame and an inset shadow on the frame itself, tuned per frame theme so both read on light and dark.
 
 ## CLI
 
