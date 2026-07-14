@@ -137,19 +137,19 @@ export default vueStory({
 
 Selecting a story in the sidebar opens the workshop: toolbar, stage, and two panel slots, bottom and right, in a css grid filling the content area. The document never scrolls; every scrollbar lives inside a panel, the sidebar, or the component frame.
 
-1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, a vision simulator matching the storybook set, blurred vision, low contrast, grayscale, protanopia, protanomaly, deuteranopia, deuteranomaly, tritanopia, tritanomaly, achromatopsia, achromatomaly, each option carrying an inline svg icon, color blindness rendered through svg color matrices. Then a props panel toggle, a console panel toggle, reload, and open. Every icon button shows a styled tooltip on hover.
+1. Toolbar: a theme toggle scoped to the component inside the iframe, zoom, a vision simulator matching the storybook set, blurred vision, low contrast, grayscale, protanopia, protanomaly, deuteranopia, deuteranomaly, tritanopia, tritanomaly, achromatopsia, achromatomaly, each option carrying an inline svg icon, color blindness rendered through svg color matrices. Then a shadow toggle dropping a theme tuned shadow on the component and an inset shadow on its frame, a props panel toggle, a console panel toggle, reload, and open. Every icon button shows a tooltip that never leaves the viewport.
 
-2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle. Small components take their natural size, full size components fill the frame exactly at any zoom.
+2. Stage: the component in its iframe on a checkered surface. The docs app theme stays untouched by the workshop theme toggle. A natural sized component centers on the backdrop, an oversized one scrolls inside the frame, a full size one fills the frame exactly at any zoom.
 
 3. Props panel: a table of rows, one per control, with the prop cell, the input cell, and inline actions. Object types render nested member rows, arrays render item rows with add and remove, records render key value entries with editable keys, string literal unions render selects, function props render their source in a code editor, json editors remain only for opaque types. Required fields left empty mark red. The panel head carries dock, mock, clear, the json dialog, and hide; the toolbar toggle brings it back.
 
-4. Console panel: the iframe's own console mirrored live, every level plus window errors and unhandled rejections, timestamped with level colors, filterable and clearable. It toggles from the toolbar and docks bottom or right exactly like the props panel; two panels in one slot split it.
+4. Console panel: the iframe's own console mirrored live, every level plus window errors and unhandled rejections, timestamped with level colors, filterable and clearable. An input at the bottom evaluates js inside the frame console style, enter runs, arrows walk the history, input and result echo as `>` and `<` entries. It toggles from the toolbar and docks bottom or right exactly like the props panel; two panels in one slot split it with a draggable divider.
 
 5. Mock: every row's actions cell has a mock button, hint driven star wars sample data for that prop alone, an added sample item on arrays, sample entries on records, a logging stub on functions. Reclicking regenerates fresh values. The panel header carries mock for every empty control and clear emptying every input form.
 
 6. Persistence: edited values, slots, and event handlers save to localStorage per system, component, and story, and restore on the next visit.
 
-7. Events: every event carries an editable handler function. The pill attaches or detaches it, the code editor below holds the exact source that runs in the frame on each firing, defaulting to a console log stub. Firings count on the pill and print in the console panel.
+7. Events: every event is a control row under the events header, structured like the props rows with the name and actions on one line and the type and description below. The handler source sits in an always visible code editor spanning the row, running in the frame on each firing and defaulting to a console log stub; mock resets the stub, clear detaches the event, a chevron hides the editor. Firings count in the row description and print in the console panel.
 
 8. The component's own sidebar entry is `Overview`; the stories are real router paths under the component path.
 
