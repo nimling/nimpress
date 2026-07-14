@@ -19,6 +19,7 @@
   import IconJson from '../icons/IconJson.svelte'
   import IconConsole from '../icons/IconConsole.svelte'
   import IconRemove from '../icons/IconRemove.svelte'
+  import IconShadow from '../icons/IconShadow.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -42,6 +43,9 @@
   let emitHandlers = $state<Record<string, string>>({})
   let consoleLog = $state<Array<{ level: string; args: unknown[]; at: string }>>([])
   let consoleFilter = $state('')
+  let consoleInput = $state('')
+  let consoleHistory: string[] = []
+  let consoleHistoryIndex = -1
   let ready = $state(false)
   let claudeDraft = $state('')
   let claudeSaved = $state(true)
@@ -67,6 +71,7 @@
   let visionOpen = $state(false)
   let toolsOpen = $state(false)
   let frameTheme = $state<'light' | 'dark'>('light')
+  let shadowOn = $state(false)
   let controlsEpoch = $state(0)
 
   interface VisionOption {
@@ -271,6 +276,7 @@
     params.set('slots', encodeParam({ ...(activeStory.slots ?? {}) }))
     params.set('emits', encodeParam(untrack(() => $state.snapshot(emitHandlers))))
     params.set('theme', untrack(() => frameTheme))
+    if (untrack(() => shadowOn)) params.set('shadow', '1')
     return `${data.harnessPath}?${params.toString()}`
   })
 
@@ -282,7 +288,8 @@
         props: $state.snapshot(propValues),
         slots: $state.snapshot(slotValues),
         emits: $state.snapshot(emitHandlers),
-        theme: frameTheme
+        theme: frameTheme,
+        shadow: shadowOn
       },
       '*'
     )
@@ -291,6 +298,41 @@
   function toggleFrameTheme() {
     frameTheme = frameTheme === 'dark' ? 'light' : 'dark'
     push()
+  }
+
+  function toggleShadow() {
+    shadowOn = !shadowOn
+    push()
+  }
+
+  function runConsoleInput() {
+    const code = consoleInput.trim()
+    if (!code || !iframeEl?.contentWindow) return
+    iframeEl.contentWindow.postMessage({ type: 'nimpress:eval', code }, '*')
+    consoleHistory = [...consoleHistory, code]
+    consoleHistoryIndex = -1
+    consoleInput = ''
+  }
+
+  function consoleInputKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      runConsoleInput()
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      if (!consoleHistory.length) return
+      e.preventDefault()
+      consoleHistoryIndex = consoleHistoryIndex === -1 ? consoleHistory.length - 1 : Math.max(0, consoleHistoryIndex - 1)
+      consoleInput = consoleHistory[consoleHistoryIndex]
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      if (consoleHistoryIndex === -1) return
+      e.preventDefault()
+      consoleHistoryIndex = consoleHistoryIndex + 1 >= consoleHistory.length ? -1 : consoleHistoryIndex + 1
+      consoleInput = consoleHistoryIndex === -1 ? '' : consoleHistory[consoleHistoryIndex]
+    }
   }
 
   function setProp(name: string, value: unknown) {
@@ -573,6 +615,15 @@
       <button
         type="button"
         class="np-ws-tool np-ws-tool-icon np-tip"
+        class:np-ws-tool-active={shadowOn}
+        aria-label={shadowOn ? 'remove the drop shadow from the component' : 'drop shadow on the component'}
+        onclick={toggleShadow}
+      >
+        <IconShadow />
+      </button>
+      <button
+        type="button"
+        class="np-ws-tool np-ws-tool-icon np-tip"
         class:np-ws-tool-active={propsOpen}
         aria-label={propsOpen ? 'hide the props panel' : 'show the props panel'}
         onclick={() => (propsOpen = !propsOpen)}
@@ -622,7 +673,7 @@
         zoom = Math.min(3, Math.max(0.25, Math.round(zoom * (1 - e.deltaY * 0.002) * 100) / 100))
       }}
     >
-      <div class="np-ws-frame-wrap">
+      <div class="np-ws-frame-wrap" class:np-ws-frame-inset={shadowOn}>
         <iframe bind:this={iframeEl} class="np-ws-frame" src={storySrc} title={data.component}></iframe>
       </div>
     </div>
@@ -656,7 +707,7 @@
           {#each filteredConsoleLog as entry, i (i)}
             <li class="np-console-{entry.level}">
               <span class="np-ws-console-time">{entry.at}</span>
-              <code class="np-ws-console-level">{entry.level}</code>
+              <code class="np-ws-console-level">{entry.level === 'input' ? '>' : entry.level === 'result' ? '<' : entry.level}</code>
               <span class="np-ws-console-args">{entry.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}</span>
             </li>
           {/each}
@@ -664,6 +715,13 @@
       {:else}
         <p class="np-ws-console-empty">{consoleLog.length ? 'nothing matches the filter' : 'console output from the component frame streams here'}</p>
       {/if}
+      <input
+        type="text"
+        class="np-ws-console-filter np-ws-console-repl"
+        placeholder="> run js in the frame, enter evaluates, arrows walk history"
+        bind:value={consoleInput}
+        onkeydown={consoleInputKeydown}
+      />
     {/snippet}
 
     {#snippet propsPanel()}
@@ -1092,7 +1150,7 @@
   }
 
   .np-ws-console-log-frame {
-    margin: 8px 0 0;
+    margin: 14px 0 0;
     max-height: none;
   }
 
@@ -1101,17 +1159,45 @@
     color: var(--np-text-secondary);
   }
 
-  .np-console-warn .np-ws-console-level {
+  .np-console-debug .np-ws-console-level,
+  .np-console-debug .np-ws-console-args {
+    color: var(--np-text-faint);
+  }
+
+  .np-console-info .np-ws-console-level {
+    color: #3e63dd;
+  }
+
+  .np-console-warn .np-ws-console-level,
+  .np-console-warn .np-ws-console-args {
     color: #e5a50a;
   }
 
-  .np-console-error .np-ws-console-level {
+  .np-console-error .np-ws-console-level,
+  .np-console-error .np-ws-console-args {
     color: var(--np-danger);
+  }
+
+  .np-console-input .np-ws-console-level,
+  .np-console-input .np-ws-console-args {
+    color: var(--np-brand);
+  }
+
+  .np-console-result .np-ws-console-level {
+    color: var(--np-text-faint);
+  }
+
+  .np-console-result .np-ws-console-args {
+    color: var(--np-text-primary);
   }
 
   .np-panel > .np-ws-console-filter {
     width: 100%;
     margin: 4px 0 0;
+  }
+
+  .np-panel > .np-ws-console-repl {
+    margin: 14px 0 0;
   }
 
   .np-ws-toolbar {
@@ -1378,6 +1464,21 @@
     overflow: hidden;
   }
 
+  .np-ws-frame-inset {
+    position: relative;
+  }
+
+  .np-ws-frame-inset::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
   .np-ws-frame {
     display: block;
     border: 0;
@@ -1498,7 +1599,7 @@
   }
 
   .np-ws-console-args {
-    color: var(--np-text-muted);
+    color: var(--np-text-primary);
     word-break: break-all;
   }
 

@@ -42,8 +42,36 @@ function applyTheme(mode) {
   document.documentElement.style.colorScheme = mode
 }
 applyTheme(params.get('theme'))
+let shadowStyle = null
+function applyShadow(on) {
+  if (on && !shadowStyle) {
+    shadowStyle = document.createElement('style')
+    shadowStyle.textContent = '#host > * { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); } [data-theme="dark"] #host > * { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }'
+    document.head.appendChild(shadowStyle)
+  } else if (!on && shadowStyle) {
+    shadowStyle.remove()
+    shadowStyle = null
+  }
+}
+applyShadow(params.get('shadow') === '1')
 function safeArgs(args) {
   try { return JSON.parse(JSON.stringify(args)) } catch { return [] }
+}
+function evalOut(value) {
+  if (value === undefined) return 'undefined'
+  try { return JSON.parse(JSON.stringify(value)) } catch { return String(value) }
+}
+function runEval(code) {
+  parent.postMessage({ type: 'nimpress:console', level: 'input', args: [code] }, '*')
+  try {
+    const result = (0, eval)(code)
+    Promise.resolve(result).then(
+      (value) => parent.postMessage({ type: 'nimpress:console', level: 'result', args: [evalOut(value)] }, '*'),
+      (err) => parent.postMessage({ type: 'nimpress:console', level: 'error', args: [String(err)] }, '*')
+    )
+  } catch (err) {
+    parent.postMessage({ type: 'nimpress:console', level: 'error', args: [String(err)] }, '*')
+  }
 }
 function emitOut(name, args) {
   parent.postMessage({ type: 'nimpress:emit', name, args: safeArgs(args) }, '*')
@@ -109,11 +137,17 @@ function materializeFns(props, path) {
 }
 window.addEventListener('message', (event) => {
   const d = event.data
-  if (!d || d.type !== 'nimpress:props') return
+  if (!d) return
+  if (d.type === 'nimpress:eval') {
+    runEval(String(d.code ?? ''))
+    return
+  }
+  if (d.type !== 'nimpress:props') return
   if (d.props !== undefined) state.props = d.props
   if (d.slots !== undefined) state.slots = d.slots
   if (d.emits !== undefined) state.emits = d.emits
   if (d.theme !== undefined) applyTheme(d.theme)
+  if (d.shadow !== undefined) applyShadow(!!d.shadow)
   render()
 })
 window.addEventListener('wheel', (event) => {
