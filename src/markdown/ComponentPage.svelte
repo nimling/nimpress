@@ -537,6 +537,20 @@
         {@html page.html}
       </article>
 
+      {#if data?.harnessPath}
+        <section class="np-component-preview">
+          <div class="np-component-preview-head">
+            <h2>Preview</h2>
+            {#if stories.length}
+              <a class="np-component-preview-open" href="{page.path}/{storyAnchor(stories[0].name)}">open in the workshop</a>
+            {/if}
+          </div>
+          <div class="np-component-preview-frame">
+            <iframe src="{data.harnessPath}?theme={$theme}" title="{data.component} preview"></iframe>
+          </div>
+        </section>
+      {/if}
+
       {#if data?.claudeMdPath !== undefined || data?.claudeMd !== undefined}
         <section class="np-component-claude">
           <div class="np-component-claude-head">
@@ -998,6 +1012,49 @@
     font-size: 16px;
     line-height: 1.6;
     color: var(--np-text-secondary);
+  }
+
+  .np-component-preview {
+    margin: 32px 0 0;
+  }
+
+  .np-component-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 12px;
+  }
+
+  .np-component-preview-head h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .np-component-preview-open {
+    font-size: 12px;
+    color: var(--np-brand);
+    text-decoration: none;
+  }
+
+  .np-component-preview-open:hover {
+    text-decoration: underline;
+  }
+
+  .np-component-preview-frame {
+    height: 360px;
+    border: 1px solid var(--np-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background:
+      repeating-conic-gradient(color-mix(in srgb, var(--np-border) 30%, transparent) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+  }
+
+  .np-component-preview-frame iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
   }
 
   .np-component-claude {

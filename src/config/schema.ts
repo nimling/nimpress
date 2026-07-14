@@ -35,6 +35,7 @@ const moduleSystemSchema = z.object({
   package: z.string().optional(),
   version: z.string().optional(),
   css: z.array(z.string()).optional(),
+  setup: z.string().optional(),
   port: z.number().optional(),
   scope: z.string().optional(),
   claim: z.string().optional(),

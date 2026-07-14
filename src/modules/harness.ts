@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { readdirSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, PluginOption } from 'vite'
@@ -39,7 +39,8 @@ function applyTheme(mode) {
   if (mode !== 'light' && mode !== 'dark') return
   document.documentElement.classList.toggle('dark', mode === 'dark')
   document.documentElement.dataset.theme = mode
-  document.documentElement.style.colorScheme = mode
+  const host = document.getElementById('host')
+  if (host) host.style.colorScheme = mode
 }
 applyTheme(params.get('theme'))
 let shadowStyle = null
@@ -191,22 +192,37 @@ const activeLoader = storyLoaders[params.get('story') ?? '']
 const activeStoryDef = activeLoader ? (await activeLoader()).default : null`
 }
 
-function vueEntry(target: HarnessTarget, css: string[]): string {
+function setupImport(setup: string | undefined): string {
+  return setup ? `import harnessSetup from ${JSON.stringify(setup)}` : 'const harnessSetup = null'
+}
+
+function vueEntry(target: HarnessTarget, css: string[], setup?: string): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   return `import { createApp, h } from 'vue'
 ${cssImports}
+${setupImport(setup)}
 
 ${messageBridge()}
 ${storyRegistry(target)}
 ${componentLoader(target)}
+
+const setupDef = typeof harnessSetup === 'function' ? await harnessSetup() : harnessSetup
+const installApp = setupDef && typeof setupDef.install === 'function' ? setupDef.install : null
+const Companion = setupDef && setupDef.companion ? setupDef.companion : null
+
+function mountApp(root) {
+  const app = createApp({ render: () => (Companion ? [h(root), h(Companion)] : h(root)) })
+  if (installApp) installApp(app)
+  app.mount('#host')
+  return app
+}
 
 let app = null
 async function render() {
   try {
     if (app) app.unmount()
     if (activeStoryDef && typeof activeStoryDef.render === 'function') {
-      app = createApp(activeStoryDef.render())
-      app.mount('#host')
+      app = mountApp(activeStoryDef.render())
       return
     }
     const Component = await ensureComponent()
@@ -219,8 +235,7 @@ async function render() {
     for (const [name, html] of Object.entries(state.slots)) {
       slots[name] = () => h('span', { innerHTML: String(html) })
     }
-    app = createApp({ render: () => h(Component, props, slots) })
-    app.mount('#host')
+    app = mountApp({ render: () => h(Component, props, slots) })
   } catch (err) {
     console.error(err)
     document.getElementById('host').innerText = String(err)
@@ -232,14 +247,17 @@ parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
-function svelteEntry(target: HarnessTarget, css: string[]): string {
+function svelteEntry(target: HarnessTarget, css: string[], setup?: string): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   return `import { mount, unmount, createRawSnippet } from 'svelte'
 ${cssImports}
+${setupImport(setup)}
 
 ${messageBridge()}
 ${storyRegistry(target)}
 ${componentLoader(target)}
+
+if (typeof harnessSetup === 'function') await harnessSetup()
 
 let instance = null
 async function render() {
@@ -265,8 +283,8 @@ parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
-export function harnessEntrySource(framework: ModuleFramework, target: HarnessTarget, css: string[]): string {
-  return framework === 'vue' ? vueEntry(target, css) : svelteEntry(target, css)
+export function harnessEntrySource(framework: ModuleFramework, target: HarnessTarget, css: string[], setup?: string): string {
+  return framework === 'vue' ? vueEntry(target, css, setup) : svelteEntry(target, css, setup)
 }
 
 export function harnessHtml(component: string): string {
@@ -279,7 +297,8 @@ export function harnessHtml(component: string): string {
     <title>${component}</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+      html, body { margin: 0; padding: 0; background: transparent !important; overflow: hidden; }
+      html { color-scheme: light !important; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
       #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; }
@@ -361,6 +380,21 @@ function collectStoryFiles(pageFile: string): Array<{ base: string; path: string
     .map((name) => ({ base: basename(name, '.story.ts'), path: join(dir, name) }))
 }
 
+export function resolveHarnessSetup(cwd: string, systemConfig: ModuleSystemConfig): string | undefined {
+  if (systemConfig.setup) {
+    return systemConfig.setup.startsWith('.') || isAbsolute(systemConfig.setup)
+      ? resolve(cwd, systemConfig.setup)
+      : systemConfig.setup
+  }
+  const sourceRoot = systemConfig.source ? resolve(cwd, systemConfig.source) : cwd
+  const candidates = [
+    join(sourceRoot, 'harness-setup.ts'),
+    join(dirname(sourceRoot), 'harness-setup.ts'),
+    join(cwd, 'harness-setup.ts')
+  ]
+  return candidates.find((candidate) => existsSync(candidate))
+}
+
 export async function writeHarnessFiles(
   cwd: string,
   systemConfig: ModuleSystemConfig,
@@ -373,11 +407,12 @@ export async function writeHarnessFiles(
   const css = (systemConfig.css ?? []).map((c) =>
     c.startsWith('.') || isAbsolute(c) ? resolve(cwd, c) : c
   )
+  const setup = resolveHarnessSetup(cwd, systemConfig)
   for (const target of targets) {
     const dir = join(root, target.component)
     await mkdir(dir, { recursive: true })
     await writeFile(join(dir, 'index.html'), harnessHtml(target.component))
-    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css))
+    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup))
   }
   return root
 }
