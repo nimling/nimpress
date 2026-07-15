@@ -33,7 +33,8 @@ function parseParam(name) {
 const state = {
   props: parseParam('props') ?? {},
   slots: parseParam('slots') ?? {},
-  emits: parseParam('emits') ?? []
+  emits: parseParam('emits') ?? [],
+  shadow: params.get('shadow') === '1'
 }
 function applyTheme(mode) {
   if (mode !== 'light' && mode !== 'dark') return
@@ -43,18 +44,6 @@ function applyTheme(mode) {
   if (host) host.style.colorScheme = mode
 }
 applyTheme(params.get('theme'))
-let shadowStyle = null
-function applyShadow(on) {
-  if (on && !shadowStyle) {
-    shadowStyle = document.createElement('style')
-    shadowStyle.textContent = '#host > * { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); } [data-theme="dark"] #host > * { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.09); }'
-    document.head.appendChild(shadowStyle)
-  } else if (!on && shadowStyle) {
-    shadowStyle.remove()
-    shadowStyle = null
-  }
-}
-applyShadow(params.get('shadow') === '1')
 function safeArgs(args) {
   try { return JSON.parse(JSON.stringify(args)) } catch { return [] }
 }
@@ -148,8 +137,8 @@ window.addEventListener('message', (event) => {
   if (d.slots !== undefined) state.slots = d.slots
   if (d.emits !== undefined) state.emits = d.emits
   if (d.theme !== undefined) applyTheme(d.theme)
-  if (d.shadow !== undefined) applyShadow(!!d.shadow)
-  render()
+  if (d.shadow !== undefined) state.shadow = !!d.shadow
+  if (globalThis.__nimpressSync) globalThis.__nimpressSync()
 })
 window.addEventListener('wheel', (event) => {
   if (!event.ctrlKey) return
@@ -220,24 +209,30 @@ export function detectVueBaseline(cwd: string, systemConfig: ModuleSystemConfig)
   return { primevue: has('primevue/config'), confirmation: has('primevue/confirmationservice'), overlay }
 }
 
-function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, baseline: VueBaseline): string {
+function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, baseline: VueBaseline, harness: string | undefined): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   const baselineImports = [
     baseline.primevue ? `import PrimeVue from 'primevue/config'` : 'const PrimeVue = null',
     baseline.confirmation ? `import ConfirmationService from 'primevue/confirmationservice'` : 'const ConfirmationService = null',
     baseline.overlay ? `import OverlayRoot from ${JSON.stringify(baseline.overlay)}` : 'const OverlayRoot = null'
   ].join('\n')
+  const harnessImport = harness
+    ? `import HarnessOverride from ${JSON.stringify(harness)}`
+    : 'const HarnessOverride = null'
   return `import { createApp, h } from 'vue'
+import { DefaultHarness, createHarnessContext, HARNESS_KEY } from '@nimling/nimpress/harness/vue'
 ${cssImports}
 ${setupImport(setup)}
 ${baselineImports}
+${harnessImport}
 
 ${messageBridge()}
 ${storyRegistry(target)}
 ${componentLoader(target)}
 
 const setupDef = typeof harnessSetup === 'function' ? await harnessSetup() : harnessSetup
-const Companion = setupDef ? (setupDef.companion ?? null) : OverlayRoot
+const Overlay = setupDef ? (setupDef.companion ?? null) : OverlayRoot
+const Harness = HarnessOverride ?? DefaultHarness
 
 function installBaseline(app) {
   if (setupDef && typeof setupDef.install === 'function') {
@@ -248,48 +243,62 @@ function installBaseline(app) {
   if (ConfirmationService) app.use(ConfirmationService)
 }
 
-function mountApp(root) {
-  const app = createApp({ render: () => (Companion ? [h(root), h(Companion)] : h(root)) })
-  installBaseline(app)
-  app.mount('#host')
-  return app
+const ctx = createHarnessContext()
+ctx.overlay.value = Overlay
+const isRenderStory = activeStoryDef && typeof activeStoryDef.render === 'function'
+
+function buildProps() {
+  const props = materializeFns(structuredClone(state.props))
+  for (const [name, source] of emitEntries(state.emits)) {
+    const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
+    props[key] = bindEmit(name, source)
+  }
+  return props
 }
 
-let app = null
-async function render() {
-  try {
-    if (app) app.unmount()
-    if (activeStoryDef && typeof activeStoryDef.render === 'function') {
-      app = mountApp(activeStoryDef.render())
-      return
-    }
-    const Component = await ensureComponent()
-    const props = materializeFns(structuredClone(state.props))
-    for (const [name, source] of emitEntries(state.emits)) {
-      const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
-      props[key] = bindEmit(name, source)
-    }
-    const slots = {}
-    for (const [name, html] of Object.entries(state.slots)) {
-      slots[name] = () => h('span', { innerHTML: String(html) })
-    }
-    app = mountApp({ render: () => h(Component, props, slots) })
-  } catch (err) {
-    console.error(err)
-    document.getElementById('host').innerText = String(err)
-    parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
+function buildSlots() {
+  const slots = {}
+  for (const [name, html] of Object.entries(state.slots)) {
+    slots[name] = () => h('span', { innerHTML: String(html) })
+  }
+  return slots
+}
+
+function sync() {
+  ctx.shadow.value = state.shadow
+  if (!isRenderStory) {
+    ctx.props.value = buildProps()
+    ctx.slots.value = buildSlots()
   }
 }
-await render()
+globalThis.__nimpressSync = sync
+
+try {
+  ctx.component.value = isRenderStory ? activeStoryDef.render() : await ensureComponent()
+  sync()
+  const app = createApp(Harness)
+  app.provide(HARNESS_KEY, ctx)
+  installBaseline(app)
+  app.mount('#host')
+} catch (err) {
+  console.error(err)
+  document.getElementById('host').innerText = String(err)
+  parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
+}
 parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
-function svelteEntry(target: HarnessTarget, css: string[], setup?: string): string {
+function svelteEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
-  return `import { mount, unmount, createRawSnippet } from 'svelte'
+  const harnessImport = harness
+    ? `import HarnessOverride from ${JSON.stringify(harness)}`
+    : 'const HarnessOverride = null'
+  return `import { mount, createRawSnippet } from 'svelte'
+import { DefaultHarness, HarnessRoot, createHarnessContext } from '@nimling/nimpress/harness/svelte'
 ${cssImports}
 ${setupImport(setup)}
+${harnessImport}
 
 ${messageBridge()}
 ${storyRegistry(target)}
@@ -297,26 +306,36 @@ ${componentLoader(target)}
 
 if (typeof harnessSetup === 'function') await harnessSetup()
 
-let instance = null
-async function render() {
-  try {
-    if (instance) unmount(instance)
-    const props = materializeFns(structuredClone(state.props))
-    for (const [name, source] of emitEntries(state.emits)) {
-      props[name] = bindEmit(name, source)
-    }
-    for (const [name, html] of Object.entries(state.slots)) {
-      props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
-    }
-    const override = activeStoryDef && activeStoryDef.component ? activeStoryDef.component : await ensureComponent()
-    instance = mount(override, { target: document.getElementById('host'), props })
-  } catch (err) {
-    console.error(err)
-    document.getElementById('host').innerText = String(err)
-    parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
+const Harness = HarnessOverride ?? DefaultHarness
+const ctx = createHarnessContext()
+const isRenderStory = activeStoryDef && activeStoryDef.component
+
+function buildProps() {
+  const props = materializeFns(structuredClone(state.props))
+  for (const [name, source] of emitEntries(state.emits)) {
+    props[name] = bindEmit(name, source)
   }
+  for (const [name, html] of Object.entries(state.slots)) {
+    props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
+  }
+  return props
 }
-await render()
+
+function sync() {
+  ctx.shadow = state.shadow
+  ctx.props = buildProps()
+}
+globalThis.__nimpressSync = sync
+
+try {
+  ctx.component = isRenderStory ? activeStoryDef.component : await ensureComponent()
+  sync()
+  mount(HarnessRoot, { target: document.getElementById('host'), props: { ctx, harness: Harness } })
+} catch (err) {
+  console.error(err)
+  document.getElementById('host').innerText = String(err)
+  parent.postMessage({ type: 'nimpress:error', message: String(err) }, '*')
+}
 parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
@@ -326,9 +345,12 @@ export function harnessEntrySource(
   target: HarnessTarget,
   css: string[],
   setup: string | undefined,
-  baseline: VueBaseline
+  baseline: VueBaseline,
+  harness: string | undefined
 ): string {
-  return framework === 'vue' ? vueEntry(target, css, setup, baseline) : svelteEntry(target, css, setup)
+  return framework === 'vue'
+    ? vueEntry(target, css, setup, baseline, harness)
+    : svelteEntry(target, css, setup, harness)
 }
 
 export function harnessHtml(component: string): string {
@@ -345,8 +367,7 @@ export function harnessHtml(component: string): string {
       html { color-scheme: light !important; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; }
-      #host > * { margin: auto; flex-shrink: 0; }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; align-items: center; justify-content: center; }
     </style>
   </head>
   <body>
@@ -431,6 +452,21 @@ export function resolveHarnessSetup(cwd: string, systemConfig: ModuleSystemConfi
     : systemConfig.setup
 }
 
+export function resolveHarnessOverride(cwd: string, systemConfig: ModuleSystemConfig): string | undefined {
+  if (systemConfig.harness) {
+    return systemConfig.harness.startsWith('.') || isAbsolute(systemConfig.harness)
+      ? resolve(cwd, systemConfig.harness)
+      : systemConfig.harness
+  }
+  const ext = systemConfig.framework === 'vue' ? '.vue' : '.svelte'
+  const roots = [systemConfig.source ? resolve(cwd, systemConfig.source) : cwd, cwd]
+  for (const r of roots) {
+    const candidate = join(r, `harness${ext}`)
+    if (existsSync(candidate)) return candidate
+  }
+  return undefined
+}
+
 export async function writeHarnessFiles(
   cwd: string,
   systemConfig: ModuleSystemConfig,
@@ -445,11 +481,12 @@ export async function writeHarnessFiles(
   )
   const setup = resolveHarnessSetup(cwd, systemConfig)
   const baseline = detectVueBaseline(cwd, systemConfig)
+  const harness = resolveHarnessOverride(cwd, systemConfig)
   for (const target of targets) {
     const dir = join(root, target.component)
     await mkdir(dir, { recursive: true })
     await writeFile(join(dir, 'index.html'), harnessHtml(target.component))
-    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup, baseline))
+    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup, baseline, harness))
   }
   return root
 }

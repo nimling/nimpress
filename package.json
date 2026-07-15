@@ -42,6 +42,8 @@
       "types": "./dist/tailwind.preset.d.ts",
       "import": "./dist/tailwind.preset.es.js"
     },
+    "./harness/vue": "./src/harness/vue/index.ts",
+    "./harness/svelte": "./src/harness/svelte/index.ts",
     "./app.css": "./src/styles/app.css",
     "./style.css": "./dist/style.css"
   },
@@ -49,6 +51,7 @@
     "dist",
     "bin",
     "src/styles",
+    "src/harness",
     ".claude/rules"
   ],
   "scripts": {
