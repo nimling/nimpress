@@ -537,7 +537,8 @@ function harnessPlugin(
         if (!component || !byComponent.has(component)) return next()
         const tail = segments.slice(1).join('/')
         if (tail === '' || tail === 'index.html') {
-          const html = await server.transformIndexHtml(path, harnessHtml(component, './entry.js', []), raw)
+          const client = `    <script type="module" src="${base}@vite/client"></script>\n  </head>`
+          const html = harnessHtml(component, './entry.js', []).replace('  </head>', client)
           res.statusCode = 200
           res.setHeader('Content-Type', 'text/html')
           res.end(html)
