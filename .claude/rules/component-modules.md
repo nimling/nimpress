@@ -60,17 +60,15 @@ modules: {
 
 3. A value story carries `props` and optional `slots`; the workshop controls seed from it and drive the component live over the iframe channel with base64 encoded props in the url.
 
-4. An executable story carries `render`, a function returning a mount definition. Vue: an options object with `components`, `setup`, `template`. The harness runs it verbatim; controls do not apply.
+4. An executable story carries `render`, a function returning a mount definition. Vue: an options object with `components`, `setup`, `template`. The harness runs it verbatim; controls do not apply. A story is self contained: it imports the component and holds its own fixture data inline. There is no shared story fixture folder.
 
-5. Shared story data modules live in `docs/components/_shared/` and are imported with `../../_shared/<name>`.
+5. Props and controls are one structure. Controls are the component's types projected onto inputs: object types resolve into nested member controls, arrays into row editors, string literal unions into selects. Story `props` are plain data destructured into that tree; a story never defines controls.
 
-6. Props and controls are one structure. Controls are the component's types projected onto inputs: object types resolve into nested member controls, arrays into row editors, string literal unions into selects, four levels deep with cycle protection. Story `props` are plain data destructured into that tree; a story never defines controls.
+6. Prop descriptions come from JSDoc blocks or line comments above the type member in the component source. Document props where they are typed, never in stories.
 
-7. Prop descriptions come from JSDoc blocks or line comments directly above the type member in the component source, at every nesting level. Document props where they are typed, never in stories.
+7. `data.controls` in the page frontmatter maps a prop name to a json schema (`type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`) that replaces or adds the control for that prop.
 
-8. `data.controls` in the page frontmatter maps a prop name to a json schema (`type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`) that replaces or adds the control for that prop through the same form generator.
-
-9. The page `title` is the human readable display name; `data.component` is the technical identifier the harness resolves. They may differ freely.
+8. The page `title` is the human readable display name; `data.component` is the technical identifier the harness resolves. They may differ freely.
 
 ## Controls and kinds
 

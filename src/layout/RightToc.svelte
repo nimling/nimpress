@@ -79,8 +79,8 @@
   }
   .np-toc {
     box-sizing: border-box;
-    width: 240px;
-    max-width: 240px;
+    width: var(--np-toc-width);
+    max-width: var(--np-toc-width);
   }
   .np-toc-label {
     font-size: 11px;
