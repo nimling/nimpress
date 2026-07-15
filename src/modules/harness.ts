@@ -204,7 +204,11 @@ export function detectVueBaseline(cwd: string, systemConfig: ModuleSystemConfig)
   let overlay: string | undefined
   if (systemConfig.source) {
     const root = resolve(cwd, systemConfig.source)
-    overlay = [join(root, 'ModalsRoot', 'ModalsRoot.vue'), join(root, 'ModalsRoot.vue')].find((f) => existsSync(f))
+    const names = ['MarModals', 'ModalsRoot', 'Modals', 'OverlayRoot']
+    for (const n of names) {
+      const found = [join(root, n, n + '.vue'), join(root, n + '.vue')].find((f) => existsSync(f))
+      if (found) { overlay = found; break }
+    }
   }
   return { primevue: has('primevue/config'), confirmation: has('primevue/confirmationservice'), overlay }
 }
