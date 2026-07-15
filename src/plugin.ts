@@ -79,6 +79,13 @@ function jsonLdScript(data: unknown): string {
   return `<script type="application/ld+json">${json}</script>`
 }
 
+const pageHiddenEverywhere = (fm: { visibility?: string }): boolean =>
+  fm.visibility === 'hidden'
+const pageExcludedFromBuild = (fm: { visibility?: string }): boolean =>
+  fm.visibility === 'hidden' || fm.visibility === 'dev-only'
+const pageDevOnly = (fm: { visibility?: string }): boolean =>
+  fm.visibility === 'dev-only'
+
 const openGraphSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
@@ -137,9 +144,10 @@ const frontmatterSchema = z.object({
   group: z.object({
     name: z.string().min(1),
     icon: z.string().optional(),
-    style: z.string().optional()
+    style: z.string().optional(),
+    path: z.string().optional()
   }).optional(),
-  hidden: z.boolean().optional(),
+  visibility: z.enum(['visible', 'hidden', 'dev-only']).optional(),
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
@@ -1019,7 +1027,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           `[nimpress] path ${path} is occupied by both a changelog collection and a regular page`
         )
       }
-      const visible = entries.filter((e) => !(isBuildCommand && e.frontmatter.hidden))
+      const visible = entries.filter((e) => !(isBuildCommand && pageExcludedFromBuild(e.frontmatter)))
       if (visible.length === 0) continue
       visible.sort((a, b) => {
         const va = String((a.frontmatter.data as Record<string, unknown> | undefined)?.version ?? '')
@@ -1051,7 +1059,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           title: entryTitle,
           description: entryDescription,
           releaseDate,
-          hidden: e.frontmatter.hidden,
+          hidden: pageDevOnly(e.frontmatter),
           html: e.html,
           headings: e.headings,
           data: e.frontmatter.data
@@ -1208,7 +1216,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function publicPages(): ProcessedPage[] {
     const out: ProcessedPage[] = []
     for (const p of pages.values()) {
-      if (p.frontmatter.hidden) continue
+      if (pageHiddenEverywhere(p.frontmatter)) continue
       if (isGated(p)) continue
       out.push(p)
     }
@@ -1525,7 +1533,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   }
 
   async function writeGatedArtifacts(): Promise<void> {
-    const gated = [...pages.values()].filter((p) => !p.frontmatter.hidden && isGated(p))
+    const gated = [...pages.values()].filter((p) => !pageHiddenEverywhere(p.frontmatter) && isGated(p))
     const accessRoutes: Record<string, { scope?: string; claim?: string }> = {}
     for (const p of gated) {
       accessRoutes[p.effectivePath] = { scope: p.frontmatter.scope, claim: p.frontmatter.claim }
@@ -1690,7 +1698,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           parent,
           progress: maxProgress,
           status,
-          hidden: e.frontmatter.hidden,
+          hidden: pageDevOnly(e.frontmatter),
           html: e.html,
           headings: e.headings,
           data: e.frontmatter.data,
@@ -1749,13 +1757,14 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const dirMeta = new Map<string, { label?: string; icon?: string; style?: string }>()
 
     for (const p of pages.values()) {
-      if (isBuildCommand && (p.frontmatter.hidden || (!includeGated && isGated(p)))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || (!includeGated && isGated(p)))) continue
       if (p.effectivePath === '/') continue
       const segments = p.effectivePath.split('/').filter(Boolean)
       const group = p.frontmatter.group
-      if (group?.name && segments[segments.length - 2] !== group.name) {
-        if (segments.length >= 3) segments.splice(segments.length - 2, 1, group.name)
-        else segments.splice(segments.length - 1, 0, group.name)
+      const groupSeg = group?.path ?? group?.name
+      if (groupSeg && segments[segments.length - 2] !== groupSeg) {
+        if (segments.length >= 3) segments.splice(segments.length - 2, 1, groupSeg)
+        else segments.splice(segments.length - 1, 0, groupSeg)
       }
       let cursor = root
       let acc = ''
@@ -1794,7 +1803,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           icon: t.page.frontmatter.icon,
           order: t.page.frontmatter.order,
           collapsed: t.page.frontmatter.collapsed,
-          hidden: t.page.frontmatter.hidden
+          hidden: pageDevOnly(t.page.frontmatter)
         }
         const flat = t.page.openApiSpec as { tags?: { name: string }[] } | undefined
         if (t.page.type === 'openapi' && flat?.tags?.length) {
@@ -1902,7 +1911,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const byPath: Record<string, string> = {}
 
     for (const [slug, p] of pages) {
-      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const meta: PageMeta = {
         slug,
         path: p.effectivePath,
@@ -1912,7 +1921,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         claim: p.frontmatter.claim,
         description: p.frontmatter.description,
         order: p.frontmatter.order,
-        hidden: p.frontmatter.hidden,
+        hidden: pageDevOnly(p.frontmatter),
         redirect: p.frontmatter.redirect,
         meta: p.frontmatter.meta
       }
@@ -1927,7 +1936,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const styles: Record<string, string> = {}
     for (const p of pages.values()) {
-      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       if (p.pageCss) styles[p.effectivePath] = p.pageCss
     }
 
@@ -1938,8 +1947,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const out: SearchEntry[] = []
     for (const [slug, p] of pages) {
       if (gatedOnly) {
-        if (p.frontmatter.hidden || !isGated(p)) continue
-      } else if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
+        if (pageExcludedFromBuild(p.frontmatter) || !isGated(p)) continue
+      } else if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const baseBody = p.rawText.replace(/```[\s\S]*?```/g, '').replace(/[#*`>_\[\]\(\)]/g, ' ')
       const specBody = p.type === 'openapi' ? extractOpenApiText(p.openApiSpec) : ''
       const roadmapBody = p.type === 'roadmap' ? extractRoadmapText(p.roadmapEntries ?? []) : ''
@@ -2102,7 +2111,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildPagesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
-      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const id = `${PAGE_COMPONENT_PREFIX}${urlSlug(slug)}.svelte`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
@@ -2112,7 +2121,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildBodiesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
-      if (isBuildCommand && (p.frontmatter.hidden || isGated(p))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const id = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
     }
@@ -2236,9 +2245,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
       const onAdd = async (file: string) => {
         const underContent = file.startsWith(contentRoot)
-        if (!underContent || !(file.endsWith('.md') || file.endsWith('.css') || file.endsWith('.story.ts'))) return
+        if (!underContent || !(file.endsWith('.md') || file.endsWith('.css') || file.match(/\.story\.tsx?$/))) return
         if (file.endsWith('.css')) dropFileCache(file.replace(/\.css$/, '.md'))
-        if (file.endsWith('.story.ts')) dropFileCache(join(dirname(file), 'index.md'))
+        if (file.match(/\.story\.tsx?$/)) dropFileCache(join(dirname(file), 'index.md'))
         try {
           await processAll()
         } catch (err) {
@@ -2251,8 +2260,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       const onUnlink = async (file: string) => {
         const underContent = file.startsWith(contentRoot)
-        if (underContent && (file.endsWith('.md') || file.endsWith('.css') || file.endsWith('.story.ts'))) {
-          if (file.endsWith('.story.ts')) dropFileCache(join(dirname(file), 'index.md'))
+        if (underContent && (file.endsWith('.md') || file.endsWith('.css') || file.match(/\.story\.tsx?$/))) {
+          if (file.match(/\.story\.tsx?$/)) dropFileCache(join(dirname(file), 'index.md'))
           else dropFileCache(file.endsWith('.css') ? file.replace(/\.css$/, '.md') : file)
           try {
             await processAll()
@@ -2419,7 +2428,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const file = ctx.file
       const isMd = file.endsWith('.md') && file.startsWith(contentRoot)
       const isPageCss = file.endsWith('.css') && file.startsWith(contentRoot)
-      const isStory = file.endsWith('.story.ts') && file.startsWith(contentRoot)
+      const isStory = file.match(/\.story\.tsx?$/) && file.startsWith(contentRoot)
       const ownsSpec = specToMd.get(file)
       const ownsComponent = componentToMd.get(file)
       if (isPageCss) {

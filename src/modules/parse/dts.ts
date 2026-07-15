@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ControlSchema, ControlSpec } from '../../types'
-import { splitTypeMembers, controlFromType, extractTypeBody } from './typeMembers'
+import { splitTypeMembers, controlFromType, applyAnnotations, extractTypeBody } from './typeMembers'
 
 function walkDts(dir: string, out: string[] = []): string[] {
   let entries
@@ -55,7 +55,7 @@ export function parseDtsSchema(text: string, component: string): ControlSchema |
       emits.push(member.name)
       continue
     }
-    props.push(controlFromType(member.name, member.type, member.optional, text, member.description))
+    props.push(applyAnnotations(controlFromType(member.name, member.type, member.optional, text, member.description), member))
   }
   return { component, props, slots, emits }
 }

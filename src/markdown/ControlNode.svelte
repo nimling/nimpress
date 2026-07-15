@@ -1,66 +1,6 @@
 <script module lang="ts">
   import type { ControlSpec } from '../types'
-
-  const swCharacters = ['Luke Skywalker', 'Leia Organa', 'Han Solo', 'Obi-Wan Kenobi', 'Ahsoka Tano', 'Lando Calrissian', 'Din Djarin', 'Padmé Amidala']
-  const swPlaces = ['Tatooine', 'Coruscant', 'Endor', 'Hoth', 'Naboo', 'Dagobah', 'Mos Eisley', 'Bespin']
-  const swThings = ['Millennium Falcon', 'X-Wing', 'Razor Crest', 'Lightsaber', 'Holocron', 'Beskar Ingot', 'Astromech Droid', 'Sarlacc Pit']
-  const swSentences = [
-    'Bantha fodder drifts across the dune sea beyond Mos Eisley.',
-    'A hyperdrive hums softly as the freighter clears the asteroid field.',
-    'Womp rats scatter when the landspeeder skims Beggar’s Canyon.',
-    'The council convened on Coruscant to debate the blockade of Naboo.',
-    'Moisture vaporators line the ridge above the homestead on Tatooine.',
-    'A protocol droid recites etiquette while the astromech beeps in protest.',
-    'Snow swirls over the shield generator on the plains of Hoth.',
-    'The cantina band strikes up as smugglers haggle over spice.'
-  ]
-  const swWords = ['bantha', 'kyber', 'hyperdrive', 'womp-rat', 'sabacc', 'holocron', 'beskar', 'porg']
-  const swEmails = ['leia.organa@rebellion.org', 'luke.skywalker@jedi.temple', 'han.solo@falcon.crew', 'ahsoka.tano@fulcrum.net']
-  const swColors = ['#ffe81f', '#2e67f8', '#e5484d', '#30a46c', '#8a63d2']
-
-  function hintHash(text: string): number {
-    let h = 0
-    for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) >>> 0
-    return h
-  }
-
-  function pick(list: string[], hint: string, seed: number): string {
-    return list[(hintHash(hint) + seed) % list.length]
-  }
-
-  function mockNumber(hint: string): number {
-    if (/count|total|amount|quantity/.test(hint)) return 7
-    if (/index|offset|position/.test(hint)) return 0
-    if (/width/.test(hint)) return 320
-    if (/height/.test(hint)) return 240
-    if (/size|length/.test(hint)) return 42
-    if (/price|cost/.test(hint)) return 199
-    if (/duration|timeout|delay|interval|ms/.test(hint)) return 300
-    if (/year/.test(hint)) return 1977
-    if (/age/.test(hint)) return 29
-    if (/min/.test(hint)) return 0
-    if (/max|limit/.test(hint)) return 100
-    if (/percent|progress|opacity/.test(hint)) return 66
-    return 42
-  }
-
-  function mockText(hint: string, seed: number): string {
-    if (/email/.test(hint)) return pick(swEmails, hint, seed)
-    if (/url|link|href|website/.test(hint)) return `https://holonet.example/${pick(swWords, hint, seed)}`
-    if (/image|avatar|photo|thumbnail|src|poster/.test(hint)) return `https://holonet.example/${pick(swWords, hint, seed)}.png`
-    if (/icon/.test(hint)) return 'pi pi-star'
-    if (/color/.test(hint)) return pick(swColors, hint, seed)
-    if (/date/.test(hint)) return '1977-05-25'
-    if (/time/.test(hint)) return '09:41'
-    if (/phone|tel/.test(hint)) return '+47 555 01138'
-    if (/id|uuid|key|slug/.test(hint)) return `${pick(swWords, hint, seed)}-1138`
-    if (/user|author|owner|person|assignee|member/.test(hint)) return pick(swCharacters, hint, seed)
-    if (/city|place|location|address/.test(hint)) return pick(swPlaces, hint, seed)
-    if (/title|name|label|heading|summary/.test(hint)) return pick(swThings, hint, seed)
-    if (/description|text|content|detail|body|paragraph|message|caption|placeholder/.test(hint)) return pick(swSentences, hint, seed)
-    if (/keyword|tag|word|category|group/.test(hint)) return pick(swWords, hint, seed)
-    return pick(swThings, hint, seed)
-  }
+  import * as mocks from '../mock'
 
   export interface FnValue {
     __nimpressFn: string
@@ -77,11 +17,6 @@
   }
 
   export function mockValue(spec: ControlSpec, seed = 0): unknown {
-    const hint = `${spec.name} ${spec.description ?? ''}`.toLowerCase()
-    if (spec.kind === 'select') return spec.options?.[(hintHash(hint) + seed) % (spec.options.length || 1)]
-    if (spec.kind === 'boolean') return true
-    if (spec.kind === 'number') return mockNumber(hint)
-    if (spec.kind === 'text' || spec.kind === 'slot') return mockText(hint, seed)
     if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: fnSource(spec.name) }
     if (spec.kind === 'object') {
       const out: Record<string, unknown> = {}
@@ -100,12 +35,24 @@
     if (spec.kind === 'record') {
       const out: Record<string, unknown> = {}
       for (let i = 0; i < 2; i++) {
-        const key = pick(swWords, hint, seed + i)
-        out[key] = spec.item ? (mockValue(spec.item, seed + i) ?? pick(swSentences, key, seed + i)) : pick(swSentences, key, seed + i)
+        const key = mocks.mockWord(seed + i)
+        out[key] = spec.item ? (mockValue(spec.item, seed + i) ?? mocks.mockSentence(seed + i)) : mocks.mockSentence(seed + i)
       }
       return out
     }
-    return undefined
+    const name =
+      spec.mock ??
+      (spec.kind === 'boolean'
+        ? 'mockBoolean'
+        : spec.kind === 'number'
+          ? 'mockInt'
+          : spec.kind === 'select'
+            ? 'mockOption'
+            : 'mockWord')
+    const fn = (mocks as Record<string, (...a: unknown[]) => unknown>)[name]
+    if (typeof fn !== 'function') return undefined
+    if (name === 'mockOption') return fn(spec.options ?? [], seed)
+    return fn(seed)
   }
 </script>
 

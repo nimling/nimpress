@@ -5,7 +5,8 @@ import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
 import { findComponentDts, parseDtsSchema } from './parse/dts'
-import { controlFromJsonSchema, type ControlJsonSchema } from './parse/typeMembers'
+import { controlFromJsonSchema, controlToJsonSchema, mockNameFor, formatFor, type ControlJsonSchema } from './parse/typeMembers'
+import type { ControlSpec } from '../types'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
 
@@ -28,9 +29,18 @@ export async function parseComponentSchema(
     extraTypes += await readFile(join(componentDir, entry), 'utf-8')
     extraTypes += '\n'
   }
-  return framework === 'vue'
-    ? parseVueComponent(text, component, extraTypes)
-    : parseSvelteComponent(text, component, extraTypes)
+  const parsed =
+    framework === 'vue'
+      ? parseVueComponent(text, component, extraTypes)
+      : parseSvelteComponent(text, component, extraTypes)
+  for (const p of parsed.props as ControlSpec[]) {
+    if (!p.format) {
+      const f = formatFor(p)
+      if (f) p.format = f
+    }
+    if (!p.mock) p.mock = mockNameFor(p.name, controlToJsonSchema(p))
+  }
+  return parsed
 }
 
 export async function buildComponentPageData(opts: {

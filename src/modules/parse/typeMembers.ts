@@ -5,15 +5,61 @@ export interface TypeMember {
   type: string
   optional: boolean
   description?: string
+  annotations?: Record<string, unknown>
 }
 
-function splitLeadingComments(text: string): { description?: string; member: string } {
+function parseJsdocTags(body: string): { description: string; annotations: Record<string, unknown> } {
+  const annotations: Record<string, unknown> = {}
+  const num = (tag: string, key: string) => {
+    const m = body.match(new RegExp(`@${tag}\\s+(-?[0-9.]+)`))
+    if (m) annotations[key] = Number(m[1])
+  }
+  num('minimum', 'minimum')
+  num('maximum', 'maximum')
+  num('exclusiveMinimum', 'exclusiveMinimum')
+  num('exclusiveMaximum', 'exclusiveMaximum')
+  num('multipleOf', 'multipleOf')
+  num('minLength', 'minLength')
+  num('maxLength', 'maxLength')
+  num('minItems', 'minItems')
+  num('maxItems', 'maxItems')
+  const parseVal = (raw: string): unknown => {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return raw
+    }
+  }
+  const pat = body.match(/@pattern\s+(.+)/)
+  if (pat) annotations.pattern = pat[1].trim()
+  const fmt = body.match(/@format\s+(\S+)/)
+  if (fmt) annotations.format = fmt[1]
+  const def = body.match(/@default\s+(.+)/)
+  if (def) annotations.default = parseVal(def[1].trim())
+  const examples = [...body.matchAll(/@examples?\s+(.+)/g)].map((m) => parseVal(m[1].trim()))
+  if (examples.length) annotations.examples = examples
+  if (/@deprecated\b/.test(body)) annotations.deprecated = true
+  if (/@readonly\b|@readOnly\b/.test(body)) annotations.readOnly = true
+  if (/@uniqueItems\b/.test(body)) annotations.uniqueItems = true
+  const description = body.replace(/^\s*@\w+.*$/gm, '').trim()
+  return { description, annotations }
+}
+
+function splitLeadingComments(text: string): {
+  description?: string
+  annotations?: Record<string, unknown>
+  member: string
+} {
   let description: string | undefined
+  let annotations: Record<string, unknown> | undefined
   let member = text
   for (;;) {
     const jsdoc = member.match(/^\/\*\*?([\s\S]*?)\*\/\s*/)
     if (jsdoc) {
-      description = jsdoc[1].replace(/^\s*\*\s?/gm, '').trim()
+      const body = jsdoc[1].replace(/^\s*\*\s?/gm, '').trim()
+      const parsed = parseJsdocTags(body)
+      description = parsed.description || undefined
+      if (Object.keys(parsed.annotations).length) annotations = parsed.annotations
       member = member.slice(jsdoc[0].length)
       continue
     }
@@ -23,7 +69,7 @@ function splitLeadingComments(text: string): { description?: string; member: str
       member = member.slice(line[0].length)
       continue
     }
-    return { description, member }
+    return { description, annotations, member }
   }
 }
 
@@ -36,10 +82,10 @@ export function splitTypeMembers(body: string): TypeMember[] {
     const text = current.trim()
     current = ''
     if (!text) return
-    const { description, member } = splitLeadingComments(text)
+    const { description, annotations, member } = splitLeadingComments(text)
     const m = member.match(/^(?:readonly\s+)?([A-Za-z_$][\w$]*)(\?)?\s*:\s*([\s\S]+)$/)
     if (!m) return
-    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim(), description })
+    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim(), description, annotations })
   }
   let inComment = false
   const chars = [...body]
@@ -133,6 +179,57 @@ export interface ControlJsonSchema {
   required?: string[]
   items?: ControlJsonSchema
   default?: unknown
+  format?: string
+  mock?: string
+}
+
+export function formatFor(spec: ControlSpec): string | undefined {
+  if (spec.format) return spec.format
+  if (spec.kind !== 'text' && spec.kind !== 'slot') return undefined
+  const n = `${spec.name} ${spec.description ?? ''}`.toLowerCase()
+  if (/email/.test(n)) return 'email'
+  if (/url|href|link|website/.test(n)) return 'uri'
+  if (/date-time|datetime|timestamp/.test(n)) return 'date-time'
+  if (/date/.test(n)) return 'date'
+  if (/uuid/.test(n)) return 'uuid'
+  return undefined
+}
+
+export function mockNameFor(name: string, js: Record<string, unknown>): string {
+  const n = name.toLowerCase()
+  const type = js.type
+  const format = typeof js.format === 'string' ? js.format : undefined
+  if (js.enum) return 'mockOption'
+  if (type === 'boolean') return 'mockBoolean'
+  if (type === 'number' || type === 'integer') {
+    if (/index|offset|position/.test(n)) return 'mockIndex'
+    if (/count|total|amount|quantity/.test(n)) return 'mockCount'
+    if (/percent|progress|opacity/.test(n)) return 'mockPercent'
+    if (/width/.test(n)) return 'mockWidth'
+    if (/height/.test(n)) return 'mockHeight'
+    if (/price|cost/.test(n)) return 'mockPrice'
+    if (/year/.test(n)) return 'mockYear'
+    if (/age/.test(n)) return 'mockAge'
+    return type === 'integer' ? 'mockInt' : 'mockFloat'
+  }
+  if (type === 'string') {
+    if (format === 'email' || /email/.test(n)) return 'mockEmail'
+    if (/password/.test(n)) return 'mockPassword'
+    if (/image|avatar|photo|thumbnail|poster|banner|logo/.test(n)) return 'mockImageUrl'
+    if (format === 'uri' || /url|href|link/.test(n)) return 'mockUrl'
+    if (format === 'date' || format === 'date-time' || /date/.test(n)) return 'mockDate'
+    if (format === 'uuid' || /uuid|slug/.test(n)) return 'mockId'
+    if (/color|colour/.test(n)) return 'mockColor'
+    if (/icon/.test(n)) return 'mockIcon'
+    if (/username|handle|login/.test(n)) return 'mockUsername'
+    if (/firstname|first_name/.test(n)) return 'mockFirstName'
+    if (/lastname|last_name|surname|familyname|family_name/.test(n)) return 'mockFamilyName'
+    if (/name/.test(n)) return 'mockFullName'
+    if (/title|label|heading|headline/.test(n)) return 'mockTitle'
+    if (/description|content|detail|body|paragraph|message|caption|subtitle|placeholder|text|summary/.test(n)) return 'mockSentence'
+    return 'mockWord'
+  }
+  return 'mockWord'
 }
 
 export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> {
@@ -142,8 +239,11 @@ export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> 
   if (spec.kind === 'select') out.enum = spec.options ?? []
   else if (spec.kind === 'boolean') out.type = 'boolean'
   else if (spec.kind === 'number') out.type = 'number'
-  else if (spec.kind === 'text' || spec.kind === 'slot') out.type = 'string'
-  else if (spec.kind === 'array') {
+  else if (spec.kind === 'text' || spec.kind === 'slot') {
+    out.type = 'string'
+    const fmt = formatFor(spec)
+    if (fmt) out.format = fmt
+  } else if (spec.kind === 'array') {
     out.type = 'array'
     out.items = spec.item ? controlToJsonSchema(spec.item) : {}
   } else if (spec.kind === 'record') {
@@ -157,7 +257,29 @@ export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> 
   } else {
     out.tsType = spec.type
   }
+  for (const [k, v] of Object.entries(spec.annotations ?? {})) {
+    if (!(k in out)) out[k] = v
+  }
   return out
+}
+
+export function applyAnnotations(spec: ControlSpec, member: TypeMember): ControlSpec {
+  if (member.annotations) {
+    spec.annotations = member.annotations
+    if (typeof member.annotations.format === 'string') spec.format = member.annotations.format
+    if (member.annotations.default !== undefined && spec.default === undefined) {
+      spec.default = member.annotations.default
+    }
+  }
+  return spec
+}
+
+function withMock(name: string, spec: ControlSpec): Record<string, unknown> {
+  const js = controlToJsonSchema(spec)
+  const mock =
+    spec.mock ??
+    (spec.kind === 'function' || spec.kind === 'event' ? 'mockEvent' : mockNameFor(name, js))
+  return { ...js, mock }
 }
 
 export function schemaToJsonSchema(component: string, props: ControlSpec[]): Record<string, unknown> {
@@ -165,7 +287,7 @@ export function schemaToJsonSchema(component: string, props: ControlSpec[]): Rec
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: component,
     type: 'object',
-    properties: Object.fromEntries(props.map((p) => [p.name, controlToJsonSchema(p)])),
+    properties: Object.fromEntries(props.map((p) => [p.name, withMock(p.name, p)])),
     required: props.filter((p) => p.required).map((p) => p.name)
   }
 }
@@ -190,6 +312,7 @@ export function controlFromJsonSchema(
   depth = 0
 ): ControlSpec {
   const description = schema.description
+  const extra = { format: schema.format, mock: schema.mock }
   if (schema.enum) {
     const options = schema.enum.map(String)
     return {
@@ -199,17 +322,18 @@ export function controlFromJsonSchema(
       options,
       required,
       description,
-      default: schema.default
+      default: schema.default,
+      ...extra
     }
   }
   if (schema.type === 'boolean') {
-    return { name, kind: 'boolean', type: 'boolean', required, description, default: schema.default }
+    return { name, kind: 'boolean', type: 'boolean', required, description, default: schema.default, ...extra }
   }
   if (schema.type === 'number' || schema.type === 'integer') {
-    return { name, kind: 'number', type: 'number', required, description, default: schema.default }
+    return { name, kind: 'number', type: 'number', required, description, default: schema.default, ...extra }
   }
   if (schema.type === 'string') {
-    return { name, kind: 'text', type: 'string', required, description, default: schema.default }
+    return { name, kind: 'text', type: 'string', required, description, default: schema.default, ...extra }
   }
   if (schema.type === 'array' && schema.items && depth < 6) {
     const item = controlFromJsonSchema('', schema.items, false, depth + 1)
@@ -221,7 +345,8 @@ export function controlFromJsonSchema(
       required,
       description,
       default: schema.default,
-      shape: `${item.shape ?? item.type}[]`
+      shape: `${item.shape ?? item.type}[]`,
+      ...extra
     }
   }
   if (schema.type === 'object' && schema.properties && depth < 6) {
@@ -237,10 +362,11 @@ export function controlFromJsonSchema(
       required,
       description,
       default: schema.default,
-      shape: shapeOfMembers(members)
+      shape: shapeOfMembers(members),
+      ...extra
     }
   }
-  return { name, kind: 'json', type: schema.type ?? 'unknown', required, description, default: schema.default }
+  return { name, kind: 'json', type: schema.type ?? 'unknown', required, description, default: schema.default, ...extra }
 }
 
 export function controlFromType(

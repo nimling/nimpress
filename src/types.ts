@@ -13,6 +13,7 @@ export type PageType =
 export type ModuleFramework = 'vue' | 'svelte'
 
 export interface ModuleSystemConfig {
+  name: string
   framework: ModuleFramework
   source?: string
   package?: string
@@ -21,8 +22,6 @@ export interface ModuleSystemConfig {
   setup?: string
   harness?: string
   port?: number
-  scope?: string
-  claim?: string
   devOnly?: boolean
 }
 
@@ -54,6 +53,9 @@ export interface ControlSpec {
   required?: boolean
   description?: string
   shape?: string
+  format?: string
+  mock?: string
+  annotations?: Record<string, unknown>
   members?: ControlSpec[]
   item?: ControlSpec
 }
@@ -164,8 +166,8 @@ export interface Frontmatter {
   description?: string
   order?: number
   icon?: string
-  group?: { name: string; icon?: string; style?: string }
-  hidden?: boolean
+  group?: { name: string; icon?: string; style?: string; path?: string }
+  visibility?: 'visible' | 'hidden' | 'dev-only'
   lastUpdated?: boolean
   redirect?: string
   noToc?: boolean
@@ -428,7 +430,7 @@ export interface NimpressUserConfig {
   banner?: NimpressBannerConfig | false
   css?: string | string[]
   vite?: Record<string, unknown>
-  modules?: Partial<ModulesConfig>
+  modules?: ModuleSystemConfig[]
 }
 
 export interface ResolvedNimpressConfig {

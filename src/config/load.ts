@@ -46,9 +46,17 @@ export async function loadNimpressConfig(
   inline?: Partial<NimpressUserConfig>
 ): Promise<{ resolved: ResolvedNimpressConfig; configFile: string | null }> {
   const found = await readConfigFile(cwd)
-  let resolved = mergeDeep(defaultConfig, found?.config as Partial<ResolvedNimpressConfig> | undefined)
-  resolved = mergeDeep(resolved, inline as Partial<ResolvedNimpressConfig> | undefined)
+  const foundConfig = found?.config ? { ...found.config, modules: undefined } : undefined
+  const inlineConfig = inline ? { ...inline, modules: undefined } : undefined
+  let resolved = mergeDeep(defaultConfig, foundConfig as Partial<ResolvedNimpressConfig> | undefined)
+  resolved = mergeDeep(resolved, inlineConfig as Partial<ResolvedNimpressConfig> | undefined)
   resolved.css = typeof resolved.css === 'string' ? [resolved.css] : resolved.css ?? []
+  const userModules = inline?.modules ?? found?.config?.modules
+  resolved.modules = {
+    dir: defaultConfig.modules.dir,
+    route: defaultConfig.modules.route,
+    systems: userModules ? Object.fromEntries(userModules.map((s) => [s.name, s])) : {}
+  }
   return { resolved, configFile: found?.file ?? null }
 }
 
