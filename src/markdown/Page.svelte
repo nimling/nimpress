@@ -219,6 +219,7 @@
   .np-page-shell {
     position: relative;
     width: 100%;
+    z-index: 1;
   }
 
   .np-page {
@@ -231,11 +232,18 @@
     min-width: 0;
   }
 
+  .np-page-shell.has-rail {
+    display: grid;
+    grid-template-columns: minmax(var(--np-toc-width), 1fr) minmax(0, var(--np-content-max)) minmax(var(--np-toc-width), 1fr);
+  }
+
+  .np-page-shell.has-rail .np-page {
+    grid-column: 2;
+  }
+
   .np-page-shell.has-rail .np-toc-rail {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px);
+    grid-column: 3;
+    justify-self: start;
     width: var(--np-toc-width);
   }
 
@@ -323,17 +331,9 @@
     min-width: 0;
   }
 
-  @media (max-width: 1535px) {
-    .np-page-shell.has-rail .np-toc-rail {
-      position: static;
-      left: auto;
-      width: 0;
-      height: 0;
-      pointer-events: none;
-      overflow: visible;
-    }
-    .np-toc-rail :global(.np-toc-wrap) {
-      pointer-events: auto;
+  @media (max-width: 1280px) {
+    .np-page-shell.has-rail {
+      display: block;
     }
   }
 
@@ -380,9 +380,5 @@
     z-index: 0;
     mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
-  }
-  .np-page-shell {
-    position: relative;
-    z-index: 1;
   }
 </style>
