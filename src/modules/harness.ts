@@ -1,9 +1,8 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { existsSync, readdirSync } from 'node:fs'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
-import type { InlineConfig, PluginOption } from 'vite'
+import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
 import { mergeDeep } from '../config/viteConfig'
 import { resolveComponentSource } from './resolve'
@@ -12,6 +11,8 @@ import { collectComponentPages } from './pages'
 
 export const HARNESS_BASE_PORT = 6161
 
+export const HARNESS_VIRTUAL_PREFIX = 'virtual:nimpress-harness/'
+
 export function harnessPort(modules: ModulesConfig, system: string): number {
   const configured = modules.systems[system]?.port
   if (configured) return configured
@@ -19,8 +20,8 @@ export function harnessPort(modules: ModulesConfig, system: string): number {
   return HARNESS_BASE_PORT + Math.max(0, names.indexOf(system))
 }
 
-export function harnessTempDir(cwd: string, system: string): string {
-  return join(cwd, '.nimpress', 'modules', system)
+export function harnessEntryId(system: string, component: string): string {
+  return `${HARNESS_VIRTUAL_PREFIX}${system}/${component}/entry`
 }
 
 function messageBridge(): string {
@@ -366,7 +367,8 @@ export function harnessEntrySource(
     : svelteEntry(target, css, setup, harness)
 }
 
-export function harnessHtml(component: string): string {
+export function harnessHtml(component: string, scriptSrc: string, cssHrefs: string[]): string {
+  const links = cssHrefs.map((href) => `    <link rel="stylesheet" href="${href}" />`).join('\n')
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -382,10 +384,10 @@ export function harnessHtml(component: string): string {
       html.dark body { color: #e4e4e7; }
       #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; align-items: center; justify-content: center; }
     </style>
-  </head>
+${links ? links + '\n' : ''}  </head>
   <body>
     <div id="host"></div>
-    <script type="module" src="./entry.ts"></script>
+    <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>
 `
@@ -489,28 +491,94 @@ export function resolveHarnessOverride(cwd: string, systemConfig: ModuleSystemCo
   return undefined
 }
 
-export async function writeHarnessFiles(
+function harnessPlugin(
   cwd: string,
   systemConfig: ModuleSystemConfig,
   system: string,
-  targets: HarnessTarget[]
-): Promise<string> {
-  const root = harnessTempDir(cwd, system)
-  await rm(root, { recursive: true, force: true })
-  await mkdir(root, { recursive: true })
+  targets: HarnessTarget[],
+  base: string
+): Plugin {
   const css = (systemConfig.css ?? []).map((c) =>
     c.startsWith('.') || isAbsolute(c) ? resolve(cwd, c) : c
   )
   const setup = resolveHarnessSetup(cwd, systemConfig)
   const baseline = detectVueBaseline(cwd, systemConfig)
   const harness = resolveHarnessOverride(cwd, systemConfig)
-  for (const target of targets) {
-    const dir = join(root, target.component)
-    await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.html'), harnessHtml(target.component))
-    await writeFile(join(dir, 'entry.ts'), harnessEntrySource(systemConfig.framework, target, css, setup, baseline, harness))
+  const byComponent = new Map(targets.map((t) => [t.component, t]))
+  const resolvedPrefix = '\0' + HARNESS_VIRTUAL_PREFIX
+  const componentOf = (id: string): string | null => {
+    if (!id.startsWith(resolvedPrefix)) return null
+    const parts = id.slice(resolvedPrefix.length).split('/')
+    return parts[0] === system && parts[1] ? parts[1] : null
   }
-  return root
+  const entrySource = (target: HarnessTarget): string =>
+    harnessEntrySource(systemConfig.framework, target, css, setup, baseline, harness)
+  return {
+    name: 'nimpress:harness',
+    resolveId(id) {
+      if (id.startsWith(resolvedPrefix)) return id
+      if (id.startsWith(HARNESS_VIRTUAL_PREFIX)) return '\0' + id
+      return null
+    },
+    load(id) {
+      const component = componentOf(id)
+      if (!component) return null
+      const target = byComponent.get(component)
+      return target ? entrySource(target) : null
+    },
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const raw = req.url
+        if (!raw) return next()
+        const path = raw.split('?')[0]
+        if (!path.startsWith(base)) return next()
+        const segments = path.slice(base.length).split('/').filter(Boolean)
+        const component = segments[0]
+        if (!component || !byComponent.has(component)) return next()
+        const tail = segments.slice(1).join('/')
+        if (tail === '' || tail === 'index.html') {
+          const html = await server.transformIndexHtml(path, harnessHtml(component, './entry.js', []), raw)
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'text/html')
+          res.end(html)
+          return
+        }
+        if (tail === 'entry.js') {
+          const result = await server.transformRequest(harnessEntryId(system, component))
+          if (!result) return next()
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/javascript')
+          res.end(result.code)
+          return
+        }
+        return next()
+      })
+    },
+    generateBundle(_, bundle) {
+      const collectCss = (fileName: string, seen: Set<string>, css: Set<string>) => {
+        if (seen.has(fileName)) return
+        seen.add(fileName)
+        const chunk = bundle[fileName]
+        if (!chunk || chunk.type !== 'chunk') return
+        const meta = (chunk as { viteMetadata?: { importedCss?: Set<string> } }).viteMetadata
+        for (const file of meta?.importedCss ?? []) css.add(file)
+        for (const imported of chunk.imports) collectCss(imported, seen, css)
+      }
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk' || !chunk.isEntry) continue
+        const target = byComponent.get(chunk.name)
+        if (!target) continue
+        const css = new Set<string>()
+        collectCss(chunk.fileName, new Set(), css)
+        const cssHrefs = [...css].map((file) => base + file)
+        this.emitFile({
+          type: 'asset',
+          fileName: `${target.component}/index.html`,
+          source: harnessHtml(target.component, base + chunk.fileName, cssHrefs)
+        })
+      }
+    }
+  }
 }
 
 export async function harnessViteConfig(
@@ -527,18 +595,26 @@ export async function harnessViteConfig(
   if (!targets.length) {
     console.warn(`[nimpress] modules: no component pages found for system ${system}`)
   }
-  const root = await writeHarnessFiles(cwd, systemConfig, system, targets)
   const framework = await loadFrameworkPlugin(cwd, systemConfig.framework)
   const sourceRoot = systemConfig.source ? resolve(cwd, systemConfig.source) : cwd
   const routeBase = modules.route.replace(/\/$/, '')
+  const base = `${routeBase}/${system}/`
+  const scanEntries = targets
+    .filter((t) => isAbsolute(t.importSpec))
+    .map((t) => t.importSpec)
+    .concat(targets.flatMap((t) => (t.storyFiles ?? []).map((s) => s.path)))
   const config: InlineConfig = {
-    root,
+    root: cwd,
     configFile: false,
     publicDir: false,
     appType: 'mpa',
     cacheDir: join(cwd, 'node_modules', '.vite-nimpress', system),
-    plugins: [framework],
+    plugins: [harnessPlugin(cwd, systemConfig, system, targets, base), framework],
     resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
+    optimizeDeps: {
+      entries: scanEntries,
+      include: systemConfig.framework === 'vue' ? ['vue'] : []
+    },
     server: {
       host: '127.0.0.1',
       port: harnessPort(modules, system),
@@ -554,10 +630,10 @@ export async function harnessViteConfig(
       emptyOutDir: true,
       target: 'es2022',
       rollupOptions: {
-        input: Object.fromEntries(targets.map((t) => [t.component, join(root, t.component, 'index.html')]))
+        input: Object.fromEntries(targets.map((t) => [t.component, harnessEntryId(system, t.component)]))
       }
     },
-    base: `${routeBase}/${system}/`
+    base
   }
   return mergeDeep(config, resolvedConfig.vite as Partial<InlineConfig>)
 }
