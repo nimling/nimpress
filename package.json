@@ -44,6 +44,7 @@
     },
     "./harness/vue": "./src/harness/vue/index.ts",
     "./harness/svelte": "./src/harness/svelte/index.ts",
+    "./mock": "./src/mock/index.ts",
     "./app.css": "./src/styles/app.css",
     "./style.css": "./dist/style.css"
   },
@@ -52,6 +53,7 @@
     "bin",
     "src/styles",
     "src/harness",
+    "src/mock",
     ".claude/rules"
   ],
   "scripts": {

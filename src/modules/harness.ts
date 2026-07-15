@@ -224,7 +224,7 @@ function vueEntry(target: HarnessTarget, css: string[], setup: string | undefine
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
     : 'const HarnessOverride = null'
   return `import { createApp, h } from 'vue'
-import { DefaultHarness, createHarnessContext, HARNESS_KEY } from '@nimling/nimpress/harness/vue'
+import { DefaultHarness, ComponentStory, createHarnessContext, HARNESS_KEY } from '@nimling/nimpress/harness/vue'
 ${cssImports}
 ${setupImport(setup)}
 ${baselineImports}
@@ -280,7 +280,15 @@ globalThis.__nimpressSync = sync
 try {
   ctx.component.value = isRenderStory ? activeStoryDef.render() : await ensureComponent()
   sync()
-  const app = createApp(Harness)
+  const StoryHarness = activeStoryDef && activeStoryDef.harness ? activeStoryDef.harness : null
+  const Root = {
+    render() {
+      const leaf = h(ComponentStory)
+      const inner = StoryHarness ? h(StoryHarness, null, { default: () => leaf }) : leaf
+      return h(Harness, null, { default: () => inner })
+    }
+  }
+  const app = createApp(Root)
   app.provide(HARNESS_KEY, ctx)
   installBaseline(app)
   app.mount('#host')
@@ -334,7 +342,8 @@ globalThis.__nimpressSync = sync
 try {
   ctx.component = isRenderStory ? activeStoryDef.component : await ensureComponent()
   sync()
-  mount(HarnessRoot, { target: document.getElementById('host'), props: { ctx, harness: Harness } })
+  const StoryHarness = activeStoryDef && activeStoryDef.harness ? activeStoryDef.harness : null
+  mount(HarnessRoot, { target: document.getElementById('host'), props: { ctx, harness: Harness, storyHarness: StoryHarness } })
 } catch (err) {
   console.error(err)
   document.getElementById('host').innerText = String(err)
@@ -396,7 +405,16 @@ export async function loadFrameworkPlugin(cwd: string, framework: ModuleFramewor
   }
   const mod = await import(pathToFileURL(resolvedPath).href)
   const vue = (mod.default ?? mod) as () => PluginOption
-  return vue()
+  const plugins: PluginOption[] = [vue()]
+  try {
+    const jsxPath = req.resolve('@vitejs/plugin-vue-jsx')
+    const jsxMod = await import(pathToFileURL(jsxPath).href)
+    const vueJsx = (jsxMod.default ?? jsxMod) as () => PluginOption
+    plugins.push(vueJsx())
+  } catch {
+    // @vitejs/plugin-vue-jsx is optional; .story.tsx stories need it installed in the consumer
+  }
+  return plugins
 }
 
 export interface HarnessTarget {

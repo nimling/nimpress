@@ -3,6 +3,7 @@ import {
   splitTypeMembers,
   splitTopLevel,
   controlFromType,
+  applyAnnotations,
   parseLiteral,
   readBalanced,
   extractTypeBody
@@ -49,7 +50,10 @@ export function parseSvelteComponent(source: string, component: string, extraTyp
         emits.push(member.name)
         continue
       }
-      const spec = controlFromType(member.name, member.type, member.optional, typeContext, member.description)
+      const spec = applyAnnotations(
+        controlFromType(member.name, member.type, member.optional, typeContext, member.description),
+        member
+      )
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
       props.push(spec)
     }

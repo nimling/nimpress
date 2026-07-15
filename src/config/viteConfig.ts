@@ -36,7 +36,7 @@ export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
     plugins: [
       svelte({ compilerOptions: { runes: true, dev: command === 'serve' } }),
       tailwindcss(),
-      nimpress(resolved)
+      nimpress({ ...resolved, modules: Object.values(resolved.modules.systems) })
     ],
     build: {
       outDir: resolve(cwd, resolved.outDir),

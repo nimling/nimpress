@@ -315,13 +315,19 @@ export async function writeComponentSchema(
   schema: ControlSchema | undefined
 ): Promise<void> {
   if (!schema) return
-  await writeFile(
-    join(dir, 'schema.json'),
-    JSON.stringify(schemaToJsonSchema(component, schema.props), null, 2) + '\n'
+  const schemaPath = join(dir, 'schema.json')
+  await writeFile(schemaPath, JSON.stringify(schemaToJsonSchema(component, schema.props), null, 2) + '\n')
+  const opaque = opaqueControls(schema.props)
+  const thin = schema.props.filter((p) => !p.description).map((p) => p.name)
+  console.log(
+    `nimpress modules: ${component} schema written to ${schemaPath} — ${schema.props.length - thin.length}/${schema.props.length} props documented`
   )
-  for (const opaque of opaqueControls(schema.props)) {
+  if (thin.length) {
+    console.warn(`nimpress modules: ${component} props missing a description: ${thin.join(', ')}`)
+  }
+  for (const o of opaque) {
     console.warn(
-      `nimpress modules: ${component}.${opaque.path} type ${opaque.type} is opaque, document it in the component file or a sibling .types.ts so the parser resolves it`
+      `nimpress modules: ${component}.${o.path} type ${o.type} is opaque, document it in the component file or a sibling .types.ts so the parser resolves it`
     )
   }
 }

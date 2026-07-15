@@ -23,7 +23,7 @@ export function parseStorySource(raw: string, fileName: string): ComponentStory 
   const props = parseObjectLiteral(raw, 'props')
   const slots = parseObjectLiteral(raw, 'slots') as Record<string, string> | undefined
   return {
-    name: commentName ?? fieldName ?? basename(fileName, '.story.ts'),
+    name: commentName ?? fieldName ?? basename(fileName).replace(/\.story\.tsx?$/, ''),
     file: fileName,
     description,
     props,
@@ -40,7 +40,7 @@ export async function readComponentStories(dir: string): Promise<ComponentStory[
   }
   const out: ComponentStory[] = []
   for (const e of entries) {
-    if (!e.isFile() || !e.name.endsWith('.story.ts')) continue
+    if (!e.isFile() || !e.name.match(/\.story\.tsx?$/)) continue
     let raw: string
     try {
       raw = await readFile(join(dir, e.name), 'utf-8')
