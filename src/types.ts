@@ -19,6 +19,7 @@ export interface ModuleSystemConfig {
   version?: string
   css?: string[]
   setup?: string
+  harness?: string
   port?: number
   scope?: string
   claim?: string

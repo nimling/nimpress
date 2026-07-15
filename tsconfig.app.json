@@ -25,5 +25,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "tailwind.preset.ts"],
-  "exclude": ["src/plugin.ts", "src/plugin/**/*", "src/banner.ts", "src/**/*.node.ts"]
+  "exclude": ["src/plugin.ts", "src/plugin/**/*", "src/banner.ts", "src/**/*.node.ts", "src/harness/**"]
 }
