@@ -30,6 +30,10 @@ modules: {
 
 4.1. `setup` in the system config is the rare override: a path to a module replacing the built in baseline when a library bootstraps differently. Its default export is an object, `install(app)` runs on every created app before mount, `companion` is a component rendered beside every story. A svelte system exports a function run once.
 
+4.2. The frame itself is a composition of harness primitives imported from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`. `ComponentHarness` is the root, `ComponentStory` is the mount point where nimpress renders the component under test, `ComponentHarnessEffects` wraps its children and applies the toolbar drop shadow, `ComponentHarnessOverlay` mounts the system overlay root. The default composition is `ComponentHarness` wrapping `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it, and it runs when a system has no override.
+
+4.3. To customize the frame, drop a `harness.vue` or `harness.svelte` in the source root, or point the `harness` config key at one. It imports the primitives and arranges them freely, wrapping `ComponentStory` in a layout, adding providers, reordering, or omitting a piece. nimpress feeds the component, its props, slots, and overlay into the tree, so `ComponentStory` always resolves it. The checkerboard background, zoom, and vision filters are workshop chrome around the iframe, not harness primitives, and stay on the toolbar.
+
 5. `port` pins the harness dev server. Pin distinct ports when several repos run side by side.
 
 6. Consumer `vite` config in `nimpress.config.ts` flows into the harness, so aliases like `@` work inside components and stories.

@@ -52,7 +52,9 @@ export default defineConfig({
 
 5. The harness mounts every component the way its real app would, and that baseline is built in. Vue systems get PrimeVue with the confirmation service installed when the consumer depends on primevue, and the system's `ModalsRoot` rendered beside every story in the same app when the source tree holds one, so overlays, dialogs, dropdowns, tooltips, and notifications work in every frame without configuration. When a library bootstraps differently, `setup` points at a module replacing the baseline: the default export carries `install(app)`, run on every created app before mount, and `companion`, a component rendered beside every story; a svelte system exports a function run once.
 
-6. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
+6. The frame is composed from harness primitives, importable from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`, so you can rearrange it. `ComponentHarness` is the root; `ComponentStory` is where the component under test renders; `ComponentHarnessEffects` applies the toolbar drop shadow to whatever it wraps; `ComponentHarnessOverlay` mounts the system overlay root. The default is `ComponentHarness` around `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it. Drop a `harness.vue` or `harness.svelte` in the source root, or set the `harness` config key, to import these and arrange them yourself, wrapping the story in a layout, reordering, or omitting a piece; nimpress feeds the component, props, slots, and overlay in so `ComponentStory` always resolves. The checkerboard, zoom, and vision filters are workshop chrome around the iframe, not primitives, and stay on the toolbar.
+
+7. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
 
 ## The component page
 
