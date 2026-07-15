@@ -2,6 +2,7 @@ export interface StoryDefinition {
   name: string
   description?: string
   component?: unknown
+  harness?: unknown
   props?: Record<string, unknown>
   slots?: Record<string, string>
   render?: () => unknown

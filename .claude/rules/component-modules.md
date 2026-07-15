@@ -62,6 +62,8 @@ modules: {
 
 4. An executable story carries `render`, a function returning a mount definition. Vue: an options object with `components`, `setup`, `template`. The harness runs it verbatim; controls do not apply. A story is self contained: it imports the component and holds its own fixture data inline. There is no shared story fixture folder.
 
+4.1. A story nests itself in a per story harness with the `harness` field: `vueStory({ harness: BlockEditorHarness, props })`. The harness is a component that renders `<slot />` where `ComponentStory` mounts, and it folds inside the system harness as `SystemHarness > StoryHarness > ComponentStory`. Shared setup that a family of stories needs, a wrapping editor, providers, or seeded context, lives in one harness component the stories import from their group folder, never in a shared fixture folder. `MarModals` is the system harness for every component; `MarBlockEditor` is the block group's per story harness.
+
 5. Props and controls are one structure. Controls are the component's types projected onto inputs: object types resolve into nested member controls, arrays into row editors, string literal unions into selects. Story `props` are plain data destructured into that tree; a story never defines controls.
 
 6. Prop descriptions come from JSDoc blocks or line comments above the type member in the component source. Document props where they are typed, never in stories.
