@@ -329,13 +329,18 @@
           <span class="np-control-note">no handler, mock writes an editable function that logs its calls</span>
         {/if}
       {:else if spec.kind === 'json'}
-        <textarea
-          class="np-control-json"
-          class:invalid={jsonError || missing}
-          value={jsonDraft}
-          placeholder={spec.shape ?? spec.type}
-          oninput={(e) => setJson(e.currentTarget.value)}
-        ></textarea>
+        <div class="np-control-json-editor" class:invalid={jsonError || missing}>
+          <CodeEditor
+            bind:value={
+              () => jsonDraft,
+              (next) => setJson(next)
+            }
+            language="json"
+            noHeader
+            minHeight={72}
+            maxHeight={220}
+          />
+        </div>
         {#if jsonError}
           <span class="np-control-error">invalid json, value not applied</span>
         {/if}
@@ -509,6 +514,17 @@
     font-size: 12px;
     min-height: 64px;
     resize: vertical;
+  }
+
+  .np-control-json-editor {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 6px;
+  }
+
+  .np-control-json-editor.invalid {
+    border-color: var(--np-danger);
   }
 
   .np-control-json.invalid {
