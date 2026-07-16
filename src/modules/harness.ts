@@ -217,11 +217,20 @@ ctx.overlay.value = Overlay
 const isRenderStory = activeStoryDef && typeof activeStoryDef.render === 'function'
 
 const requiredDefaults = ${JSON.stringify(defaults)}
+const storyProps = activeStoryDef && activeStoryDef.props ? activeStoryDef.props : {}
+const storySlots = activeStoryDef && activeStoryDef.slots ? activeStoryDef.slots : {}
+
+function cloneValue(value) {
+  try { return structuredClone(value) } catch { return value }
+}
 
 function buildProps() {
   const props = structuredClone(state.props)
+  for (const [prop, value] of Object.entries(storyProps)) {
+    if (props[prop] === undefined) props[prop] = cloneValue(value)
+  }
   for (const [prop, value] of Object.entries(requiredDefaults)) {
-    if (props[prop] === undefined) props[prop] = structuredClone(value)
+    if (props[prop] === undefined) props[prop] = cloneValue(value)
   }
   materializeFns(props)
   for (const [name, source] of emitEntries(state.emits)) {
@@ -233,7 +242,7 @@ function buildProps() {
 
 function buildSlots() {
   const slots = {}
-  for (const [name, html] of Object.entries(state.slots)) {
+  for (const [name, html] of Object.entries({ ...storySlots, ...state.slots })) {
     slots[name] = () => h('span', { innerHTML: String(html) })
   }
   return slots
@@ -294,17 +303,26 @@ const ctx = createHarnessContext()
 const isRenderStory = activeStoryDef && activeStoryDef.component
 
 const requiredDefaults = ${JSON.stringify(defaults)}
+const storyProps = activeStoryDef && activeStoryDef.props ? activeStoryDef.props : {}
+const storySlots = activeStoryDef && activeStoryDef.slots ? activeStoryDef.slots : {}
+
+function cloneValue(value) {
+  try { return structuredClone(value) } catch { return value }
+}
 
 function buildProps() {
   const props = structuredClone(state.props)
+  for (const [prop, value] of Object.entries(storyProps)) {
+    if (props[prop] === undefined) props[prop] = cloneValue(value)
+  }
   for (const [prop, value] of Object.entries(requiredDefaults)) {
-    if (props[prop] === undefined) props[prop] = structuredClone(value)
+    if (props[prop] === undefined) props[prop] = cloneValue(value)
   }
   materializeFns(props)
   for (const [name, source] of emitEntries(state.emits)) {
     props[name] = bindEmit(name, source)
   }
-  for (const [name, html] of Object.entries(state.slots)) {
+  for (const [name, html] of Object.entries({ ...storySlots, ...state.slots })) {
     props[name] = createRawSnippet(() => ({ render: () => '<span>' + String(html) + '</span>' }))
   }
   return props
