@@ -274,10 +274,18 @@
     push()
   }
 
+  const overviewSrc = $derived.by(() => {
+    if (!data?.harnessPath) return ''
+    const params = new URLSearchParams()
+    if (stories.length) params.set('story', stories[0].file.replace(/\.story\.tsx?$/, ''))
+    params.set('theme', $theme)
+    return `${data.harnessPath}?${params.toString()}`
+  })
+
   const storySrc = $derived.by(() => {
     if (!data || !activeStory) return ''
     const params = new URLSearchParams()
-    params.set('story', activeStory.file.replace(/\.story\.ts$/, ''))
+    params.set('story', activeStory.file.replace(/\.story\.tsx?$/, ''))
     params.set('props', encodeParam({ ...defaultValues(), ...(activeStory.props ?? {}) }))
     params.set('slots', encodeParam({ ...(activeStory.slots ?? {}) }))
     params.set('emits', encodeParam(untrack(() => $state.snapshot(emitHandlers))))
@@ -552,7 +560,7 @@
             {/if}
           </div>
           <div class="np-component-preview-frame">
-            <iframe src="{data.harnessPath}?theme={$theme}" title="{data.component} preview"></iframe>
+            <iframe src={overviewSrc} title="{data.component} preview"></iframe>
           </div>
         </section>
       {/if}
