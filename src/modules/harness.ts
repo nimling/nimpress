@@ -158,36 +158,39 @@ window.addEventListener('gesturechange', (event) => {
   parent.postMessage({ type: 'nimpress:zoomscale', scale: scale / gestureBase }, '*')
   gestureBase = scale
 })
+let panX = 0
+let panY = 0
 let panning = null
+function stageEl() {
+  return document.getElementById('stage')
+}
+function applyPan() {
+  const stage = stageEl()
+  if (stage) stage.style.transform = panX || panY ? 'translate(' + panX + 'px, ' + panY + 'px)' : ''
+}
 window.addEventListener('pointerdown', (event) => {
-  const host = document.getElementById('host')
-  if (!host) return
-  if (event.button === 1) {
-    event.preventDefault()
-    host.scrollTo({
-      left: (host.scrollWidth - host.clientWidth) / 2,
-      top: (host.scrollHeight - host.clientHeight) / 2,
-      behavior: 'smooth'
-    })
-    return
-  }
-  if (event.button !== 0 || !(event.metaKey || event.ctrlKey)) return
+  const pan = event.button === 1 || (event.button === 0 && (event.metaKey || event.ctrlKey))
+  if (!pan) return
   event.preventDefault()
-  panning = { x: event.clientX, y: event.clientY, left: host.scrollLeft, top: host.scrollTop }
-  host.style.cursor = 'grabbing'
+  panning = { x: event.clientX, y: event.clientY, tx: panX, ty: panY }
+  document.documentElement.style.cursor = 'grabbing'
 })
 window.addEventListener('pointermove', (event) => {
   if (!panning) return
-  const host = document.getElementById('host')
-  if (!host) return
-  host.scrollLeft = panning.left - (event.clientX - panning.x)
-  host.scrollTop = panning.top - (event.clientY - panning.y)
+  panX = panning.tx + (event.clientX - panning.x)
+  panY = panning.ty + (event.clientY - panning.y)
+  applyPan()
 })
 window.addEventListener('pointerup', () => {
   if (!panning) return
   panning = null
-  const host = document.getElementById('host')
-  if (host) host.style.cursor = ''
+  document.documentElement.style.cursor = ''
+})
+window.addEventListener('dblclick', (event) => {
+  if (!(event.metaKey || event.ctrlKey)) return
+  panX = 0
+  panY = 0
+  applyPan()
 })`
 }
 
@@ -302,7 +305,7 @@ try {
   const app = createApp(Root)
   app.provide(HARNESS_KEY, ctx)
   installBaseline(app)
-  app.mount('#host')
+  app.mount('#stage')
 } catch (err) {
   console.error(err)
   document.getElementById('host').innerText = String(err)
@@ -369,7 +372,7 @@ try {
   ctx.component = isRenderStory ? activeStoryDef.component : await ensureComponent()
   sync()
   const StoryHarness = activeStoryDef && activeStoryDef.harness ? activeStoryDef.harness : null
-  mount(HarnessRoot, { target: document.getElementById('host'), props: { ctx, harness: Harness, storyHarness: StoryHarness } })
+  mount(HarnessRoot, { target: document.getElementById('stage'), props: { ctx, harness: Harness, storyHarness: StoryHarness } })
 } catch (err) {
   console.error(err)
   document.getElementById('host').innerText = String(err)
@@ -425,11 +428,12 @@ export function harnessHtml(component: string, scriptSrc: string, cssHrefs: stri
       html { color-scheme: light !important; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; align-items: safe center; justify-content: safe center; }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; }
+      #stage { margin: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; will-change: transform; }
     </style>
 ${links ? links + '\n' : ''}  </head>
   <body>
-    <div id="host"></div>
+    <div id="host"><div id="stage"></div></div>
     <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>
