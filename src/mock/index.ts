@@ -30,6 +30,16 @@ export interface MockFnValue {
   __nimpressFn: string
 }
 
+export function isFnValue(value: unknown): value is MockFnValue {
+  return !!value && typeof value === 'object' && typeof (value as MockFnValue).__nimpressFn === 'string'
+}
+
+export function fnSource(name: string): string {
+  return `(...args) => {
+  console.log(${JSON.stringify(name || 'handler')}, ...args)
+}`
+}
+
 export const mockFullName = (seed = 0): string => pick(swCharacters, seed)
 export const mockFirstName = (seed = 0): string => pick(swFirst, seed)
 export const mockFamilyName = (seed = 0): string => pick(swFamily, seed)
@@ -66,6 +76,6 @@ export const mockOption = (options: string[] = [], seed = 0): string | undefined
   options.length ? options[(hintHash(String(seed)) + seed) % options.length] : undefined
 
 export const mockFunction = (name = 'handler'): MockFnValue => ({
-  __nimpressFn: `(...args) => {\n  console.log(${JSON.stringify(name)}, ...args)\n}`
+  __nimpressFn: fnSource(name)
 })
 export const mockEvent = (name = 'event'): MockFnValue => mockFunction(name)

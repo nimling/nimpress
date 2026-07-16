@@ -1,11 +1,12 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
 import { mergeDeep } from '../config/viteConfig'
 import { resolveComponentSource } from './resolve'
+import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
 
@@ -186,7 +187,7 @@ function setupImport(setup: string | undefined): string {
   return setup ? `import harnessSetup from ${JSON.stringify(setup)}` : 'const harnessSetup = null'
 }
 
-function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined): string {
+function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined, defaults: Record<string, unknown>): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   const harnessImport = harness
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
@@ -215,8 +216,14 @@ const ctx = createHarnessContext()
 ctx.overlay.value = Overlay
 const isRenderStory = activeStoryDef && typeof activeStoryDef.render === 'function'
 
+const requiredDefaults = ${JSON.stringify(defaults)}
+
 function buildProps() {
-  const props = materializeFns(structuredClone(state.props))
+  const props = structuredClone(state.props)
+  for (const [prop, value] of Object.entries(requiredDefaults)) {
+    if (props[prop] === undefined) props[prop] = structuredClone(value)
+  }
+  materializeFns(props)
   for (const [name, source] of emitEntries(state.emits)) {
     const key = 'on' + name.replace(/[:.-](\\w)/g, (_, c) => c.toUpperCase()).replace(/^\\w/, (c) => c.toUpperCase())
     props[key] = bindEmit(name, source)
@@ -265,7 +272,7 @@ parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
-function svelteEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined): string {
+function svelteEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined, defaults: Record<string, unknown>): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
   const harnessImport = harness
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
@@ -286,8 +293,14 @@ const Harness = HarnessOverride ?? DefaultHarness
 const ctx = createHarnessContext()
 const isRenderStory = activeStoryDef && activeStoryDef.component
 
+const requiredDefaults = ${JSON.stringify(defaults)}
+
 function buildProps() {
-  const props = materializeFns(structuredClone(state.props))
+  const props = structuredClone(state.props)
+  for (const [prop, value] of Object.entries(requiredDefaults)) {
+    if (props[prop] === undefined) props[prop] = structuredClone(value)
+  }
+  materializeFns(props)
   for (const [name, source] of emitEntries(state.emits)) {
     props[name] = bindEmit(name, source)
   }
@@ -317,6 +330,24 @@ parent.postMessage({ type: 'nimpress:ready' }, '*')
 `
 }
 
+function requiredDefaults(target: HarnessTarget): Record<string, unknown> {
+  if (!target.schemaFile || !existsSync(target.schemaFile)) return {}
+  let raw: ComponentJsonSchema
+  try {
+    raw = JSON.parse(readFileSync(target.schemaFile, 'utf-8')) as ComponentJsonSchema
+  } catch {
+    return {}
+  }
+  const schema = schemaFromJsonSchema(target.component, raw)
+  const out: Record<string, unknown> = {}
+  for (const spec of schema.props) {
+    if (!spec.required) continue
+    const value = spec.default !== undefined ? spec.default : mockValue(spec, 0)
+    if (value !== undefined) out[spec.name] = value
+  }
+  return out
+}
+
 export function harnessEntrySource(
   framework: ModuleFramework,
   target: HarnessTarget,
@@ -324,9 +355,10 @@ export function harnessEntrySource(
   setup: string | undefined,
   harness: string | undefined
 ): string {
+  const defaults = requiredDefaults(target)
   return framework === 'vue'
-    ? vueEntry(target, css, setup, harness)
-    : svelteEntry(target, css, setup, harness)
+    ? vueEntry(target, css, setup, harness, defaults)
+    : svelteEntry(target, css, setup, harness, defaults)
 }
 
 export function harnessHtml(component: string, scriptSrc: string, cssHrefs: string[]): string {
@@ -386,6 +418,7 @@ export interface HarnessTarget {
   importSpec: string
   named?: boolean
   storyFiles?: Array<{ base: string; path: string }>
+  schemaFile?: string
 }
 
 export function resolveHarnessTargets(
@@ -400,16 +433,17 @@ export function resolveHarnessTargets(
   for (const page of pages) {
     if (page.system !== system) continue
     const storyFiles = collectStoryFiles(page.pageFile)
+    const schemaFile = join(dirname(page.pageFile), 'schema.json')
     const source = systemConfig.source
       ? resolveComponentSource(cwd, modules, system, page.component, page.file)
       : null
     if (source) {
-      targets.push({ component: page.component, importSpec: source.componentFile, storyFiles })
+      targets.push({ component: page.component, importSpec: source.componentFile, storyFiles, schemaFile })
       continue
     }
     const pkg = page.package ?? systemConfig.package
     if (pkg) {
-      targets.push({ component: page.component, importSpec: pkg, named: true, storyFiles })
+      targets.push({ component: page.component, importSpec: pkg, named: true, storyFiles, schemaFile })
       continue
     }
     console.warn(`[nimpress] modules: no source found for ${system}/${page.component}`)

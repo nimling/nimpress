@@ -2,11 +2,12 @@
   import { onMount, untrack } from 'svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import type { ComponentStory, PageModule } from '../types'
-  import { schemaToJsonSchema } from '../modules/parse/typeMembers'
+  import { mockValue, schemaToJsonSchema } from '../modules/parse/typeMembers'
+  import { fnSource, isFnValue } from '../mock'
   import { theme } from '../framework/stores/theme'
   import CodeEditor from './CodeEditor.svelte'
   import DragDivider from './DragDivider.svelte'
-  import ControlNode, { mockValue, fnSource, isFnValue } from './ControlNode.svelte'
+  import ControlNode from './ControlNode.svelte'
   import IconMock from '../icons/IconMock.svelte'
   import IconClear from '../icons/IconClear.svelte'
   import IconAdd from '../icons/IconAdd.svelte'
@@ -212,7 +213,12 @@
   function defaultValues(): Record<string, unknown> {
     const out: Record<string, unknown> = {}
     for (const spec of schema?.props ?? []) {
-      if (spec.default !== undefined) out[spec.name] = spec.default
+      if (spec.default !== undefined) {
+        out[spec.name] = spec.default
+      } else if (spec.required) {
+        const value = mockValue(spec, 0)
+        if (value !== undefined) out[spec.name] = value
+      }
     }
     return out
   }

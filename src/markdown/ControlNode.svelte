@@ -1,62 +1,7 @@
-<script module lang="ts">
-  import type { ControlSpec } from '../types'
-  import * as mocks from '../mock'
-
-  export interface FnValue {
-    __nimpressFn: string
-  }
-
-  export function isFnValue(value: unknown): value is FnValue {
-    return !!value && typeof value === 'object' && typeof (value as FnValue).__nimpressFn === 'string'
-  }
-
-  export function fnSource(name: string): string {
-    return `(...args) => {
-  console.log(${JSON.stringify(name || 'handler')}, ...args)
-}`
-  }
-
-  export function mockValue(spec: ControlSpec, seed = 0): unknown {
-    if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: fnSource(spec.name) }
-    if (spec.kind === 'object') {
-      const out: Record<string, unknown> = {}
-      for (const member of spec.members ?? []) {
-        const v = mockValue(member, seed)
-        if (v !== undefined) out[member.name] = v
-      }
-      return Object.keys(out).length ? out : undefined
-    }
-    if (spec.kind === 'array') {
-      if (!spec.item) return undefined
-      const first = mockValue(spec.item, seed)
-      if (first === undefined) return undefined
-      return [first, mockValue(spec.item, seed + 1)]
-    }
-    if (spec.kind === 'record') {
-      const out: Record<string, unknown> = {}
-      for (let i = 0; i < 2; i++) {
-        const key = mocks.mockWord(seed + i)
-        out[key] = spec.item ? (mockValue(spec.item, seed + i) ?? mocks.mockSentence(seed + i)) : mocks.mockSentence(seed + i)
-      }
-      return out
-    }
-    const name =
-      spec.mock ??
-      (spec.kind === 'boolean'
-        ? 'mockBoolean'
-        : spec.kind === 'number'
-          ? 'mockInt'
-          : spec.kind === 'select'
-            ? 'mockOption'
-            : 'mockWord')
-    const fn = (mocks as Record<string, (...a: unknown[]) => unknown>)[name]
-    if (typeof fn !== 'function') return undefined
-    if (name === 'mockOption') return fn(spec.options ?? [], seed)
-    return fn(seed)
-  }
-</script>
-
 <script lang="ts">
+  import type { ControlSpec } from '../types'
+  import { isFnValue, type MockFnValue } from '../mock'
+  import { mockValue } from '../modules/parse/typeMembers'
   import ControlNode from './ControlNode.svelte'
   import CodeEditor from './CodeEditor.svelte'
   import IconMock from '../icons/IconMock.svelte'
@@ -372,7 +317,7 @@
         {#if isFnValue(value)}
           <CodeEditor
             bind:value={
-              () => (value as FnValue).__nimpressFn,
+              () => (value as MockFnValue).__nimpressFn,
               (next) => onchange(next.trim() === '' ? undefined : { __nimpressFn: next })
             }
             language="javascript"
