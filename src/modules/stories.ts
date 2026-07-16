@@ -16,10 +16,20 @@ function parseObjectLiteral(source: string, key: string): Record<string, unknown
   }
 }
 
+function stripObjectLiteral(source: string, key: string): string {
+  const at = source.search(new RegExp(`\\b${key}\\s*:`))
+  if (at < 0) return source
+  const brace = source.indexOf('{', at)
+  if (brace < 0) return source
+  const body = readBalanced(source, brace + 1)
+  return source.slice(0, at) + source.slice(brace + 1 + body.length + 1)
+}
+
 export function parseStorySource(raw: string, fileName: string): ComponentStory {
   const commentName = raw.match(/^\s*\/\/\s*story:\s*(.+)$/m)?.[1]?.trim()
   const fieldName = raw.match(/\bname\s*:\s*['"]([^'"]+)['"]/)?.[1]
-  const description = raw.match(/\bdescription\s*:\s*['"]([^'"]+)['"]/)?.[1]
+  const head = stripObjectLiteral(stripObjectLiteral(raw, 'props'), 'slots')
+  const description = head.match(/\bdescription\s*:\s*['"]([^'"]+)['"]/)?.[1]
   const props = parseObjectLiteral(raw, 'props')
   const slots = parseObjectLiteral(raw, 'slots') as Record<string, string> | undefined
   return {
