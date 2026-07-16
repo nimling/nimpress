@@ -4,7 +4,7 @@ import { viewer, viewerReady } from '../framework/stores/viewer'
 import type { AccessChecker, AccessRequirement, Viewer } from '../types'
 
 const defaultChecker: AccessChecker = (req, v) => {
-  if (!req.scope && !req.claim) return true
+  if (!req.gate) return true
   return v.authenticated
 }
 

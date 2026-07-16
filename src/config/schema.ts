@@ -18,8 +18,7 @@ const siteSchema = z.object({
 const navRouteSchema = z.object({
   text: z.string(),
   link: z.string(),
-  scope: z.string().optional(),
-  claim: z.string().optional()
+  gate: z.string().optional()
 })
 
 const bannerSchema = z.object({
@@ -39,7 +38,7 @@ const moduleSystemSchema = z.object({
   setup: z.string().optional(),
   harness: z.string().optional(),
   port: z.number().optional(),
-  devOnly: z.boolean().optional()
+  visibility: z.enum(['visible', 'dev-only']).optional()
 })
 
 export const userConfigSchema = z.object({
@@ -62,7 +61,8 @@ export const userConfigSchema = z.object({
       userinfo: z.string().optional(),
       endSession: z.string().optional(),
       jwks: z.string().optional()
-    }).passthrough().optional()
+    }).passthrough().optional(),
+    guard: z.custom<(...args: unknown[]) => string>((v) => v === undefined || typeof v === 'function').optional()
   }).passthrough().optional(),
   client: z.string().optional(),
   subscribe: z.object({

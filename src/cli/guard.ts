@@ -1,4 +1,4 @@
-import { join, relative, extname, dirname } from 'node:path'
+import { join, relative, extname } from 'node:path'
 import { writeFileSync, existsSync, rmSync, readFileSync, statSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import type { ResolvedNimpressConfig } from '../types'
@@ -18,15 +18,21 @@ const guardMimes: Record<string, string> = {
   '.pdf': 'application/pdf'
 }
 
-interface GuardRequirement {
-  scope?: string
-  claim?: string
+interface GuardedRoute {
+  gate?: string
+  bundle: string
 }
 
 interface GuardAccess {
   prefix: string
   base?: string
-  routes: Record<string, GuardRequirement>
+  routes: Record<string, GuardedRoute>
+}
+
+interface GuardMap {
+  prefix: string
+  routes: Record<string, GuardedRoute>
+  bundles: Record<string, { pages: Record<string, string>; files: string[] }>
 }
 
 export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: string[]): void {
@@ -39,28 +45,41 @@ export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: st
   const access = JSON.parse(readFileSync(accessPath, 'utf-8')) as GuardAccess
 
   if (sub === 'map') {
-    const gatedDir = join(dist, '_gated')
-    const files = existsSync(gatedDir) ? walkFiles(gatedDir) : []
-    const prefix = access.prefix ?? '/_gated/'
+    const guardedDir = join(dist, '_guarded')
+    const mapPath = join(dist, 'guard.map.json')
+    const built: GuardMap = existsSync(mapPath)
+      ? (JSON.parse(readFileSync(mapPath, 'utf-8')) as GuardMap)
+      : { prefix: access.prefix ?? '/_guarded/', routes: access.routes, bundles: {} }
+    const files = existsSync(guardedDir) ? walkFiles(guardedDir) : []
+    const prefix = built.prefix ?? '/_guarded/'
     const entries = files.map((file) => {
-      const rel = relative(gatedDir, file).split('\\').join('/')
-      const remainder = '/' + rel
-      const requirement = access.routes[remainder] ?? access.routes[dirname(remainder)] ?? {}
+      const rel = relative(guardedDir, file).split('\\').join('/')
+      const bundle = rel.split('/')[0] ?? ''
+      const gates = [
+        ...new Set(
+          Object.values(built.routes ?? {})
+            .filter((r) => r.bundle === bundle && r.gate)
+            .map((r) => r.gate as string)
+        )
+      ]
       const data = readFileSync(file)
       return {
         path: `${prefix}${rel}`,
         file: rel,
+        bundle,
         sha256: createHash('sha256').update(data).digest('hex'),
         size: statSync(file).size,
         mime: guardMimes[extname(file).toLowerCase()] ?? 'application/octet-stream',
-        scope: requirement.scope,
-        claim: requirement.claim
+        gates
       }
     })
     const outFlag = flag(args, 'out')
-    const out = outFlag ? join(cwd, outFlag) : join(dist, 'guard-map.json')
-    writeFileSync(out, JSON.stringify({ prefix, routes: access.routes, files: entries }, null, 2) + '\n')
-    console.log(`nimpress guard: mapped ${entries.length} gated files to ${out}`)
+    const out = outFlag ? join(cwd, outFlag) : mapPath
+    writeFileSync(
+      out,
+      JSON.stringify({ ...built, prefix, files: entries }, null, 2) + '\n'
+    )
+    console.log(`nimpress guard: mapped ${entries.length} guarded files to ${out}`)
     return
   }
 
@@ -71,9 +90,9 @@ export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: st
     if (!uploaded.base) throw new Error('[nimpress] guard apply: mapping json carries no base url')
     access.base = uploaded.base.replace(/\/$/, '')
     writeFileSync(accessPath, JSON.stringify(access, null, 2) + '\n')
-    rmSync(join(dist, '_gated'), { recursive: true, force: true })
-    rmSync(join(dist, 'guard-map.json'), { force: true })
-    console.log(`nimpress guard: base ${access.base} applied, _gated removed from ${dist}`)
+    rmSync(join(dist, '_guarded'), { recursive: true, force: true })
+    rmSync(join(dist, 'guard.map.json'), { force: true })
+    console.log(`nimpress guard: base ${access.base} applied, _guarded removed from ${dist}`)
     return
   }
 

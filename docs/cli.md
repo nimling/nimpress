@@ -1,75 +1,87 @@
 ---
 title: CLI reference
 description: Every nimpress command, its arguments, flags, and exit behavior.
-tags: cli, lint, modules, build
+tags: cli, lint, modules, build, guard, export
+order: 5
+sidebar:
+  name: Core
 ---
 
-The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, linting, building, exporting, and the component workshop. Every command runs from the consumer repo root and reads `nimpress.config.ts`, `nimpress.config.js`, `nimpress.config.mjs`, or `nimpress.config.json`. Long value flags take their value with an equals sign, `--target=central`.
+The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, linting, building, exporting, guarding, and the component workshop. Every command runs from the consumer repo root and reads `nimpress.config.ts`, `nimpress.config.js`, `nimpress.config.mjs`, or `nimpress.config.json`. Long value flags take their value with an equals sign, `--target=central`.
 
 ## Command map
 
 | Command | Description |
 |---------|-------------|
-| `nimpress init` | Scaffold config, content folder, and the agent guides |
+| `nimpress init` | Scaffold a fully documented config, the content folder, and the agent guides |
 | `nimpress dev` | Run the site and every component harness |
 | `nimpress build` | Emit the static site plus harness bundles |
-| `nimpress preview` | Serve the built site |
-| `nimpress lint` | Validate frontmatter and every import in content code files |
-| `nimpress export` | Collect pages marked with the `export:` header |
-| `nimpress guard` | Map and apply the gated artifact flow |
+| `nimpress lint` | Validate structure, frontmatter, imports, and modules, then build to verify |
+| `nimpress export` | Collect pages marked with the `export:` header into `.nimpress` |
+| `nimpress guard` | Map and apply the guarded bundle flow |
 | `nimpress modules <sub>` | The component workshop surface |
 
 ## init
 
-Writes `nimpress.config.json` when no config exists, seeds the content folder with a home page when it is empty, and writes `CLAUDE.md` and `AGENTS.md` pointing at the packaged AI rules under `node_modules/@nimling/nimpress/.claude/rules/`. Existing files are never overwritten.
+Writes `nimpress.config.ts` with every field documented in JSDoc and examples, uncommenting is the whole setup; `--json` writes `nimpress.config.json` instead, with a `$schema` reference to the packaged `config.schema.json` so editors show the same descriptions. Seeds the content folder with a home page when it is empty, and writes `CLAUDE.md` and `AGENTS.md` pointing at the packaged AI rules under `node_modules/@nimling/nimpress/.claude/rules/`. Existing files are never overwritten.
 
-## dev, build, preview
+## dev and build
 
 1. `dev` starts the docs vite server plus one harness server per configured system and prints the urls.
 
-2. `build` emits the static site into `outDir`, default `dist`, then builds a static harness bundle per system into `dist/_components/<system>/`. Systems marked `devOnly` are skipped.
-
-3. `preview` serves the output of a completed build.
+2. `build` emits the static site into `outDir`, default `dist`, then builds a static harness bundle per system into `dist/_components/<system>/`. Systems with `visibility: dev-only` are skipped. Gated pages land in `dist/_guarded/<bundle>/` with `access.json` and `guard.map.json` beside the site.
 
 ## lint
 
-Two passes over `contentDir`, both reported together, exit code 1 when anything fails.
+Four passes over `contentDir` reported together with file paths and fix explanations, then a verification build. Exit code 1 when anything fails.
 
-1. Frontmatter: every markdown file parses and its frontmatter validates against the schema.
+1. Structure: folder and file naming, lowercase kebab case with PascalCase reserved for component and group folders, one `type: component` page per folder, changelog entries without `path`, stories and `schema.json` only beside a component page, page css only beside its page.
 
-2. Imports: every `.ts`, `.tsx`, `.js`, `.mjs`, `.vue`, and `.svelte` file under the content tree has its static and dynamic imports checked. Relative imports must resolve on disk with the standard extensions. Alias imports resolve through the `vite.resolve.alias` block of the nimpress config. Any import of a `_shared` folder fails outright: stories are self contained and shared setup lives in a group harness component, never in a shared fixture folder.
+2. Frontmatter: every markdown file parses and its frontmatter validates against the schema.
+
+3. Imports: every `.ts`, `.tsx`, `.js`, `.mjs`, `.vue`, and `.svelte` file under the content tree has its static and dynamic imports checked. Relative imports must resolve on disk with the standard extensions. Alias imports resolve through the `vite.resolve.alias` block of the nimpress config. Any import of a `_shared` folder fails outright: stories are self contained and shared setup lives in a group harness component.
+
+4. Modules: the full `modules lint` pass over every system.
+
+5. Build: when the content passes, lint builds the whole site to a throwaway folder and reports compile errors in the same format. `--no-build` skips this stage.
 
 ```bash
 nimpress lint
+nimpress lint --no-build
 ```
 
 ## export
 
-Collects every page whose frontmatter carries `export: <target>` into an export tree for the docs sync pipeline, default `.nimpress-export`, rewriting component pages to package mode: the `export:` header and the `file:` override drop, and the package version from the repo `package.json` stamps in.
+Collects every page whose frontmatter carries `export: <target>` into an export tree for the docs sync pipeline, default `.nimpress`, rewriting component pages to package mode: the `export:` header and the `file:` override drop, and the package version from the repo `package.json` stamps in. This is the command the nimpress GitHub actions run for their export logic.
 
 ```bash
-nimpress export --target=central --out=.nimpress-export
+nimpress export --target=central
+nimpress export --target=central --out=custom-folder
 ```
 
 ## guard
 
-1. `guard map` hashes every file in the `_gated` build output and writes `guard-map.json` with the scope and claim per route, ready for upload.
+The build already constructs `dist/guard.map.json` through the `auth.guard` function; these commands finish the flow.
 
-2. `guard apply --map=<uploaded json>` writes the returned base url into `access.json` and removes the `_gated` tree from the dist.
+1. `guard map` enriches `guard.map.json` with one entry per file in `dist/_guarded/`: `sha256`, `size`, `mime`, its bundle, and the gates that bundle serves, ready for upload to the auth provider. `--dist=<dir>` targets another build folder, `--out=<path>` writes the map elsewhere.
+
+2. `guard apply --map=<uploaded json>` writes the returned base url into `access.json` and removes the `_guarded` tree and `guard.map.json` from the dist, so the public bundle ships no gated content.
+
+Full flow in [auth.md](/auth).
 
 ## modules
 
-The component workshop. Full concept guide in [Component modules](/modules).
+The component workshop. Full concept guide in [Component modules](/modules). Every subcommand takes `--system=<name>`, required only when several systems are configured.
 
 | Subcommand | Description |
 |------------|-------------|
 | `modules init` | Ensure the modules folder and config block exist |
-| `modules dev [system]` | Run harness servers |
-| `modules build [system]` | Build static harness bundles |
-| `modules lint [system]` | Lint component pages, stories, and schemas |
-| `modules story <system> [component]` | Write typed mock auto stories |
-| `modules import <system> [file]` | Import a library or one component |
-| `modules create <system> <Component>` | Scaffold a component page |
+| `modules dev [--system=]` | Run harness servers |
+| `modules build [--system=]` | Build static harness bundles |
+| `modules lint [--system=]` | Lint component pages, stories, and schemas |
+| `modules story [component]` | Write typed mock auto stories |
+| `modules import [file]` | Import a library or one component |
+| `modules create <Component>` | Scaffold a component page |
 | `modules create --component=<ref> --schema` | Regenerate one schema.json |
 
 ### modules lint
@@ -86,12 +98,12 @@ Checks every component page of the named system, or every system when none is na
 
 ```bash
 nimpress modules lint
-nimpress modules lint nimtech
+nimpress modules lint --system=nimtech
 ```
 
 ### modules create with schema
 
-`--component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when it is unique across systems, or the path to the component file when it is not.
+`--component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when it is unique across systems, or the path to the component file when it is not. The workshop reads `schema.json`, not the source, so this is the refresh loop after changing component types.
 
 ```bash
 nimpress modules create --component=MarButton --schema

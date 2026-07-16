@@ -9,8 +9,13 @@ interface GatedManifest {
   sidebar: SidebarNode[]
 }
 
+interface GuardedRoute {
+  gate?: string
+  bundle: string
+}
+
 let loaded = false
-let gatedBase = '/_gated'
+let gatedBase = '/_guarded'
 
 export function gatedContentBase(): string {
   return gatedBase
@@ -28,43 +33,56 @@ export async function gatedFetch(url: string): Promise<Response> {
 
 export async function loadGatedContent(): Promise<void> {
   if (loaded) return
+  let routes: Record<string, GuardedRoute> = {}
   try {
     const accessRes = await fetch('/access.json')
     if (accessRes.ok) {
-      const access = (await accessRes.json()) as { base?: string }
+      const access = (await accessRes.json()) as { base?: string; routes?: Record<string, GuardedRoute> }
       if (access.base) gatedBase = access.base.replace(/\/$/, '')
+      routes = access.routes ?? {}
     }
   } catch {}
-  let res: Response
-  try {
-    res = await fetch(`${gatedBase}/manifest.json`, { credentials: 'include' })
-  } catch {
-    return
-  }
-  if (!res.ok) return
-  loaded = true
-  const gated = (await res.json()) as GatedManifest
+  const bundles = [...new Set(Object.values(routes).map((r) => r.bundle))]
+  if (!bundles.length) return
+  const shells: PageShell[] = []
+  let styles: Record<string, string> = {}
+  let sidebar: SidebarNode[] | null = null
   let search: SearchEntry[] = []
-  try {
-    const searchRes = await fetch(`${gatedBase}/search.json`, { credentials: 'include' })
-    if (searchRes.ok) search = (await searchRes.json()) as SearchEntry[]
-  } catch {}
+  for (const bundle of bundles) {
+    let res: Response
+    try {
+      res = await fetch(`${gatedBase}/${bundle}/manifest.json`, { credentials: 'include' })
+    } catch {
+      continue
+    }
+    if (!res.ok) continue
+    const gated = (await res.json()) as GatedManifest
+    shells.push(...gated.shells)
+    styles = { ...styles, ...gated.styles }
+    sidebar = gated.sidebar
+    try {
+      const searchRes = await fetch(`${gatedBase}/${bundle}/search.json`, { credentials: 'include' })
+      if (searchRes.ok) search = [...search, ...((await searchRes.json()) as SearchEntry[])]
+    } catch {}
+  }
+  if (!shells.length) return
+  loaded = true
 
   configStore.update((config) => {
     const manifest = config.manifest
     if (!manifest) return config
     const pages: Record<string, PageMeta> = { ...manifest.pages }
     const byPath: Record<string, string> = { ...manifest.byPath }
-    const styles: Record<string, string> = { ...(manifest.styles ?? {}), ...gated.styles }
+    const mergedStyles: Record<string, string> = { ...(manifest.styles ?? {}), ...styles }
     const pageLoader = { ...(config.pageLoader ?? {}) }
-    for (const shell of gated.shells) {
+    for (const shell of shells) {
       pages[shell.slug] = {
         slug: shell.slug,
         path: shell.path,
         type: shell.type,
         title: shell.frontmatter.title,
-        scope: shell.frontmatter.scope,
-        claim: shell.frontmatter.claim,
+        gate: shell.frontmatter.gate,
+        bundle: shell.bundle,
         description: shell.frontmatter.description,
         order: shell.frontmatter.order,
         hidden: shell.frontmatter.visibility === 'dev-only',
@@ -76,7 +94,7 @@ export async function loadGatedContent(): Promise<void> {
     }
     return {
       ...config,
-      manifest: { ...manifest, pages, byPath, styles, sidebar: gated.sidebar },
+      manifest: { ...manifest, pages, byPath, styles: mergedStyles, sidebar: sidebar ?? manifest.sidebar },
       pageLoader,
       searchIndex: [...(config.searchIndex ?? []), ...search]
     }

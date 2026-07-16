@@ -1,7 +1,7 @@
 ---
 title: Page types
 order: 1
-group:
+sidebar:
   name: Core
 ---
 

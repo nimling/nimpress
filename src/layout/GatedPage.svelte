@@ -14,7 +14,7 @@
   setPageMeta(shell)
   applyPageStyles(shell.path)
 
-  const bodyUrl = `${gatedContentBase()}/body/${shell.slug === '' ? '__root__' : shell.slug}.json`
+  const bodyUrl = `${gatedContentBase()}/${shell.bundle ?? 'default'}/body/${shell.slug === '' ? '__root__' : shell.slug}.json`
   const bodyPromise: Promise<{ default: PageBody }> = gatedFetch(bodyUrl).then(
     async (res: Response) => {
       if (!res.ok) throw new Error(`gated body request returned ${res.status}`)

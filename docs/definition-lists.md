@@ -1,7 +1,7 @@
 ---
 title: Definition lists
 order: 2
-group:
+sidebar:
   name: Authoring
 ---
 

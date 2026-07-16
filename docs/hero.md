@@ -1,7 +1,7 @@
 ---
 title: Hero pages
 order: 4
-group:
+sidebar:
   name: Authoring
 ---
 

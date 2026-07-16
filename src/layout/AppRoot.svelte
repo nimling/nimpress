@@ -23,8 +23,8 @@
       routes[meta.path] = {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
-        guard: meta.scope || meta.claim
-          ? pageGuard({ scope: meta.scope, claim: meta.claim })
+        guard: meta.gate
+          ? pageGuard({ gate: meta.gate })
           : undefined
       }
     }
@@ -37,8 +37,8 @@
       routes[path] = {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
-        guard: meta.scope || meta.claim
-          ? pageGuard({ scope: meta.scope, claim: meta.claim })
+        guard: meta.gate
+          ? pageGuard({ gate: meta.gate })
           : undefined
       }
     }

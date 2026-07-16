@@ -70,7 +70,7 @@ title: How sessions work
 
 ## Auth
 
-1. `scope` and `claim` gate the page through the viewer's session claims. Public pages omit both.
+1. `gate` marks the page guarded. Any string works; the build's guard function maps it to a guarded bundle and the runtime checks the viewer against it. Public pages omit it.
 
 2. `hidden: true` removes the page from the sidebar, the search index, and direct routing. Use for drafts.
 

@@ -11,6 +11,7 @@
   import CodeGroup from './CodeGroup.svelte'
   import Actions from './Actions.svelte'
   import Feature from './Feature.svelte'
+  import ComponentEmbed from './ComponentEmbed.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -137,6 +138,38 @@
           icon: config.icon ?? '',
           link: config.link ?? '',
           bodyHtml
+        }
+      })
+      mounted.push({ destroy: () => unmount(instance) })
+    }
+
+    const embeds = container.querySelectorAll<HTMLElement>('.np-component-embed[data-embed]:not(.np-component-embed-mounted)')
+    for (const el of Array.from(embeds)) {
+      let embedConfig: {
+        route?: string
+        system?: string
+        component?: string
+        story?: string
+        props?: Record<string, unknown>
+        slots?: Record<string, string>
+        height?: string
+      } = {}
+      try {
+        embedConfig = JSON.parse(el.getAttribute('data-embed') ?? '{}')
+      } catch {}
+      const host = document.createElement('div')
+      host.className = 'np-component-embed-mounted'
+      el.replaceWith(host)
+      const instance = mount(ComponentEmbed, {
+        target: host,
+        props: {
+          route: embedConfig.route ?? '/_components',
+          system: embedConfig.system ?? '',
+          component: embedConfig.component ?? '',
+          story: embedConfig.story ?? '',
+          props: embedConfig.props,
+          slots: embedConfig.slots,
+          height: embedConfig.height ?? '20em'
         }
       })
       mounted.push({ destroy: () => unmount(instance) })

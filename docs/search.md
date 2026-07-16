@@ -1,7 +1,7 @@
 ---
 title: Search
 order: 8
-group:
+sidebar:
   name: Authoring
 ---
 
@@ -23,7 +23,7 @@ The plugin emits a search corpus to `virtual:nimpress/search`. Each entry has:
 
 4. `headings` collected by the anchor walker.
 
-5. `scope` and `claim` so the runtime can hide gated hits from viewers who lack access.
+5. `gate` so the runtime can hide gated hits from viewers who lack access.
 
 Hidden pages are excluded from the corpus at build time.
 

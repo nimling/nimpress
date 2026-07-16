@@ -1,7 +1,7 @@
 ---
 title: Theming
 order: 1
-group:
+sidebar:
   name: Styling
 ---
 

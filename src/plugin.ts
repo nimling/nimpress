@@ -1,6 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
-import { createReadStream, existsSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, statSync, readdirSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
@@ -136,12 +136,11 @@ const frontmatterSchema = z.object({
   ]).optional(),
   path: z.string().optional(),
   spec: z.string().optional(),
-  scope: z.string().optional(),
-  claim: z.string().optional(),
+  gate: z.string().optional(),
   description: z.string().optional(),
   order: z.number().optional(),
   icon: z.string().optional(),
-  group: z.object({
+  sidebar: z.object({
     name: z.string().min(1),
     icon: z.string().optional(),
     style: z.string().optional(),
@@ -296,7 +295,7 @@ type ContainerOpts = {
   validate?: (params: string) => boolean
 }
 
-function buildMarkdownIt(highlighter: Highlighter): MarkdownIt {
+function buildMarkdownIt(highlighter: Highlighter, embed: { route: string; system?: string } = { route: '/_components' }): MarkdownIt {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -410,6 +409,22 @@ function buildMarkdownIt(highlighter: Highlighter): MarkdownIt {
         const data = json ? safeParseJson(json, tokens[idx].info) : {}
         const payload = encodeAttr(JSON.stringify(data))
         return `<div class="np-feature" data-config="${payload}"><div class="np-feature-body">`
+      }
+      return '</div></div>'
+    }
+  })
+
+  useContainer('component', {
+    render(tokens, idx) {
+      if (tokens[idx].nesting === 1) {
+        const info = tokens[idx].info.trim().slice('component'.length).trim()
+        const data = info.startsWith('{')
+          ? safeParseJson(info, tokens[idx].info)
+          : info
+            ? { component: info }
+            : {}
+        const payload = encodeAttr(JSON.stringify({ ...embed, ...data }))
+        return `<div class="np-component-embed" data-embed="${payload}"><div class="np-component-embed-body">`
       }
       return '</div></div>'
     }
@@ -849,7 +864,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const hl = await ensureHighlighter()
-    const md = buildMarkdownIt(hl)
+    const md = buildMarkdownIt(hl, embedContext())
     const prepared = rewriteMermaid(content)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared)
@@ -951,6 +966,14 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
   function dropFileCache(file: string): void {
     fileCache.delete(file)
+  }
+
+  function embedContext(): { route: string; system?: string } {
+    const names = Object.keys(resolved.modules.systems)
+    return {
+      route: resolved.modules.route.replace(/\/$/, ''),
+      system: names.length === 1 ? names[0] : undefined
+    }
   }
 
   function isExcluded(slug: string): boolean {
@@ -1114,7 +1137,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (entries.length === 0) continue
       const basePath = p.effectivePath === '/' ? '' : p.effectivePath
       const pageUrl = `${siteUrl}${basePath || '/'}`
-      const gatedPrefix = isGated(p) ? '/_gated' : ''
+      const gatedPrefix = isGated(p) ? `/_guarded/${bundleFor(p)}` : ''
       const feedPath = (index: number) => `${gatedPrefix}${basePath}/${feedFileName(index)}`
       const dates = entries
         .map((e) => (e.releaseDate ? new Date(e.releaseDate).getTime() : Number.NaN))
@@ -1210,7 +1233,28 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   const gitDateCache = new Map<string, string | undefined>()
 
   function isGated(p: ProcessedPage): boolean {
-    return p.frontmatter.scope !== undefined || p.frontmatter.claim !== undefined
+    return p.frontmatter.gate !== undefined
+  }
+
+  function relatedFilesFor(p: ProcessedPage): string[] {
+    const dir = dirname(p.filePath)
+    let entries: string[] = []
+    try {
+      entries = readdirSync(dir)
+    } catch {
+      return []
+    }
+    return entries
+      .filter((name) => join(dir, name) !== p.filePath)
+      .map((name) => relative(process.cwd(), join(dir, name)))
+  }
+
+  function bundleFor(p: ProcessedPage): string {
+    const guard = resolved.auth?.guard
+    if (typeof guard === 'function') {
+      return guard(p.frontmatter, relative(process.cwd(), p.filePath), relatedFilesFor(p))
+    }
+    return p.frontmatter.gate ?? 'default'
   }
 
   function publicPages(): ProcessedPage[] {
@@ -1532,45 +1576,65 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
   }
 
-  async function writeGatedArtifacts(): Promise<void> {
+  async function writeGuardedArtifacts(): Promise<void> {
     const gated = [...pages.values()].filter((p) => !pageHiddenEverywhere(p.frontmatter) && isGated(p))
-    const accessRoutes: Record<string, { scope?: string; claim?: string }> = {}
+    const accessRoutes: Record<string, { gate?: string; bundle: string }> = {}
+    const byBundle = new Map<string, ProcessedPage[]>()
     for (const p of gated) {
-      accessRoutes[p.effectivePath] = { scope: p.frontmatter.scope, claim: p.frontmatter.claim }
+      const bundle = bundleFor(p)
+      accessRoutes[p.effectivePath] = { gate: p.frontmatter.gate, bundle }
+      const list = byBundle.get(bundle) ?? []
+      list.push(p)
+      byBundle.set(bundle, list)
     }
     await writeFile(
       join(resolvedOutDir, 'access.json'),
-      JSON.stringify({ prefix: '/_gated/', routes: accessRoutes }, null, 2) + '\n'
+      JSON.stringify({ prefix: '/_guarded/', routes: accessRoutes }, null, 2) + '\n'
     )
     if (gated.length === 0) return
-    const dir = join(resolvedOutDir, '_gated')
-    await mkdir(join(dir, 'body'), { recursive: true })
-    const styles: Record<string, string> = {}
-    const shells = gated.map((p) => ({
-      slug: p.slug,
-      path: p.effectivePath,
-      type: p.type,
-      frontmatter: p.frontmatter
-    }))
-    for (const p of gated) {
-      if (p.pageCss) styles[p.effectivePath] = p.pageCss
-      const body = {
-        html: p.html,
-        headings: p.headings,
-        openApiSpec: p.openApiSpec,
-        changelogEntries: p.changelogEntries,
-        roadmapEntries: p.roadmapEntries,
-        componentData: p.componentData
+    const root = join(resolvedOutDir, '_guarded')
+    const mapBundles: Record<string, { pages: Record<string, string>; files: string[] }> = {}
+    for (const [bundle, list] of byBundle) {
+      const dir = join(root, bundle)
+      await mkdir(join(dir, 'body'), { recursive: true })
+      const styles: Record<string, string> = {}
+      const shells = list.map((p) => ({
+        slug: p.slug,
+        path: p.effectivePath,
+        type: p.type,
+        frontmatter: p.frontmatter,
+        bundle
+      }))
+      const files: string[] = [`${bundle}/manifest.json`, `${bundle}/search.json`]
+      for (const p of list) {
+        if (p.pageCss) styles[p.effectivePath] = p.pageCss
+        const body = {
+          html: p.html,
+          headings: p.headings,
+          openApiSpec: p.openApiSpec,
+          changelogEntries: p.changelogEntries,
+          roadmapEntries: p.roadmapEntries,
+          componentData: p.componentData
+        }
+        const bodyFile = join(dir, 'body', `${urlSlug(p.slug)}.json`)
+        await mkdir(dirname(bodyFile), { recursive: true })
+        await writeFile(bodyFile, JSON.stringify(body))
+        files.push(`${bundle}/body/${urlSlug(p.slug)}.json`)
       }
-      const bodyFile = join(dir, 'body', `${urlSlug(p.slug)}.json`)
-      await mkdir(dirname(bodyFile), { recursive: true })
-      await writeFile(bodyFile, JSON.stringify(body))
+      await writeFile(
+        join(dir, 'manifest.json'),
+        JSON.stringify({ shells, styles, sidebar: buildSidebar(true) })
+      )
+      await writeFile(join(dir, 'search.json'), JSON.stringify(buildSearch(true, list)))
+      mapBundles[bundle] = {
+        pages: Object.fromEntries(list.map((p) => [p.effectivePath, p.frontmatter.gate ?? ''])),
+        files
+      }
     }
     await writeFile(
-      join(dir, 'manifest.json'),
-      JSON.stringify({ shells, styles, sidebar: buildSidebar(true) })
+      join(resolvedOutDir, 'guard.map.json'),
+      JSON.stringify({ prefix: '/_guarded/', routes: accessRoutes, bundles: mapBundles }, null, 2) + '\n'
     )
-    await writeFile(join(dir, 'search.json'), JSON.stringify(buildSearch(true)))
   }
 
   function attachRoadmapEntries(
@@ -1760,8 +1824,17 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || (!includeGated && isGated(p)))) continue
       if (p.effectivePath === '/') continue
       const segments = p.effectivePath.split('/').filter(Boolean)
-      const group = p.frontmatter.group
-      const groupSeg = group?.path ?? group?.name
+      const sidebarMeta = p.frontmatter.sidebar
+      const isFolderIndex = p.filePath.endsWith(`${sep}index.md`)
+      if (sidebarMeta?.name && isFolderIndex) {
+        const own = '/' + segments.join('/')
+        dirMeta.set(own, {
+          label: sidebarMeta.name,
+          icon: sidebarMeta.icon ?? dirMeta.get(own)?.icon,
+          style: sidebarMeta.style ?? dirMeta.get(own)?.style
+        })
+      }
+      const groupSeg = isFolderIndex ? undefined : (sidebarMeta?.path ?? sidebarMeta?.name)
       if (groupSeg && segments[segments.length - 2] !== groupSeg) {
         if (segments.length >= 3) segments.splice(segments.length - 2, 1, groupSeg)
         else segments.splice(segments.length - 1, 0, groupSeg)
@@ -1778,12 +1851,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         cursor = next
       }
       cursor.page = p
-      if (group?.name) {
+      if (!isFolderIndex && sidebarMeta?.name) {
         const target = '/' + segments.slice(0, -1).join('/')
         dirMeta.set(target, {
-          label: group.name,
-          icon: group.icon ?? dirMeta.get(target)?.icon,
-          style: group.style ?? dirMeta.get(target)?.style
+          label: sidebarMeta.name,
+          icon: sidebarMeta.icon ?? dirMeta.get(target)?.icon,
+          style: sidebarMeta.style ?? dirMeta.get(target)?.style
         })
       }
     }
@@ -1798,13 +1871,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           text: pageLabel(t.page),
           link: t.page.effectivePath,
           slug: t.page.slug,
-          scope: t.page.frontmatter.scope,
-          claim: t.page.frontmatter.claim,
+          gate: t.page.frontmatter.gate,
           icon: t.page.frontmatter.icon,
           order: t.page.frontmatter.order,
           collapsed: t.page.frontmatter.collapsed,
           hidden: pageDevOnly(t.page.frontmatter)
         }
+        const ownMeta = dirMeta.get(t.fullPath)
+        if (ownMeta?.label) node.text = ownMeta.label
+        if (ownMeta?.icon && !node.icon) node.icon = ownMeta.icon
+        if (ownMeta?.style) node.style = ownMeta.style
         const flat = t.page.openApiSpec as { tags?: { name: string }[] } | undefined
         if (t.page.type === 'openapi' && flat?.tags?.length) {
           const tagNodes: SidebarNode[] = flat.tags.map((tag) => ({
@@ -1917,8 +1993,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         path: p.effectivePath,
         type: p.type,
         title: p.frontmatter.title,
-        scope: p.frontmatter.scope,
-        claim: p.frontmatter.claim,
+        gate: p.frontmatter.gate,
+        bundle: isGated(p) ? bundleFor(p) : undefined,
         description: p.frontmatter.description,
         order: p.frontmatter.order,
         hidden: pageDevOnly(p.frontmatter),
@@ -1943,9 +2019,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return { pages: pageMap, byPath, sidebar: buildSidebar(), styles }
   }
 
-  function buildSearch(gatedOnly = false): SearchEntry[] {
+  function buildSearch(gatedOnly = false, only?: ProcessedPage[]): SearchEntry[] {
     const out: SearchEntry[] = []
-    for (const [slug, p] of pages) {
+    const source: Iterable<[string, ProcessedPage]> = only
+      ? only.map((p) => [p.slug, p] as [string, ProcessedPage])
+      : pages
+    for (const [slug, p] of source) {
       if (gatedOnly) {
         if (pageExcludedFromBuild(p.frontmatter) || !isGated(p)) continue
       } else if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
@@ -1968,8 +2047,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         title: p.frontmatter.title,
         description: p.frontmatter.description,
         body,
-        scope: p.frontmatter.scope,
-        claim: p.frontmatter.claim,
+        gate: p.frontmatter.gate,
         headings: p.headings.map((h) => h.text),
         tags: [
           ...normalizeTags(p.frontmatter.tags),
@@ -2233,7 +2311,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         await writeFile(target, xml)
       }
       await writeStaticArtifacts()
-      await writeGatedArtifacts()
+      await writeGuardedArtifacts()
     },
 
     configureServer(devServer) {

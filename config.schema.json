@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nimpress config",
+  "description": "Configuration for a nimpress site. Every field has a default, so a config can be as small as a title. A nimpress.config.ts using defineConfig gets the same descriptions through the exported types and additionally accepts functions such as auth.guard.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "title": {
+      "type": "string",
+      "description": "Site title shown in the header and the tab.",
+      "examples": ["Nimtech Components"]
+    },
+    "logo": {
+      "type": "string",
+      "description": "Header logo url, absolute or under assetUrlBase.",
+      "examples": ["/assets/logo.svg"]
+    },
+    "github": {
+      "type": "string",
+      "description": "Repository url rendered as the header GitHub link.",
+      "examples": ["https://github.com/nimling/nimpress"]
+    },
+    "brand": {
+      "type": "object",
+      "description": "Brand colors written onto the theme tokens.",
+      "properties": {
+        "primary": { "type": "string", "description": "Brand color written onto --np-brand.", "examples": ["#CC785C"] },
+        "primaryHover": { "type": "string", "description": "Hover variant written onto --np-brand-hover.", "examples": ["#B86A52"] }
+      }
+    },
+    "footer": {
+      "type": "string",
+      "description": "Site wide footer line, overridable per page with the footer frontmatter field."
+    },
+    "navRoutes": {
+      "type": "array",
+      "description": "Extra header navigation routes.",
+      "items": {
+        "type": "object",
+        "required": ["text", "link"],
+        "properties": {
+          "text": { "type": "string", "description": "Label in the header." },
+          "link": { "type": "string", "description": "Route or url the entry opens." },
+          "gate": { "type": "string", "description": "Gate value a viewer must satisfy to see the entry." }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "OAuth 2.0 session login. The build time guard function for gated pages needs a nimpress.config.ts, json carries no functions.",
+      "required": ["issuer", "clientId"],
+      "properties": {
+        "issuer": { "type": "string", "description": "OAuth 2.0 issuer url.", "examples": ["https://auth.example.io"] },
+        "clientId": { "type": "string", "description": "OAuth client id of this site.", "examples": ["samna-developer"] },
+        "scopes": { "type": "string", "description": "Requested scopes.", "examples": ["openid profile email"] },
+        "redirectPath": { "type": "string", "description": "Redirect path on this origin.", "examples": ["/auth/callback"] },
+        "headers": { "type": "object", "description": "Extra headers sent to the auth endpoints.", "additionalProperties": { "type": "string" } },
+        "endpoints": {
+          "type": "object",
+          "description": "Endpoint overrides when discovery is unavailable.",
+          "properties": {
+            "discovery": { "type": "string" },
+            "authorization": { "type": "string" },
+            "token": { "type": "string" },
+            "userinfo": { "type": "string" },
+            "endSession": { "type": "string" },
+            "jwks": { "type": "string" }
+          }
+        }
+      }
+    },
+    "client": {
+      "type": "string",
+      "description": "Path to a client module exporting authFunctions and subscribeFunctions.",
+      "examples": ["./docs/client.ts"]
+    },
+    "subscribe": {
+      "type": "object",
+      "description": "Changelog subscription wiring.",
+      "properties": {
+        "endpoint": { "type": "string", "description": "Subscription endpoint receiving feed subscriptions." },
+        "appSlug": { "type": "string", "description": "App slug the subscription registers under." }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "SEO, robots, llms.txt, webmanifest, and security.txt emission.",
+      "properties": {
+        "keywords": { "type": "array", "items": { "type": "string" }, "description": "Site wide keywords merged into every page head." },
+        "localeAlternates": { "type": "array", "items": { "type": "string" }, "description": "Locale codes emitted as hreflang alternates.", "examples": [["en", "nb"]] },
+        "organization": { "type": "object", "description": "Organization JSON LD object written on every page." },
+        "robots": {
+          "type": "object",
+          "properties": {
+            "block": { "type": "array", "items": { "type": "string" }, "description": "Crawler user agents to disallow." },
+            "append": { "type": "string", "description": "Extra lines appended to robots.txt." },
+            "custom": { "type": "string", "description": "Full robots.txt replacement, overrides everything else." }
+          }
+        },
+        "llms": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string", "description": "One line summary at the top of llms.txt." },
+            "append": { "type": "string", "description": "Extra markdown appended to llms.txt." },
+            "full": { "type": "boolean", "description": "Also emit llms-full.txt with every page body." }
+          }
+        },
+        "og": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "number", "description": "OpenGraph image width.", "examples": [1200] },
+            "height": { "type": "number", "description": "OpenGraph image height.", "examples": [600] }
+          }
+        },
+        "webmanifest": { "type": "object", "description": "site.webmanifest content, emitted verbatim." },
+        "humans": { "type": "string", "description": "humans.txt content, emitted verbatim." },
+        "security": {
+          "type": "object",
+          "properties": {
+            "contact": { "type": "string", "description": "security.txt Contact line." },
+            "policy": { "type": "string", "description": "security.txt Policy url." },
+            "languages": { "type": "string", "description": "security.txt Preferred-Languages." },
+            "canonical": { "type": "string", "description": "security.txt Canonical url." },
+            "expires": { "type": "string", "description": "security.txt Expires timestamp." }
+          }
+        }
+      }
+    },
+    "site": {
+      "type": "object",
+      "description": "Canonical site identity used for absolute urls, sitemap, and social cards.",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string", "description": "Canonical site name." },
+        "url": { "type": "string", "description": "Canonical origin, required for sitemap, feeds, and absolute social urls.", "examples": ["https://developer.example.io"] },
+        "description": { "type": "string", "description": "Default meta description." },
+        "ogImage": { "type": "string", "description": "Default social card image." },
+        "twitterSite": { "type": "string", "description": "Twitter site handle.", "examples": ["@nimling"] },
+        "locale": { "type": "string", "description": "Site locale.", "examples": ["en_US"] }
+      }
+    },
+    "contentDir": {
+      "type": "string",
+      "description": "Folder holding the markdown content.",
+      "default": "docs"
+    },
+    "assetsDir": {
+      "type": "string",
+      "description": "Root assets folder copied into the build. Never inside contentDir.",
+      "default": "assets"
+    },
+    "assetUrlBase": {
+      "type": "string",
+      "description": "Url base the assets folder serves under.",
+      "default": "/assets"
+    },
+    "outDir": {
+      "type": "string",
+      "description": "Build output folder.",
+      "default": "dist"
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Slug prefixes excluded from the site.",
+      "examples": [["drafts"]]
+    },
+    "defaultFrontmatter": {
+      "type": "object",
+      "description": "Frontmatter defaults applied to every page that leaves the field unset.",
+      "examples": [{ "lastUpdated": true }]
+    },
+    "defaultFrontmatterExclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Path prefixes the frontmatter defaults skip.",
+      "examples": [["/api"]]
+    },
+    "banner": {
+      "description": "Dev server banner, false disables it.",
+      "oneOf": [
+        { "type": "boolean", "const": false },
+        {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "description": "Banner title, defaults to the site title." },
+            "tagline": { "type": "string", "description": "Line under the title." },
+            "company": { "type": "string", "description": "Company name in the banner footer." },
+            "version": { "type": "string", "description": "Version label, defaults to the consumer package version." }
+          }
+        }
+      ]
+    },
+    "css": {
+      "description": "Extra stylesheets loaded after the framework styles.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "examples": ["docs/overrides.css"]
+    },
+    "vite": {
+      "type": "object",
+      "description": "Vite overrides merged into the site and harness configs.",
+      "examples": [{ "resolve": { "alias": { "@": "./src" } } }]
+    },
+    "modules": {
+      "type": "array",
+      "description": "Component workshop systems, one entry per component library.",
+      "items": {
+        "type": "object",
+        "required": ["name", "framework"],
+        "properties": {
+          "name": { "type": "string", "description": "System identifier, the folder name under the modules route and the value component pages reference in data.system.", "examples": ["nimtech"] },
+          "framework": { "type": "string", "enum": ["vue", "svelte"], "description": "Component framework of this system." },
+          "source": { "type": "string", "description": "Local component tree, resolved as <source>/<Name>/<Name>.<ext> or <source>/<Name>.<ext>.", "examples": ["./src/components"] },
+          "package": { "type": "string", "description": "Released npm package the harness imports components from when they do not resolve from source.", "examples": ["@nimling/components-nimtech"] },
+          "version": { "type": "string", "description": "Version pin recorded on exported pages." },
+          "css": { "type": "array", "items": { "type": "string" }, "description": "Stylesheets loaded inside the harness iframe." },
+          "setup": { "type": "string", "description": "Module replacing the harness bootstrap: default export carries install(app) and companion for vue, a bare function for svelte." },
+          "harness": { "type": "string", "description": "Relative path to the system harness component wrapping every story, .ts, .tsx, .vue, or .svelte." },
+          "port": { "type": "number", "description": "Fixed dev port for this system's harness server.", "examples": [6161] },
+          "visibility": { "type": "string", "enum": ["visible", "dev-only"], "description": "dev-only keeps the system in nimpress dev and out of the built bundle." }
+        }
+      }
+    }
+  }
+}

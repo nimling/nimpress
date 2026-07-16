@@ -4,8 +4,8 @@ import { dirname, join, relative } from 'node:path'
 import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
-import { findComponentDts, parseDtsSchema } from './parse/dts'
-import { controlFromJsonSchema, controlToJsonSchema, mockNameFor, formatFor, type ControlJsonSchema } from './parse/typeMembers'
+import { findComponentDts } from './parse/dts'
+import { controlFromJsonSchema, controlToJsonSchema, mockNameFor, formatFor, schemaFromJsonSchema, type ControlJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
 import type { ControlSpec } from '../types'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
@@ -59,15 +59,24 @@ export async function buildComponentPageData(opts: {
   const watchFiles: string[] = []
 
   let schema
+  const schemaPath = join(dirname(pageFile), 'schema.json')
+  if (existsSync(schemaPath)) {
+    watchFiles.push(schemaPath)
+    try {
+      const raw = JSON.parse(await readFile(schemaPath, 'utf-8')) as ComponentJsonSchema
+      schema = schemaFromJsonSchema(component, raw)
+    } catch (err) {
+      console.warn(`nimpress modules: ${system}/${component} schema.json failed to parse: ${String(err)}`)
+    }
+  } else {
+    console.warn(
+      `nimpress modules: ${system}/${component} has no schema.json, controls stay empty, run nimpress modules create --component=${component} --schema`
+    )
+  }
+
   let claudeMd: string | undefined
   let claudeMdPath: string | undefined
   if (source) {
-    schema = await parseComponentSchema(
-      source.componentDir,
-      source.componentFile,
-      source.systemConfig.framework,
-      component
-    )
     watchFiles.push(source.componentFile)
     claudeMdPath = relative(cwd, source.claudeMdPath)
     if (existsSync(source.claudeMdPath)) {
@@ -79,7 +88,6 @@ export async function buildComponentPageData(opts: {
     if (pkg) {
       const dtsPath = findComponentDts(cwd, pkg, component)
       if (dtsPath) {
-        schema = parseDtsSchema(await readFile(dtsPath, 'utf-8'), component)
         const packagedClaude = dtsPath.replace(/[^/]+$/, 'CLAUDE.md')
         if (existsSync(packagedClaude)) {
           claudeMd = await readFile(packagedClaude, 'utf-8')

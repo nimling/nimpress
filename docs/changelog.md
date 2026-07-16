@@ -1,7 +1,7 @@
 ---
 title: Changelog renderer
 order: 5
-group:
+sidebar:
   name: Authoring
 ---
 

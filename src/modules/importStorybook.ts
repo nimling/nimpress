@@ -433,7 +433,7 @@ export async function importStorybook(
         const displayName = scenario === name ? story.name : `${scenario} ${story.name}`
         let base = storyFileName(story.name)
         if (writtenThisRun.has(base)) base = storyFileName(`${scenario}-${story.name}`)
-        const target = join(dir, `${base}.story.ts`)
+        const target = join(dir, `${base}.story.tsx`)
         writtenThisRun.add(base)
         if (existsSync(target)) continue
         await writeFile(target, storySource(framework, displayName, scenario, story, module))
@@ -535,7 +535,7 @@ async function importFromStories(
     }
     for (const story of mineStories(module)) {
       const base = storyFileName(story.name)
-      const target = join(dir, `${base}.story.ts`)
+      const target = join(dir, `${base}.story.tsx`)
       if (existsSync(target)) continue
       await writeFile(target, storySource(framework, story.name, fileBase, story, module))
       stories++

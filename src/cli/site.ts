@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { writeFileSync, existsSync, rmSync } from 'node:fs'
-import { createServer, build, preview } from 'vite'
+import { createServer, build } from 'vite'
 import type { ResolvedNimpressConfig } from '../types'
 import { buildViteConfig } from '../config/viteConfig'
 import { indexHtml } from '../config/html'
@@ -8,7 +8,7 @@ import { harnessViteConfig, harnessPort } from '../modules/harness'
 
 export function deployableSystems(resolved: ResolvedNimpressConfig): string[] {
   return Object.entries(resolved.modules.systems)
-    .filter(([, systemConfig]) => !systemConfig.devOnly)
+    .filter(([, systemConfig]) => systemConfig.visibility !== 'dev-only')
     .map(([name]) => name)
 }
 
@@ -57,9 +57,4 @@ export async function runBuild(cwd: string, resolved: ResolvedNimpressConfig): P
     if (created) rmSync(htmlPath, { force: true })
   }
   await buildHarnesses(cwd, resolved, deployableSystems(resolved))
-}
-
-export async function runPreview(cwd: string, resolved: ResolvedNimpressConfig): Promise<void> {
-  const server = await preview(buildViteConfig({ cwd, command: 'build', resolved }))
-  server.printUrls()
 }

@@ -13,16 +13,26 @@ export type PageType =
 export type ModuleFramework = 'vue' | 'svelte'
 
 export interface ModuleSystemConfig {
+  /** System identifier, the folder name under the modules route and the value component pages reference in data.system. @example "nimtech" */
   name: string
+  /** Component framework of this system, decides the harness entry, the parser, and the story helper. @example "vue" */
   framework: ModuleFramework
+  /** Local component tree, resolved as <source>/<Name>/<Name>.<ext> or <source>/<Name>.<ext>. @example "./src/components" */
   source?: string
+  /** Released npm package the harness imports components from when they do not resolve from source. @example "@nimling/components-nimtech" */
   package?: string
+  /** Version pin recorded on exported pages. @example "1.4.2" */
   version?: string
+  /** Stylesheets loaded inside the harness iframe, token and theme sheets. @example ["./src/assets/style.css"] */
   css?: string[]
+  /** Module replacing the harness bootstrap: default export carries install(app) and companion for vue, a bare function for svelte. @example "./docs/harness-setup.ts" */
   setup?: string
+  /** Relative path to the system harness component wrapping every story, .ts, .tsx, .vue, or .svelte. @example "./docs/components/harness.vue" */
   harness?: string
+  /** Fixed dev port for this system's harness server, allocated from 6161 by sorted system name when absent. @example 6161 */
   port?: number
-  devOnly?: boolean
+  /** dev-only keeps the system in nimpress dev and out of the built bundle, visible is the default. @example "dev-only" */
+  visibility?: 'visible' | 'dev-only'
 }
 
 export interface ModulesConfig {
@@ -161,12 +171,11 @@ export interface Frontmatter {
   type?: PageType
   path?: string
   spec?: string
-  scope?: string
-  claim?: string
+  gate?: string
   description?: string
   order?: number
   icon?: string
-  group?: { name: string; icon?: string; style?: string; path?: string }
+  sidebar?: { name: string; icon?: string; style?: string; path?: string }
   visibility?: 'visible' | 'hidden' | 'dev-only'
   lastUpdated?: boolean
   redirect?: string
@@ -204,6 +213,7 @@ export interface PageShell {
   path: string
   type: PageType
   frontmatter: Frontmatter
+  bundle?: string
 }
 
 export interface PageBody {
@@ -221,8 +231,7 @@ export interface SidebarNode {
   text: string
   link?: string
   slug?: string
-  scope?: string
-  claim?: string
+  gate?: string
   icon?: string
   style?: string
   order?: number
@@ -253,8 +262,8 @@ export interface PageMeta {
   path: string
   type: PageType
   title: string
-  scope?: string
-  claim?: string
+  gate?: string
+  bundle?: string
   description?: string
   order?: number
   hidden?: boolean
@@ -268,8 +277,7 @@ export interface SearchEntry {
   title: string
   description?: string
   body: string
-  scope?: string
-  claim?: string
+  gate?: string
   headings: string[]
   tags: string[]
 }
@@ -287,8 +295,7 @@ export interface Viewer {
 }
 
 export interface AccessRequirement {
-  scope?: string
-  claim?: string
+  gate?: string
 }
 
 export type AccessChecker = (
@@ -296,8 +303,16 @@ export type AccessChecker = (
   viewer: Viewer
 ) => boolean
 
+export type GuardFunction = (
+  frontmatter: Frontmatter,
+  filePath: string,
+  relatedFiles: string[]
+) => string
+
 export interface NimpressBrandConfig {
+  /** Brand color written onto --np-brand. @example "#CC785C" */
   primary?: string
+  /** Hover variant written onto --np-brand-hover. @example "#B86A52" */
   primaryHover?: string
 }
 
@@ -313,36 +328,56 @@ export interface SubscribeFunctions {
 }
 
 export interface SubscribeConfig {
+  /** Subscription endpoint receiving feed subscriptions. @example "https://auth.example.io/api/subscribe" */
   endpoint?: string
+  /** App slug the subscription registers under. @example "samna-developer" */
   appSlug?: string
   functions?: SubscribeFunctions
 }
 
 export interface NimpressMetaConfig {
+  /** Site wide keywords merged into every page head. @example ["booking", "api"] */
   keywords?: string[]
+  /** Locale codes emitted as hreflang alternates. @example ["en", "nb"] */
   localeAlternates?: string[]
+  /** Organization JSON LD object written on every page. */
   organization?: Record<string, unknown>
   robots?: {
+    /** Crawler user agents to disallow. @example ["GPTBot"] */
     block?: string[]
+    /** Extra lines appended to robots.txt. */
     append?: string
+    /** Full robots.txt replacement, overrides everything else. */
     custom?: string
   }
   llms?: {
+    /** One line summary at the top of llms.txt. */
     summary?: string
+    /** Extra markdown appended to llms.txt. */
     append?: string
+    /** Also emit llms-full.txt with every page body. @example true */
     full?: boolean
   }
   og?: {
+    /** OpenGraph image width. @example 1200 */
     width?: number
+    /** OpenGraph image height. @example 600 */
     height?: number
   }
+  /** site.webmanifest content, emitted verbatim. */
   webmanifest?: Record<string, unknown>
+  /** humans.txt content, emitted verbatim. */
   humans?: string
   security?: {
+    /** security.txt Contact line. @example "mailto:security@example.io" */
     contact?: string
+    /** security.txt Policy url. */
     policy?: string
+    /** security.txt Preferred-Languages. @example "en, nb" */
     languages?: string
+    /** security.txt Canonical url. */
     canonical?: string
+    /** security.txt Expires timestamp. @example "2027-01-01T00:00:00.000Z" */
     expires?: string
   }
 }
@@ -374,13 +409,27 @@ export interface AuthFunctions {
 }
 
 export interface AuthConfig {
+  /** OAuth 2.0 issuer url. @example "https://auth.example.io" */
   issuer: string
+  /** OAuth client id of this site. @example "samna-developer" */
   clientId: string
+  /** Requested scopes. @example "openid profile email" */
   scopes?: string
+  /** Redirect path on this origin. @example "/auth/callback" */
   redirectPath?: string
+  /** Extra headers sent to the auth endpoints. */
   headers?: Record<string, string>
+  /** Endpoint overrides when discovery is unavailable. */
   endpoints?: OidcEndpoints
+  /** Runtime auth functions supplied through the client module. */
   functions?: AuthFunctions
+  /**
+   * Build time bundling of gated pages. Called once per page carrying a gate value; the returned
+   * string names the guarded bundle the page lands in under dist/_guarded/<name>/. Requires a
+   * nimpress.config.ts since json carries no functions; without it the gate value is the bundle name.
+   * @example (frontmatter) => frontmatter.gate === "internal" ? "staff" : "partners"
+   */
+  guard?: GuardFunction
 }
 
 export interface NimpressConfig {
@@ -402,34 +451,60 @@ export interface NimpressConfig {
 }
 
 export interface NimpressBannerConfig {
+  /** Banner title, defaults to the site title. */
   title?: string
+  /** Line under the title. @example "Component workshop" */
   tagline?: string
+  /** Company name in the banner footer. @example "Nimling" */
   company?: string
+  /** Version label, defaults to the consumer package version. */
   version?: string
 }
 
 export interface NimpressUserConfig {
+  /** Site title shown in the header and the tab. @example "Nimtech Components" */
   title?: string
+  /** Header logo url, absolute or under assetUrlBase. @example "/assets/logo.svg" */
   logo?: string
+  /** Repository url rendered as the header GitHub link. @example "https://github.com/nimling/nimpress" */
   github?: string
+  /** Brand colors written onto the theme tokens. @example { "primary": "#CC785C" } */
   brand?: NimpressBrandConfig
+  /** Site wide footer line, overridable per page with the footer frontmatter field. */
   footer?: string
+  /** Extra header navigation routes. @example [{ "text": "API", "link": "/api" }] */
   navRoutes?: NavRoute[]
+  /** OAuth 2.0 session login and the build time guard function for gated pages. */
   auth?: AuthConfig
+  /** Path to a client module exporting authFunctions and subscribeFunctions. @example "./docs/client.ts" */
   client?: string
+  /** Changelog subscription wiring. */
   subscribe?: SubscribeConfig
+  /** SEO, robots, llms.txt, webmanifest, and security.txt emission. */
   meta?: NimpressMetaConfig
+  /** Canonical site identity used for absolute urls, sitemap, and social cards. @example { "title": "Docs", "url": "https://developer.example.io" } */
   site?: SiteMeta
+  /** Folder holding the markdown content. @example "docs" */
   contentDir?: string
+  /** Root assets folder copied into the build. @example "assets" */
   assetsDir?: string
+  /** Url base the assets folder serves under. @example "/assets" */
   assetUrlBase?: string
+  /** Build output folder. @example "dist" */
   outDir?: string
+  /** Slug prefixes excluded from the site. @example ["drafts"] */
   exclude?: string[]
+  /** Frontmatter defaults applied to every page that leaves the field unset. @example { "lastUpdated": true } */
   defaultFrontmatter?: Partial<Frontmatter>
+  /** Path prefixes the frontmatter defaults skip. @example ["/api"] */
   defaultFrontmatterExclude?: string[]
+  /** Dev server banner, false disables it. */
   banner?: NimpressBannerConfig | false
+  /** Extra stylesheets loaded after the framework styles. @example "docs/overrides.css" */
   css?: string | string[]
+  /** Vite overrides merged into the site and harness configs. @example { "resolve": { "alias": { "@": "./src" } } } */
   vite?: Record<string, unknown>
+  /** Component workshop systems, one entry per component library. */
   modules?: ModuleSystemConfig[]
 }
 
@@ -461,8 +536,7 @@ export interface ResolvedNimpressConfig {
 export interface NavRoute {
   text: string
   link: string
-  scope?: string
-  claim?: string
+  gate?: string
 }
 
 export interface OpenApiOperation {

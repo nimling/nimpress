@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { existsSync, readdirSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
@@ -186,41 +186,8 @@ function setupImport(setup: string | undefined): string {
   return setup ? `import harnessSetup from ${JSON.stringify(setup)}` : 'const harnessSetup = null'
 }
 
-export interface VueBaseline {
-  primevue: boolean
-  confirmation: boolean
-  overlay?: string
-}
-
-export function detectVueBaseline(cwd: string, systemConfig: ModuleSystemConfig): VueBaseline {
-  const req = createRequire(join(cwd, 'package.json'))
-  const has = (spec: string) => {
-    try {
-      req.resolve(spec)
-      return true
-    } catch {
-      return false
-    }
-  }
-  let overlay: string | undefined
-  if (systemConfig.source) {
-    const root = resolve(cwd, systemConfig.source)
-    const names = ['MarModals', 'ModalsRoot', 'Modals', 'OverlayRoot']
-    for (const n of names) {
-      const found = [join(root, n, n + '.vue'), join(root, n + '.vue')].find((f) => existsSync(f))
-      if (found) { overlay = found; break }
-    }
-  }
-  return { primevue: has('primevue/config'), confirmation: has('primevue/confirmationservice'), overlay }
-}
-
-function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, baseline: VueBaseline, harness: string | undefined): string {
+function vueEntry(target: HarnessTarget, css: string[], setup: string | undefined, harness: string | undefined): string {
   const cssImports = css.map((c) => `import ${JSON.stringify(c)}`).join('\n')
-  const baselineImports = [
-    baseline.primevue ? `import PrimeVue from 'primevue/config'` : 'const PrimeVue = null',
-    baseline.confirmation ? `import ConfirmationService from 'primevue/confirmationservice'` : 'const ConfirmationService = null',
-    baseline.overlay ? `import OverlayRoot from ${JSON.stringify(baseline.overlay)}` : 'const OverlayRoot = null'
-  ].join('\n')
   const harnessImport = harness
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
     : 'const HarnessOverride = null'
@@ -228,7 +195,6 @@ function vueEntry(target: HarnessTarget, css: string[], setup: string | undefine
 import { DefaultHarness, ComponentStory, createHarnessContext, HARNESS_KEY } from '@nimling/nimpress/harness/vue'
 ${cssImports}
 ${setupImport(setup)}
-${baselineImports}
 ${harnessImport}
 
 ${messageBridge()}
@@ -236,16 +202,13 @@ ${storyRegistry(target)}
 ${componentLoader(target)}
 
 const setupDef = typeof harnessSetup === 'function' ? await harnessSetup() : harnessSetup
-const Overlay = setupDef ? (setupDef.companion ?? null) : OverlayRoot
+const Overlay = setupDef ? (setupDef.companion ?? null) : null
 const Harness = HarnessOverride ?? DefaultHarness
 
 function installBaseline(app) {
   if (setupDef && typeof setupDef.install === 'function') {
     setupDef.install(app)
-    return
   }
-  if (PrimeVue) app.use(PrimeVue, { ripple: true, theme: 'none' })
-  if (ConfirmationService) app.use(ConfirmationService)
 }
 
 const ctx = createHarnessContext()
@@ -359,11 +322,10 @@ export function harnessEntrySource(
   target: HarnessTarget,
   css: string[],
   setup: string | undefined,
-  baseline: VueBaseline,
   harness: string | undefined
 ): string {
   return framework === 'vue'
-    ? vueEntry(target, css, setup, baseline, harness)
+    ? vueEntry(target, css, setup, harness)
     : svelteEntry(target, css, setup, harness)
 }
 
@@ -464,9 +426,12 @@ function collectStoryFiles(pageFile: string): Array<{ base: string; path: string
     return []
   }
   return entries
-    .filter((name) => name.endsWith('.story.ts'))
+    .filter((name) => name.endsWith('.story.ts') || name.endsWith('.story.tsx'))
     .sort()
-    .map((name) => ({ base: basename(name, '.story.ts'), path: join(dir, name) }))
+    .map((name) => ({
+      base: name.endsWith('.story.tsx') ? basename(name, '.story.tsx') : basename(name, '.story.ts'),
+      path: join(dir, name)
+    }))
 }
 
 export function resolveHarnessSetup(cwd: string, systemConfig: ModuleSystemConfig): string | undefined {
@@ -477,18 +442,10 @@ export function resolveHarnessSetup(cwd: string, systemConfig: ModuleSystemConfi
 }
 
 export function resolveHarnessOverride(cwd: string, systemConfig: ModuleSystemConfig): string | undefined {
-  if (systemConfig.harness) {
-    return systemConfig.harness.startsWith('.') || isAbsolute(systemConfig.harness)
-      ? resolve(cwd, systemConfig.harness)
-      : systemConfig.harness
-  }
-  const ext = systemConfig.framework === 'vue' ? '.vue' : '.svelte'
-  const roots = [systemConfig.source ? resolve(cwd, systemConfig.source) : cwd, cwd]
-  for (const r of roots) {
-    const candidate = join(r, `harness${ext}`)
-    if (existsSync(candidate)) return candidate
-  }
-  return undefined
+  if (!systemConfig.harness) return undefined
+  return systemConfig.harness.startsWith('.') || isAbsolute(systemConfig.harness)
+    ? resolve(cwd, systemConfig.harness)
+    : systemConfig.harness
 }
 
 function harnessPlugin(
@@ -502,7 +459,6 @@ function harnessPlugin(
     c.startsWith('.') || isAbsolute(c) ? resolve(cwd, c) : c
   )
   const setup = resolveHarnessSetup(cwd, systemConfig)
-  const baseline = detectVueBaseline(cwd, systemConfig)
   const harness = resolveHarnessOverride(cwd, systemConfig)
   const byComponent = new Map(targets.map((t) => [t.component, t]))
   const resolvedPrefix = '\0' + HARNESS_VIRTUAL_PREFIX
@@ -512,7 +468,7 @@ function harnessPlugin(
     return parts[0] === system && parts[1] ? parts[1] : null
   }
   const entrySource = (target: HarnessTarget): string =>
-    harnessEntrySource(systemConfig.framework, target, css, setup, baseline, harness)
+    harnessEntrySource(systemConfig.framework, target, css, setup, harness)
   return {
     name: 'nimpress:harness',
     resolveId(id) {

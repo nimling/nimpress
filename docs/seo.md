@@ -1,7 +1,7 @@
 ---
 title: SEO and social cards
 order: 9
-group:
+sidebar:
   name: Authoring
 ---
 

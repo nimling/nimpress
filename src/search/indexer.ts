@@ -109,7 +109,7 @@ export function searchIndex(
     .filter((r) => matchesPathPrefix(String(r.path ?? ''), prefixes))
     .filter((r) =>
       viewerCanAccess(
-        { scope: r.scope as string | undefined, claim: r.claim as string | undefined },
+        { gate: r.gate as string | undefined },
         viewer
       )
     )

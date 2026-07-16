@@ -36,7 +36,7 @@ A repo keeps its docs beside its code and ships them into the central site on a 
 :::
 
 :::feature {"title":"Session gating","link":"/auth"}
-Gate any page on a scope or a claim. Gated pages build into separate artifacts and upload behind the auth provider.
+Gate any page with one frontmatter field. Gated pages build into guarded bundles and upload behind the auth provider.
 :::
 ::::
 
