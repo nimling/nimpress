@@ -1,4 +1,9 @@
-# Theming
+---
+title: Theming
+order: 1
+group:
+  name: Styling
+---
 
 Nimpress styles flow through CSS custom properties. Override the ones you want in your own stylesheet, no fork required.
 

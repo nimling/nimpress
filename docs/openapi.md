@@ -1,4 +1,9 @@
-# OpenAPI renderer
+---
+title: OpenAPI renderer
+order: 6
+group:
+  name: Authoring
+---
 
 A page with `type: openapi` and a `spec` field renders an OpenAPI 3.1 reference page.
 

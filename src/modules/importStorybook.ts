@@ -2,10 +2,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
-import type { ControlSchema, ModuleFramework, ResolvedNimpressConfig } from '../types'
-import { opaqueControls, readBalanced, schemaToJsonSchema } from './parse/typeMembers'
-import { parseComponentSchema } from './componentData'
+import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
+import { readBalanced } from './parse/typeMembers'
 import { findComponentDts, parseDtsSchema } from './parse/dts'
+import { parseSourceSchema, writeComponentSchema } from './schema'
 
 export interface ImportOptions {
   source?: string
@@ -122,7 +122,7 @@ function parseStoryModule(file: string): StoryModule {
           return `from ${JSON.stringify(classified.abs)}`
         }
         const base = basename(spec).replace(/\.ts$/, '')
-        return `from "../../_shared/${base}"`
+        return `from "./${base}"`
       })
     )
     .join('\n')
@@ -309,42 +309,6 @@ function packageExportNames(cwd: string, pkg: string): Map<string, string> {
   return map
 }
 
-export async function writeComponentSchema(
-  dir: string,
-  component: string,
-  schema: ControlSchema | undefined
-): Promise<void> {
-  if (!schema) return
-  const schemaPath = join(dir, 'schema.json')
-  await writeFile(schemaPath, JSON.stringify(schemaToJsonSchema(component, schema.props), null, 2) + '\n')
-  const opaque = opaqueControls(schema.props)
-  const thin = schema.props.filter((p) => !p.description).map((p) => p.name)
-  console.log(
-    `nimpress modules: ${component} schema written to ${schemaPath} — ${schema.props.length - thin.length}/${schema.props.length} props documented`
-  )
-  if (thin.length) {
-    console.warn(`nimpress modules: ${component} props missing a description: ${thin.join(', ')}`)
-  }
-  for (const o of opaque) {
-    console.warn(
-      `nimpress modules: ${component}.${o.path} type ${o.type} is opaque, document it in the component file or a sibling .types.ts so the parser resolves it`
-    )
-  }
-}
-
-export async function parseSourceSchema(
-  componentFile: string,
-  framework: ModuleFramework,
-  component: string
-): Promise<ControlSchema | undefined> {
-  try {
-    return await parseComponentSchema(dirname(componentFile), componentFile, framework, component)
-  } catch (err) {
-    console.warn(`nimpress modules: schema parse failed for ${component}: ${String(err)}`)
-    return undefined
-  }
-}
-
 export async function importStorybook(
   cwd: string,
   resolved: ResolvedNimpressConfig,
@@ -356,7 +320,6 @@ export async function importStorybook(
   const framework: ModuleFramework = systemConfig.framework
   const ext = framework === 'vue' ? '.vue' : '.svelte'
   const docsRoot = join(cwd, resolved.contentDir, 'components')
-  const sharedDir = join(docsRoot, '_shared')
   const pkg = systemConfig.package
   const matcher = opts.match ? new RegExp(opts.match) : null
 
@@ -422,10 +385,6 @@ export async function importStorybook(
     const list = modulesByComponent.get(canonical) ?? []
     list.push(module)
     modulesByComponent.set(canonical, list)
-    for (const dataModule of module.dataModules) {
-      await mkdir(sharedDir, { recursive: true })
-      await copyFile(dataModule, join(sharedDir, basename(dataModule)))
-    }
   }
   const seen = new Map<string, string>()
   let pages = 0
@@ -467,6 +426,9 @@ export async function importStorybook(
       if (!mined.length) {
         console.warn(`nimpress modules: no stories mined from ${basename(module.file)}`)
       }
+      for (const dataModule of module.dataModules) {
+        await copyFile(dataModule, join(dir, basename(dataModule)))
+      }
       for (const story of mined) {
         const displayName = scenario === name ? story.name : `${scenario} ${story.name}`
         let base = storyFileName(story.name)
@@ -491,7 +453,6 @@ async function importFromStories(
   const systemConfig = resolved.modules.systems[system]!
   const framework: ModuleFramework = systemConfig.framework
   const docsRoot = join(cwd, resolved.contentDir, 'components')
-  const sharedDir = join(docsRoot, '_shared')
   const storiesDir = resolve(cwd, opts.stories ?? '')
   if (!opts.stories || !existsSync(storiesDir)) {
     throw new Error('[nimpress] modules import --from-stories requires --stories=<csf dir>')
@@ -570,8 +531,7 @@ async function importFromStories(
     }
     pages++
     for (const dataModule of module.dataModules) {
-      await mkdir(sharedDir, { recursive: true })
-      await copyFile(dataModule, join(sharedDir, basename(dataModule)))
+      await copyFile(dataModule, join(dir, basename(dataModule)))
     }
     for (const story of mineStories(module)) {
       const base = storyFileName(story.name)

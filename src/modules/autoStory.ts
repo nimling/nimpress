@@ -116,7 +116,7 @@ import { ${component} } from "${pkg ?? system}";
   const source = resolveComponentSource(cwd, resolved.modules, system, component)
   if (source) {
     const framework = frameworkFlag ?? detectFramework(source.componentFile) ?? systemConfig.framework
-    const { parseSourceSchema, writeComponentSchema } = await import('./importStorybook')
+    const { parseSourceSchema, writeComponentSchema } = await import('./schema')
     await writeComponentSchema(dir, component, await parseSourceSchema(source.componentFile, framework, component))
     await generateAutoStory(cwd, resolved, system, component, frameworkFlag)
   } else {

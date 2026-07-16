@@ -18,7 +18,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 4. `description` gets used as a meta description and a search excerpt. Add it for any page expected to land via search.
 
-5. `hidden: true` removes the page from sidebar, search, and direct routing. Use for drafts.
+5. `visibility` controls where the page appears, one of `visible`, `hidden`, `dev-only`. `visible` is the default. `hidden` removes the page from sidebar, search, and the build, use it for drafts. `dev-only` keeps the page in `nimpress dev` but excludes it from the built bundle, use it for pages that must never ship.
 
 6. `noToc: true` hides the right rail. Use on hero pages and short pages where the TOC would feel empty.
 
@@ -35,6 +35,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A page combining several release notes into one collapsible list | `changelog` |
 | A landing page with an oversized hero band on top | `hero` |
 | A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
+| A live workshop page for one component in a library | `component` |
 
 ## Type specific fields
 
@@ -47,6 +48,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
 
 5. `type: milestone | epic | feature | bug` (issue pages) require `title`, `description`, and `data.date` as an RFC 3339 string. Optional `data.parent` references another issue by relative filename. Each issue page renders at its own URL with a kind chip and date header. See [roadmap-entries.md](./roadmap-entries.md).
+
+6. `type: component` requires `data.system` naming a configured module system and `data.component` naming the component. Optional `data.package`, `data.file`, `data.version`, and `data.controls`. One `type: component` page per folder; the sibling `.story.ts` files are its stories. See [component-modules.md](./component-modules.md).
 
 ## SEO and social cards
 
@@ -78,7 +81,7 @@ Defaults flow from `frontmatter.description` and the site level `site` config in
 
 2. Public pages omit both.
 
-3. Hidden pages cannot be reached even with the right claim.
+3. `visibility: hidden` removes a page from the build entirely, and `dev-only` from the built bundle, independent of `scope` and `claim`. A page with the right claim still will not render if its visibility excludes it.
 
 ## Never
 

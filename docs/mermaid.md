@@ -1,4 +1,9 @@
-# Mermaid
+---
+title: Mermaid
+order: 3
+group:
+  name: Authoring
+---
 
 Fenced ` ```mermaid ` blocks render through the bundled `MermaidBlock` component.
 

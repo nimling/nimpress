@@ -1,4 +1,9 @@
-# Relative links
+---
+title: Relative links
+order: 7
+group:
+  name: Authoring
+---
 
 Authoring links between markdown pages.
 

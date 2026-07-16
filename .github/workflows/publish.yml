@@ -38,6 +38,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
 
+      - name: Test
+        run: pnpm test
+
       - name: Build
         run: pnpm build:lib
         env:

@@ -44,6 +44,12 @@ export function parseVueComponent(source: string, component: string, extraTypes 
     }
   }
 
+  for (const model of script.matchAll(/\bdefineModel(?:<([^>]*)>)?\(\s*(?:['"]([\w-]+)['"])?/g)) {
+    const name = model[2] ?? 'modelValue'
+    if (props.some((p) => p.name === name)) continue
+    props.push(controlFromType(name, model[1]?.trim() || 'string', true, typeContext))
+  }
+
   const slots: ControlSpec[] = []
   const seen = new Set<string>()
   for (const m of template.matchAll(/<slot\b([^>]*)>/g)) {

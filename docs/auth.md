@@ -1,4 +1,9 @@
-# Auth
+---
+title: Auth
+order: 2
+group:
+  name: Pipeline
+---
 
 Page level gating through `samna_auth`. Sessions arrive via cookies. There is no client secret in the browser.
 
@@ -39,6 +44,20 @@ Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot
 ## Logout
 
 `endSession()` calls `<authEndpoint>/api/auth/logout` with `credentials: 'include'` and clears the viewer store.
+
+## Gated artifacts and the guard command
+
+A `scope` or `claim` on a page does more than hide it at runtime. The build separates gated pages from the public bundle so their content never ships to the static host, and the `nimpress guard` command wires the built site to the artifacts once they live behind the auth provider.
+
+1. `nimpress build` writes `dist/access.json`, the route requirements and the gated path prefix, and emits every gated file under `dist/_gated/` instead of into the public tree.
+
+2. `nimpress guard map` reads `dist/access.json` and `dist/_gated/` and writes `dist/guard-map.json`: the prefix, the route requirements, and one entry per gated file with its `sha256`, `size`, `mime`, and the `scope` and `claim` it resolves from `access.json`. Pass `--dist=<dir>` to point at a build folder other than the configured `outDir`, and `--out=<path>` to write the map elsewhere.
+
+3. You upload the gated files to the auth provider, keyed by `guard-map.json`, with a deploy artifact claim. The provider returns a mapping json carrying a `base` url where the artifacts now live.
+
+4. `nimpress guard apply --map=<uploaded mapping json>` reads that `base`, writes it into `dist/access.json`, then removes `dist/_gated/` and `dist/guard-map.json` from the build. The public bundle now carries no gated content, and the runtime resolves gated paths against the provider base, which serves them only to a viewer whose session satisfies the claim.
+
+This is the last step before publishing a site that mixes public and gated pages. A build with no gated pages produces no `_gated/` folder and needs no guard step.
 
 ## Threat model
 

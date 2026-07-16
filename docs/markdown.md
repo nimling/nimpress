@@ -1,4 +1,9 @@
-# Markdown
+---
+title: Markdown
+order: 1
+group:
+  name: Authoring
+---
 
 Built on `markdown-it` with a focused set of plugins. CommonMark plus the extensions below.
 

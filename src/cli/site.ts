@@ -1,0 +1,65 @@
+import { join } from 'node:path'
+import { writeFileSync, existsSync, rmSync } from 'node:fs'
+import { createServer, build, preview } from 'vite'
+import type { ResolvedNimpressConfig } from '../types'
+import { buildViteConfig } from '../config/viteConfig'
+import { indexHtml } from '../config/html'
+import { harnessViteConfig, harnessPort } from '../modules/harness'
+
+export function deployableSystems(resolved: ResolvedNimpressConfig): string[] {
+  return Object.entries(resolved.modules.systems)
+    .filter(([, systemConfig]) => !systemConfig.devOnly)
+    .map(([name]) => name)
+}
+
+export async function startHarnessServers(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  systems: string[]
+): Promise<void> {
+  for (const system of systems) {
+    try {
+      const server = await createServer(await harnessViteConfig(cwd, resolved, system, 'serve'))
+      await server.listen()
+      console.log(`nimpress modules: ${system} harness on port ${harnessPort(resolved.modules, system)}`)
+    } catch (err) {
+      console.warn(`nimpress modules: harness for ${system} failed to start: ${String(err)}`)
+    }
+  }
+}
+
+export async function buildHarnesses(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  systems: string[]
+): Promise<void> {
+  for (const system of systems) {
+    await build(await harnessViteConfig(cwd, resolved, system, 'build'))
+    console.log(`nimpress modules: built ${system}`)
+  }
+}
+
+export async function runDev(cwd: string, resolved: ResolvedNimpressConfig): Promise<void> {
+  const server = await createServer(buildViteConfig({ cwd, command: 'serve', resolved }))
+  await server.listen()
+  await startHarnessServers(cwd, resolved, Object.keys(resolved.modules.systems))
+  server.printUrls()
+  server.bindCLIShortcuts({ print: true })
+}
+
+export async function runBuild(cwd: string, resolved: ResolvedNimpressConfig): Promise<void> {
+  const htmlPath = join(cwd, 'index.html')
+  const created = !existsSync(htmlPath)
+  if (created) writeFileSync(htmlPath, indexHtml(resolved))
+  try {
+    await build(buildViteConfig({ cwd, command: 'build', resolved, htmlInput: htmlPath }))
+  } finally {
+    if (created) rmSync(htmlPath, { force: true })
+  }
+  await buildHarnesses(cwd, resolved, deployableSystems(resolved))
+}
+
+export async function runPreview(cwd: string, resolved: ResolvedNimpressConfig): Promise<void> {
+  const server = await preview(buildViteConfig({ cwd, command: 'build', resolved }))
+  server.printUrls()
+}

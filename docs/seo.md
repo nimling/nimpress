@@ -1,4 +1,9 @@
-# SEO and social cards
+---
+title: SEO and social cards
+order: 9
+group:
+  name: Authoring
+---
 
 Every page can declare per page metadata that gets written to `<head>` so search engines and social media crawlers see the right values. The plugin parses the frontmatter at build time. The runtime applies the resolved tags to `document.head` on every navigation.
 

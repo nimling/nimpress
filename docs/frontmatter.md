@@ -1,4 +1,9 @@
-# Frontmatter
+---
+title: Frontmatter
+order: 2
+group:
+  name: Core
+---
 
 YAML at the top of every markdown file, parsed with `gray-matter` and validated with `zod`. Unknown fields warn but do not fail the build.
 
@@ -8,7 +13,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 |-------|------|-------------|
 | `title` | string, required | Page heading rendered as h1 |
 | `slug` | string | Short label rendered in the sidebar, falls back to `title` |
-| `type` | `doc` \| `openapi` \| `changelog` \| `hero` | Renderer selection, defaults to `doc` |
+| `type` | page type | Renderer selection, defaults to `doc`, see [page-types.md](/page-types) |
 | `path` | string | Route override, default derived from the file location |
 | `spec` | string | Required when `type: openapi`, path to the spec JSON, relative to the markdown file |
 | `scope` | string | Auth scope required to view the page |
@@ -16,19 +21,44 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
 | `icon` | string | Optional icon next to the sidebar entry |
-| `group` | object | Sidebar group definition: required `name`, optional `icon` and `style`, groups the page without changing its URL |
-| `hidden` | boolean | Excludes the page from sidebar, search, and direct routing |
+| `group` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL |
+| `visibility` | `visible` \| `hidden` \| `dev-only` | `hidden` removes the page from sidebar, search, and the build entirely. `dev-only` shows it in `nimpress dev` but excludes it from the built bundle. Defaults to `visible` |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
 | `redirect` | string | Send the visitor to another path on load |
 | `noToc` | boolean | Hide the right rail table of contents |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
-| `meta` | object | SEO and social card metadata, see [seo.md](./seo.md) |
+| `background` | string | Banner image behind the header, used by `hero` and `roadmap` |
+| `tags` | string \| string[] | Comma separated string or YAML array of search keywords |
+| `rss` | boolean | Serve a `changelog` collection as an RSS feed |
+| `subscribe` | boolean | Show a subscribe control on a `changelog` collection |
+| `meta` | object | SEO and social card metadata, see [seo.md](/seo) |
 | `data` | object | Renderer specific payload, see below |
+
+## `visibility`
+
+Replaces a plain hidden flag with three states, enforced in `src/plugin.ts`:
+
+1. `visible` is the default. The page routes, appears in the sidebar, and indexes into search.
+
+2. `hidden` removes the page from the sidebar, from search, and from the build output. Use it for drafts.
+
+3. `dev-only` keeps the page in `nimpress dev` so you can work on it locally, but excludes it from the built bundle. Use it for pages that should never ship, like internal scratch pages.
+
+## `group`
+
+A top level `group` block places the page under a named sidebar group without moving its folder or changing its URL. `name` is required and renders verbatim. `icon` and `style` decorate the group row. `path` overrides the group's route; without it the route falls back to the physical folder. See [sidebar.md](/sidebar).
+
+```yaml
+group:
+  name: Inputs
+  icon: "▤"
+  style: "color: var(--np-brand)"
+```
 
 ## `meta`
 
-SEO and social card metadata written to `<head>` at build time and re applied on every navigation. Full reference in [seo.md](./seo.md). Top level keys:
+SEO and social card metadata written to `<head>` at build time and re applied on every navigation. Full reference in [seo.md](/seo). Top level keys:
 
 1. `description`, `canonical`, `robots`, `keywords`, `author`, `themeColor` for standard HTML head tags.
 
@@ -42,11 +72,15 @@ SEO and social card metadata written to `<head>` at build time and re applied on
 
 Arbitrary object handed to the renderer the page selected.
 
-1. `type: changelog` reads `data.version` for sort order, `data.title` for the per release headline, and `data.description` for the per release summary line. The top level `title` is the shared collection title and the grouping key.
+1. `type: changelog` reads `data.version` for sort order, `data.release_date` for the date, `data.title` for the per release headline, and `data.description` for the per release summary. The top level `title` is the shared collection title and the grouping key.
 
-2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [markdown.md](./markdown.md), not in `data`.
+2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [markdown.md](/markdown), not in `data`.
 
-3. Custom renderers read whatever they need.
+3. `type: roadmap` reads `data.issues` and `data.changelog` to scope the timeline. The issue kinds read `data.date` and `data.parent`.
+
+4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.controls`. See [modules.md](/modules).
+
+5. Custom renderers read whatever they need.
 
 ## Path derivation
 
@@ -56,7 +90,7 @@ A frontmatter `path` overrides this entirely.
 
 ## Duplicate paths
 
-Two pages sharing the same effective `path` raise a build error. `type: changelog` entries do not declare `path` at all; they are grouped by `(parent folder, title)` and collapse into one rendered page mounted at the folder's path. See [changelog.md](./changelog.md).
+Two pages sharing the same effective `path` raise a build error. `type: changelog` entries do not declare `path` at all; they are grouped by `(parent folder, title)` and collapse into one rendered page mounted at the folder's path. See [changelog.md](/changelog).
 
 ## Outside contentDir
 

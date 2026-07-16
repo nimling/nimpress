@@ -1,4 +1,9 @@
-# Search
+---
+title: Search
+order: 8
+group:
+  name: Authoring
+---
 
 Local, client side, no external service. Powered by MiniSearch.
 

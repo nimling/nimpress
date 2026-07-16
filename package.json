@@ -61,6 +61,7 @@
     "build:lib": "vite build --mode library",
     "preview:lib": "vite preview --mode library",
     "type-check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "vitest run",
     "bump": "../sbump/sbump.sh patch --package-file=package.json --push-version",
     "bump:minor": "../sbump/sbump.sh minor --package-file=package.json --push-version",
     "bump:major": "../sbump/sbump.sh major --package-file=package.json --push-version"
@@ -111,7 +112,8 @@
     "svelte": "^5.34.7",
     "svelte-check": "^4.2.2",
     "typescript": "~5.9.3",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.1.10"
   },
   "packageManager": "pnpm@10.18.3",
   "publishConfig": {
