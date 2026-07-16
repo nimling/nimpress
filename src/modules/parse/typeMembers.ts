@@ -1,4 +1,5 @@
 import type { ControlSpec } from '../../types'
+import * as mocks from '../../mock'
 
 export interface TypeMember {
   name: string
@@ -304,6 +305,45 @@ export interface ComponentJsonSchema {
   required?: string[]
   slots?: Record<string, ControlJsonSchema>
   emits?: string[]
+}
+
+export function mockValue(spec: ControlSpec, seed = 0): unknown {
+  if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: mocks.fnSource(spec.name) }
+  if (spec.kind === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const member of spec.members ?? []) {
+      const v = mockValue(member, seed)
+      if (v !== undefined) out[member.name] = v
+    }
+    return Object.keys(out).length ? out : undefined
+  }
+  if (spec.kind === 'array') {
+    if (!spec.item) return undefined
+    const first = mockValue(spec.item, seed)
+    if (first === undefined) return undefined
+    return [first, mockValue(spec.item, seed + 1)]
+  }
+  if (spec.kind === 'record') {
+    const out: Record<string, unknown> = {}
+    for (let i = 0; i < 2; i++) {
+      const key = mocks.mockWord(seed + i)
+      out[key] = spec.item ? (mockValue(spec.item, seed + i) ?? mocks.mockSentence(seed + i)) : mocks.mockSentence(seed + i)
+    }
+    return out
+  }
+  const name =
+    spec.mock ??
+    (spec.kind === 'boolean'
+      ? 'mockBoolean'
+      : spec.kind === 'number'
+        ? 'mockInt'
+        : spec.kind === 'select'
+          ? 'mockOption'
+          : 'mockWord')
+  const fn = (mocks as unknown as Record<string, (...a: unknown[]) => unknown>)[name]
+  if (typeof fn !== 'function') return undefined
+  if (name === 'mockOption') return fn(spec.options ?? [], seed)
+  return fn(seed)
 }
 
 export function schemaFromJsonSchema(
