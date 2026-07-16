@@ -196,7 +196,7 @@ function cleanForEval(source: string): string {
 
 function mineStories(module: StoryModule): MinedStory[] {
   const out: MinedStory[] = []
-  const re = /export const (\w+)(?::[^=]*)?=\s*\{/g
+  const re = /export const (\w+)\s*(?::[^=]*)?=\s*\{/g
   let match
   while ((match = re.exec(module.text))) {
     const name = match[1]
@@ -430,8 +430,9 @@ export async function importStorybook(
         await copyFile(dataModule, join(dir, basename(dataModule)))
       }
       for (const story of mined) {
-        const displayName = scenario === name ? story.name : `${scenario} ${story.name}`
-        let base = storyFileName(story.name)
+        const isDefault = story.name === name
+        const displayName = isDefault ? 'Default' : scenario === name ? story.name : `${scenario} ${story.name}`
+        let base = storyFileName(displayName)
         if (writtenThisRun.has(base)) base = storyFileName(`${scenario}-${story.name}`)
         const target = join(dir, `${base}.story.tsx`)
         writtenThisRun.add(base)
@@ -534,10 +535,11 @@ async function importFromStories(
       await copyFile(dataModule, join(dir, basename(dataModule)))
     }
     for (const story of mineStories(module)) {
-      const base = storyFileName(story.name)
+      const displayName = story.name === component ? 'Default' : story.name
+      const base = storyFileName(displayName)
       const target = join(dir, `${base}.story.tsx`)
       if (existsSync(target)) continue
-      await writeFile(target, storySource(framework, story.name, fileBase, story, module))
+      await writeFile(target, storySource(framework, displayName, fileBase, story, module))
       stories++
     }
   }

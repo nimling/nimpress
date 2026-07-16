@@ -79,10 +79,19 @@ The component workshop. Full concept guide in [Component modules](/modules). Eve
 | `modules dev [--system=]` | Run harness servers |
 | `modules build [--system=]` | Build static harness bundles |
 | `modules lint [--system=]` | Lint component pages, stories, and schemas |
-| `modules story [component]` | Write typed mock auto stories |
+| `modules story [component]` | Write `default.story.tsx` for every storyless page |
 | `modules import [file]` | Import a library or one component |
 | `modules create <Component>` | Scaffold a component page |
 | `modules create --component=<ref> --schema` | Regenerate one schema.json |
+
+### modules story
+
+Writes `default.story.tsx` with the name `Default` beside every storyless component page, or for one named component. Every component opens on the same entry story; richer scenarios sit beside it as further story files. The importer follows the same convention: a mined storybook story whose name equals the component itself lands as the Default story.
+
+```bash
+nimpress modules story
+nimpress modules story MarButton
+```
 
 ### modules lint
 
@@ -90,11 +99,13 @@ Checks every component page of the named system, or every system when none is na
 
 1. Framework purity: a vue system rejects `svelteStory` and `.svelte` imports in stories, a svelte system rejects the inverse, and the component source file extension must match the system framework.
 
-2. `schema.json` exists beside every `index.md` and parses as json.
+2. Every page carries at least one story. A storyless page reports the exact `modules story` command that fills it.
 
-3. Value story props all exist in `schema.json`. Stories carrying a `harness` field or a `render` function are exempt, their props feed the harness or the render function rather than the control tree.
+3. `schema.json` exists beside every `index.md` and parses as json.
 
-4. `schema.json` matches what the component source parses to today. Drift reports the exact regenerate command.
+4. Value story props all exist in `schema.json`. Stories carrying a `harness` field or a `render` function are exempt, their props feed the harness or the render function rather than the control tree.
+
+5. `schema.json` matches what the component source parses to today. Drift reports the exact regenerate command.
 
 ```bash
 nimpress modules lint

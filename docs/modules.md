@@ -208,17 +208,17 @@ nimpress modules build
 
 The system rides along as `--system=<name>` on every subcommand and is required only when several systems are configured.
 
-1. `import` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers, then fills storyless components with typed auto stories. A data module a render story imports copies in beside the story so every component folder stays self contained; there is no shared fixture folder. `--match` filters component names by regex, `--select` lists the matches and prompts interactively, comma separated numbers, names, or `/regex/`. Meta `argTypes` convert to `data.controls` json schemas on the generated page so storybook custom inputs survive the conversion.
+1. `import` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers, then fills storyless components with generated default stories. A mined story whose name equals the component itself becomes the Default story, written as `default.story.tsx` named `Default`, so every component opens on the same entry story. A data module a render story imports copies in beside the story so every component folder stays self contained; there is no shared fixture folder. `--match` filters component names by regex, `--select` lists the matches and prompts interactively, comma separated numbers, names, or `/regex/`. Meta `argTypes` convert to `data.controls` json schemas on the generated page so storybook custom inputs survive the conversion.
 
 2. `import <file>` registers a single external component into the system.
 
-3. `story [component]` writes typed mock auto stories, framework autodetected from the file extension with `--framework=` as the override.
+3. `story [component]` writes `default.story.tsx` named `Default` for every storyless component page, framework autodetected from the file extension with `--framework=` as the override. One command fills a whole system so every component carries at least its Default story.
 
-4. `create <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, one typed auto story when the source component exists or a stub story otherwise, and `schema.json`.
+4. `create <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, `default.story.tsx`, and `schema.json`.
 
 5. `create --component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is either the component name, unique across every system, or the path to the component file when the name is ambiguous.
 
-6. `lint [--system=]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, `schema.json` present and valid beside every `index.md`, value story props all present in `schema.json`, and `schema.json` matching what the component source parses to today. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree.
+6. `lint [--system=]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, at least one story beside every page, `schema.json` present and valid beside every `index.md`, value story props all present in `schema.json`, and `schema.json` matching what the component source parses to today. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree.
 
 7. Every component folder gets `schema.json` on import and create, the props as a json schema generated from the parsed control tree, the same generator behind the workshop's json dialog. Prop types the parser cannot resolve log warnings with the component, the prop path, and the type, the hint that the type should be documented where the parser sees it.
 
