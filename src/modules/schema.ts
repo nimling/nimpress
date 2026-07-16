@@ -21,7 +21,7 @@ export async function parseSourceSchema(
 }
 
 export function renderComponentSchema(component: string, schema: ControlSchema): string {
-  return JSON.stringify(schemaToJsonSchema(component, schema.props), null, 2) + '\n'
+  return JSON.stringify(schemaToJsonSchema(component, schema.props, schema.slots, schema.emits), null, 2) + '\n'
 }
 
 export async function writeComponentSchema(

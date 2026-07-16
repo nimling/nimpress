@@ -1,7 +1,7 @@
 import { loadNimpressConfig } from './config/load'
 import { runInit } from './cli/init'
 import { runLint } from './cli/lint'
-import { runDev, runBuild, runPreview } from './cli/site'
+import { runDev, runBuild } from './cli/site'
 import { runGuard } from './cli/guard'
 import { runModules } from './cli/modules'
 import { runExport } from './cli/export'
@@ -29,10 +29,6 @@ export async function run(argv: string[]): Promise<void> {
   }
   if (cmd === 'build') {
     await runBuild(cwd, resolved)
-    return
-  }
-  if (cmd === 'preview') {
-    await runPreview(cwd, resolved)
     return
   }
   if (cmd === 'guard') {

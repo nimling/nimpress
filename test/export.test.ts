@@ -31,7 +31,7 @@ data:
     file(repo.cwd, 'docs/components/Components/Foo/foo.story.ts', 'export default {}\n')
     file(repo.cwd, 'docs/guide/unmarked.md', '---\ntitle: Guide\n---\n\nBody\n')
     runExport(repo.cwd, resolvedConfig(), ['--target=central'])
-    const out = join(repo.cwd, '.nimpress-export')
+    const out = join(repo.cwd, '.nimpress')
     const page = readFileSync(join(out, 'components/Components/Foo/index.md'), 'utf-8')
     expect(page).not.toContain('export:')
     expect(page).toContain('version: "1.2.3"')
@@ -43,7 +43,7 @@ data:
     repo = makeRepo()
     file(repo.cwd, 'docs/a/index.md', '---\ntitle: A\nexport: other\n---\n\nBody\n')
     runExport(repo.cwd, resolvedConfig(), ['--target=central'])
-    expect(existsSync(join(repo.cwd, '.nimpress-export', 'a'))).toBe(false)
+    expect(existsSync(join(repo.cwd, '.nimpress', 'a'))).toBe(false)
   })
 })
 

@@ -1,7 +1,7 @@
 ---
 title: Relative links
 order: 7
-group:
+sidebar:
   name: Authoring
 ---
 

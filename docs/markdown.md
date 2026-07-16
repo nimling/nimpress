@@ -1,7 +1,7 @@
 ---
 title: Markdown
 order: 1
-group:
+sidebar:
   name: Authoring
 ---
 
@@ -156,3 +156,20 @@ See [definition-lists.md](./definition-lists.md).
 ## Task lists
 
 `markdown-it-task-lists` enabled. Use `- [ ]` and `- [x]`.
+
+## Live components
+
+The `:::component` directive renders a live component from a configured module system inline in any page, through the same iframe harness the workshop uses:
+
+```markdown
+:::component {"component":"MarButton","props":{"label":"Save"},"height":"12em"}
+:::
+```
+
+1. `component` alone suffices when one system is configured; `system` names it otherwise.
+
+2. `story` selects a story file by its base name, `props` and `slots` travel base64 encoded into the frame, `height` sizes it, default `20em`.
+
+3. `:::component MarButton` is the shorthand for the bare component with its default controls.
+
+See [modules.md](./modules.md) for systems and the harness.

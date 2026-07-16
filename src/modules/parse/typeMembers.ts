@@ -282,14 +282,44 @@ function withMock(name: string, spec: ControlSpec): Record<string, unknown> {
   return { ...js, mock }
 }
 
-export function schemaToJsonSchema(component: string, props: ControlSpec[]): Record<string, unknown> {
+export function schemaToJsonSchema(
+  component: string,
+  props: ControlSpec[],
+  slots: ControlSpec[] = [],
+  emits: string[] = []
+): Record<string, unknown> {
   return {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     title: component,
     type: 'object',
     properties: Object.fromEntries(props.map((p) => [p.name, withMock(p.name, p)])),
-    required: props.filter((p) => p.required).map((p) => p.name)
+    required: props.filter((p) => p.required).map((p) => p.name),
+    slots: Object.fromEntries(slots.map((s) => [s.name, withMock(s.name, s)])),
+    emits
   }
+}
+
+export interface ComponentJsonSchema {
+  properties?: Record<string, ControlJsonSchema>
+  required?: string[]
+  slots?: Record<string, ControlJsonSchema>
+  emits?: string[]
+}
+
+export function schemaFromJsonSchema(
+  component: string,
+  raw: ComponentJsonSchema
+): { component: string; props: ControlSpec[]; slots: ControlSpec[]; emits: string[] } {
+  const required = new Set(raw.required ?? [])
+  const props = Object.entries(raw.properties ?? {}).map(([name, member]) =>
+    controlFromJsonSchema(name, member, required.has(name))
+  )
+  const slots = Object.entries(raw.slots ?? {}).map(([name, member]) => ({
+    ...controlFromJsonSchema(name, member),
+    kind: 'slot' as const
+  }))
+  const emits = Array.isArray(raw.emits) ? raw.emits : []
+  return { component, props, slots, emits }
 }
 
 export function opaqueControls(props: ControlSpec[], prefix = ''): Array<{ path: string; type: string }> {

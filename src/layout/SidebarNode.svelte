@@ -19,7 +19,7 @@
   const isGroup = $derived(!!(node.items && node.items.length))
   const v = $derived($viewer)
   const visible = $derived(
-    viewerCanAccess({ scope: node.scope, claim: node.claim }, v)
+    viewerCanAccess({ gate: node.gate }, v)
   )
   const active = $derived(
     !!route && !!node.link && route.path.replace(/\/$/, '') === node.link.replace(/\/$/, '')

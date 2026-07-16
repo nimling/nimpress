@@ -1,7 +1,7 @@
 ---
 title: Frontmatter
 order: 2
-group:
+sidebar:
   name: Core
 ---
 
@@ -16,12 +16,11 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `type` | page type | Renderer selection, defaults to `doc`, see [page-types.md](/page-types) |
 | `path` | string | Route override, default derived from the file location |
 | `spec` | string | Required when `type: openapi`, path to the spec JSON, relative to the markdown file |
-| `scope` | string | Auth scope required to view the page |
-| `claim` | string | Auth claim required to view the page |
+| `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
 | `icon` | string | Optional icon next to the sidebar entry |
-| `group` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL |
+| `sidebar` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL |
 | `visibility` | `visible` \| `hidden` \| `dev-only` | `hidden` removes the page from sidebar, search, and the build entirely. `dev-only` shows it in `nimpress dev` but excludes it from the built bundle. Defaults to `visible` |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
@@ -45,15 +44,23 @@ Replaces a plain hidden flag with three states, enforced in `src/plugin.ts`:
 
 3. `dev-only` keeps the page in `nimpress dev` so you can work on it locally, but excludes it from the built bundle. Use it for pages that should never ship, like internal scratch pages.
 
-## `group`
+## `sidebar`
 
-A top level `group` block places the page under a named sidebar group without moving its folder or changing its URL. `name` is required and renders verbatim. `icon` and `style` decorate the group row. `path` overrides the group's route; without it the route falls back to the physical folder. See [sidebar.md](/sidebar).
+A top level `sidebar` block places the page under a named sidebar group without moving its folder or changing its URL. `name` is required and renders verbatim. `icon` and `style` decorate the group row. `path` overrides the group's route; without it the route falls back to the physical folder. On a folder `index.md` the block changes and styles the folder's own sidebar entry instead of nesting a group, for every page type. See [sidebar.md](/sidebar).
 
 ```yaml
-group:
+sidebar:
   name: Inputs
   icon: "▤"
   style: "color: var(--np-brand)"
+```
+
+## `gate`
+
+One field guards a page. The value is an arbitrary string; the build's guard function maps every gated page into a guarded bundle under `dist/_guarded/<bundle>/`, `dist/guard.map.json` records what went where, and the runtime checks the viewer against the gate. See [auth.md](/auth).
+
+```yaml
+gate: internal
 ```
 
 ## `meta`

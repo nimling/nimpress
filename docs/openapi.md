@@ -1,7 +1,7 @@
 ---
 title: OpenAPI renderer
 order: 6
-group:
+sidebar:
   name: Authoring
 ---
 

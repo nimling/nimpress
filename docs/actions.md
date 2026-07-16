@@ -2,7 +2,7 @@
 title: Publishing a repo's docs to the central site
 description: How any nimling repo ships its own docs into the central docs site through the nimpress docs-sync action on a version tag.
 order: 1
-group:
+sidebar:
   name: Pipeline
 ---
 

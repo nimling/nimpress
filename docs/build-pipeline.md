@@ -1,7 +1,7 @@
 ---
 title: Build pipeline
 order: 4
-group:
+sidebar:
   name: Core
 ---
 

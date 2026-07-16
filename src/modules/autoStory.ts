@@ -49,7 +49,7 @@ export default ${helper}({
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '')
-  const target = join(dirname(page.pageFile), `${fileBase}.story.ts`)
+  const target = join(dirname(page.pageFile), `${fileBase}.story.tsx`)
   if (existsSync(target)) {
     console.warn(`[nimpress] modules story: ${target} exists, not overwriting`)
     return null
@@ -126,7 +126,7 @@ import { ${component} } from "${pkg ?? system}";
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '')
     await writeFile(
-      join(dir, `${fileBase}.story.ts`),
+      join(dir, `${fileBase}.story.tsx`),
       `import { ${helper} } from '@nimling/nimpress/story'
 
 // story: ${component}

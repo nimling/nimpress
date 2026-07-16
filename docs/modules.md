@@ -1,7 +1,7 @@
 ---
 title: Component modules
 order: 1
-group:
+sidebar:
   name: Components
 ---
 
@@ -13,7 +13,7 @@ The component workshop: present a component library inside a nimpress site with 
 
 2. A component page is a folder holding one `type: component` md file. The folder is the sidebar parent; the docs page and the stories are its children.
 
-3. A story is a `.story.ts` file beside the page: either a value story, props the controls can drive, or an executable story carrying its own render function.
+3. A story is a `.story.tsx` file beside the page, so html sits directly in the render, and `.story.ts` also loads: either a value story, props the controls can drive, or an executable story carrying its own render function.
 
 4. The harness is a per system vite server in dev and a static bundle in build, always reached same origin under `/_components/<system>/<Component>/`.
 
@@ -33,17 +33,17 @@ export default defineConfig({
       }
     }
   },
-  modules: {
-    systems: {
-      nimtech: {
-        framework: 'vue',
-        source: './src/components',
-        package: '@nimling/components-nimtech',
-        port: 6161,
-        css: ['./src/assets/style.css']
-      }
+  modules: [
+    {
+      name: 'nimtech',
+      framework: 'vue',
+      source: './src/components',
+      package: '@nimling/components-nimtech',
+      port: 6161,
+      css: ['./src/assets/style.css'],
+      harness: './docs/components/harness.vue'
     }
-  }
+  ]
 })
 ```
 
@@ -55,9 +55,9 @@ export default defineConfig({
 
 4. `css`: sheets loaded inside the harness iframe, token sheets and theme sheets. The postcss config of the consumer applies, so tailwind pipelines work.
 
-5. The harness mounts every component the way its real app would, and that baseline is built in. Vue systems get PrimeVue with the confirmation service installed when the consumer depends on primevue, and the system's `ModalsRoot` rendered beside every story in the same app when the source tree holds one, so overlays, dialogs, dropdowns, tooltips, and notifications work in every frame without configuration. When a library bootstraps differently, `setup` points at a module replacing the baseline: the default export carries `install(app)`, run on every created app before mount, and `companion`, a component rendered beside every story; a svelte system exports a function run once.
+5. The harness mounts the component bare, and everything a library needs around its components is declared. `setup` points at a module bootstrapping the app: the default export carries `install(app)`, run on every created app before mount, and `companion`, a component rendered beside every story; a svelte system exports a function run once. Overlay roots, plugin installs, and providers all arrive through `setup` or the harness, never through discovery.
 
-6. The frame is composed from harness primitives, importable from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`, so you can rearrange it. `ComponentHarness` is the root; `ComponentStory` is where the component under test renders; `ComponentHarnessEffects` applies the toolbar drop shadow to whatever it wraps; `ComponentHarnessOverlay` mounts the system overlay root. The default is `ComponentHarness` around `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it. Drop a `harness.vue` or `harness.svelte` in the source root, or set the `harness` config key, to import these and arrange them yourself, wrapping the story in a layout, reordering, or omitting a piece; nimpress feeds the component, props, slots, and overlay in so `ComponentStory` always resolves. The checkerboard, zoom, and vision filters are workshop chrome around the iframe, not primitives, and stay on the toolbar.
+6. The frame is composed from harness primitives, importable from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`, so you can rearrange it. `ComponentHarness` is the root; `ComponentStory` is where the component under test renders; `ComponentHarnessEffects` applies the toolbar drop shadow to whatever it wraps; `ComponentHarnessOverlay` mounts the system overlay root. The default is `ComponentHarness` around `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it. Point the `harness` config key at your own component, a `.ts`, `.tsx`, `.vue`, or `.svelte` path, to import these and arrange them yourself, wrapping the story in a layout, reordering, or omitting a piece; nimpress feeds the component, props, slots, and overlay in so `ComponentStory` always resolves. A story nests its own harness inside the system one through the `harness` field on `vueStory` and `svelteStory`. The checkerboard, zoom, and vision filters are workshop chrome around the iframe, not primitives, and stay on the toolbar.
 
 7. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
 
@@ -80,12 +80,12 @@ data:
 
 1. One `type: component` per folder, enforced at build.
 
-2. Grouping comes from two sources. Physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Frontmatter: a top level `group` block places the page under a named group at the outer level, sibling to the physical group folders, standing in for the page's parent folder in the sidebar without changing its folder or its URL.
+2. Grouping comes from two sources. Physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Frontmatter: a top level `sidebar` block places the page under a named group at the outer level, sibling to the physical group folders, standing in for the page's parent folder in the sidebar without changing its folder or its URL.
 
-3. The `group` block carries the group definition. `name` is required and is the sidebar label, rendered verbatim. `icon` is an optional ascii icon rendered before the group label. `style` is optional inline css applied to the group row. Pages sharing a `name` land in the same group, latest `icon` and `style` definition wins. A `name` matching the page's own folder decorates that physical group instead of moving the page:
+3. The `sidebar` block carries the group definition. `name` is required and is the sidebar label, rendered verbatim. `icon` is an optional ascii icon rendered before the group label. `style` is optional inline css applied to the group row. Pages sharing a `name` land in the same group, latest `icon` and `style` definition wins. A `name` matching the page's own folder decorates that physical group instead of moving the page:
 
 ```yaml
-group:
+sidebar:
   name: Inputs
   icon: "▤"
   style: "color: var(--np-brand)"
@@ -158,21 +158,21 @@ Selecting a story in the sidebar opens the workshop: toolbar, stage, and two pan
 
 8. The component's own sidebar entry is `Overview`; the stories are real router paths under the component path.
 
-## Schema parsing
+## The schema
 
-Controls derive from the component source without executing it. A prop and its control are one structure: the control tree is the type projected onto inputs, the value is plain data at every level.
+`schema.json` beside the page is the read path: the workshop controls, validation, and mock selection load from it, never from the component source at render time. A prop and its control are one structure: the control tree is the schema projected onto inputs, the value is plain data at every level.
 
-1. Vue: `defineProps` destructure or generic, defaults from the destructure, type aliases resolved from the script and sibling `.types.ts` files, slots from the template, emits from `defineEmits`.
+1. Generation reads the component source: vue through `defineProps` destructure or generic with type aliases resolved from the script and sibling `.types.ts` files, slots from the template, emits from `defineEmits`; svelte 5 through the `$props()` destructure with `$bindable` defaults, `Snippet` members as slots, `on*` function members as emits. `import`, `create`, and `create --component=<ref> --schema` write the result to `schema.json` with `properties`, `required`, `slots`, `emits`, and a `mock` name per member.
 
-2. Svelte 5: `$props()` destructure with `$bindable` defaults, `Snippet` members as slots, `on*` function members as emits.
+2. After changing component types, regenerate with `nimpress modules create --component=<ref> --schema`. `nimpress modules lint` flags drift between `schema.json` and the source.
 
-3. Package mode: the props interface parses from the package `d.ts`, `<Component>Props` or `Props`.
+3. A page without `schema.json` renders with empty controls and a console warning naming the regenerate command.
 
 4. Recursion: an object typed prop resolves its interface or type alias into member controls, an array typed prop gets an item control per row, `Record<string, T>` and index signatures become key value entries, top level `(args) => ...` signatures become function controls, four levels deep with cycle protection. Types that stay opaque fall back to a json editor and log documentation warnings on import.
 
 5. Descriptions: a JSDoc block or a line comment directly above a type member becomes the description under its control, at every nesting level. Document the prop where it is typed and the panel picks it up.
 
-6. Stories never carry control definitions. A story is values only, plain data destructured into the control tree by shape; the component source stays the single source of truth for what the controls are.
+6. Stories never carry control definitions. A story is values only, plain data destructured into the control tree by shape; `schema.json` stays the single source of truth for what the controls are, generated from the component types.
 
 7. JSON Schema override: `data.controls` in the page frontmatter maps a prop name to a json schema, `type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`. A matching schema replaces the parsed control for that prop, an unmatched key adds one, and the same generated form set renders it: objects become member rows, arrays become item rows, enums become selects. One reusable form generator for both sources.
 
@@ -197,26 +197,28 @@ data:
 ## CLI
 
 ```bash
-nimpress modules import nimtech --stories=../lib/src/scenarios --match='^Mar'
-nimpress modules import nimtech ../elsewhere/Special.vue --name=Special
-nimpress modules story nimtech MarButton
+nimpress modules import --stories=../lib/src/scenarios --match='^Mar'
+nimpress modules import ../elsewhere/Special.vue --name=Special
+nimpress modules story MarButton
 nimpress modules create --component=MarButton --schema
-nimpress modules lint nimtech
-nimpress modules dev nimtech
+nimpress modules lint
+nimpress modules dev
 nimpress modules build
 ```
 
-1. `import <system>` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers, then fills storyless components with typed auto stories. A data module a render story imports copies in beside the story so every component folder stays self contained; there is no shared fixture folder. `--match` filters component names by regex, `--select` lists the matches and prompts interactively, comma separated numbers, names, or `/regex/`. Meta `argTypes` convert to `data.controls` json schemas on the generated page so storybook custom inputs survive the conversion.
+The system rides along as `--system=<name>` on every subcommand and is required only when several systems are configured.
 
-2. `import <system> <file>` registers a single external component into the system.
+1. `import` walks the source tree and any extra `--stories` directories, mines storybook CSF: groups from meta titles, named value stories from args, render stories ported executable with their helpers, then fills storyless components with typed auto stories. A data module a render story imports copies in beside the story so every component folder stays self contained; there is no shared fixture folder. `--match` filters component names by regex, `--select` lists the matches and prompts interactively, comma separated numbers, names, or `/regex/`. Meta `argTypes` convert to `data.controls` json schemas on the generated page so storybook custom inputs survive the conversion.
 
-3. `story <system> [component]` writes typed mock auto stories, framework autodetected from the file extension with `--framework=` as the override.
+2. `import <file>` registers a single external component into the system.
 
-4. `create <system> <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, one typed auto story when the source component exists or a stub story otherwise, and `schema.json`.
+3. `story [component]` writes typed mock auto stories, framework autodetected from the file extension with `--framework=` as the override.
+
+4. `create <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, one typed auto story when the source component exists or a stub story otherwise, and `schema.json`.
 
 5. `create --component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is either the component name, unique across every system, or the path to the component file when the name is ambiguous.
 
-6. `lint [system]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, `schema.json` present and valid beside every `index.md`, value story props all present in `schema.json`, and `schema.json` matching what the component source parses to today. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree.
+6. `lint [--system=]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, `schema.json` present and valid beside every `index.md`, value story props all present in `schema.json`, and `schema.json` matching what the component source parses to today. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree.
 
 7. Every component folder gets `schema.json` on import and create, the props as a json schema generated from the parsed control tree, the same generator behind the workshop's json dialog. Prop types the parser cannot resolve log warnings with the component, the prop path, and the type, the hint that the type should be documented where the parser sees it.
 
@@ -226,4 +228,4 @@ nimpress modules build
 
 1. Build output is fully static: the site plus `dist/_components/<system>/` per system, same paths as dev, no server required.
 
-2. Component pages gate like any page: `scope` or `claim` in frontmatter moves the page into the gated artifact flow, and the harness bundles deploy with the site.
+2. Component pages gate like any page: `gate` in frontmatter moves the page into the guarded bundle flow, and the harness bundles deploy with the site.

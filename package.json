@@ -54,7 +54,8 @@
     "src/styles",
     "src/harness",
     "src/mock",
-    ".claude/rules"
+    ".claude/rules",
+    "config.schema.json"
   ],
   "scripts": {
     "dev": "node scripts/dev.mjs",

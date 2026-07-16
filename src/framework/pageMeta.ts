@@ -59,13 +59,14 @@ export function setPageMeta(shell: PageShell) {
   if (typeof document === 'undefined') return
   const fm = shell.frontmatter
   const site = readSite()
-  applyPageMeta(fm, shell.path, site)
+  applyPageMeta(fm, shell.path, site, shell.bundle)
 }
 
 export function applyPageMeta(
   fm: Frontmatter,
   pagePath: string,
-  site?: SiteMeta
+  site?: SiteMeta,
+  bundle?: string
 ) {
   if (typeof document === 'undefined') return
 
@@ -105,7 +106,7 @@ export function applyPageMeta(
   if (canonical) upsert('link[rel="canonical"]', () => tag('link', { rel: 'canonical', href: canonical }))
 
   if (fm.type === 'changelog' && (fm.rss === true || fm.subscribe === true)) {
-    const prefix = fm.scope !== undefined || fm.claim !== undefined ? '/_gated' : ''
+    const prefix = fm.gate !== undefined ? `/_guarded/${bundle ?? fm.gate}` : ''
     const cleanPath = pagePath === '/' ? '' : pagePath.replace(/\/$/, '')
     const feedPath = `${prefix}${cleanPath}/rss.xml`
     const feedHref = absoluteUrl(feedPath, site) ?? feedPath

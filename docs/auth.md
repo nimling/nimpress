@@ -1,7 +1,7 @@
 ---
 title: Auth
 order: 2
-group:
+sidebar:
   name: Pipeline
 ---
 
@@ -21,17 +21,16 @@ The viewer store is consumed by `AccountMenu`, `pageGuard`, and any component th
 
 ## Page gating
 
-Two frontmatter fields:
+One frontmatter field:
 
 ```yaml
 ---
 title: Internal runbook
-scope: docs.internal
-claim: docs.read
+gate: internal
 ---
 ```
 
-`scope` and `claim` are opaque strings. The runtime hands them to `pageGuard` along with the current viewer. The default `pageGuard` returns true when the viewer has the matching claim. Pass your own `accessChecker` to `createNimpressApp` to apply different rules per project.
+`gate` is an opaque string. The runtime hands it to `pageGuard` along with the current viewer. The default checker requires an authenticated viewer for any gated page. Pass your own `accessChecker` to `createNimpressApp` to interpret gate values however the project needs, for example comparing header token claims against the gate.
 
 ## Hidden until allowed
 
@@ -45,19 +44,21 @@ Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot
 
 `endSession()` calls `<authEndpoint>/api/auth/logout` with `credentials: 'include'` and clears the viewer store.
 
-## Gated artifacts and the guard command
+## Guarded bundles and the guard command
 
-A `scope` or `claim` on a page does more than hide it at runtime. The build separates gated pages from the public bundle so their content never ships to the static host, and the `nimpress guard` command wires the built site to the artifacts once they live behind the auth provider.
+A `gate` on a page does more than hide it at runtime. The build separates gated pages from the public bundle so their content never ships to the static host, and the `nimpress guard` command wires the built site to the artifacts once they live behind the auth provider.
 
-1. `nimpress build` writes `dist/access.json`, the route requirements and the gated path prefix, and emits every gated file under `dist/_gated/` instead of into the public tree.
+1. The `auth.guard` function in `nimpress.config.ts` decides the bundling: `guard(frontmatter, filePath, relatedFiles) => string` runs once per gated page at build time and the returned string names the bundle the page lands in. Without a guard function the gate value is the bundle name. The build knows every page's related files, its stories, schema, and page css, and passes them in.
 
-2. `nimpress guard map` reads `dist/access.json` and `dist/_gated/` and writes `dist/guard-map.json`: the prefix, the route requirements, and one entry per gated file with its `sha256`, `size`, `mime`, and the `scope` and `claim` it resolves from `access.json`. Pass `--dist=<dir>` to point at a build folder other than the configured `outDir`, and `--out=<path>` to write the map elsewhere.
+2. `nimpress build` emits every gated page into `dist/_guarded/<bundle>/` with a per bundle `manifest.json`, `search.json`, and `body/` payloads, writes `dist/access.json` with the gate and bundle per route, and writes `dist/guard.map.json` recording which content went into which bundle under which gate.
 
-3. You upload the gated files to the auth provider, keyed by `guard-map.json`, with a deploy artifact claim. The provider returns a mapping json carrying a `base` url where the artifacts now live.
+3. `nimpress guard map` enriches `guard.map.json` with one entry per guarded file: `sha256`, `size`, `mime`, its bundle, and the gates that bundle serves, ready for upload. Pass `--dist=<dir>` for a build folder other than the configured `outDir`, and `--out=<path>` to write the map elsewhere.
 
-4. `nimpress guard apply --map=<uploaded mapping json>` reads that `base`, writes it into `dist/access.json`, then removes `dist/_gated/` and `dist/guard-map.json` from the build. The public bundle now carries no gated content, and the runtime resolves gated paths against the provider base, which serves them only to a viewer whose session satisfies the claim.
+4. You upload the guarded bundles to the auth provider, keyed by `guard.map.json`, with a deploy artifact claim. The provider returns a mapping json carrying a `base` url where the artifacts now live.
 
-This is the last step before publishing a site that mixes public and gated pages. A build with no gated pages produces no `_gated/` folder and needs no guard step.
+5. `nimpress guard apply --map=<uploaded mapping json>` reads that `base`, writes it into `dist/access.json`, then removes `dist/_guarded/` and `dist/guard.map.json` from the build. The public bundle now carries no gated content, and the runtime resolves guarded bundles against the provider base, which serves each bundle only to a viewer whose session satisfies its gates.
+
+This is the last step before publishing a site that mixes public and gated pages. A build with no gated pages produces no `_guarded/` folder and needs no guard step.
 
 ## Threat model
 

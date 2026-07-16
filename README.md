@@ -87,7 +87,7 @@ Wire the CLI into `package.json`:
   "scripts": {
     "dev": "nimpress dev",
     "build": "nimpress build",
-    "preview": "nimpress preview"
+    "lint": "nimpress lint"
   }
 }
 ```
@@ -99,7 +99,6 @@ Wire the CLI into `package.json`:
 | `nimpress init` | Scaffold config, content folder, and CLAUDE.md plus AGENTS.md pointing at the packaged AI rules |
 | `nimpress dev` | Start the dev server, component harnesses included |
 | `nimpress build` | Build the static site into `outDir`, default `dist`, harness bundles included |
-| `nimpress preview` | Serve the built site |
 | `nimpress lint` | Validate frontmatter and every import in content code files |
 | `nimpress export [--target=]` | Collect pages marked with the `export:` frontmatter header for the docs pipeline |
 | `nimpress modules import <system> [file]` | Import a component library or a single component, stories, argTypes, and schema.json included |
@@ -146,7 +145,7 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Frontmatter reference | [docs/frontmatter.md](./docs/frontmatter.md) |
 | Sidebar layout from the content tree | [docs/sidebar.md](./docs/sidebar.md) |
 | Theming and overriding styles | [docs/theming.md](./docs/theming.md) |
-| Auth, scope, and claim guards | [docs/auth.md](./docs/auth.md) |
+| Auth and the gate guard flow | [docs/auth.md](./docs/auth.md) |
 | Search index | [docs/search.md](./docs/search.md) |
 | Publishing docs to the central site, the sync actions, and their secrets | [docs/actions.md](./docs/actions.md) |
 

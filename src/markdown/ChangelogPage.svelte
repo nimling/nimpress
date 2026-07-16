@@ -22,8 +22,8 @@
   const tocHeadings = $derived(page.headings ?? [])
   const feedEnabled = $derived(page.frontmatter.rss === true || page.frontmatter.subscribe === true)
   const feedPath = $derived.by(() => {
-    const gated = page.frontmatter.scope !== undefined || page.frontmatter.claim !== undefined
-    const prefix = gated ? '/_gated' : ''
+    const gated = page.frontmatter.gate !== undefined
+    const prefix = gated ? `/_guarded/${page.bundle ?? page.frontmatter.gate}` : ''
     return page.path === '/' ? `${prefix}/rss.xml` : `${prefix}${page.path}/rss.xml`
   })
 

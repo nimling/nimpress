@@ -33,7 +33,7 @@ export function rewriteExportedPage(text: string, version: string): string {
 
 export function runExport(cwd: string, resolved: ResolvedNimpressConfig, args: string[]): void {
   const target = flag(args, 'target') ?? ''
-  const out = join(cwd, flag(args, 'out') ?? '.nimpress-export')
+  const out = join(cwd, flag(args, 'out') ?? '.nimpress')
   const contentRoot = join(cwd, resolved.contentDir)
   let version = ''
   try {

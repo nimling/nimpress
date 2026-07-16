@@ -1,7 +1,7 @@
 ---
 title: Mermaid
 order: 3
-group:
+sidebar:
   name: Authoring
 ---
 

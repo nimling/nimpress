@@ -1,7 +1,7 @@
 ---
 title: Sidebar
 order: 3
-group:
+sidebar:
   name: Core
 ---
 
@@ -13,16 +13,20 @@ The plugin walks every `.md` file under `contentDir`, computes the effective rou
 
 ## Frontmatter groups
 
-A page with a top level `group` block is inserted under a named group between its parent and itself, without changing its URL:
+A page with a top level `sidebar` block is inserted under a named group between its parent and itself, without changing its URL:
 
 ```yaml
-group:
+sidebar:
   name: Inputs
   icon: "▤"
   style: "color: var(--np-brand)"
 ```
 
 `name` is required and renders verbatim as the group label. `icon` and `style` are optional and decorate the group row, latest definition among members wins. Pages in the same parent sharing a `name` land in the same group. A `name` matching the page's own parent folder decorates that physical group instead of nesting a new one.
+
+## Folder index entries
+
+A `sidebar` block on a folder's `index.md` does not nest a group. It changes and styles the folder's own entry: `name` relabels it, `icon` and `style` decorate it. This works on every page type, so any folder entry in the sidebar is stylable from the page that owns it.
 
 ## Ordering
 

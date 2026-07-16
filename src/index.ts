@@ -84,6 +84,7 @@ export type {
   Viewer,
   AccessRequirement,
   AccessChecker,
+  GuardFunction,
   SearchEntry,
   OpenApiOperation,
   OpenApiParameter
