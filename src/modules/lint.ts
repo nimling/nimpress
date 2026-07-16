@@ -21,7 +21,7 @@ async function storyFiles(dir: string): Promise<string[]> {
   } catch {
     return []
   }
-  return entries.filter((e) => e.isFile() && e.name.endsWith('.story.ts')).map((e) => e.name)
+  return entries.filter((e) => e.isFile() && /\.story\.tsx?$/.test(e.name)).map((e) => e.name)
 }
 
 function schemaProperties(raw: string): Set<string> | null {
@@ -55,8 +55,12 @@ export async function lintModules(
       const dir = dirname(page.pageFile)
       const label = relative(cwd, dir).split(sep).join('/')
 
+      const files = await storyFiles(dir)
+      if (!files.length) {
+        problems.push(`${label}: no story, run nimpress modules story --system=${name} ${page.component}`)
+      }
       const propsExempt = new Set<string>()
-      for (const file of await storyFiles(dir)) {
+      for (const file of files) {
         let raw: string
         try {
           raw = await readFile(join(dir, file), 'utf-8')

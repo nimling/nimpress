@@ -115,17 +115,17 @@ The `:::component` directive renders a live component inline in any markdown pag
 
 Every modules subcommand takes `--system=<name>`; it is required only when several systems are configured.
 
-1. `nimpress modules import` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with typed auto stories. A data module a render story imports copies in beside the story so the component folder stays self contained. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
+1. `nimpress modules import` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with generated default stories. A mined story whose name equals the component becomes the Default story, written as `default.story.tsx` with the name `Default`. A data module a render story imports copies in beside the story so the component folder stays self contained. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
 
 2. `nimpress modules import <file> --name=` registers one external component file into the system.
 
-3. `nimpress modules story [component] [--framework=]` writes typed mock auto stories.
+3. `nimpress modules story [component] [--framework=]` writes `default.story.tsx` named `Default` for every storyless component page, one uniform entry story per component.
 
-4. `nimpress modules create <Component>` scaffolds the dedicated component folder: Overview `index.md`, one typed auto story, and `schema.json`.
+4. `nimpress modules create <Component>` scaffolds the dedicated component folder: Overview `index.md`, `default.story.tsx`, and `schema.json`.
 
 5. `nimpress modules create --component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when unique across systems, else the component file path. This is the refresh loop after changing component types, since the workshop reads the schema, not the source.
 
-6. `nimpress modules lint [--system=]` checks framework purity of stories and component files, `schema.json` presence and validity beside every `index.md`, value story props against `schema.json`, and `schema.json` drift against the component source. Harness and render stories are exempt from the prop check. Run it after touching stories, schemas, or component types.
+6. `nimpress modules lint [--system=]` checks framework purity of stories and component files, that every page carries at least one story, `schema.json` presence and validity beside every `index.md`, value story props against `schema.json`, and `schema.json` drift against the component source. Harness and render stories are exempt from the prop check. Run it after touching stories, schemas, or component types.
 
 7. `nimpress lint` validates structure, folder and file naming, file combinations, frontmatter, and every import in content code files, then builds to verify the output compiles. The import pipeline lives in the nimpress CLI; a consumer repo carries no generator or import scripts.
 

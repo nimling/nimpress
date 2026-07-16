@@ -27,13 +27,25 @@ defineProps<{ label: string }>()
 `
 
 describe('lintModules', () => {
-  it('flags a missing schema.json', async () => {
+  it('flags a missing schema.json and a missing story', async () => {
     repo = makeRepo()
     file(repo.cwd, 'docs/components/Components/Foo/index.md', componentPage('sys', 'Foo'))
     const problems = await lintModules(repo.cwd, vueSystem())
-    expect(problems).toHaveLength(1)
-    expect(problems[0]).toContain('schema.json missing')
-    expect(problems[0]).toContain('--component=Foo --schema')
+    expect(problems).toHaveLength(2)
+    expect(problems.some((p) => p.includes('no story') && p.includes('modules story --system=sys Foo'))).toBe(true)
+    expect(problems.some((p) => p.includes('schema.json missing') && p.includes('--component=Foo --schema'))).toBe(true)
+  })
+
+  it('accepts a default.story.tsx as the page story', async () => {
+    repo = makeRepo()
+    file(repo.cwd, 'docs/components/Components/Foo/index.md', componentPage('sys', 'Foo'))
+    file(repo.cwd, 'docs/components/Components/Foo/schema.json', '{"title":"Foo","type":"object","properties":{}}\n')
+    file(
+      repo.cwd,
+      'docs/components/Components/Foo/default.story.tsx',
+      `import { vueStory } from '@nimling/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
+    )
+    expect(await lintModules(repo.cwd, vueSystem())).toHaveLength(0)
   })
 
   it('flags the wrong story helper inside a system', async () => {
@@ -100,6 +112,11 @@ describe('lintModules', () => {
     file(repo.cwd, 'src/components/Foo/Foo.vue', fooVue)
     file(repo.cwd, 'docs/components/Components/Foo/index.md', componentPage('sys', 'Foo'))
     file(repo.cwd, 'docs/components/Components/Foo/schema.json', '{"title":"Foo","type":"object","properties":{}}\n')
+    file(
+      repo.cwd,
+      'docs/components/Components/Foo/default.story.tsx',
+      `import { vueStory } from '@nimling/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
+    )
     const before = await lintModules(repo.cwd, resolved)
     expect(before.some((p) => p.includes('out of date'))).toBe(true)
     await upgradeComponentSchema(repo.cwd, resolved, 'Foo')

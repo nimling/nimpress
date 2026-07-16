@@ -40,16 +40,12 @@ export async function generateAutoStory(
   const helper = framework === 'vue' ? 'vueStory' : 'svelteStory'
   const content = `import { ${helper} } from '@nimling/nimpress/story'
 
-// story: ${component}
+// story: Default
 export default ${helper}({
-  name: ${JSON.stringify(component)}
+  name: "Default"
 })
 `
-  const fileBase = component
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '')
-  const target = join(dirname(page.pageFile), `${fileBase}.story.tsx`)
+  const target = join(dirname(page.pageFile), 'default.story.tsx')
   if (existsSync(target)) {
     console.warn(`[nimpress] modules story: ${target} exists, not overwriting`)
     return null
@@ -121,17 +117,13 @@ import { ${component} } from "${pkg ?? system}";
     await generateAutoStory(cwd, resolved, system, component, frameworkFlag)
   } else {
     const helper = systemConfig.framework === 'vue' ? 'vueStory' : 'svelteStory'
-    const fileBase = component
-      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '')
     await writeFile(
-      join(dir, `${fileBase}.story.tsx`),
+      join(dir, 'default.story.tsx'),
       `import { ${helper} } from '@nimling/nimpress/story'
 
-// story: ${component}
+// story: Default
 export default ${helper}({
-  name: ${JSON.stringify(component)},
+  name: "Default",
   props: {}
 })
 `
