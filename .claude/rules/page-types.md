@@ -4,7 +4,7 @@ Quick guide for picking the right `type` in frontmatter.
 
 ## `doc`
 
-The default. Reach for it first. Anything that does not match the other three is a `doc`.
+The default. Reach for it first. Anything that does not match another type is a `doc`.
 
 ## `openapi`
 
@@ -64,6 +64,16 @@ Issue page types. Each file is one standalone page at its own URL, listed under 
 
 3. The body is a regular doc page that renders with a kind chip and date header above the markdown.
 
+## `component`
+
+A live component workshop page. Use when:
+
+1. The page presents one component from a library configured as a module system.
+
+2. Readers should render it live, drive its props through controls, and browse its stories.
+
+Frontmatter needs `data.system` and `data.component`. One `type: component` page per folder; the sibling `.story.ts` files become the stories. See [component-modules.md](./component-modules.md).
+
 ## Decision tree
 
 ```
@@ -76,6 +86,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: roadmap
    ├─ Is it one item on a roadmap timeline?
    │  └─ Yes  → type: milestone | epic | feature | bug
+   ├─ Is it a live component workshop page?
+   │  └─ Yes  → type: component
    ├─ Is it a beacon style landing page?
    │  └─ Yes  → type: hero
    └─ Otherwise → type: doc  (omit the field)

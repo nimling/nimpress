@@ -1,0 +1,9 @@
+{
+  "title": "Nimpress",
+  "github": "https://github.com/nimling/nimpress",
+  "contentDir": "docs",
+  "brand": {
+    "primary": "#CC785C",
+    "primaryHover": "#B86A52"
+  }
+}

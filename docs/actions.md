@@ -1,6 +1,9 @@
 ---
 title: Publishing a repo's docs to the central site
 description: How any nimling repo ships its own docs into the central docs site through the nimpress docs-sync action on a version tag.
+order: 1
+group:
+  name: Pipeline
 ---
 
 A repo keeps its documentation next to its code in a `.nimpress` folder, or, in a nimpress repo, marks individual pages with an `export:` frontmatter header. On a version tag the nimpress pipeline mirrors the folder or the marked pages into the central docs site under a mapped path. The `docs-sync` action owns the whole publish flow with no other dependencies, so a consumer pipeline is just checkout, token, run.

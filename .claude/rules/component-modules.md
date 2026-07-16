@@ -98,7 +98,7 @@ modules: {
 
 ## CLI
 
-1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with typed auto stories. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
+1. `nimpress modules import <system>` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with typed auto stories. A data module a render story imports copies in beside the story so the component folder stays self contained. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
 
 2. `nimpress modules import <system> <file> --name=` registers one external component file into the system.
 
@@ -106,13 +106,19 @@ modules: {
 
 4. `nimpress modules create <system> <Component>` scaffolds the dedicated component folder: Overview `index.md`, one typed auto story, and `schema.json`.
 
-5. Every import and create writes `schema.json` beside `index.md`, the component props as a json schema from the parsed control tree. Opaque prop types log warnings naming the component, prop path, and type; fix them by documenting the type in the component file or a sibling `.types.ts`.
+5. `nimpress modules create --component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when unique across systems, else the component file path.
 
-6. `nimpress modules dev [system]` runs harness servers. `nimpress dev` starts them all beside the docs.
+6. `nimpress modules lint [system]` checks framework purity of stories and component files, `schema.json` presence and validity beside every `index.md`, value story props against `schema.json`, and `schema.json` drift against the component source. Harness and render stories are exempt from the prop check. Run it after touching stories, schemas, or component types.
 
-7. `nimpress modules build [system]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every non devOnly system.
+7. `nimpress lint` validates frontmatter and every import in content code files; imports of a `_shared` folder fail outright because stories are self contained.
 
-8. `nimpress export [--target=] [--out=]` collects pages marked with the `export:` frontmatter header into a tree for the docs-sync pipeline, rewriting component pages to package mode. The `docs-export` action is the pipeline twin; see the docs-sync rule.
+8. Every import and create writes `schema.json` beside `index.md`, the component props as a json schema from the parsed control tree. Opaque prop types log warnings naming the component, prop path, and type; fix them by documenting the type in the component file or a sibling `.types.ts`.
+
+9. `nimpress modules dev [system]` runs harness servers. `nimpress dev` starts them all beside the docs.
+
+10. `nimpress modules build [system]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every non devOnly system.
+
+11. `nimpress export [--target=] [--out=]` collects pages marked with the `export:` frontmatter header into a tree for the docs-sync pipeline, rewriting component pages to package mode. The `docs-export` action is the pipeline twin; see the docs-sync rule.
 
 ## Never
 

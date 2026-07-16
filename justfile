@@ -20,6 +20,7 @@ check:
 
 test:
     cd actions && go test ./...
+    pnpm run test
     pnpm run type-check
 
 clean:

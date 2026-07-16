@@ -1,4 +1,9 @@
-# Build pipeline
+---
+title: Build pipeline
+order: 4
+group:
+  name: Core
+---
 
 How `.md` files turn into routes, page shells, and lazy markdown bodies at build time.
 

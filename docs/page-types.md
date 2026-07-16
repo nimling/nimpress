@@ -1,6 +1,11 @@
-# Page types
+---
+title: Page types
+order: 1
+group:
+  name: Core
+---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Four types exist.
+Every markdown file selects a renderer through the `type` frontmatter field. Ten types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -24,7 +29,7 @@ spec: ./bookable.json
 ---
 ```
 
-See [openapi.md](./openapi.md) for the rendered structure.
+See [openapi.md](/openapi) for the rendered structure.
 
 ## `changelog`
 
@@ -36,16 +41,17 @@ title: Changelog
 type: changelog
 data:
   version: 1.4.2
+  release_date: 2026-05-04
   title: Booking calendars, code actions, full user management
   description: One short sentence summary of this release.
 ---
 ```
 
-See [changelog.md](./changelog.md) for the rendered structure, grouping rules, and version sort.
+See [changelog.md](/changelog) for the rendered structure, grouping rules, and version sort.
 
 ## `hero`
 
-Oversized landing page with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top. The markdown body renders below the band through the standard prose shell. Action buttons and feature grids live in the markdown body, not in `data`. See [markdown.md](./markdown.md#action-buttons) and [markdown.md](./markdown.md#feature-grid) for the directives.
+Oversized landing page with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top. The markdown body renders below the band through the standard prose shell. Action buttons and feature grids live in the markdown body, not in `data`. See [markdown.md](/markdown#action-buttons) and [markdown.md](/markdown#feature-grid) for the directives.
 
 ```yaml
 ---
@@ -62,20 +68,59 @@ data:
 [Get started](/guide){"variant":"primary"}
 [GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
 :::
-
-::::features
-:::feature {"icon":"⚡","title":"Fast","link":"/guide"}
-Vite plugin, shiki at build time.
-:::
-
-:::feature {"icon":"/icons/themable.svg","title":"Themable","link":"/docs/theming"}
-Tokens overridable in your own CSS.
-:::
-::::
 ```
 
-See [hero.md](./hero.md) for the band field reference.
+See [hero.md](/hero) for the band field reference.
 
-## Notes
+## `roadmap`
 
-Pages with type `changelog` are grouped by `(parent folder, title)` and collapse into one collection page. Pages of any other type that share a route raise a build error so duplicate routes never reach the runtime.
+A customer facing timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` in the same folder become the timeline items. `data.changelog` and `data.issues` scope which sibling folders feed the timeline, and `background` sets a banner behind the header.
+
+```yaml
+---
+title: Roadmap
+type: roadmap
+description: What we are building and what has shipped.
+data:
+  issues: ./items
+  changelog: ../changelog
+---
+```
+
+See [roadmap-entries.md in the packaged rules](/modules) for the timeline structure.
+
+## `milestone`, `epic`, `feature`, `bug`
+
+The roadmap issue kinds. Each file is one standalone page at its own URL, listed under its parent `type: roadmap` page in the sidebar and rendered with a kind chip and date header above the markdown body. `title`, `description`, and `data.date` are required; `data.parent` references another issue in the same roadmap by relative filename.
+
+```yaml
+---
+title: Booking calendars
+type: feature
+description: Month and week calendar views for bookables.
+data:
+  date: 2026-06-01
+  parent: ./q2-milestone.md
+---
+```
+
+## `component`
+
+A live component workshop page. One `type: component` file per folder turns the folder into the sidebar parent; the sibling `.story.ts` files become its stories. `data.system` and `data.component` are required. The component renders inside an isolated iframe harness with a controls panel derived from its props.
+
+```yaml
+---
+title: MarButton
+type: component
+data:
+  system: nimtech
+  component: MarButton
+  package: "@nimling/components-nimtech"
+---
+```
+
+See [modules.md](/modules) for systems, stories, controls, the harness, and the modules CLI.
+
+## Grouping and duplicate routes
+
+Pages of type `changelog` are grouped by `(parent folder, title)` and collapse into one collection page mounted at the folder's route. Pages of any other type that share an effective route raise a build error, so duplicate routes never reach the runtime.
