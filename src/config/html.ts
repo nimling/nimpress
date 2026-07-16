@@ -1,13 +1,12 @@
 import type { ResolvedNimpressConfig } from '../types'
 
 export function indexHtml(resolved: ResolvedNimpressConfig, entrySrc = 'virtual:nimpress/main'): string {
-  const favicon = resolved.logo ?? `${resolved.assetUrlBase}/logo.png`
+  const favicon = resolved.logo ? `\n    <link rel="icon" href="${resolved.logo}" />` : ''
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="${favicon}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />${favicon}
     <title>${resolved.title}</title>
     <script>
       try {
