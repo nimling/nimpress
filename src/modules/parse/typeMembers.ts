@@ -182,6 +182,8 @@ export interface ControlJsonSchema {
   default?: unknown
   format?: string
   mock?: string
+  minimum?: number
+  maximum?: number
 }
 
 export function formatFor(spec: ControlSpec): string | undefined {
@@ -319,9 +321,13 @@ export function mockValue(spec: ControlSpec, seed = 0): unknown {
   }
   if (spec.kind === 'array') {
     if (!spec.item) return undefined
-    const first = mockValue(spec.item, seed)
+    const item =
+      spec.item.kind === 'number' && !spec.item.annotations && spec.annotations
+        ? { ...spec.item, annotations: spec.annotations }
+        : spec.item
+    const first = mockValue(item, seed)
     if (first === undefined) return undefined
-    return [first, mockValue(spec.item, seed + 1)]
+    return [first, mockValue(item, seed + 1)]
   }
   if (spec.kind === 'record') {
     const out: Record<string, unknown> = {}
@@ -343,7 +349,18 @@ export function mockValue(spec: ControlSpec, seed = 0): unknown {
   const fn = (mocks as unknown as Record<string, (...a: unknown[]) => unknown>)[name]
   if (typeof fn !== 'function') return undefined
   if (name === 'mockOption') return fn(spec.options ?? [], seed)
-  return fn(seed)
+  const value = fn(seed)
+  if (spec.kind === 'number' && typeof value === 'number') {
+    const min = typeof spec.annotations?.minimum === 'number' ? spec.annotations.minimum : undefined
+    const max = typeof spec.annotations?.maximum === 'number' ? spec.annotations.maximum : undefined
+    if (min !== undefined && max !== undefined) {
+      const t = ((seed * 37) % 100) / 100
+      return Math.round((min + (max - min) * (t || 0.5)) * 1000) / 1000
+    }
+    if (min !== undefined) return Math.max(min, value)
+    if (max !== undefined) return Math.min(max, value)
+  }
+  return value
 }
 
 export function schemaFromJsonSchema(
@@ -400,13 +417,28 @@ export function controlFromJsonSchema(
     return { name, kind: 'boolean', type: 'boolean', required, description, default: schema.default, ...extra }
   }
   if (schema.type === 'number' || schema.type === 'integer') {
-    return { name, kind: 'number', type: 'number', required, description, default: schema.default, ...extra }
+    const annotations: Record<string, unknown> = {}
+    if (typeof schema.minimum === 'number') annotations.minimum = schema.minimum
+    if (typeof schema.maximum === 'number') annotations.maximum = schema.maximum
+    return {
+      name,
+      kind: 'number',
+      type: 'number',
+      required,
+      description,
+      default: schema.default,
+      ...(Object.keys(annotations).length ? { annotations } : {}),
+      ...extra
+    }
   }
   if (schema.type === 'string') {
     return { name, kind: 'text', type: 'string', required, description, default: schema.default, ...extra }
   }
   if (schema.type === 'array' && schema.items && depth < 6) {
     const item = controlFromJsonSchema('', schema.items, false, depth + 1)
+    const annotations: Record<string, unknown> = {}
+    if (typeof schema.minimum === 'number') annotations.minimum = schema.minimum
+    if (typeof schema.maximum === 'number') annotations.maximum = schema.maximum
     return {
       name,
       kind: 'array',
@@ -416,6 +448,7 @@ export function controlFromJsonSchema(
       description,
       default: schema.default,
       shape: `${item.shape ?? item.type}[]`,
+      ...(Object.keys(annotations).length ? { annotations } : {}),
       ...extra
     }
   }
