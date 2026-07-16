@@ -570,7 +570,8 @@ export async function harnessViteConfig(
     resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
     optimizeDeps: {
       entries: scanEntries,
-      include: systemConfig.framework === 'vue' ? ['vue'] : []
+      include: systemConfig.framework === 'vue' ? ['vue'] : [],
+      exclude: ['@nimling/nimpress/harness/vue', '@nimling/nimpress/harness/svelte']
     },
     server: {
       host: '127.0.0.1',
