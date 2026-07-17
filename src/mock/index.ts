@@ -77,8 +77,10 @@ export const mockHeight = (): number => 240
 export const mockPrice = (): number => 199
 export const mockYear = (): number => 1977
 export const mockAge = (): number => 29
-export const mockOption = (options: string[] = [], seed = 0): string | undefined =>
-  options.length ? options[(hintHash(String(seed)) + seed) % options.length] : undefined
+export const mockOption = (options: string[] = [], seed = 0, exclude: unknown[] = []): string | undefined => {
+  const pool = options.filter((option) => !exclude.includes(option))
+  return pool.length ? pool[(hintHash(String(seed)) + seed) % pool.length] : undefined
+}
 
 export const mockFunction = (name = 'handler'): MockFnValue => ({
   __nimpressFn: fnSource(name)

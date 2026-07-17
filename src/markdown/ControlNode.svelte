@@ -106,7 +106,9 @@
   function mockSelf() {
     mockSeed++
     if (spec.kind === 'array') {
-      if (spec.item) onchange([...rows, mockValue(spec.item, mockSeed)])
+      if (!spec.item) return
+      const next = mockValue(spec.item, mockSeed, rows)
+      if (next !== undefined) onchange([...rows, next])
       return
     }
     if (spec.kind === 'record') {
