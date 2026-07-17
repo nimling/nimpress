@@ -357,6 +357,15 @@ function jsonMockName(type: string): string {
 
 export function mockValue(spec: ControlSpec, seed = 0): unknown {
   if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: mocks.fnSource(spec.name) }
+  if (
+    spec.default !== undefined &&
+    spec.kind !== 'object' &&
+    spec.kind !== 'array' &&
+    spec.kind !== 'record'
+  ) {
+    const d = spec.default
+    return typeof d === 'object' && d !== null ? (JSON.parse(JSON.stringify(d)) as unknown) : d
+  }
   if (spec.kind === 'object') {
     const out: Record<string, unknown> = {}
     for (const member of spec.members ?? []) {
