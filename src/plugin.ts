@@ -1269,6 +1269,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function publicPages(): ProcessedPage[] {
     const out: ProcessedPage[] = []
     for (const p of pages.values()) {
+      if (p.sidebarOnly) continue
       if (pageHiddenEverywhere(p.frontmatter)) continue
       if (isGated(p)) continue
       out.push(p)
@@ -2023,6 +2024,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const styles: Record<string, string> = {}
     for (const p of pages.values()) {
+      if (p.sidebarOnly) continue
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       if (p.pageCss) styles[p.effectivePath] = p.pageCss
     }
@@ -2036,6 +2038,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       ? only.map((p) => [p.slug, p] as [string, ProcessedPage])
       : pages
     for (const [slug, p] of source) {
+      if (p.sidebarOnly) continue
       if (gatedOnly) {
         if (pageExcludedFromBuild(p.frontmatter) || !isGated(p)) continue
       } else if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
@@ -2200,6 +2203,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildPagesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
+      if (p.sidebarOnly) continue
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const id = `${PAGE_COMPONENT_PREFIX}${urlSlug(slug)}.svelte`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
@@ -2210,6 +2214,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildBodiesEntry(): string {
     const entries: string[] = []
     for (const [slug, p] of pages) {
+      if (p.sidebarOnly) continue
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       const id = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
       entries.push(`  ${JSON.stringify(slug)}: () => import(${JSON.stringify(id)})`)
