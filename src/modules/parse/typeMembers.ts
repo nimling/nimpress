@@ -355,7 +355,7 @@ function jsonMockName(type: string): string {
   return 'mockObject'
 }
 
-export function mockValue(spec: ControlSpec, seed = 0): unknown {
+export function mockValue(spec: ControlSpec, seed = 0, taken: unknown[] = []): unknown {
   if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: mocks.fnSource(spec.name) }
   if (
     spec.default !== undefined &&
@@ -380,9 +380,10 @@ export function mockValue(spec: ControlSpec, seed = 0): unknown {
       spec.item.kind === 'number' && !spec.item.annotations && spec.annotations
         ? { ...spec.item, annotations: spec.annotations }
         : spec.item
-    const first = mockValue(item, seed)
+    const first = mockValue(item, seed, taken)
     if (first === undefined) return undefined
-    return [first, mockValue(item, seed + 1)]
+    const second = mockValue(item, seed + 1, [...taken, first])
+    return second === undefined ? [first] : [first, second]
   }
   if (spec.kind === 'record') {
     const out: Record<string, unknown> = {}
@@ -404,7 +405,7 @@ export function mockValue(spec: ControlSpec, seed = 0): unknown {
           }))
   const fn = (mocks as unknown as Record<string, (...a: unknown[]) => unknown>)[name]
   if (typeof fn !== 'function') return undefined
-  if (name === 'mockOption') return fn(spec.options ?? [], seed)
+  if (name === 'mockOption') return fn(spec.options ?? [], seed, taken)
   const value = fn(seed)
   if (spec.kind === 'number' && typeof value === 'number') {
     const min = typeof spec.annotations?.minimum === 'number' ? spec.annotations.minimum : undefined
