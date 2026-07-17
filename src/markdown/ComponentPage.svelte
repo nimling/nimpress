@@ -158,17 +158,83 @@
 
   let jsonDialogOpen = $state(false)
   let jsonDialogTab = $state<'input' | 'schema'>('input')
+
+  function closeTopOverlay(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return
+    if (jsonDialogOpen) {
+      jsonDialogOpen = false
+      e.stopPropagation()
+      return
+    }
+    if (visionOpen) {
+      visionOpen = false
+      e.stopPropagation()
+      return
+    }
+    if (toolsOpen) {
+      toolsOpen = false
+      e.stopPropagation()
+    }
+  }
   let jsonAllDraft = $state('')
   let jsonAllError = $state(false)
   let jsonTyping = $state(false)
 
   $effect(() => {
-    const text = JSON.stringify(propValues, null, 2)
+    const text = JSON.stringify(jsonDialogScope === 'events' ? emitHandlers : propValues, null, 2)
     if (!jsonTyping) {
       jsonAllDraft = text
       jsonAllError = false
     }
   })
+
+  let jsonDialogScope = $state<'props' | 'events'>('props')
+  let panelSection = $state<'props' | 'events'>('props')
+  let panelBodyEl = $state<HTMLElement | null>(null)
+  let emitsEl = $state<HTMLElement | null>(null)
+
+  function onPanelScroll() {
+    if (!panelBodyEl || !emitsEl) {
+      panelSection = 'props'
+      return
+    }
+    panelSection = panelBodyEl.scrollTop >= emitsEl.offsetTop - 8 ? 'events' : 'props'
+  }
+
+  $effect(() => {
+    void activeStory
+    panelSection = 'props'
+  })
+
+  function openJsonDialog(scope: 'props' | 'events') {
+    jsonDialogScope = scope
+    jsonTyping = false
+    jsonAllDraft = JSON.stringify(scope === 'events' ? emitHandlers : propValues, null, 2)
+    jsonAllError = false
+    jsonDialogOpen = true
+  }
+
+  function setAllEmitsJson(text: string) {
+    jsonAllDraft = text
+    jsonTyping = true
+    try {
+      const parsed = JSON.parse(text) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        jsonAllError = true
+        return
+      }
+      jsonAllError = false
+      const next: Record<string, string> = {}
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === 'string') next[k] = v
+      }
+      emitHandlers = next
+      persistControls()
+      push()
+    } catch {
+      jsonAllError = true
+    }
+  }
 
   function setAllJson(text: string) {
     jsonAllDraft = text
@@ -189,6 +255,8 @@
     }
   }
 
+  const eventsJsonSchema = $derived(JSON.stringify({ emits: visibleEmits }, null, 2))
+
   const propsJsonSchema = $derived(
     JSON.stringify(schemaToJsonSchema(data?.component ?? '', schema?.props ?? []), null, 2)
   )
@@ -203,7 +271,9 @@
 
   async function copyDialogJson() {
     try {
-      await navigator.clipboard.writeText(jsonDialogTab === 'input' ? jsonAllDraft : propsJsonSchema)
+      await navigator.clipboard.writeText(
+        jsonDialogTab === 'input' ? jsonAllDraft : jsonDialogScope === 'events' ? eventsJsonSchema : propsJsonSchema
+      )
       copied = true
       setTimeout(() => (copied = false), 1200)
     } catch {
@@ -562,6 +632,8 @@
   </defs>
 </svg>
 
+<svelte:window onkeydown={closeTopOverlay} />
+
 {#if view === 'overview'}
   <div class="np-page-backdrop np-page-backdrop-doc" aria-hidden="true"></div>
   <div class="np-page-shell">
@@ -791,9 +863,13 @@
 
     {#snippet propsPanel()}
       <div class="np-ws-props-head">
-        <span class="np-ws-props-title">props</span>
+        <span class="np-ws-props-title">{panelSection === 'events' ? 'events' : 'props'}</span>
         <span class="np-ws-props-actions">
-          <span class="np-ws-dialog-count" title="populated props of total props">{propCounts.populated}/{propCounts.total} props</span>
+          {#if panelSection === 'events'}
+            <span class="np-ws-dialog-count" title="attached handlers of total events">{attachedEmitCount}/{visibleEmits.length} handlers</span>
+          {:else}
+            <span class="np-ws-dialog-count" title="populated props of total props">{propCounts.populated}/{propCounts.total} props</span>
+          {/if}
           <button
             type="button"
             class="np-ws-tool np-ws-tool-icon np-tip"
@@ -805,41 +881,66 @@
           <button type="button" class="np-ws-tool np-ws-tool-icon np-tip" aria-label="hide the props panel" onclick={() => (propsOpen = false)}>
             <IconRemove />
           </button>
-          <button
-            type="button"
-            class="np-ws-tool np-ws-tool-icon np-tip"
-            aria-label="fill every empty control with a sample value"
-            onclick={fillMock}
-          >
-            <IconMock />
-            mock
-          </button>
-          <button
-            type="button"
-            class="np-ws-tool np-ws-tool-icon np-tip"
-            aria-label="empty every input form"
-            onclick={clearControls}
-          >
-            <IconClear />
-            clear
-          </button>
-          <button
-            type="button"
-            class="np-ws-tool np-ws-tool-icon np-tip"
-            aria-label="props as json, view the schema or paste values for all props"
-            onclick={() => {
-              jsonTyping = false
-              jsonAllDraft = JSON.stringify(propValues, null, 2)
-              jsonAllError = false
-              jsonDialogOpen = true
-            }}
-          >
-            <IconJson />
-            json
-          </button>
+          {#if panelSection === 'events'}
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="attach a logging stub to every event without a handler"
+              onclick={fillEmitHandlers}
+            >
+              <IconMock />
+              mock
+            </button>
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="detach every event handler"
+              onclick={clearEmitHandlers}
+            >
+              <IconClear />
+              clear
+            </button>
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="event handlers as json, copy or paste handler sources"
+              onclick={() => openJsonDialog('events')}
+            >
+              <IconJson />
+              json
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="fill every empty control with a sample value"
+              onclick={fillMock}
+            >
+              <IconMock />
+              mock
+            </button>
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="empty every input form"
+              onclick={clearControls}
+            >
+              <IconClear />
+              clear
+            </button>
+            <button
+              type="button"
+              class="np-ws-tool np-ws-tool-icon np-tip"
+              aria-label="props as json, view the schema or paste values for all props"
+              onclick={() => openJsonDialog('props')}
+            >
+              <IconJson />
+              json
+            </button>
+          {/if}
         </span>
       </div>
-      <div class="np-panel-body">
+      <div class="np-panel-body" bind:this={panelBodyEl} onscroll={onPanelScroll}>
       {#if jsonDialogOpen}
         <button class="np-ws-dialog-backdrop" aria-label="close" onclick={() => (jsonDialogOpen = false)}></button>
         <div class="np-ws-dialog" role="dialog" aria-label="props json">
@@ -881,7 +982,7 @@
               <CodeEditor
                 bind:value={
                   () => jsonAllDraft,
-                  (next) => setAllJson(next)
+                  (next) => (jsonDialogScope === 'events' ? setAllEmitsJson(next) : setAllJson(next))
                 }
                 language="json"
                 noHeader
@@ -894,7 +995,7 @@
             {/if}
           {:else}
             <div class="np-ws-dialog-body">
-              <CodeEditor value={propsJsonSchema} language="json" readonly minHeight={360} maxHeight={420} />
+              <CodeEditor value={jsonDialogScope === 'events' ? eventsJsonSchema : propsJsonSchema} language="json" readonly minHeight={360} maxHeight={420} />
             </div>
           {/if}
         </div>
@@ -919,7 +1020,7 @@
         <p class="np-ws-props-empty">no parsed props for this component</p>
       {/if}
       {#if visibleEmits.length}
-        <div class="np-ws-emits">
+        <div class="np-ws-emits" bind:this={emitsEl}>
           <div class="np-ws-props-head np-ws-emits-head">
             <span class="np-ws-props-title">events</span>
             <span class="np-ws-props-actions">
@@ -1268,6 +1369,7 @@
   }
 
   .np-panel-body {
+    position: relative;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -1660,9 +1762,6 @@
   }
 
   .np-ws-emits-head {
-    position: sticky;
-    top: -12px;
-    z-index: 6;
     margin: 0 calc(var(--np-panel-pad-x, 16px) * -1) 10px;
   }
 
