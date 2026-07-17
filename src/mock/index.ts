@@ -60,6 +60,11 @@ export const mockTime = (): string => '09:41'
 export const mockPhone = (): string => '+47 555 01138'
 export const mockId = (seed = 0): string => `${pick(swWords, seed)}-1138`
 export const mockSlug = (seed = 0): string => pick(swWords, seed)
+export const mockObject = (seed = 0): Record<string, unknown> => ({
+  [pick(swWords, seed)]: pick(swSentences, seed),
+  [pick(swWords, seed + 3)]: pick(swSentences, seed + 3)
+})
+export const mockArray = (seed = 0): unknown[] => [pick(swWords, seed), pick(swWords, seed + 3)]
 
 export const mockBoolean = (): boolean => true
 export const mockInt = (): number => 42

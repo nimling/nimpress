@@ -696,7 +696,7 @@
     <div
       class="np-ws-stage"
       onwheel={(e) => {
-        if (!e.ctrlKey) return
+        if (!e.ctrlKey && !e.metaKey) return
         e.preventDefault()
         zoom = Math.min(3, Math.max(0.25, Math.round(zoom * (1 - e.deltaY * 0.002) * 100) / 100))
       }}
@@ -1367,9 +1367,15 @@
   }
 
   .np-ws-tool {
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 12px;
     font-weight: 600;
-    padding: 3px 10px;
+    padding: 0 10px;
     border-radius: var(--np-radius-pill);
     border: 1px solid var(--np-border);
     background-color: var(--np-bg-surface);
@@ -1607,7 +1613,10 @@
   .np-ws-tool-icon {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
+    min-width: 34px;
+    padding: 0 8px;
   }
 
   .np-ws-emits {

@@ -8,5 +8,7 @@ export {
   createHarnessContext,
   setHarness,
   useHarness,
+  setStage,
   type HarnessContext,
+  type HarnessStageBounds,
 } from './context.svelte'
