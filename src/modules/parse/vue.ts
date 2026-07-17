@@ -5,6 +5,7 @@ import {
   controlFromType,
   applyAnnotations,
   parseLiteral,
+  parseJsdocTags,
   readBalanced,
   extractTypeBody
 } from './typeMembers'
@@ -47,13 +48,22 @@ export function parseVueComponent(source: string, component: string, extraTypes 
   for (const model of script.matchAll(/\bdefineModel(?:<([^>]*)>)?\(\s*(?:['"]([\w-]+)['"])?/g)) {
     const name = model[2] ?? 'modelValue'
     if (props.some((p) => p.name === name)) continue
-    props.push(controlFromType(name, model[1]?.trim() || 'string', true, typeContext))
+    const spec = controlFromType(name, model[1]?.trim() || 'string', true, typeContext)
+    const lead = script.slice(0, model.index).match(/\/\*\*((?:[^*]|\*(?!\/))*)\*\/\s*(?:const|let)\s+[\w$]+\s*=\s*$/)
+    if (lead) {
+      const parsed = parseJsdocTags(lead[1].replace(/^\s*\*\s?/gm, '').trim())
+      if (parsed.description) spec.description = parsed.description
+      if (parsed.mock && !spec.mock) spec.mock = parsed.mock
+    }
+    props.push(spec)
   }
 
   const slots: ControlSpec[] = []
   const seen = new Set<string>()
   for (const m of template.matchAll(/<slot\b([^>]*)>/g)) {
-    const name = m[1].match(/name=["']([^"']+)["']/)?.[1] ?? 'default'
+    const staticName = m[1].match(/(?:^|[^:\w-])name=["']([^"']+)["']/)?.[1]
+    if (!staticName && /(?:^|\s)(?::|v-bind:)name=/.test(m[1])) continue
+    const name = staticName ?? 'default'
     if (seen.has(name)) continue
     seen.add(name)
     slots.push({ name, kind: 'slot', type: 'slot' })
@@ -69,7 +79,9 @@ export function parseVueComponent(source: string, component: string, extraTypes 
       const close = open === '<' ? '>' : ')'
       const region = readBalanced(rest, openIdx + 1, open, close)
       const found = new Set<string>()
-      for (const q of region.matchAll(/['"]([\w:.-]+)['"]/g)) found.add(q[1])
+      for (const q of region.matchAll(/['"]([\w:.-]+)['"]\s*:\s*\[/g)) found.add(q[1])
+      for (const q of region.matchAll(/\(\s*\w+\s*:\s*['"]([\w:.-]+)['"]/g)) found.add(q[1])
+      for (const q of region.matchAll(/[,\[]\s*['"]([\w:.-]+)['"]\s*[,\]]/g)) found.add(q[1])
       for (const k of region.matchAll(/(?:^|[\n;{,])\s*([A-Za-z_$][\w$]*)\s*:\s*\[/g)) found.add(k[1])
       emits.push(...found)
     }

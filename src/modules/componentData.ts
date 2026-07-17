@@ -1,6 +1,6 @@
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, join, relative } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
@@ -13,6 +13,63 @@ import { resolveComponentSource } from './resolve'
 export interface BuiltComponentData {
   data: ComponentPageData
   watchFiles: string[]
+}
+
+function srcRootFor(componentDir: string): string | null {
+  let dir = componentDir
+  for (let i = 0; i < 8; i++) {
+    if (dir.endsWith('/src')) return dir
+    const parent = dirname(dir)
+    if (parent === dir) return null
+    dir = parent
+  }
+  return null
+}
+
+function scriptText(file: string, text: string): string {
+  if (!file.endsWith('.vue') && !file.endsWith('.svelte')) return text
+  return [...text.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n')
+}
+
+async function collectImportedTypes(
+  componentDir: string,
+  componentFile: string,
+  text: string
+): Promise<string> {
+  const srcRoot = srcRootFor(componentDir)
+  const seen = new Set<string>([resolve(componentFile)])
+  const queue: Array<{ file: string; text: string; depth: number }> = [{ file: componentFile, text, depth: 0 }]
+  let collected = ''
+  while (queue.length) {
+    const current = queue.shift()
+    if (!current || current.depth >= 3) continue
+    const body = scriptText(current.file, current.text)
+    for (const m of body.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+      const spec = m[1]
+      let base: string | null = null
+      if (spec.startsWith('.')) base = resolve(dirname(current.file), spec)
+      else if (spec.startsWith('@/') && srcRoot) base = resolve(srcRoot, spec.slice(2))
+      if (!base || !isAbsolute(base)) continue
+      const candidates = [base, `${base}.ts`, `${base}.vue`, join(base, 'index.ts')]
+      const target = candidates.find((c) => statIsFile(c))
+      if (!target) continue
+      const key = resolve(target)
+      if (seen.has(key) || seen.size > 50) continue
+      seen.add(key)
+      const targetText = await readFile(target, 'utf-8')
+      collected += scriptText(target, targetText) + '\n'
+      queue.push({ file: target, text: targetText, depth: current.depth + 1 })
+    }
+  }
+  return collected
+}
+
+function statIsFile(path: string): boolean {
+  try {
+    return statSync(path).isFile()
+  } catch {
+    return false
+  }
 }
 
 export async function parseComponentSchema(
@@ -29,6 +86,7 @@ export async function parseComponentSchema(
     extraTypes += await readFile(join(componentDir, entry), 'utf-8')
     extraTypes += '\n'
   }
+  extraTypes += await collectImportedTypes(componentDir, componentFile, text)
   const parsed =
     framework === 'vue'
       ? parseVueComponent(text, component, extraTypes)

@@ -7,9 +7,10 @@ export interface TypeMember {
   optional: boolean
   description?: string
   annotations?: Record<string, unknown>
+  mock?: string
 }
 
-function parseJsdocTags(body: string): { description: string; annotations: Record<string, unknown> } {
+export function parseJsdocTags(body: string): { description: string; annotations: Record<string, unknown>; mock?: string } {
   const annotations: Record<string, unknown> = {}
   const num = (tag: string, key: string) => {
     const m = body.match(new RegExp(`@${tag}\\s+(-?[0-9.]+)`))
@@ -43,16 +44,19 @@ function parseJsdocTags(body: string): { description: string; annotations: Recor
   if (/@readonly\b|@readOnly\b/.test(body)) annotations.readOnly = true
   if (/@uniqueItems\b/.test(body)) annotations.uniqueItems = true
   const description = body.replace(/^\s*@\w+.*$/gm, '').trim()
-  return { description, annotations }
+  const mock = body.match(/@mock\s+(\w+)/)?.[1]
+  return { description, annotations, mock }
 }
 
 function splitLeadingComments(text: string): {
   description?: string
   annotations?: Record<string, unknown>
+  mock?: string
   member: string
 } {
   let description: string | undefined
   let annotations: Record<string, unknown> | undefined
+  let mock: string | undefined
   let member = text
   for (;;) {
     const jsdoc = member.match(/^\/\*\*?([\s\S]*?)\*\/\s*/)
@@ -61,6 +65,7 @@ function splitLeadingComments(text: string): {
       const parsed = parseJsdocTags(body)
       description = parsed.description || undefined
       if (Object.keys(parsed.annotations).length) annotations = parsed.annotations
+      mock = parsed.mock
       member = member.slice(jsdoc[0].length)
       continue
     }
@@ -70,7 +75,7 @@ function splitLeadingComments(text: string): {
       member = member.slice(line[0].length)
       continue
     }
-    return { description, annotations, member }
+    return { description, annotations, mock, member }
   }
 }
 
@@ -83,10 +88,10 @@ export function splitTypeMembers(body: string): TypeMember[] {
     const text = current.trim()
     current = ''
     if (!text) return
-    const { description, annotations, member } = splitLeadingComments(text)
+    const { description, annotations, mock, member } = splitLeadingComments(text)
     const m = member.match(/^(?:readonly\s+)?([A-Za-z_$][\w$]*)(\?)?\s*:\s*([\s\S]+)$/)
     if (!m) return
-    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim(), description, annotations })
+    members.push({ name: m[1], optional: m[2] === '?', type: m[3].trim(), description, annotations, mock })
   }
   let inComment = false
   const chars = [...body]
@@ -140,6 +145,29 @@ export function splitTopLevel(text: string): string[] {
   return parts
 }
 
+export function splitUnion(type: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let current = ''
+  let prev = ''
+  for (const ch of type) {
+    if (ch === '{' || ch === '(' || ch === '[') depth++
+    else if (ch === '}' || ch === ')' || ch === ']') depth--
+    else if (ch === '<' && prev !== '=') depth++
+    else if (ch === '>' && prev !== '=') depth--
+    if (ch === '|' && depth === 0) {
+      if (current.trim()) parts.push(current.trim())
+      current = ''
+      prev = ch
+      continue
+    }
+    current += ch
+    prev = ch
+  }
+  if (current.trim()) parts.push(current.trim())
+  return parts.filter((p) => p !== 'undefined' && p !== 'null')
+}
+
 export function stringLiteralUnion(type: string): string[] | null {
   const parts = type
     .split('|')
@@ -184,6 +212,8 @@ export interface ControlJsonSchema {
   mock?: string
   minimum?: number
   maximum?: number
+  additionalProperties?: ControlJsonSchema
+  tsType?: string
 }
 
 export function formatFor(spec: ControlSpec): string | undefined {
@@ -193,7 +223,7 @@ export function formatFor(spec: ControlSpec): string | undefined {
   if (/email/.test(n)) return 'email'
   if (/url|href|link|website/.test(n)) return 'uri'
   if (/date-time|datetime|timestamp/.test(n)) return 'date-time'
-  if (/date/.test(n)) return 'date'
+  if (/date/.test(spec.name.toLowerCase()) || /\bdates?\b/.test((spec.description ?? '').toLowerCase())) return 'date'
   if (/uuid/.test(n)) return 'uuid'
   return undefined
 }
@@ -212,13 +242,13 @@ export function mockNameFor(name: string, js: Record<string, unknown>): string {
     if (/height/.test(n)) return 'mockHeight'
     if (/price|cost/.test(n)) return 'mockPrice'
     if (/year/.test(n)) return 'mockYear'
-    if (/age/.test(n)) return 'mockAge'
+    if (/^age$|(^|[^a-z])age$/.test(n)) return 'mockAge'
     return type === 'integer' ? 'mockInt' : 'mockFloat'
   }
   if (type === 'string') {
     if (format === 'email' || /email/.test(n)) return 'mockEmail'
     if (/password/.test(n)) return 'mockPassword'
-    if (/image|avatar|photo|thumbnail|poster|banner|logo/.test(n)) return 'mockImageUrl'
+    if (/image|avatar|photo|thumbnail|poster|banner|logo|cover/.test(n)) return 'mockImageUrl'
     if (format === 'uri' || /url|href|link/.test(n)) return 'mockUrl'
     if (format === 'date' || format === 'date-time' || /date/.test(n)) return 'mockDate'
     if (format === 'uuid' || /uuid|slug/.test(n)) return 'mockId'
@@ -232,6 +262,12 @@ export function mockNameFor(name: string, js: Record<string, unknown>): string {
     if (/description|content|detail|body|paragraph|message|caption|subtitle|placeholder|text|summary/.test(n)) return 'mockSentence'
     return 'mockWord'
   }
+  if (type === 'object') return 'mockObject'
+  if (type === 'array') return 'mockArray'
+  const ts = typeof js.tsType === 'string' ? js.tsType : ''
+  if (ts.includes('=>')) return 'mockEvent'
+  if (ts.endsWith('[]') || ts.startsWith('Array<')) return 'mockArray'
+  if (ts && ts !== 'unknown') return 'mockObject'
   return 'mockWord'
 }
 
@@ -267,6 +303,7 @@ export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> 
 }
 
 export function applyAnnotations(spec: ControlSpec, member: TypeMember): ControlSpec {
+  if (member.mock && !spec.mock) spec.mock = member.mock
   if (member.annotations) {
     spec.annotations = member.annotations
     if (typeof member.annotations.format === 'string') spec.format = member.annotations.format
@@ -309,6 +346,13 @@ export interface ComponentJsonSchema {
   emits?: string[]
 }
 
+function jsonMockName(type: string): string {
+  if (type === 'array' || type.endsWith('[]') || type.startsWith('Array<')) return 'mockArray'
+  if (/\bDate\b/.test(type)) return 'mockDate'
+  if (type === 'unknown') return 'mockWord'
+  return 'mockObject'
+}
+
 export function mockValue(spec: ControlSpec, seed = 0): unknown {
   if (spec.kind === 'function' || spec.kind === 'event') return { __nimpressFn: mocks.fnSource(spec.name) }
   if (spec.kind === 'object') {
@@ -339,13 +383,14 @@ export function mockValue(spec: ControlSpec, seed = 0): unknown {
   }
   const name =
     spec.mock ??
-    (spec.kind === 'boolean'
-      ? 'mockBoolean'
-      : spec.kind === 'number'
-        ? 'mockInt'
-        : spec.kind === 'select'
-          ? 'mockOption'
-          : 'mockWord')
+    (spec.kind === 'select'
+      ? 'mockOption'
+      : spec.kind === 'json'
+        ? jsonMockName(spec.type)
+        : mockNameFor(spec.name, {
+            type: spec.kind === 'boolean' ? 'boolean' : spec.kind === 'number' ? 'number' : 'string',
+            format: spec.format
+          }))
   const fn = (mocks as unknown as Record<string, (...a: unknown[]) => unknown>)[name]
   if (typeof fn !== 'function') return undefined
   if (name === 'mockOption') return fn(spec.options ?? [], seed)
@@ -452,6 +497,20 @@ export function controlFromJsonSchema(
       ...extra
     }
   }
+  if (schema.type === 'object' && !schema.properties && schema.additionalProperties && depth < 6) {
+    const item = controlFromJsonSchema('', schema.additionalProperties, false, depth + 1)
+    return {
+      name,
+      kind: 'record',
+      type: schema.title ?? 'object',
+      item,
+      required,
+      description,
+      default: schema.default,
+      shape: `Record<string, ${item.shape ?? item.type}>`,
+      ...extra
+    }
+  }
   if (schema.type === 'object' && schema.properties && depth < 6) {
     const requiredNames = schema.required ?? []
     const members = Object.entries(schema.properties).map(([key, member]) =>
@@ -469,7 +528,10 @@ export function controlFromJsonSchema(
       ...extra
     }
   }
-  return { name, kind: 'json', type: schema.type ?? 'unknown', required, description, default: schema.default, ...extra }
+  if (schema.tsType?.includes('=>')) {
+    return { name, kind: 'function', type: schema.tsType, required, description, default: schema.default, ...extra }
+  }
+  return { name, kind: 'json', type: schema.tsType ?? schema.type ?? 'unknown', required, description, default: schema.default, ...extra }
 }
 
 export function controlFromType(
@@ -489,6 +551,14 @@ export function controlFromType(
   if (bare === 'boolean') return { name, kind: 'boolean', type: t, required: !optional, description }
   if (bare === 'number') return { name, kind: 'number', type: t, required: !optional, description }
   if (bare === 'string') return { name, kind: 'text', type: t, required: !optional, description }
+  if (bare.includes('|')) {
+    const flat = splitUnion(bare).flatMap((b) => splitUnion(resolveTypeAlias(b, typeContext)))
+    const literals = stringLiteralUnion(flat.join(' | '))
+    if (literals) return { name, kind: 'select', type: t, options: literals, required: !optional, description }
+    if (flat.includes('string')) return { name, kind: 'text', type: t, required: !optional, description }
+    if (flat.includes('number')) return { name, kind: 'number', type: t, required: !optional, description }
+    if (flat.includes('boolean')) return { name, kind: 'boolean', type: t, required: !optional, description }
+  }
   if (/^\([^)]*\)\s*=>/.test(bare)) {
     return { name, kind: 'function', type: t, required: !optional, description }
   }
@@ -533,9 +603,11 @@ export function controlFromType(
     }
     if (body !== null) {
       const nextSeen = alias ? [...seen, alias] : seen
-      const members = splitTypeMembers(body).map((m) =>
-        controlFromType(m.name, m.type, m.optional, typeContext, m.description, depth + 1, nextSeen)
-      )
+      const members = splitTypeMembers(body).map((m) => {
+        const spec = controlFromType(m.name, m.type, m.optional, typeContext, m.description, depth + 1, nextSeen)
+        if (m.mock && !spec.mock) spec.mock = m.mock
+        return spec
+      })
       if (members.length) {
         return {
           name,

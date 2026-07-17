@@ -7,5 +7,7 @@ export {
   HARNESS_KEY,
   createHarnessContext,
   useHarness,
+  setStage,
   type HarnessContext,
+  type HarnessStageBounds,
 } from './context'

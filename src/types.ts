@@ -33,6 +33,13 @@ export interface ModuleSystemConfig {
   port?: number
   /** dev-only keeps the system in nimpress dev and out of the built bundle, visible is the default. @example "dev-only" */
   visibility?: 'visible' | 'dev-only'
+  /** Width bounds of the component area inside the harness frame, numbers are px. When set the area spans the frame like a page column clamped between the bounds. @example { minWidth: 360, maxWidth: 1200 } */
+  stage?: ModuleStageConfig
+}
+
+export interface ModuleStageConfig {
+  minWidth?: number | string
+  maxWidth?: number | string
 }
 
 export interface ModulesConfig {

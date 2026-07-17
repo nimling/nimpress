@@ -283,6 +283,7 @@
           }
           language="javascript"
           noHeader
+          showLineNumbers={false}
           minHeight={72}
           maxHeight={220}
         />
@@ -322,6 +323,7 @@
             }
             language="javascript"
             noHeader
+            showLineNumbers={false}
             minHeight={72}
             maxHeight={220}
           />
@@ -329,18 +331,17 @@
           <span class="np-control-note">no handler, mock writes an editable function that logs its calls</span>
         {/if}
       {:else if spec.kind === 'json'}
-        <div class="np-control-json-editor" class:invalid={jsonError || missing}>
-          <CodeEditor
-            bind:value={
-              () => jsonDraft,
-              (next) => setJson(next)
-            }
-            language="json"
-            noHeader
-            minHeight={72}
-            maxHeight={220}
-          />
-        </div>
+        <CodeEditor
+          bind:value={
+            () => jsonDraft,
+            (next) => setJson(next)
+          }
+          language="json"
+          noHeader
+          showLineNumbers={false}
+          minHeight={72}
+          maxHeight={220}
+        />
         {#if jsonError}
           <span class="np-control-error">invalid json, value not applied</span>
         {/if}
@@ -488,8 +489,7 @@
 
   .np-control-input input[type='text'],
   .np-control-input input[type='number'],
-  .np-control-input select,
-  .np-control-json {
+  .np-control-input select {
     width: 100%;
     box-sizing: border-box;
     font-size: 13px;
@@ -509,25 +509,4 @@
     accent-color: var(--np-brand);
   }
 
-  .np-control-json {
-    font-family: var(--np-font-mono);
-    font-size: 12px;
-    min-height: 64px;
-    resize: vertical;
-  }
-
-  .np-control-json-editor {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid transparent;
-    border-radius: 6px;
-  }
-
-  .np-control-json-editor.invalid {
-    border-color: var(--np-danger);
-  }
-
-  .np-control-json.invalid {
-    border-color: var(--np-danger);
-  }
 </style>
