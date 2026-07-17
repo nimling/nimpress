@@ -158,6 +158,7 @@
     {:else}
       <span class="np-control-label">
         {spec.name}{#if spec.required}<span class="np-control-required">*</span>{/if}
+        {#if spec.bindable}<span class="np-control-bind" title="two way bound, changes in the frame flow back into this control">bind</span>{/if}
       </span>
     {/if}
     <div class="np-control-actions">
@@ -414,6 +415,18 @@
   .np-control-required {
     color: var(--np-danger);
     margin-left: 2px;
+  }
+
+  .np-control-bind {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--np-brand);
+    border: 1px solid color-mix(in srgb, var(--np-brand) 45%, transparent);
+    border-radius: var(--np-radius-pill);
+    padding: 1px 5px;
+    margin-left: 6px;
   }
 
   .np-control-type {
