@@ -791,6 +791,7 @@
       <div class="np-ws-props-head">
         <span class="np-ws-props-title">props</span>
         <span class="np-ws-props-actions">
+          <span class="np-ws-dialog-count" title="populated props of total props">{propCounts.populated}/{propCounts.total} props</span>
           <button
             type="button"
             class="np-ws-tool np-ws-tool-icon np-tip"
