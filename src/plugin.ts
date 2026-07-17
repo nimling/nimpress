@@ -205,6 +205,7 @@ interface ProcessedPage {
   filePath: string
   effectivePath: string
   type: PageType
+  sidebarOnly?: boolean
   frontmatter: Frontmatter
   html: string
   headings: Heading[]
@@ -847,6 +848,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const slug = slugFromPath(contentRoot, file)
     const type: PageType = fm.type ?? 'doc'
     const effectivePath = normalizePath(fm.path ?? defaultPathFromSlug(slug))
+    const sidebarOnly = (data as Record<string, unknown>).type === undefined && content.trim() === ''
 
     const defaults = resolved.defaultFrontmatter ?? {}
     const defaultExcludes = resolved.defaultFrontmatterExclude ?? []
@@ -909,6 +911,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       filePath: file,
       effectivePath,
       type,
+      sidebarOnly,
       frontmatter: fm,
       html,
       headings,
@@ -1834,6 +1837,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           style: sidebarMeta.style ?? dirMeta.get(own)?.style
         })
       }
+      if (p.sidebarOnly) continue
       const groupSeg = isFolderIndex ? undefined : (sidebarMeta?.path ?? sidebarMeta?.name)
       if (groupSeg && segments[segments.length - 2] !== groupSeg) {
         if (segments.length >= 3) segments.splice(segments.length - 2, 1, groupSeg)
@@ -1988,6 +1992,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     for (const [slug, p] of pages) {
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
+      if (p.sidebarOnly) continue
       const meta: PageMeta = {
         slug,
         path: p.effectivePath,
