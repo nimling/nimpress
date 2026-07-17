@@ -143,6 +143,15 @@
     jsonError = false
     onchange(undefined)
   }
+
+  function defaultSelf() {
+    jsonError = false
+    const value = spec.default
+    const next =
+      typeof value === 'object' && value !== null ? (JSON.parse(JSON.stringify(value)) as unknown) : value
+    jsonDraft = spec.kind === 'json' ? (next === undefined ? '' : JSON.stringify(next, null, 2)) : jsonDraft
+    onchange(next)
+  }
 </script>
 
 {#snippet info()}
@@ -185,7 +194,10 @@
           <IconMock />
         </button>
       {/if}
-      <button type="button" class="np-control-act np-tip" aria-label="clear this input" onclick={clearSelf}>
+      {#if spec.default !== undefined}
+        <button type="button" class="np-control-act np-control-act-default np-tip" aria-label="reset to the declared default" onclick={defaultSelf}>default</button>
+      {/if}
+      <button type="button" class="np-control-act np-tip" aria-label="clear this input, clearing everything" onclick={clearSelf}>
         <IconClear />
       </button>
       {#if onremove}
@@ -493,6 +505,13 @@
   .np-control-act-remove:hover {
     color: var(--np-danger);
     border-color: var(--np-danger);
+  }
+
+  .np-control-act-default {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 7px;
+    letter-spacing: 0.02em;
   }
 
   .np-control-input input.invalid,
