@@ -143,7 +143,7 @@ window.addEventListener('message', (event) => {
   if (globalThis.__nimpressSync) globalThis.__nimpressSync()
 })
 window.addEventListener('wheel', (event) => {
-  if (!event.ctrlKey) return
+  if (!event.ctrlKey && !event.metaKey) return
   event.preventDefault()
   parent.postMessage({ type: 'nimpress:zoom', delta: event.deltaY }, '*')
 }, { passive: false })
