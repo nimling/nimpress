@@ -120,7 +120,7 @@ const metaTagsSchema = z.object({
 }).passthrough()
 
 const frontmatterSchema = z.object({
-  title: z.string(),
+  title: z.string().optional(),
   slug: z.string().optional(),
   type: z.union([
     z.literal('doc'),
@@ -160,7 +160,7 @@ const frontmatterSchema = z.object({
   data: z.record(z.unknown()).optional()
 }).passthrough()
 
-function frontmatterIssues(data: unknown): string[] {
+function frontmatterIssues(data: unknown, body = 'x'): string[] {
   const issues: string[] = []
   const parsed = frontmatterSchema.safeParse(data)
   if (!parsed.success) {
@@ -171,6 +171,12 @@ function frontmatterIssues(data: unknown): string[] {
   }
   const fm = parsed.data
   const d = (fm.data ?? {}) as Record<string, unknown>
+  const decorationOnly = (data as Record<string, unknown>).type === undefined && body.trim() === ''
+  if (decorationOnly) {
+    if (!fm.sidebar?.name) issues.push('a page without a type and without a body needs a sidebar.name to decorate its group')
+    return issues
+  }
+  if (!fm.title) issues.push('title: Required')
   if (fm.type === 'openapi' && !fm.spec) {
     issues.push('type openapi requires a spec field')
   }
@@ -836,7 +842,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const raw = await readFile(file, 'utf-8')
     const { data, content } = matter(raw)
 
-    const issues = frontmatterIssues(data)
+    const issues = frontmatterIssues(data, content)
     if (issues.length) {
       const detail = `${file}\n  ${issues.join('\n  ')}`
       if (isBuildCommand) throw new Error(`[nimpress] invalid frontmatter in ${detail}`)
