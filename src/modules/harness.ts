@@ -426,6 +426,7 @@ function stageWidthCss(stage: ModuleStageConfig | undefined): string {
   const dim = stageDim
   const bounds = [
     'display: block;',
+    'align-self: flex-start;',
     'margin: 0 auto;',
     'width: 100%;',
     stage.minWidth !== undefined ? `min-width: ${dim(stage.minWidth)};` : '',
