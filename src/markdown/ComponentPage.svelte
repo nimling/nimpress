@@ -1260,6 +1260,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 12px 16px;
+    --np-panel-pad-x: 16px;
   }
 
   .np-ws-slot-panels-split > .np-panel:first-child {
@@ -1277,6 +1278,7 @@
   .np-ws-slot-right .np-panel {
     padding: 12px;
     --np-ws-row-pad: 0px;
+    --np-panel-pad-x: 12px;
   }
 
   .np-ws-console-log-frame {
@@ -1523,6 +1525,7 @@
 
   .np-ws-props-actions {
     display: inline-flex;
+    align-items: center;
     gap: 6px;
   }
 
@@ -1644,8 +1647,8 @@
     z-index: 6;
     background-color: var(--np-bg);
     border-bottom: 1px solid var(--np-border);
-    margin: 0 0 10px;
-    padding: 6px var(--np-ws-row-pad, 0) 8px;
+    margin: 0 calc(var(--np-panel-pad-x, 16px) * -1) 10px;
+    padding: 8px calc(var(--np-panel-pad-x, 16px) + var(--np-ws-row-pad, 0px)) 8px;
   }
 
   .np-ws-props-title {
