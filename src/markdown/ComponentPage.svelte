@@ -759,6 +759,7 @@
           </button>
         </span>
       </div>
+      <div class="np-panel-body">
       <input
         type="text"
         class="np-ws-console-filter"
@@ -785,6 +786,7 @@
         bind:value={consoleInput}
         onkeydown={consoleInputKeydown}
       />
+      </div>
     {/snippet}
 
     {#snippet propsPanel()}
@@ -837,6 +839,7 @@
           </button>
         </span>
       </div>
+      <div class="np-panel-body">
       {#if jsonDialogOpen}
         <button class="np-ws-dialog-backdrop" aria-label="close" onclick={() => (jsonDialogOpen = false)}></button>
         <div class="np-ws-dialog" role="dialog" aria-label="props json">
@@ -957,6 +960,7 @@
           </div>
         </div>
       {/if}
+      </div>
     {/snippet}
 
     {#if bottomOccupied}
@@ -1257,10 +1261,18 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    --np-panel-pad-x: 16px;
+  }
+
+  .np-panel-body {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 12px 16px;
-    --np-panel-pad-x: 16px;
+    padding: 12px var(--np-panel-pad-x, 16px);
   }
 
   .np-ws-slot-panels-split > .np-panel:first-child {
@@ -1276,7 +1288,6 @@
   }
 
   .np-ws-slot-right .np-panel {
-    padding: 12px;
     --np-ws-row-pad: 0px;
     --np-panel-pad-x: 12px;
   }
@@ -1642,13 +1653,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex: 0 0 auto;
+    background-color: var(--np-bg);
+    border-bottom: 1px solid var(--np-border);
+    padding: 8px calc(var(--np-panel-pad-x, 16px) + var(--np-ws-row-pad, 0px));
+  }
+
+  .np-ws-emits-head {
     position: sticky;
     top: -12px;
     z-index: 6;
-    background-color: var(--np-bg);
-    border-bottom: 1px solid var(--np-border);
     margin: 0 calc(var(--np-panel-pad-x, 16px) * -1) 10px;
-    padding: 8px calc(var(--np-panel-pad-x, 16px) + var(--np-ws-row-pad, 0px)) 8px;
   }
 
   .np-ws-props-title {
