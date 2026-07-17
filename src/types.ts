@@ -72,6 +72,7 @@ export interface ControlSpec {
   shape?: string
   format?: string
   mock?: string
+  bindable?: boolean
   annotations?: Record<string, unknown>
   members?: ControlSpec[]
   item?: ControlSpec

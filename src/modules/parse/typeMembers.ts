@@ -210,6 +210,7 @@ export interface ControlJsonSchema {
   default?: unknown
   format?: string
   mock?: string
+  bindable?: boolean
   minimum?: number
   maximum?: number
   additionalProperties?: ControlJsonSchema
@@ -296,6 +297,7 @@ export function controlToJsonSchema(spec: ControlSpec): Record<string, unknown> 
   } else {
     out.tsType = spec.type
   }
+  if (spec.bindable) out.bindable = true
   for (const [k, v] of Object.entries(spec.annotations ?? {})) {
     if (!(k in out)) out[k] = v
   }
@@ -444,7 +446,7 @@ export function controlFromJsonSchema(
   depth = 0
 ): ControlSpec {
   const description = schema.description
-  const extra = { format: schema.format, mock: schema.mock }
+  const extra = { format: schema.format, mock: schema.mock, bindable: schema.bindable }
   if (schema.enum) {
     const options = schema.enum.map(String)
     return {

@@ -49,6 +49,7 @@ export function parseVueComponent(source: string, component: string, extraTypes 
     const name = model[2] ?? 'modelValue'
     if (props.some((p) => p.name === name)) continue
     const spec = controlFromType(name, model[1]?.trim() || 'string', true, typeContext)
+    spec.bindable = true
     const lead = script.slice(0, model.index).match(/\/\*\*((?:[^*]|\*(?!\/))*)\*\/\s*(?:const|let)\s+[\w$]+\s*=\s*$/)
     if (lead) {
       const parsed = parseJsdocTags(lead[1].replace(/^\s*\*\s?/gm, '').trim())
@@ -84,6 +85,13 @@ export function parseVueComponent(source: string, component: string, extraTypes 
       for (const q of region.matchAll(/[,\[]\s*['"]([\w:.-]+)['"]\s*[,\]]/g)) found.add(q[1])
       for (const k of region.matchAll(/(?:^|[\n;{,])\s*([A-Za-z_$][\w$]*)\s*:\s*\[/g)) found.add(k[1])
       emits.push(...found)
+    }
+  }
+
+  for (const p of props) {
+    if (p.bindable || emits.includes(`update:${p.name}`)) {
+      p.bindable = true
+      if (!emits.includes(`update:${p.name}`)) emits.push(`update:${p.name}`)
     }
   }
 

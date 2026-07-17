@@ -16,11 +16,13 @@ export function parseSvelteComponent(source: string, component: string, extraTyp
   const propsCall = script.match(/(?:let|const)\s*\{([\s\S]*?)\}\s*(?::\s*([\s\S]*?))?=\s*\$props\(\)/)
 
   const defaults = new Map<string, unknown>()
+  const bindableNames = new Set<string>()
   if (propsCall) {
     for (const part of splitTopLevel(propsCall[1])) {
       const m = part.match(/^([A-Za-z_$][\w$]*)\s*=\s*([\s\S]+)$/)
       if (!m) continue
       const bindable = m[2].trim().match(/^\$bindable\(([\s\S]*)\)$/)
+      if (bindable) bindableNames.add(m[1])
       defaults.set(m[1], parseLiteral(bindable ? bindable[1] : m[2]))
     }
   }
@@ -55,6 +57,7 @@ export function parseSvelteComponent(source: string, component: string, extraTyp
         member
       )
       if (defaults.has(member.name)) spec.default = defaults.get(member.name)
+      if (bindableNames.has(member.name)) spec.bindable = true
       props.push(spec)
     }
   } else if (propsCall) {
@@ -63,6 +66,7 @@ export function parseSvelteComponent(source: string, component: string, extraTyp
       if (!name || name === 'children') continue
       const spec: ControlSpec = { name, kind: 'json', type: 'unknown' }
       if (defaults.has(name)) spec.default = defaults.get(name)
+      if (bindableNames.has(name)) spec.bindable = true
       props.push(spec)
     }
     if (/\bchildren\b/.test(propsCall[1])) {

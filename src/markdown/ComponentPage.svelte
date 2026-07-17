@@ -115,6 +115,19 @@
     view === 'overview' ? null : stories.find((s) => storyAnchor(s.name) === view) ?? null
   )
 
+  const boundEmits = $derived(
+    new Set((page.componentData?.schema?.props ?? []).filter((p) => p.bindable).map((p) => `update:${p.name}`))
+  )
+  const visibleEmits = $derived(emits.filter((n) => !boundEmits.has(n)))
+  const attachedEmitCount = $derived(visibleEmits.filter((n) => emitHandlers[n] !== undefined).length)
+
+  function emitsPayload(): Record<string, string | null> {
+    const out: Record<string, string | null> = {}
+    for (const name of boundEmits) out[name] = null
+    for (const [k, v] of Object.entries($state.snapshot(emitHandlers))) out[k] = v
+    return out
+  }
+
   const emitCounts = $derived.by(() => {
     const counts: Record<string, number> = {}
     for (const entry of emitLog) counts[entry.name] = (counts[entry.name] ?? 0) + 1
@@ -268,8 +281,25 @@
   function clearControls() {
     propValues = {}
     slotValues = {}
-    emitHandlers = {}
     controlsEpoch++
+    persistControls()
+    push()
+  }
+
+  function fillEmitHandlers() {
+    const next = { ...emitHandlers }
+    for (const name of visibleEmits) {
+      if (next[name] === undefined) next[name] = fnSource(name)
+    }
+    emitHandlers = next
+    persistControls()
+    push()
+  }
+
+  function clearEmitHandlers() {
+    const next = { ...emitHandlers }
+    for (const name of visibleEmits) delete next[name]
+    emitHandlers = next
     persistControls()
     push()
   }
@@ -288,7 +318,7 @@
     params.set('story', activeStory.file.replace(/\.story\.tsx?$/, ''))
     params.set('props', encodeParam({ ...defaultValues(), ...(activeStory.props ?? {}) }))
     params.set('slots', encodeParam({ ...(activeStory.slots ?? {}) }))
-    params.set('emits', encodeParam(untrack(() => $state.snapshot(emitHandlers))))
+    params.set('emits', encodeParam(untrack(() => emitsPayload())))
     params.set('theme', untrack(() => frameTheme))
     if (untrack(() => shadowOn)) params.set('shadow', '1')
     return `${data.harnessPath}?${params.toString()}`
@@ -301,7 +331,7 @@
         type: 'nimpress:props',
         props: $state.snapshot(propValues),
         slots: $state.snapshot(slotValues),
-        emits: $state.snapshot(emitHandlers),
+        emits: emitsPayload(),
         theme: frameTheme,
         shadow: shadowOn
       },
@@ -386,11 +416,6 @@
       if (typeof value === 'string') nextSlots[spec.name] = value
     }
     slotValues = nextSlots
-    const nextHandlers = { ...emitHandlers }
-    for (const name of schema?.emits ?? []) {
-      if (nextHandlers[name] === undefined) nextHandlers[name] = fnSource(name)
-    }
-    emitHandlers = nextHandlers
     controlsEpoch++
     persistControls()
     push()
@@ -483,8 +508,18 @@
         return
       }
       if (d.type === 'nimpress:emit') {
+        const name = String(d.name)
+        if (boundEmits.has(name)) {
+          const prop = name.slice('update:'.length)
+          const value = ((d.args ?? []) as unknown[])[0]
+          const next = { ...propValues }
+          if (value === undefined) delete next[prop]
+          else next[prop] = value
+          propValues = next
+          persistControls()
+        }
         const at = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
-        emitLog = [{ name: String(d.name), args: (d.args ?? []) as unknown[], at }, ...emitLog].slice(0, 200)
+        emitLog = [{ name, args: (d.args ?? []) as unknown[], at }, ...emitLog].slice(0, 200)
         return
       }
       if (d.type === 'nimpress:console') {
@@ -879,11 +914,34 @@
       {:else}
         <p class="np-ws-props-empty">no parsed props for this component</p>
       {/if}
-      {#if emits.length}
+      {#if visibleEmits.length}
         <div class="np-ws-emits">
-          <span class="np-ws-emits-title">events</span>
+          <div class="np-ws-props-head np-ws-emits-head">
+            <span class="np-ws-props-title">events</span>
+            <span class="np-ws-props-actions">
+              <span class="np-ws-dialog-count" title="attached handlers of total events">{attachedEmitCount}/{visibleEmits.length} handlers</span>
+              <button
+                type="button"
+                class="np-ws-tool np-ws-tool-icon np-tip"
+                aria-label="attach a logging stub to every event without a handler"
+                onclick={fillEmitHandlers}
+              >
+                <IconMock />
+                mock
+              </button>
+              <button
+                type="button"
+                class="np-ws-tool np-ws-tool-icon np-tip"
+                aria-label="detach every event handler"
+                onclick={clearEmitHandlers}
+              >
+                <IconClear />
+                clear
+              </button>
+            </span>
+          </div>
           <div class="np-ws-controls" style="--np-ws-info: {infoSize}%;">
-            {#each emits as name (name)}
+            {#each visibleEmits as name (name)}
               <ControlNode
                 spec={{
                   name,
@@ -1580,8 +1638,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: sticky;
+    top: -12px;
+    z-index: 6;
+    background-color: var(--np-bg);
+    border-bottom: 1px solid var(--np-border);
     margin: 0 0 10px;
-    padding: 0 var(--np-ws-row-pad, 0);
+    padding: 6px var(--np-ws-row-pad, 0) 8px;
   }
 
   .np-ws-props-title {
@@ -1622,16 +1685,8 @@
   .np-ws-emits {
     display: flex;
     flex-direction: column;
-    gap: 6px;
     margin: 18px auto 0;
-  }
-
-  .np-ws-emits-title {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--np-text-secondary);
+    width: 100%;
   }
 
   .np-ws-console {
