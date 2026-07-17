@@ -2632,8 +2632,8 @@ export async function lintContent(cwd: string, contentDir: string): Promise<stri
     } catch {
       continue
     }
-    const { data } = matter(raw)
-    for (const issue of frontmatterIssues(data)) {
+    const { data, content } = matter(raw)
+    for (const issue of frontmatterIssues(data, content)) {
       problems.push(`${relative(root, file).split(sep).join('/')}: ${issue}`)
     }
   }
