@@ -35,6 +35,7 @@
   )
   const rows = $derived(Array.isArray(value) ? (value as unknown[]) : [])
   const missing = $derived(!!spec.required && (value === undefined || value === ''))
+  const options = $derived(spec.options ?? spec.item?.options ?? [])
 
   function setMember(memberName: string, memberValue: unknown) {
     const next = { ...record }
@@ -210,7 +211,18 @@
     </div>
   </div>
   <div class="np-control-info" style="padding-left: {depth * 14}px">
-    <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
+    {#if options.length}
+      <div class="np-control-options" title={spec.shape ?? spec.type}>
+        {#each options as option (option)}
+          <span class="np-control-option">{option}</span>
+        {/each}
+        {#if spec.kind === 'array'}
+          <span class="np-control-option np-control-option-mark">[]</span>
+        {/if}
+      </div>
+    {:else}
+      <code class="np-control-type" title={spec.shape ?? spec.type}>{spec.type}</code>
+    {/if}
     {#if spec.description}
       <span class="np-control-desc">{spec.description}</span>
     {/if}
@@ -456,6 +468,30 @@
     font-size: 11px;
     line-height: 1.4;
     color: var(--np-text-muted);
+  }
+
+  .np-control-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 1px 0;
+  }
+
+  .np-control-option {
+    font-size: 10px;
+    line-height: 1.4;
+    font-family: var(--np-font-mono);
+    color: var(--np-text-muted);
+    background-color: var(--np-bg-surface);
+    border: 1px solid color-mix(in srgb, var(--np-border) 70%, transparent);
+    border-radius: var(--np-radius-pill);
+    padding: 0 6px;
+    white-space: nowrap;
+  }
+
+  .np-control-option-mark {
+    color: var(--np-text-faint);
+    border-style: dashed;
   }
 
   .np-control-input {
