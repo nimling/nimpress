@@ -413,9 +413,17 @@ export function harnessEntrySource(
     : svelteEntry(target, css, setup, harness, defaults)
 }
 
+function stageDim(v: number | string): string {
+  return typeof v === 'number' ? `${v}px` : v
+}
+
+function stagePadding(stage: ModuleStageConfig | undefined): string {
+  return stage?.padding !== undefined ? stageDim(stage.padding) : '24px'
+}
+
 function stageWidthCss(stage: ModuleStageConfig | undefined): string {
   if (!stage || (stage.minWidth === undefined && stage.maxWidth === undefined)) return ''
-  const dim = (v: number | string): string => (typeof v === 'number' ? `${v}px` : v)
+  const dim = stageDim
   const bounds = [
     'display: block;',
     'margin: 0 auto;',
@@ -441,7 +449,7 @@ export function harnessHtml(component: string, scriptSrc: string, cssHrefs: stri
       html { color-scheme: light !important; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; overflow: auto; display: flex; }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: ${stagePadding(stage)}; overflow: auto; display: flex; }
       #stage { margin: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; will-change: transform;${stageWidthCss(stage)} }
     </style>
 ${links ? links + '\n' : ''}  </head>

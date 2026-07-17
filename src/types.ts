@@ -40,6 +40,7 @@ export interface ModuleSystemConfig {
 export interface ModuleStageConfig {
   minWidth?: number | string
   maxWidth?: number | string
+  padding?: number | string
 }
 
 export interface ModulesConfig {
