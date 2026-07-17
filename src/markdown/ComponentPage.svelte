@@ -192,6 +192,14 @@
   let panelSection = $state<'props' | 'events'>('props')
   let panelBodyEl = $state<HTMLElement | null>(null)
   let emitsEl = $state<HTMLElement | null>(null)
+  let consoleScrollEl = $state<HTMLDivElement | null>(null)
+
+  $effect(() => {
+    const count = filteredConsoleLog.length
+    const el = consoleScrollEl
+    if (!el || !count) return
+    requestAnimationFrame(() => el.scrollTo({ top: el.scrollHeight }))
+  })
 
   function onPanelScroll() {
     if (!panelBodyEl || !emitsEl) {
@@ -429,14 +437,17 @@
   }
 
   function consoleInputKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      e.stopPropagation()
       runConsoleInput()
       return
     }
+    if (consoleInput.includes('\n')) return
     if (e.key === 'ArrowUp') {
       if (!consoleHistory.length) return
       e.preventDefault()
+      e.stopPropagation()
       consoleHistoryIndex = consoleHistoryIndex === -1 ? consoleHistory.length - 1 : Math.max(0, consoleHistoryIndex - 1)
       consoleInput = consoleHistory[consoleHistoryIndex]
       return
@@ -444,6 +455,7 @@
     if (e.key === 'ArrowDown') {
       if (consoleHistoryIndex === -1) return
       e.preventDefault()
+      e.stopPropagation()
       consoleHistoryIndex = consoleHistoryIndex + 1 >= consoleHistory.length ? -1 : consoleHistoryIndex + 1
       consoleInput = consoleHistoryIndex === -1 ? '' : consoleHistory[consoleHistoryIndex]
     }
@@ -594,7 +606,7 @@
       }
       if (d.type === 'nimpress:console') {
         const at = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
-        consoleLog = [{ level: String(d.level), args: (d.args ?? []) as unknown[], at }, ...consoleLog].slice(0, 300)
+        consoleLog = [...consoleLog, { level: String(d.level), args: (d.args ?? []) as unknown[], at }].slice(-300)
         return
       }
       if (d.type === 'nimpress:zoom') {
@@ -831,33 +843,39 @@
           </button>
         </span>
       </div>
-      <div class="np-panel-body">
-      <input
-        type="text"
-        class="np-ws-console-filter"
-        placeholder="filter by level or content"
-        bind:value={consoleFilter}
-      />
-      {#if filteredConsoleLog.length}
-        <ol class="np-ws-console-log np-ws-console-log-frame">
-          {#each filteredConsoleLog as entry, i (i)}
-            <li class="np-console-{entry.level}">
-              <span class="np-ws-console-time">{entry.at}</span>
-              <code class="np-ws-console-level">{entry.level === 'input' ? '>' : entry.level === 'result' ? '<' : entry.level}</code>
-              <span class="np-ws-console-args">{entry.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}</span>
-            </li>
-          {/each}
-        </ol>
-      {:else}
-        <p class="np-ws-console-empty">{consoleLog.length ? 'nothing matches the filter' : 'console output from the component frame streams here'}</p>
-      {/if}
-      <input
-        type="text"
-        class="np-ws-console-filter np-ws-console-repl"
-        placeholder="> run js in the frame, enter evaluates, arrows walk history"
-        bind:value={consoleInput}
-        onkeydown={consoleInputKeydown}
-      />
+      <div class="np-ws-console-body">
+        <div class="np-ws-console-toolbar">
+          <input
+            type="text"
+            class="np-ws-console-filter"
+            placeholder="filter by level or content"
+            bind:value={consoleFilter}
+          />
+          {#if consoleFilter.trim()}
+            <span class="np-ws-console-count">{filteredConsoleLog.length} of {consoleLog.length}</span>
+          {/if}
+        </div>
+        <div class="np-ws-console-scroll" bind:this={consoleScrollEl}>
+          {#if filteredConsoleLog.length}
+            <ol class="np-ws-console-log">
+              {#each filteredConsoleLog as entry, i (i)}
+                <li class="np-ws-console-row np-console-{entry.level}">
+                  <code class="np-ws-console-level">{entry.level === 'input' ? '>' : entry.level === 'result' ? '<' : entry.level}</code>
+                  <span class="np-ws-console-args">{entry.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}</span>
+                  <span class="np-ws-console-time">{entry.at}</span>
+                </li>
+              {/each}
+            </ol>
+          {:else}
+            <p class="np-ws-console-empty">{consoleLog.length ? 'nothing matches the filter' : 'console output from the component frame streams here'}</p>
+          {/if}
+        </div>
+        <div class="np-ws-console-repl" onkeydowncapture={consoleInputKeydown}>
+          <span class="np-ws-console-prompt">&gt;</span>
+          <div class="np-ws-console-editor">
+            <CodeEditor bind:value={consoleInput} language="js" noHeader showLineNumbers={false} minHeight={24} maxHeight={120} />
+          </div>
+        </div>
       </div>
     {/snippet}
 
@@ -1394,13 +1412,81 @@
     --np-panel-pad-x: 12px;
   }
 
-  .np-ws-console-log-frame {
-    margin: 14px 0 0;
-    max-height: none;
+  .np-ws-console-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .np-ws-console-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 10px;
+    border-bottom: 1px solid var(--np-divider);
+  }
+
+  .np-ws-console-filter {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 11.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: var(--np-text-primary);
+    font-family: var(--np-font-mono);
+  }
+
+  .np-ws-console-filter:hover {
+    border-color: var(--np-border);
+  }
+
+  .np-ws-console-filter:focus {
+    outline: none;
+    border-color: var(--np-brand);
+  }
+
+  .np-ws-console-count {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-family: var(--np-font-mono);
+    color: var(--np-text-faint);
+  }
+
+  .np-ws-console-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .np-ws-console-log {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--np-font-mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+
+  .np-ws-console-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 10px;
+    border-bottom: 1px solid var(--np-divider);
+  }
+
+  .np-ws-console-row:hover {
+    background-color: color-mix(in srgb, var(--np-text-primary) 4%, transparent);
   }
 
   .np-ws-console-level {
-    margin-right: 8px;
+    flex: 0 0 38px;
     color: var(--np-text-secondary);
   }
 
@@ -1436,13 +1522,68 @@
     color: var(--np-text-primary);
   }
 
-  .np-panel > .np-ws-console-filter {
-    width: 100%;
-    margin: 4px 0 0;
+  .np-ws-console-args {
+    flex: 1;
+    min-width: 0;
+    color: var(--np-text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
-  .np-panel > .np-ws-console-repl {
-    margin: 14px 0 0;
+  .np-ws-console-time {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: var(--np-text-faint);
+  }
+
+  .np-ws-console-empty {
+    margin: 0;
+    padding: 12px 10px;
+    font-size: 11.5px;
+    font-family: var(--np-font-mono);
+    color: var(--np-text-faint);
+  }
+
+  .np-ws-console-repl {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    border-top: 1px solid var(--np-divider);
+    padding: 0 10px;
+  }
+
+  .np-ws-console-prompt {
+    flex: 0 0 auto;
+    padding: 5px 0;
+    font-family: var(--np-font-mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    font-weight: 700;
+    color: var(--np-brand);
+  }
+
+  .np-ws-console-editor {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .np-ws-console-editor :global(.np-editor) {
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+  }
+
+  .np-ws-console-editor :global(.cm-editor),
+  .np-ws-console-editor :global(.cm-scroller) {
+    background-color: transparent !important;
+  }
+
+  .np-ws-console-editor :global(.cm-content) {
+    padding: 5px 8px !important;
+  }
+
+  .np-ws-console-editor :global(.cm-activeLine) {
+    background-color: transparent !important;
   }
 
   .np-ws-toolbar {
@@ -1807,65 +1948,4 @@
     width: 100%;
   }
 
-  .np-ws-console {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border: 1px solid var(--np-border);
-    border-radius: 8px;
-    padding: 8px;
-    background-color: var(--np-bg-surface);
-  }
-
-  .np-ws-console-bar {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .np-ws-console-filter {
-    flex: 1;
-    min-width: 0;
-    box-sizing: border-box;
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--np-border);
-    background-color: var(--np-bg);
-    color: var(--np-text-primary);
-    font-family: var(--np-font-mono);
-  }
-
-  .np-ws-console-log {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-family: var(--np-font-mono);
-    font-size: 11px;
-    line-height: 1.7;
-    max-height: 180px;
-    overflow-y: auto;
-  }
-
-  .np-ws-console-time {
-    color: var(--np-text-faint);
-    margin-right: 8px;
-  }
-
-  .np-ws-console-name {
-    color: var(--np-brand);
-    margin-right: 8px;
-  }
-
-  .np-ws-console-args {
-    color: var(--np-text-primary);
-    word-break: break-all;
-  }
-
-  .np-ws-console-empty {
-    margin: 0;
-    font-size: 11px;
-    color: var(--np-text-faint);
-    font-family: var(--np-font-mono);
-  }
 </style>
