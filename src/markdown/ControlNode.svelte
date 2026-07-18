@@ -36,6 +36,20 @@
   const rows = $derived(Array.isArray(value) ? (value as unknown[]) : [])
   const missing = $derived(!!spec.required && (value === undefined || value === ''))
   const options = $derived(spec.options ?? spec.item?.options ?? [])
+  let optionsExpanded = $state(false)
+  let optionsOverflow = $state(false)
+  let optionsEl: HTMLElement | undefined = $state()
+
+  $effect(() => {
+    void options
+    const el = optionsEl
+    if (!el) return
+    const measure = () => (optionsOverflow = el.scrollWidth > el.clientWidth + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  })
 
   function setMember(memberName: string, memberValue: unknown) {
     const next = { ...record }
@@ -212,12 +226,42 @@
   </div>
   <div class="np-control-info" style="padding-left: {depth * 14}px">
     {#if options.length}
-      <div class="np-control-options" title={spec.shape ?? spec.type}>
+      {#snippet optionPills()}
         {#each options as option (option)}
           <span class="np-control-option">{option}</span>
         {/each}
         {#if spec.kind === 'array'}
           <span class="np-control-option np-control-option-mark">[]</span>
+        {/if}
+      {/snippet}
+      <div class="np-control-options-wrap" title={spec.shape ?? spec.type}>
+        {#if optionsExpanded}
+          <button
+            type="button"
+            class="np-control-options np-control-options-open"
+            aria-label="collapse the options to one line"
+            onclick={() => (optionsExpanded = false)}
+          >
+            {@render optionPills()}
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="np-control-options np-control-options-line"
+            class:np-control-options-more={optionsOverflow}
+            bind:this={optionsEl}
+            aria-label="expand all options"
+            onclick={() => {
+              if (optionsOverflow) optionsExpanded = true
+            }}
+          >
+            {@render optionPills()}
+          </button>
+          {#if optionsOverflow}
+            <div class="np-control-options-pop">
+              {@render optionPills()}
+            </div>
+          {/if}
         {/if}
       </div>
     {:else}
@@ -470,11 +514,60 @@
     color: var(--np-text-muted);
   }
 
+  .np-control-options-wrap {
+    position: relative;
+    min-width: 0;
+  }
+
   .np-control-options {
     display: flex;
     flex-wrap: wrap;
     gap: 3px;
     padding: 1px 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+    cursor: default;
+  }
+
+  .np-control-options-line {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .np-control-options-more {
+    cursor: pointer;
+    mask-image: linear-gradient(to right, #000 82%, transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent);
+  }
+
+  .np-control-options-open {
+    cursor: pointer;
+  }
+
+  .np-control-options-pop {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 4px);
+    z-index: 30;
+    flex-wrap: wrap;
+    gap: 3px;
+    width: max-content;
+    max-width: min(420px, 80vw);
+    padding: 6px;
+    border: 1px solid var(--np-border);
+    border-radius: 8px;
+    background-color: var(--np-bg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .np-control-options-wrap:hover .np-control-options-pop,
+  .np-control-options-wrap:focus-within .np-control-options-pop {
+    display: flex;
   }
 
   .np-control-option {

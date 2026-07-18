@@ -364,6 +364,18 @@
     push()
   }
 
+  function defaultControls() {
+    propValues = defaultValues()
+    const slots: Record<string, string> = {}
+    for (const spec of schema?.slots ?? []) {
+      if (typeof spec.default === 'string') slots[spec.name] = spec.default
+    }
+    slotValues = slots
+    controlsEpoch++
+    persistControls()
+    push()
+  }
+
   function fillEmitHandlers() {
     const next = { ...emitHandlers }
     for (const name of visibleEmits) {
@@ -378,6 +390,12 @@
     const next = { ...emitHandlers }
     for (const name of visibleEmits) delete next[name]
     emitHandlers = next
+    persistControls()
+    push()
+  }
+
+  function defaultEmitHandlers() {
+    emitHandlers = Object.fromEntries((schema?.emits ?? []).map((name) => [name, fnSource(name)]))
     persistControls()
     push()
   }
@@ -911,6 +929,12 @@
             </button>
             <button
               type="button"
+              class="np-ws-tool np-tip"
+              aria-label="reset every event handler to the default logging stub"
+              onclick={defaultEmitHandlers}
+            >default</button>
+            <button
+              type="button"
               class="np-ws-tool np-ws-tool-icon np-tip"
               aria-label="detach every event handler"
               onclick={clearEmitHandlers}
@@ -937,6 +961,12 @@
               <IconMock />
               mock
             </button>
+            <button
+              type="button"
+              class="np-ws-tool np-tip"
+              aria-label="reset every control to its schema default"
+              onclick={defaultControls}
+            >default</button>
             <button
               type="button"
               class="np-ws-tool np-ws-tool-icon np-tip"
@@ -1052,6 +1082,12 @@
                 <IconMock />
                 mock
               </button>
+              <button
+                type="button"
+                class="np-ws-tool np-tip"
+                aria-label="reset every event handler to the default logging stub"
+                onclick={defaultEmitHandlers}
+              >default</button>
               <button
                 type="button"
                 class="np-ws-tool np-ws-tool-icon np-tip"
