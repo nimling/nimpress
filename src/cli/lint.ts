@@ -157,8 +157,10 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
     if (stories.length && !hasComponentPage) {
       problems.push(`${rel}: story files without a type component page, add the component index.md or move the stories`)
     }
-    if (entries.includes('schema.json') && !hasComponentPage) {
-      problems.push(`${rel}: schema.json without a type component page, it belongs beside the component index.md`)
+    for (const schemaName of ['schema.json', 'schema.yml']) {
+      if (entries.includes(schemaName) && !hasComponentPage) {
+        problems.push(`${rel}: ${schemaName} without a type component page, it belongs beside the component index.md`)
+      }
     }
     if (hasComponentPage && mds.length > 1) {
       const extras = mds.filter((m) => m !== componentDirs.get(dir)).map((m) => basename(m))

@@ -4,7 +4,7 @@ import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { generateAutoStory, generateAutoStories, createComponentPage } from '../modules/autoStory'
 import { importStorybook } from '../modules/importStorybook'
 import { lintModules } from '../modules/lint'
-import { upgradeComponentSchema } from '../modules/schema'
+import { updateComponentSchemas, upgradeComponentSchema } from '../modules/schema'
 import { flag, hasFlag, positional, finishLint } from './shared'
 import { startHarnessServers, buildHarnesses, deployableSystems } from './site'
 
@@ -87,14 +87,20 @@ export async function runModules(
     })
     return
   }
+  if (sub === 'update') {
+    const ref = flag(rest, 'component') ?? positional(rest, 0)
+    const count = await updateComponentSchemas(cwd, resolved, { ref, system: systemFlag(resolved, rest) })
+    console.log(`nimpress modules: ${count} schema${count === 1 ? '' : 's'} upserted`)
+    return
+  }
   if (sub === 'create') {
     const componentRef = flag(rest, 'component')
     if (componentRef) {
       if (!hasFlag(rest, 'schema')) {
-        throw new Error('[nimpress] modules create --component expects --schema to regenerate schema.json')
+        throw new Error('[nimpress] modules create --component expects --schema to upsert the schema')
       }
       const written = await upgradeComponentSchema(cwd, resolved, componentRef)
-      console.log(`nimpress modules: schema upgraded at ${written}`)
+      console.log(`nimpress modules: schema upserted at ${written}`)
       return
     }
     const component = positional(rest, 0)
@@ -107,7 +113,7 @@ export async function runModules(
     console.log(`nimpress modules: created ${component} at ${relative(cwd, dir)}`)
     return
   }
-  throw new Error('[nimpress] modules expects init, dev, build, lint, story, import or create')
+  throw new Error('[nimpress] modules expects init, dev, build, lint, story, import, create or update')
 }
 
 function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {

@@ -2451,6 +2451,41 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           })
           return
         }
+        if (url === '/__nimpress/schema-defaults' && req.method === 'PUT') {
+          const chunks: Buffer[] = []
+          req.on('data', (chunk) => chunks.push(chunk))
+          req.on('end', async () => {
+            try {
+              const body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as {
+                path?: string
+                defaults?: Record<string, unknown>
+              }
+              const rel = String(body.path ?? '')
+              const target = resolve(process.cwd(), rel)
+              const okName = target.endsWith(`${sep}schema.json`) || target.endsWith(`${sep}schema.yml`)
+              if (!target.startsWith(contentRoot + sep) || !okName || !existsSync(target)) {
+                res.statusCode = 403
+                res.end('invalid schema target')
+                return
+              }
+              const { parseSchemaText, renderSchemaText } = await import('./modules/schema')
+              const form = target.endsWith('.yml') ? ('yml' as const) : ('json' as const)
+              const parsed = parseSchemaText(await readFile(target, 'utf-8'), form)
+              for (const [name, value] of Object.entries(body.defaults ?? {})) {
+                const node = parsed.properties?.[name]
+                if (node) node.default = value
+              }
+              await writeFile(target, renderSchemaText(parsed as Record<string, unknown>, form))
+              dropFileCache(componentToMd.get(target) ?? '')
+              res.statusCode = 204
+              res.end()
+            } catch (err) {
+              res.statusCode = 400
+              res.end(String(err))
+            }
+          })
+          return
+        }
         const feed = feedFiles.get(url)
         if (feed !== undefined) {
           res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')

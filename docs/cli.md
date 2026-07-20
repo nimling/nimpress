@@ -82,7 +82,7 @@ The component workshop. Full concept guide in [Component modules](/modules). Eve
 | `modules story [component]` | Write `default.story.tsx` for every storyless page |
 | `modules import [file]` | Import a library or one component |
 | `modules create <Component>` | Scaffold a component page |
-| `modules create --component=<ref> --schema` | Regenerate one schema.json |
+| `modules update [component]` | Upsert schemas from the component types |
 
 ### modules story
 
@@ -101,24 +101,27 @@ Checks every component page of the named system, or every system when none is na
 
 2. Every page carries at least one story. A storyless page reports the exact `modules story` command that fills it.
 
-3. `schema.json` exists beside every `index.md` and parses as json.
+3. Exactly one schema file, `schema.json` or `schema.yml`, exists beside every `index.md` and parses.
 
-4. Value story props all exist in `schema.json`. Stories carrying a `harness` field or a `render` function are exempt, their props feed the harness or the render function rather than the control tree.
+4. Value story props all exist in the schema. Stories carrying a `harness` field or a `render` function are exempt, their props feed the harness or the render function rather than the control tree.
 
-5. `schema.json` matches what the component source parses to today. Drift reports the exact regenerate command.
+5. The schema holds structurally against the component source: every source prop, slot, and emit exists in the schema, schema members without a source counterpart are flagged, an authored type conflicting with the source type fails, and an authored enum must fit the source type and stay inside a source union. Authored narrowing, an enum over a plain string, is legal. A missing member reports the exact update command.
+
+6. Coaching warnings, props without a description and opaque types, print without failing the run.
 
 ```bash
 nimpress modules lint
 nimpress modules lint --system=nimtech
 ```
 
-### modules create with schema
+### modules update
 
-`--component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when it is unique across systems, or the path to the component file when it is not. The workshop reads `schema.json`, not the source, so this is the refresh loop after changing component types.
+Upserts the schema from the component types, for one component page or every page when no component is named. New props, slots, and emits are added, a changed type shape refreshes on existing members, authored defaults, enums, descriptions, and mocks are never overwritten, an empty description fills from a JSDoc or line comment above the type member, and a member gone from the source stays in the file, flagged for the author to decide. `create --component=<ref> --schema` runs the same upsert for one page. In `nimpress dev` the upsert runs automatically when a component under a page changes.
 
 ```bash
-nimpress modules create --component=MarButton --schema
-nimpress modules create --component=src/components/MarButton/MarButton.vue --schema
+nimpress modules update
+nimpress modules update MarButton
+nimpress modules update src/components/MarButton/MarButton.vue
 ```
 
 ## Exit behavior

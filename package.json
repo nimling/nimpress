@@ -99,6 +99,7 @@
     "sly-svelte-location-router": "^3.3.5",
     "tailwindcss": "^4.1.17",
     "vite": "^6.3.5",
+    "yaml": "^2.9.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
