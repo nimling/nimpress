@@ -46,9 +46,9 @@ If the working tree has nothing to commit, skip the commit but still push so the
 just deploy
 ```
 
-Calls `../sbump/sbump.sh patch --json package.json@.version --push-version --auto`. Patch bump, tag write, tag push. The GitHub Actions workflow at `.github/workflows/publish.yml` picks up the tag and publishes to GitHub Packages.
+Calls `sbump patch --json package.json@.version --push-version --auto --workflow`. Patch bump, tag write, tag push. The GitHub Actions workflow at `.github/workflows/publish.yml` picks up the tag and publishes to GitHub Packages.
 
-For minor or major releases use `just bump:minor` or `just bump:major` instead and push the tag with `git push origin --tags`.
+For minor or major releases use `just deploy-minor` or `just deploy-major` instead.
 
 ## Never
 

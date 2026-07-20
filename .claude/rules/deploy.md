@@ -16,9 +16,9 @@ The release pipeline for `@nimling/nimpress`. Run from the repo root.
 
 ## Variants
 
-1. Minor release: replace step 5 with `just bump:minor` followed by `git push origin --tags`. Wired in `package.json` scripts.
+1. Minor release: replace step 5 with `just deploy-minor`.
 
-2. Major release: replace step 5 with `just bump:major` followed by `git push origin --tags`.
+2. Major release: replace step 5 with `just deploy-major`.
 
 ## Never
 

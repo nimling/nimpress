@@ -40,6 +40,8 @@ modules: [
 
 7. `visibility: dev-only` keeps a system in `nimpress dev` and out of the built bundle.
 
+8. `stage` bounds the component area inside the harness frame: `minWidth`, `maxWidth`, and optional `padding`, numbers as px. When set the area spans the frame like a page column clamped between the bounds.
+
 ## The component page
 
 1. A folder under `docs/components/<Group>/<Component>/` holds exactly one md file with `type: component`; the build refuses a second one. The folder becomes the sidebar parent, the page appears inside it under its title, stories follow as siblings.
@@ -64,7 +66,7 @@ modules: [
 
 4. An executable story carries `render`, a function returning a mount definition. Vue: an options object with `components`, `setup`, `template`. The harness runs it verbatim; controls do not apply. A story is self contained: it imports the component and holds its own fixture data inline. There is no shared story fixture folder.
 
-4.1. A story nests itself in a per story harness with the `harness` field: `vueStory({ harness: BlockEditorHarness, props })`. The harness is a component that renders `<slot />` where `ComponentStory` mounts, and it folds inside the system harness as `SystemHarness > StoryHarness > ComponentStory`. Shared setup that a family of stories needs, a wrapping editor, providers, or seeded context, lives in one harness component the stories import from their group folder. `MarModals` is the system harness for every component; `MarBlockEditor` is the block group's per story harness.
+4.1. A value story nests itself in a per story harness with the `harness` field: `vueStory({ harness: BlockEditorHarness, props })`. The harness is a component that renders `<slot />` where `ComponentStory` mounts, and it folds inside the system harness as `SystemHarness > StoryHarness > ComponentStory`. A render story includes the shared harness component directly in its own markup instead and owns its sizing there, `<div style="width: 210mm">` around the harness when the story needs a width. Shared setup that a family of stories needs, a wrapping editor, providers, or seeded context, lives in one harness component the stories import from their group folder, a `harness.vue` beside the group's pages.
 
 5. Props and controls are one structure loaded from `schema.json`. The schema is the read path: the workshop controls, validation, and mock selection all come from it. Object schemas resolve into nested member controls, arrays into row editors, enums into selects. Story `props` are plain data destructured into that tree; a story never defines controls.
 
@@ -76,15 +78,15 @@ modules: [
 
 ## Controls and kinds
 
-1. Control kinds derive from the schema: `text`, `number`, `boolean`, `select` from enums, `object` with nested member rows, `array` with item rows, `record` with key value entries, `function` for callable props, `json` only for opaque leaves.
+1. Control kinds derive from the schema: `text`, `number`, `boolean`, `select` from enums, `object` with nested member rows, `array` with item rows, `record` with key value entries, `function` for callable props, `json` only for opaque leaves. Enum options render as chips in the control info; a long option list collapses to one line that expands in a hover popup.
 
 2. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, firings counting on the event row and printing in the console panel. The default mock stub logs its arguments.
 
-3. Every event renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events.
+3. Every event renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events. A default button at the events header resets every handler to the logging stub at once.
 
-4. Mock resolves from the schema through the `@nimling/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
+4. Mock resolves from the schema through the `@nimling/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed, and option picks exclude values already present so a reclick lands on a fresh option. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
 
-5. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header. The json dialog in the panel head shows the live values as one editable json object plus the schema, with copy and populated counts.
+5. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header; the panel header also carries default, resetting every control to its schema default and every slot to its declared default. Once the workshop has pushed props to the frame, the pushed set alone drives the component and story props and required defaults no longer fill in underneath, so a cleared prop renders truly empty. The json dialog in the panel head shows the live values as one editable json object plus the schema, with copy and populated counts.
 
 ## The workshop layout
 
