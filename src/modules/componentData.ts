@@ -5,10 +5,11 @@ import type { ComponentPageData, ModulesConfig } from '../types'
 import { parseVueComponent } from './parse/vue'
 import { parseSvelteComponent } from './parse/svelte'
 import { findComponentDts } from './parse/dts'
-import { controlFromJsonSchema, controlToJsonSchema, mockNameFor, formatFor, schemaFromJsonSchema, type ControlJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
+import { controlToJsonSchema, mockNameFor, formatFor, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
 import type { ControlSpec } from '../types'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
+import { mergeComponentSchema, parseSchemaText, schemaFileIn, writeComponentSchema } from './schema'
 
 export interface BuiltComponentData {
   data: ComponentPageData
@@ -116,19 +117,33 @@ export async function buildComponentPageData(opts: {
   const source = resolveComponentSource(cwd, modules, system, component, fileOverride)
   const watchFiles: string[] = []
 
-  let schema
-  const schemaPath = join(dirname(pageFile), 'schema.json')
-  if (existsSync(schemaPath)) {
-    watchFiles.push(schemaPath)
+  if (editable && source) {
+    const framework = source.componentFile.endsWith('.svelte') ? 'svelte' : 'vue'
     try {
-      const raw = JSON.parse(await readFile(schemaPath, 'utf-8')) as ComponentJsonSchema
-      schema = schemaFromJsonSchema(component, raw)
+      const parsed = await parseComponentSchema(
+        dirname(source.componentFile),
+        source.componentFile,
+        framework,
+        component
+      )
+      await writeComponentSchema(dirname(pageFile), component, parsed)
     } catch (err) {
-      console.warn(`nimpress modules: ${system}/${component} schema.json failed to parse: ${String(err)}`)
+      console.warn(`nimpress modules: ${system}/${component} schema upsert failed: ${String(err)}`)
+    }
+  }
+
+  let schemaJson: ComponentJsonSchema | undefined
+  const schemaFile = schemaFileIn(dirname(pageFile))
+  if (schemaFile) {
+    watchFiles.push(schemaFile.path)
+    try {
+      schemaJson = parseSchemaText(await readFile(schemaFile.path, 'utf-8'), schemaFile.form)
+    } catch (err) {
+      console.warn(`nimpress modules: ${system}/${component} ${schemaFile.form} schema failed to parse: ${String(err)}`)
     }
   } else {
     console.warn(
-      `nimpress modules: ${system}/${component} has no schema.json, controls stay empty, run nimpress modules create --component=${component} --schema`
+      `nimpress modules: ${system}/${component} has no schema file, controls stay empty, run nimpress modules update ${component}`
     )
   }
 
@@ -154,20 +169,16 @@ export async function buildComponentPageData(opts: {
     }
   }
 
-  const controls =
-    data.controls && typeof data.controls === 'object' && !Array.isArray(data.controls)
-      ? (data.controls as Record<string, ControlJsonSchema>)
+  const layer =
+    data.schema && typeof data.schema === 'object' && !Array.isArray(data.schema)
+      ? (data.schema as ComponentJsonSchema)
       : undefined
-  if (controls) {
-    schema = schema ?? { component, props: [], slots: [], emits: [] }
-    const props = schema.props.map((p) =>
-      controls[p.name] ? controlFromJsonSchema(p.name, controls[p.name], !!p.required) : p
-    )
-    for (const [key, member] of Object.entries(controls)) {
-      if (!props.some((p) => p.name === key)) props.push(controlFromJsonSchema(key, member))
-    }
-    schema = { ...schema, props }
+  if (layer) {
+    schemaJson = schemaJson
+      ? (mergeComponentSchema(layer, schemaJson as unknown as Record<string, unknown>).merged as ComponentJsonSchema)
+      : layer
   }
+  const schema = schemaJson ? schemaFromJsonSchema(component, schemaJson) : undefined
 
   const route = modules.route.replace(/\/$/, '')
   return {
@@ -181,6 +192,7 @@ export async function buildComponentPageData(opts: {
       editable: editable && !!source,
       harnessPath: `${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}/`,
       schema,
+      schemaPath: schemaFile ? relative(cwd, schemaFile.path) : undefined,
       stories
     },
     watchFiles

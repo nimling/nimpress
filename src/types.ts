@@ -104,6 +104,7 @@ export interface ComponentPageData {
   editable?: boolean
   harnessPath: string
   schema?: ControlSchema
+  schemaPath?: string
   stories: ComponentStory[]
 }
 

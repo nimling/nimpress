@@ -51,7 +51,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 5. `type: milestone | epic | feature | bug` (issue pages) require `title`, `description`, and `data.date` as an RFC 3339 string. Optional `data.parent` references another issue by relative filename. Each issue page renders at its own URL with a kind chip and date header. See [roadmap-entries.md](./roadmap-entries.md).
 
-6. `type: component` requires `data.system` naming a configured module system and `data.component` naming the component. Optional `data.package`, `data.file`, `data.version`, and `data.controls`. One `type: component` page per folder; the sibling story files are its stories. See [component-modules.md](./component-modules.md).
+6. `type: component` requires `data.system` naming a configured module system and `data.component` naming the component. Optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. One `type: component` page per folder; the sibling story files are its stories. See [component-modules.md](./component-modules.md).
 
 ## SEO and social cards
 

@@ -68,11 +68,15 @@ modules: [
 
 4.1. A value story nests itself in a per story harness with the `harness` field: `vueStory({ harness: BlockEditorHarness, props })`. The harness is a component that renders `<slot />` where `ComponentStory` mounts, and it folds inside the system harness as `SystemHarness > StoryHarness > ComponentStory`. A render story includes the shared harness component directly in its own markup instead and owns its sizing there, `<div style="width: 210mm">` around the harness when the story needs a width. Shared setup that a family of stories needs, a wrapping editor, providers, or seeded context, lives in one harness component the stories import from their group folder, a `harness.vue` beside the group's pages.
 
-5. Props and controls are one structure loaded from `schema.json`. The schema is the read path: the workshop controls, validation, and mock selection all come from it. Object schemas resolve into nested member controls, arrays into row editors, enums into selects. Story `props` are plain data destructured into that tree; a story never defines controls.
+5. Props and controls are one structure loaded from the schema file beside `index.md`, `schema.json` or `schema.yml`, one of the two. The schema is the read path: the workshop controls, validation, and mock selection all come from it. Object schemas resolve into nested member controls, arrays into row editors, enums into selects. Story `props` are plain data destructured into that tree; a story never defines controls. The schema carries `properties`, `required`, `slots`, `emits`, and a `mock` name per member.
 
-6. `schema.json` is generated from the component types by import, create, and `create --component=<ref> --schema`. Prop descriptions come from JSDoc blocks or line comments above the type member in the component source; document props where they are typed, then regenerate. The schema carries `properties`, `required`, `slots`, `emits`, and a `mock` name per member.
+6. The schema is seeded from the component types by import and create, and from there the file is authored: defaults, enums, descriptions, mocks, and narrowing live in the schema, not in the component. `nimpress modules update [component]` upserts source changes into it: new props, slots, and emits are added, a changed type shape refreshes on existing members, authored fields are never overwritten, an empty description fills from a JSDoc or line comment above the type member, and a member gone from the source stays in the file and is flagged so the author decides its removal.
 
-7. `data.controls` in the page frontmatter maps a prop name to a json schema (`type`, `properties`, `required`, `items`, `enum`, `description`, `default`, `title`) that replaces or adds the control for that prop on top of `schema.json`.
+6.1. In `nimpress dev` the upsert runs automatically whenever a component under a page changes, and every pass warns about what the author should fix: props without a description, opaque types, and schema members without a source counterpart. The warnings coach the library toward fully documented and typed components.
+
+6.2. In local dev the json dialog carries a set defaults action that writes the current live control values into the schema file as the prop defaults, so defaults are found by testing in the workshop and persisted where they belong.
+
+7. A `data.schema` block in the page frontmatter carries the same schema structure inline and merges over the schema file as the page local last word, for small curations that do not warrant the file.
 
 8. The page `title` is the human readable display name; `data.component` is the technical identifier the harness resolves. They may differ freely.
 
@@ -117,21 +121,21 @@ The `:::component` directive renders a live component inline in any markdown pag
 
 Every modules subcommand takes `--system=<name>`; it is required only when several systems are configured.
 
-1. `nimpress modules import` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes into `data.controls`, and render stories ported executable, then fills storyless components with generated default stories. A mined story whose name equals the component becomes the Default story, written as `default.story.tsx` with the name `Default`. A data module a render story imports copies in beside the story so the component folder stays self contained. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports are idempotent.
+1. `nimpress modules import` walks the system source, mines storybook CSF files for groups from meta titles, named stories with args, argTypes merged into the seeded schema, and render stories ported executable, then fills storyless components with generated default stories. A mined story whose name equals the component becomes the Default story, written as `default.story.tsx` with the name `Default`. A data module a render story imports copies in beside the story so the component folder stays self contained. Flags: `--source=`, `--stories=<extra csf dir>`, `--match=<component name regex>`, `--select` for interactive picking. Reimports upsert the schema and never clear authored content.
 
 2. `nimpress modules import <file> --name=` registers one external component file into the system.
 
 3. `nimpress modules story [component] [--framework=]` writes `default.story.tsx` named `Default` for every storyless component page, one uniform entry story per component.
 
-4. `nimpress modules create <Component>` scaffolds the dedicated component folder: Overview `index.md`, `default.story.tsx`, and `schema.json`.
+4. `nimpress modules create <Component>` scaffolds the dedicated component folder: Overview `index.md`, `default.story.tsx`, and the seeded `schema.json`.
 
-5. `nimpress modules create --component=<ref> --schema` regenerates `schema.json` for one existing component page from the component types. The ref is the component name when unique across systems, else the component file path. This is the refresh loop after changing component types, since the workshop reads the schema, not the source.
+5. `nimpress modules update [component] [--system=]` upserts the schema for one component page, or every page of a system when no component is named. The ref is the component name when unique across systems, else the component file path; `create --component=<ref> --schema` runs the same upsert for one page. This is the refresh loop after changing component types, since the workshop reads the schema, not the source.
 
-6. `nimpress modules lint [--system=]` checks framework purity of stories and component files, that every page carries at least one story, `schema.json` presence and validity beside every `index.md`, value story props against `schema.json`, and `schema.json` drift against the component source. Harness and render stories are exempt from the prop check. Run it after touching stories, schemas, or component types.
+6. `nimpress modules lint [--system=]` checks framework purity of stories and component files, that every page carries at least one story, exactly one schema file present and parseable beside every `index.md`, value story props against the schema, and the schema structurally against the component source: every source member exists in the schema, schema members without a source counterpart are flagged, an authored type conflicting with the source type fails, and an authored enum must fit the source type and stay inside a source union. Authored narrowing, an enum over a string, is legal. Harness and render stories are exempt from the prop check. Coaching warnings for undocumented props and opaque types print without failing the run. Run it after touching stories, schemas, or component types.
 
 7. `nimpress lint` validates structure, folder and file naming, file combinations, frontmatter, and every import in content code files, then builds to verify the output compiles. The import pipeline lives in the nimpress CLI; a consumer repo carries no generator or import scripts.
 
-8. Every import and create writes `schema.json` beside `index.md`. Opaque prop types log warnings naming the component, prop path, and type; fix them by documenting the type in the component file or a sibling `.types.ts` and regenerating.
+8. Import and create seed the schema beside `index.md` when none exists. Opaque prop types log warnings naming the component, prop path, and type; fix them by authoring the member in the schema with enum or properties, or by documenting the type in the component file or a sibling `.types.ts` and running update.
 
 9. `nimpress modules dev [--system=]` runs harness servers. `nimpress dev` starts them all beside the docs.
 

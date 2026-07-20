@@ -583,6 +583,27 @@
     }
   }
 
+  let defaultsSaving = $state(false)
+  let defaultsSaved = $state(false)
+
+  async function saveDefaultsToSchema() {
+    if (!data?.schemaPath) return
+    defaultsSaving = true
+    try {
+      const res = await fetch('/__nimpress/schema-defaults', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: data.schemaPath, defaults: $state.snapshot(propValues) })
+      })
+      defaultsSaved = res.ok
+      setTimeout(() => (defaultsSaved = false), 1200)
+    } catch {
+      defaultsSaved = false
+    } finally {
+      defaultsSaving = false
+    }
+  }
+
   let seededView = ''
   $effect(() => {
     if (view === 'overview') {
@@ -1016,6 +1037,15 @@
                 </span>
               {:else}
                 <span class="np-ws-dialog-count" title="total props in the schema">{propCounts.total} props</span>
+              {/if}
+              {#if jsonDialogTab === 'input' && jsonDialogScope === 'props' && data?.editable && data?.schemaPath}
+                <button
+                  type="button"
+                  class="np-ws-tool"
+                  disabled={defaultsSaving}
+                  title="write the current values into the schema file as the prop defaults"
+                  onclick={saveDefaultsToSchema}
+                >{defaultsSaved ? 'saved' : defaultsSaving ? 'saving' : 'set defaults'}</button>
               {/if}
               <button type="button" class="np-ws-tool" title="copy this tab's json to the clipboard" onclick={copyDialogJson}>
                 {copied ? 'copied' : 'copy'}

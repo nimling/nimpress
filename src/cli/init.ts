@@ -143,13 +143,13 @@ The authoritative AI working rules ship inside the package at \`node_modules/@ni
 
 2. \`nimpress lint\` validates structure, frontmatter, and imports, then builds and reports build errors; run it after content changes.
 
-3. \`nimpress modules lint\` checks component pages for framework mixups, missing schema.json files, and schema.json drift against stories and component source.
+3. \`nimpress modules lint\` checks component pages for framework mixups, missing schema files, and structural drift between the schema and the stories and component source.
 
 4. \`nimpress build\` emits the static site plus harness bundles.
 
-5. \`nimpress modules import | create | story\` manage component pages, with \`--system=<name>\` when several systems are configured; never hand roll importer scripts.
+5. \`nimpress modules import | create | story | update\` manage component pages, with \`--system=<name>\` when several systems are configured; never hand roll importer scripts.
 
-6. \`nimpress modules create --component=<name> --schema\` regenerates schema.json from the component types; the workshop controls read schema.json, not the source.
+6. \`nimpress modules update <name>\` upserts the schema from the component types, adding new members without touching authored defaults, enums, or descriptions; the workshop controls read the schema, not the source.
 
 7. \`nimpress export --target=<name>\` collects pages marked \`export: <name>\` into \`.nimpress\` for the docs pipeline.
 

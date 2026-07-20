@@ -7,6 +7,7 @@ import type { ModuleFramework, ModuleStageConfig, ModuleSystemConfig, ModulesCon
 import { mergeDeep } from '../config/viteConfig'
 import { resolveComponentSource } from './resolve'
 import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
+import { parseSchemaText, schemaFileIn } from './schema'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
 
@@ -396,7 +397,7 @@ function requiredDefaults(target: HarnessTarget): Record<string, unknown> {
   if (!target.schemaFile || !existsSync(target.schemaFile)) return {}
   let raw: ComponentJsonSchema
   try {
-    raw = JSON.parse(readFileSync(target.schemaFile, 'utf-8')) as ComponentJsonSchema
+    raw = parseSchemaText(readFileSync(target.schemaFile, 'utf-8'), target.schemaFile.endsWith('.yml') ? 'yml' : 'json')
   } catch {
     return {}
   }
@@ -518,7 +519,7 @@ export function resolveHarnessTargets(
   for (const page of pages) {
     if (page.system !== system) continue
     const storyFiles = collectStoryFiles(page.pageFile)
-    const schemaFile = join(dirname(page.pageFile), 'schema.json')
+    const schemaFile = schemaFileIn(dirname(page.pageFile))?.path ?? join(dirname(page.pageFile), 'schema.json')
     const source = systemConfig.source
       ? resolveComponentSource(cwd, modules, system, page.component, page.file)
       : null

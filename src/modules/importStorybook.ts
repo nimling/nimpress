@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline/promises'
 import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { readBalanced } from './parse/typeMembers'
 import { findComponentDts, parseDtsSchema } from './parse/dts'
-import { parseSourceSchema, writeComponentSchema } from './schema'
+import { mergeSchemaLayer, parseSourceSchema, writeComponentSchema } from './schema'
 
 export interface ImportOptions {
   source?: string
@@ -412,11 +412,9 @@ export async function importStorybook(
         (acc, m) => (m ? { ...(acc ?? {}), ...m } : acc),
         undefined
       )
-    await writeFile(
-      join(dir, 'index.md'),
-      pageMarkdown(system, name, pkg, canonical ? undefined : rel, argTypes)
-    )
+    await writeFile(join(dir, 'index.md'), pageMarkdown(system, name, pkg, canonical ? undefined : rel))
     await writeComponentSchema(dir, name, await parseSourceSchema(file, framework, name))
+    if (argTypes) await mergeSchemaLayer(dir, { properties: argTypes } as Parameters<typeof mergeSchemaLayer>[1])
     pages++
     const modules = modulesByComponent.get(name) ?? []
     const writtenThisRun = new Set<string>()
@@ -508,10 +506,7 @@ async function importFromStories(
       : 'Components'
     const dir = join(docsRoot, group, component)
     await mkdir(dir, { recursive: true })
-    await writeFile(
-      join(dir, 'index.md'),
-      pageMarkdown(system, component, pagePkg, fileRel, mineArgTypes(module))
-    )
+    await writeFile(join(dir, 'index.md'), pageMarkdown(system, component, pagePkg, fileRel))
     const sourceExt = framework === 'vue' ? '.vue' : '.svelte'
     const sourceCandidates = fileRel
       ? [resolve(sourceRoot, fileRel)]
@@ -527,9 +522,11 @@ async function importFromStories(
       if (dtsPath) {
         await writeComponentSchema(dir, component, parseDtsSchema(readFileSync(dtsPath, 'utf-8'), component))
       } else {
-        console.warn(`nimpress modules: no source or d.ts found for ${component}, schema.json skipped`)
+        console.warn(`nimpress modules: no source or d.ts found for ${component}, the schema seed is skipped`)
       }
     }
+    const argTypes = mineArgTypes(module)
+    if (argTypes) await mergeSchemaLayer(dir, { properties: argTypes } as Parameters<typeof mergeSchemaLayer>[1])
     pages++
     for (const dataModule of module.dataModules) {
       await copyFile(dataModule, join(dir, basename(dataModule)))
@@ -546,22 +543,15 @@ async function importFromStories(
   console.log(`nimpress modules: imported ${pages} components with ${stories} stories for ${system} from stories`)
 }
 
-function pageMarkdown(
-  system: string,
-  name: string,
-  pkg: string | undefined,
-  fileRel?: string,
-  controls?: Record<string, unknown>
-): string {
+function pageMarkdown(system: string, name: string, pkg: string | undefined, fileRel?: string): string {
   const packageLine = pkg ? `\n  package: "${pkg}"` : ''
   const fileLine = fileRel ? `\n  file: ${JSON.stringify(fileRel)}` : ''
-  const controlsLine = controls ? `\n  controls: ${JSON.stringify(controls)}` : ''
   return `---
 title: ${name}
 type: component
 data:
   system: ${system}
-  component: ${name}${packageLine}${fileLine}${controlsLine}
+  component: ${name}${packageLine}${fileLine}
 ---
 
 ## Usage
