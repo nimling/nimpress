@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleStageConfig, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
 import { mergeDeep } from '../config/viteConfig'
+import { cacheDir, outDir } from '../config/paths'
 import { resolveComponentSource } from './resolve'
 import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
 import { parseSchemaText, schemaFileIn } from './schema'
@@ -685,7 +686,7 @@ export async function harnessViteConfig(
     configFile: false,
     publicDir: false,
     appType: 'mpa',
-    cacheDir: join(cwd, 'node_modules', '.vite-nimpress', system),
+    cacheDir: cacheDir(cwd, resolvedConfig, 'modules', system),
     plugins: [harnessPlugin(cwd, systemConfig, system, targets, base), framework],
     resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
     optimizeDeps: {
@@ -704,7 +705,7 @@ export async function harnessViteConfig(
       }
     },
     build: {
-      outDir: resolve(cwd, resolvedConfig.outDir, routeBase.replace(/^\//, ''), system),
+      outDir: join(outDir(cwd, resolvedConfig), routeBase.replace(/^\//, ''), system),
       emptyOutDir: true,
       target: 'es2022',
       rollupOptions: {

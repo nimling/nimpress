@@ -47,6 +47,14 @@ function readSite(): SiteMeta | undefined {
   return site
 }
 
+function readGuardedBase(): string {
+  let base = '/_guarded'
+  configStore.subscribe((c) => {
+    if (c.guardedBase) base = c.guardedBase.replace(/\/$/, '')
+  })()
+  return base
+}
+
 function absoluteUrl(path: string | undefined, site?: SiteMeta): string | undefined {
   if (!path) return undefined
   if (/^https?:\/\//.test(path)) return path
@@ -106,7 +114,7 @@ export function applyPageMeta(
   if (canonical) upsert('link[rel="canonical"]', () => tag('link', { rel: 'canonical', href: canonical }))
 
   if (fm.type === 'changelog' && (fm.rss === true || fm.subscribe === true)) {
-    const prefix = fm.gate !== undefined ? `/_guarded/${bundle ?? fm.gate}` : ''
+    const prefix = fm.gate !== undefined ? `${readGuardedBase()}/${bundle ?? fm.gate}` : ''
     const cleanPath = pagePath === '/' ? '' : pagePath.replace(/\/$/, '')
     const feedPath = `${prefix}${cleanPath}/rss.xml`
     const feedHref = absoluteUrl(feedPath, site) ?? feedPath

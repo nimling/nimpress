@@ -4,6 +4,7 @@ import matter from 'gray-matter'
 import type { ResolvedNimpressConfig } from '../types'
 import { lintContent } from '../plugin'
 import { lintModules } from '../modules/lint'
+import { cacheDir } from '../config/paths'
 import { walkFiles, hasFlag, finishLint } from './shared'
 
 const scannedExtensions = ['.ts', '.tsx', '.js', '.mjs', '.vue', '.svelte']
@@ -191,10 +192,17 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
 }
 
 async function lintBuild(cwd: string, resolved: ResolvedNimpressConfig): Promise<string[]> {
-  const outDir = '.nimpress-lint'
+  const out = cacheDir(cwd, resolved, 'lint')
+  const clean = () => rmSync(out, { recursive: true, force: true })
+  const onSignal = () => {
+    clean()
+    process.exit(130)
+  }
+  process.once('SIGINT', onSignal)
+  process.once('SIGTERM', onSignal)
   const { runBuild } = await import('./site')
   try {
-    await runBuild(cwd, { ...resolved, outDir })
+    await runBuild(cwd, { ...resolved, paths: { ...resolved.paths, out } })
     return []
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -203,7 +211,9 @@ async function lintBuild(cwd: string, resolved: ResolvedNimpressConfig): Promise
       .filter((line) => line.trim())
       .map((line) => `build: ${line.trim()}`)
   } finally {
-    rmSync(join(cwd, outDir), { recursive: true, force: true })
+    process.off('SIGINT', onSignal)
+    process.off('SIGTERM', onSignal)
+    clean()
   }
 }
 

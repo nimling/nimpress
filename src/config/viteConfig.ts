@@ -1,8 +1,8 @@
-import { resolve } from 'node:path'
 import type { InlineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
 import type { ResolvedNimpressConfig } from '../types'
+import { cacheDir, outDir } from './paths'
 import nimpress from '../plugin'
 
 export function mergeDeep<T>(base: T, override: Partial<T> | undefined): T {
@@ -38,8 +38,9 @@ export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
       tailwindcss(),
       nimpress({ ...resolved, modules: Object.values(resolved.modules.systems) })
     ],
+    cacheDir: cacheDir(cwd, resolved, 'site'),
     build: {
-      outDir: resolve(cwd, resolved.outDir),
+      outDir: outDir(cwd, resolved),
       emptyOutDir: true,
       target: 'es2022',
       ...(htmlInput ? { rollupOptions: { input: htmlInput } } : {})

@@ -1147,7 +1147,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (entries.length === 0) continue
       const basePath = p.effectivePath === '/' ? '' : p.effectivePath
       const pageUrl = `${siteUrl}${basePath || '/'}`
-      const gatedPrefix = isGated(p) ? `/_guarded/${bundleFor(p)}` : ''
+      const gatedPrefix = isGated(p) ? `/${resolved.paths.guarded}/${bundleFor(p)}` : ''
       const feedPath = (index: number) => `${gatedPrefix}${basePath}/${feedFileName(index)}`
       const dates = entries
         .map((e) => (e.releaseDate ? new Date(e.releaseDate).getTime() : Number.NaN))
@@ -1598,12 +1598,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       list.push(p)
       byBundle.set(bundle, list)
     }
+    const guardedPrefix = `/${resolved.paths.guarded}/`
     await writeFile(
       join(resolvedOutDir, 'access.json'),
-      JSON.stringify({ prefix: '/_guarded/', routes: accessRoutes }, null, 2) + '\n'
+      JSON.stringify({ prefix: guardedPrefix, routes: accessRoutes }, null, 2) + '\n'
     )
     if (gated.length === 0) return
-    const root = join(resolvedOutDir, '_guarded')
+    const root = join(resolvedOutDir, resolved.paths.guarded)
     const mapBundles: Record<string, { pages: Record<string, string>; files: string[] }> = {}
     for (const [bundle, list] of byBundle) {
       const dir = join(root, bundle)
@@ -1644,7 +1645,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
     await writeFile(
       join(resolvedOutDir, 'guard.map.json'),
-      JSON.stringify({ prefix: '/_guarded/', routes: accessRoutes, bundles: mapBundles }, null, 2) + '\n'
+      JSON.stringify({ prefix: guardedPrefix, routes: accessRoutes, bundles: mapBundles }, null, 2) + '\n'
     )
   }
 
@@ -1950,9 +1951,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             order: -1
           }
           const storyNodes: SidebarNode[] = (t.page.componentData?.stories ?? []).map((story, idx) => ({
-            text: story.name,
+            text: story.sidebar?.name ?? story.name,
             link: `${t.page!.effectivePath}/${storyAnchor(story.name)}`,
             slug: `${t.page!.slug}__story__${storyAnchor(story.name)}`,
+            icon: story.sidebar?.icon,
+            style: story.sidebar?.style,
             order: idx
           }))
           node.text = prettyDirName(t.segment)

@@ -29,7 +29,21 @@ Writes `nimpress.config.ts` with every field documented in JSDoc and examples, u
 
 1. `dev` starts the docs vite server plus one harness server per configured system and prints the urls.
 
-2. `build` emits the static site into `outDir`, default `dist`, then builds a static harness bundle per system into `dist/_components/<system>/`. Systems with `visibility: dev-only` are skipped. Gated pages land in `dist/_guarded/<bundle>/` with `access.json` and `guard.map.json` beside the site.
+2. `build` emits the static site into `paths.out`, default `dist`, then builds a static harness bundle per system into `<out>/<paths.modules>/<system>/`, default `dist/_components/<system>/`. Systems with `visibility: dev-only` are skipped. Gated pages land in `<out>/<paths.guarded>/<bundle>/`, default `dist/_guarded/<bundle>/`, with `access.json` and `guard.map.json` beside the site.
+
+## paths
+
+Every folder nimpress writes is set under one optional `paths` block in the config, and every field carries a default so the block is omittable.
+
+1. `paths.out` is the build root, default `dist`.
+
+2. `paths.cache` is the one cache root for every operation, default `node_modules/.nimpress`, layered per feature beneath it: `<cache>/site` for the docs vite cache, `<cache>/modules/<system>` for each harness cache, `<cache>/lint` for the lint verification build. It sits under node_modules like vite's own cache, so nothing ephemeral appears at the repo root.
+
+3. `paths.export` is where `export` collects pages, default `.nimpress`.
+
+4. `paths.modules` is both the folder under `out` and the url route segment for the harness bundles, default `_components`, served at `/<modules>/<system>/`.
+
+5. `paths.guarded` is both the folder under `out` and the url route prefix for guarded bundles, default `_guarded`, served at `/<guarded>/<bundle>/`. The prefix is written into `access.json` so the runtime and the guard provider agree.
 
 ## lint
 

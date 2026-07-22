@@ -92,6 +92,7 @@ export interface ComponentStory {
   description?: string
   props?: Record<string, unknown>
   slots?: Record<string, string>
+  sidebar?: { name?: string; icon?: string; style?: string }
 }
 
 export interface ComponentPageData {
@@ -453,11 +454,33 @@ export interface NimpressConfig {
   subscribe?: SubscribeConfig
   site?: SiteMeta
   footer?: string
+  guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
   pageLoader?: Record<string, () => Promise<{ default: unknown } | unknown>>
   bodyLoader?: Record<string, () => Promise<PageBody>>
   accessChecker?: AccessChecker
+}
+
+export interface NimpressPathsConfig {
+  /** Build output root. @example "dist" */
+  out?: string
+  /** Cache root for every nimpress operation, layered per feature beneath it. @example "node_modules/.nimpress" */
+  cache?: string
+  /** Folder the export command collects pages into for the docs-sync pipeline. @example ".nimpress" */
+  export?: string
+  /** Folder under out and url route segment for the component module harness bundles, served at /<modules>/<system>/. @example "_components" */
+  modules?: string
+  /** Folder under out and url route segment for guarded bundles, served at /<guarded>/<bundle>/. @example "_guarded" */
+  guarded?: string
+}
+
+export interface ResolvedPaths {
+  out: string
+  cache: string
+  export: string
+  modules: string
+  guarded: string
 }
 
 export interface NimpressBannerConfig {
@@ -500,8 +523,8 @@ export interface NimpressUserConfig {
   assetsDir?: string
   /** Url base the assets folder serves under. @example "/assets" */
   assetUrlBase?: string
-  /** Build output folder. @example "dist" */
-  outDir?: string
+  /** Build output, cache, export, and served route folders. Every field is optional and carries a default. */
+  paths?: NimpressPathsConfig
   /** Slug prefixes excluded from the site. @example ["drafts"] */
   exclude?: string[]
   /** Frontmatter defaults applied to every page that leaves the field unset. @example { "lastUpdated": true } */
@@ -533,7 +556,7 @@ export interface ResolvedNimpressConfig {
   contentDir: string
   assetsDir: string
   assetUrlBase: string
-  outDir: string
+  paths: ResolvedPaths
   exclude: string[]
   defaultFrontmatter: Partial<Frontmatter>
   defaultFrontmatterExclude: string[]

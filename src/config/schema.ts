@@ -101,7 +101,13 @@ export const userConfigSchema = z.object({
   contentDir: z.string().optional(),
   assetsDir: z.string().optional(),
   assetUrlBase: z.string().optional(),
-  outDir: z.string().optional(),
+  paths: z.object({
+    out: z.string().optional(),
+    cache: z.string().optional(),
+    export: z.string().optional(),
+    modules: z.string().optional(),
+    guarded: z.string().optional()
+  }).passthrough().optional(),
   exclude: z.array(z.string()).optional(),
   defaultFrontmatter: z.record(z.unknown()).optional(),
   defaultFrontmatterExclude: z.array(z.string()).optional(),

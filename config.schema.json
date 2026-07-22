@@ -154,10 +154,16 @@
       "description": "Url base the assets folder serves under.",
       "default": "/assets"
     },
-    "outDir": {
-      "type": "string",
-      "description": "Build output folder.",
-      "default": "dist"
+    "paths": {
+      "type": "object",
+      "description": "Build output, cache, export, and served route folders. Every field is optional and carries a default.",
+      "properties": {
+        "out": { "type": "string", "description": "Build output root.", "default": "dist" },
+        "cache": { "type": "string", "description": "Cache root for every nimpress operation, layered per feature beneath it.", "default": "node_modules/.nimpress" },
+        "export": { "type": "string", "description": "Folder the export command collects pages into for the docs-sync pipeline.", "default": ".nimpress" },
+        "modules": { "type": "string", "description": "Folder under out and url route segment for the component module harness bundles, served at /<modules>/<system>/.", "default": "_components" },
+        "guarded": { "type": "string", "description": "Folder under out and url route segment for guarded bundles, served at /<guarded>/<bundle>/.", "default": "_guarded" }
+      }
     },
     "exclude": {
       "type": "array",

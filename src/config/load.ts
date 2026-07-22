@@ -54,7 +54,7 @@ export async function loadNimpressConfig(
   const userModules = inline?.modules ?? found?.config?.modules
   resolved.modules = {
     dir: defaultConfig.modules.dir,
-    route: defaultConfig.modules.route,
+    route: `/${resolved.paths.modules}`,
     systems: userModules ? Object.fromEntries(userModules.map((s) => [s.name, s])) : {}
   }
   return { resolved, configFile: found?.file ?? null }
@@ -71,6 +71,7 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     auth: resolved.auth,
     subscribe: resolved.subscribe,
     site: resolved.site,
-    footer: resolved.footer
+    footer: resolved.footer,
+    guardedBase: `/${resolved.paths.guarded}`
   }
 }
