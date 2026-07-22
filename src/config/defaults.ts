@@ -1,11 +1,19 @@
-import type { ResolvedNimpressConfig } from '../types'
+import type { ResolvedNimpressConfig, ResolvedPaths } from '../types'
+
+export const defaultPaths: ResolvedPaths = {
+  out: 'dist',
+  cache: 'node_modules/.nimpress',
+  export: '.nimpress',
+  modules: '_components',
+  guarded: '_guarded'
+}
 
 export const defaultConfig: ResolvedNimpressConfig = {
   title: 'Nimpress',
   contentDir: 'docs',
   assetsDir: 'assets',
   assetUrlBase: '/assets',
-  outDir: 'dist',
+  paths: defaultPaths,
   exclude: [],
   defaultFrontmatter: {},
   defaultFrontmatterExclude: [],
@@ -14,7 +22,7 @@ export const defaultConfig: ResolvedNimpressConfig = {
   vite: {},
   modules: {
     dir: 'modules',
-    route: '/_components',
+    route: `/${defaultPaths.modules}`,
     systems: {}
   }
 }

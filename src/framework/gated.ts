@@ -37,7 +37,8 @@ export async function loadGatedContent(): Promise<void> {
   try {
     const accessRes = await fetch('/access.json')
     if (accessRes.ok) {
-      const access = (await accessRes.json()) as { base?: string; routes?: Record<string, GuardedRoute> }
+      const access = (await accessRes.json()) as { base?: string; prefix?: string; routes?: Record<string, GuardedRoute> }
+      if (access.prefix) gatedBase = access.prefix.replace(/\/$/, '')
       if (access.base) gatedBase = access.base.replace(/\/$/, '')
       routes = access.routes ?? {}
     }

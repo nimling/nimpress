@@ -24,8 +24,14 @@ export default defineConfig({
   /** Url base the assets folder serves under. Default ${JSON.stringify(defaultConfig.assetUrlBase)}. */
   // assetUrlBase: '/assets',
 
-  /** Build output folder. Default ${JSON.stringify(defaultConfig.outDir)}. */
-  // outDir: 'dist',
+  /**
+   * Build output, cache, export, and served route folders. Every field is optional.
+   * out is the build root, cache is the layered cache root under node_modules,
+   * export is where the export command collects pages, modules and guarded are the
+   * folders under out and the url route segments for the harness bundles and the
+   * guarded content.
+   */
+  // paths: { out: 'dist', cache: 'node_modules/.nimpress', export: '.nimpress', modules: '_components', guarded: '_guarded' },
 
   /** Header logo url. @example "/assets/logo.svg" */
   // logo: '/assets/logo.svg',
@@ -109,8 +115,7 @@ function jsonSeed(): string {
         title: defaultConfig.title,
         contentDir: defaultConfig.contentDir,
         assetsDir: defaultConfig.assetsDir,
-        assetUrlBase: defaultConfig.assetUrlBase,
-        outDir: defaultConfig.outDir
+        assetUrlBase: defaultConfig.assetUrlBase
       },
       null,
       2

@@ -2,6 +2,7 @@ import { join, relative, extname } from 'node:path'
 import { writeFileSync, existsSync, rmSync, readFileSync, statSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import type { ResolvedNimpressConfig } from '../types'
+import { guardedDir } from '../config/paths'
 import { flag, walkFiles } from './shared'
 
 const guardMimes: Record<string, string> = {
@@ -37,7 +38,8 @@ interface GuardMap {
 
 export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: string[]): void {
   const sub = args[0]
-  const dist = join(cwd, flag(args, 'dist') ?? resolved.outDir)
+  const dist = join(cwd, flag(args, 'dist') ?? resolved.paths.out)
+  const defaultPrefix = `/${resolved.paths.guarded}/`
   const accessPath = join(dist, 'access.json')
   if (!existsSync(accessPath)) {
     throw new Error(`[nimpress] guard: ${accessPath} not found, run a build first`)
@@ -45,15 +47,15 @@ export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: st
   const access = JSON.parse(readFileSync(accessPath, 'utf-8')) as GuardAccess
 
   if (sub === 'map') {
-    const guardedDir = join(dist, '_guarded')
+    const gdir = guardedDir(dist, resolved)
     const mapPath = join(dist, 'guard.map.json')
     const built: GuardMap = existsSync(mapPath)
       ? (JSON.parse(readFileSync(mapPath, 'utf-8')) as GuardMap)
-      : { prefix: access.prefix ?? '/_guarded/', routes: access.routes, bundles: {} }
-    const files = existsSync(guardedDir) ? walkFiles(guardedDir) : []
-    const prefix = built.prefix ?? '/_guarded/'
+      : { prefix: access.prefix ?? defaultPrefix, routes: access.routes, bundles: {} }
+    const files = existsSync(gdir) ? walkFiles(gdir) : []
+    const prefix = built.prefix ?? defaultPrefix
     const entries = files.map((file) => {
-      const rel = relative(guardedDir, file).split('\\').join('/')
+      const rel = relative(gdir, file).split('\\').join('/')
       const bundle = rel.split('/')[0] ?? ''
       const gates = [
         ...new Set(
@@ -90,9 +92,9 @@ export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: st
     if (!uploaded.base) throw new Error('[nimpress] guard apply: mapping json carries no base url')
     access.base = uploaded.base.replace(/\/$/, '')
     writeFileSync(accessPath, JSON.stringify(access, null, 2) + '\n')
-    rmSync(join(dist, '_guarded'), { recursive: true, force: true })
+    rmSync(guardedDir(dist, resolved), { recursive: true, force: true })
     rmSync(join(dist, 'guard.map.json'), { force: true })
-    console.log(`nimpress guard: base ${access.base} applied, _guarded removed from ${dist}`)
+    console.log(`nimpress guard: base ${access.base} applied, ${resolved.paths.guarded} removed from ${dist}`)
     return
   }
 
