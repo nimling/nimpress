@@ -4,7 +4,7 @@ import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { generateAutoStory, generateAutoStories, createComponentPage } from '../modules/autoStory'
 import { importStorybook } from '../modules/importStorybook'
 import { lintModules } from '../modules/lint'
-import { updateComponentSchemas, upgradeComponentSchema } from '../modules/schema'
+import { flushDiagnostics, updateComponentSchemas, upgradeComponentSchema } from '../modules/schema'
 import { flag, hasFlag, positional, finishLint } from './shared'
 import { startHarnessServers, buildHarnesses, deployableSystems } from './site'
 
@@ -85,12 +85,14 @@ export async function runModules(
       fromStories: rest.includes('--from-stories'),
       select: rest.includes('--select')
     })
+    flushDiagnostics(cwd)
     return
   }
   if (sub === 'update') {
     const ref = flag(rest, 'component') ?? positional(rest, 0)
     const count = await updateComponentSchemas(cwd, resolved, { ref, system: systemFlag(resolved, rest) })
     console.log(`nimpress modules: ${count} schema${count === 1 ? '' : 's'} upserted`)
+    flushDiagnostics(cwd)
     return
   }
   if (sub === 'create') {

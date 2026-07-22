@@ -9,7 +9,7 @@ import { controlToJsonSchema, mockNameFor, formatFor, schemaFromJsonSchema, type
 import type { ControlSpec } from '../types'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
-import { mergeComponentSchema, parseSchemaText, schemaFileIn, writeComponentSchema } from './schema'
+import { devUpsertSchema, mergeComponentSchema, parseSchemaText, schemaFileIn } from './schema'
 
 export interface BuiltComponentData {
   data: ComponentPageData
@@ -120,13 +120,7 @@ export async function buildComponentPageData(opts: {
   if (editable && source) {
     const framework = source.componentFile.endsWith('.svelte') ? 'svelte' : 'vue'
     try {
-      const parsed = await parseComponentSchema(
-        dirname(source.componentFile),
-        source.componentFile,
-        framework,
-        component
-      )
-      await writeComponentSchema(dirname(pageFile), component, parsed)
+      await devUpsertSchema(dirname(pageFile), component, source.componentFile, framework)
     } catch (err) {
       console.warn(`nimpress modules: ${system}/${component} schema upsert failed: ${String(err)}`)
     }

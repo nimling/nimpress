@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { parse as parseYamlText, stringify as stringifyYaml } from 'yaml'
 import type { ControlSchema, ModuleFramework, ResolvedNimpressConfig } from '../types'
@@ -138,22 +139,94 @@ export function mergeComponentSchema(
   return { merged, report }
 }
 
-export function schemaCoaching(component: string, schemaJson: ComponentJsonSchema, report?: SchemaMergeReport): string[] {
-  const out: string[] = []
+export type SchemaDiagnosticKind = 'opaque' | 'undocumented' | 'orphan'
+
+export interface SchemaDiagnostic {
+  component: string
+  sourceFile?: string
+  line?: number
+  path: string
+  detail: string
+  kind: SchemaDiagnosticKind
+}
+
+const pendingDiagnostics: SchemaDiagnostic[] = []
+const reportedDiagnostics = new Set<string>()
+
+function diagnosticKey(d: SchemaDiagnostic): string {
+  return `${d.component}|${d.kind}|${d.path}`
+}
+
+export function recordDiagnostics(list: SchemaDiagnostic[]): void {
+  for (const d of list) {
+    const key = diagnosticKey(d)
+    if (reportedDiagnostics.has(key)) continue
+    reportedDiagnostics.add(key)
+    pendingDiagnostics.push(d)
+  }
+}
+
+const tipFor: Record<SchemaDiagnosticKind, string> = {
+  opaque: 'author opaque members in the schema with enum or properties, or type them in the source',
+  undocumented: 'describe them in the schema or above the type member in the source',
+  orphan: 'remove the schema member or restore it in the source'
+}
+
+export function flushDiagnostics(cwd: string = process.cwd()): void {
+  if (!pendingDiagnostics.length) return
+  const byComponent = new Map<string, SchemaDiagnostic[]>()
+  for (const d of pendingDiagnostics) {
+    const list = byComponent.get(d.component) ?? []
+    list.push(d)
+    byComponent.set(d.component, list)
+  }
+  pendingDiagnostics.length = 0
+  const lines: string[] = []
+  for (const [component, diags] of byComponent) {
+    const file = diags.find((d) => d.sourceFile)?.sourceFile
+    lines.push(`nimpress modules: ${component}${file ? `  ${relative(cwd, file)}` : ''}`)
+    for (const d of diags) {
+      const loc = d.line ? `L${d.line}` : '   '
+      lines.push(`  ${loc}  ${d.path || '(component)'}  ${d.detail}`)
+    }
+    const kinds = new Set(diags.map((d) => d.kind))
+    const tips = [...kinds].map((k) => tipFor[k])
+    lines.push(`  → ${tips.join('; ')}, then nimpress modules update ${component}`)
+  }
+  console.warn(lines.join('\n'))
+}
+
+function lineOf(sourceText: string | undefined, memberPath: string): number | undefined {
+  if (!sourceText) return undefined
+  const leaf = memberPath.split('.').filter((s) => s && s !== '[]').pop()
+  if (!leaf) return undefined
+  const lines = sourceText.split('\n')
+  const declared = new RegExp(`(^|[^\\w$])${leaf}\\s*[?:]`)
+  for (let i = 0; i < lines.length; i++) {
+    if (declared.test(lines[i])) return i + 1
+  }
+  const word = new RegExp(`\\b${leaf}\\b`)
+  for (let i = 0; i < lines.length; i++) {
+    if (word.test(lines[i])) return i + 1
+  }
+  return undefined
+}
+
+export function schemaCoaching(
+  component: string,
+  schemaJson: ComponentJsonSchema,
+  opts: { sourceFile?: string; sourceText?: string; report?: SchemaMergeReport } = {}
+): SchemaDiagnostic[] {
+  const out: SchemaDiagnostic[] = []
   const schema = schemaFromJsonSchema(component, schemaJson)
-  const thin = schema.props.filter((p) => !p.description).map((p) => p.name)
-  if (thin.length) {
-    out.push(
-      `${component} props without a description: ${thin.join(', ')} — describe them in the schema or above the type member in the source`
-    )
+  for (const p of schema.props.filter((p) => !p.description)) {
+    out.push({ component, sourceFile: opts.sourceFile, line: lineOf(opts.sourceText, p.name), path: p.name, detail: 'has no description', kind: 'undocumented' })
   }
   for (const o of opaqueControls(schema.props)) {
-    out.push(
-      `${component}.${o.path} type ${o.type} is opaque, author it in the schema with enum or properties, or document the type in the component source`
-    )
+    out.push({ component, sourceFile: opts.sourceFile, line: lineOf(opts.sourceText, o.path), path: o.path, detail: `type ${o.type} is opaque`, kind: 'opaque' })
   }
-  for (const name of report?.missing ?? []) {
-    out.push(`${component} schema carries ${name} with no counterpart in the component source, remove it or restore the member`)
+  for (const name of opts.report?.missing ?? []) {
+    out.push({ component, sourceFile: opts.sourceFile, path: name, detail: 'has no counterpart in the component source', kind: 'orphan' })
   }
   return out
 }
@@ -161,18 +234,18 @@ export function schemaCoaching(component: string, schemaJson: ComponentJsonSchem
 export async function writeComponentSchema(
   dir: string,
   component: string,
-  schema: ControlSchema | undefined
+  schema: ControlSchema | undefined,
+  sourceFile?: string
 ): Promise<void> {
   if (!schema) return
   const fresh = schemaToJsonSchema(component, schema.props, schema.slots, schema.emits)
+  const sourceText = sourceFile ? await readFile(sourceFile, 'utf-8').catch(() => undefined) : undefined
   const found = schemaFileIn(dir)
   if (!found) {
     const schemaPath = join(dir, 'schema.json')
     await writeFile(schemaPath, renderSchemaText(fresh, 'json'))
     console.log(`nimpress modules: ${component} schema seeded at ${schemaPath} — the file is yours to author from here`)
-    for (const warning of schemaCoaching(component, fresh as ComponentJsonSchema)) {
-      console.warn(`nimpress modules: ${warning}`)
-    }
+    recordDiagnostics(schemaCoaching(component, fresh as ComponentJsonSchema, { sourceFile, sourceText }))
     return
   }
   const raw = await readFile(found.path, 'utf-8')
@@ -190,9 +263,29 @@ export async function writeComponentSchema(
     const added = report.added.length ? `, added ${report.added.join(', ')}` : ''
     console.log(`nimpress modules: ${component} schema upserted at ${found.path}${added}`)
   }
-  for (const warning of schemaCoaching(component, merged as ComponentJsonSchema, report)) {
-    console.warn(`nimpress modules: ${warning}`)
+  recordDiagnostics(schemaCoaching(component, merged as ComponentJsonSchema, { sourceFile, sourceText, report }))
+}
+
+const devSourceHash = new Map<string, string>()
+
+export async function devUpsertSchema(
+  pageDir: string,
+  component: string,
+  sourceFile: string,
+  framework: ModuleFramework
+): Promise<void> {
+  let text: string
+  try {
+    text = await readFile(sourceFile, 'utf-8')
+  } catch {
+    return
   }
+  const hash = createHash('sha1').update(text).digest('hex')
+  if (devSourceHash.get(sourceFile) === hash) return
+  devSourceHash.set(sourceFile, hash)
+  const schema = await parseSourceSchema(sourceFile, framework, component)
+  if (!schema) return
+  await writeComponentSchema(pageDir, component, schema, sourceFile)
 }
 
 export async function mergeSchemaLayer(dir: string, layer: ComponentJsonSchema): Promise<void> {

@@ -5,7 +5,7 @@ import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { collectComponentPages } from './pages'
 import { readComponentStories } from './stories'
 import { resolveComponentSource } from './resolve'
-import { parseSourceSchema, parseSchemaText, schemaCoaching, schemaFileIn } from './schema'
+import { flushDiagnostics, parseSourceSchema, parseSchemaText, recordDiagnostics, schemaCoaching, schemaFileIn } from './schema'
 import { schemaToJsonSchema, type ComponentJsonSchema, type ControlJsonSchema } from './parse/typeMembers'
 
 const helperFor: Record<ModuleFramework, string> = { vue: 'vueStory', svelte: 'svelteStory' }
@@ -176,6 +176,7 @@ export async function lintModules(
         }
       }
 
+      const sourceText = source ? await readFile(source.componentFile, 'utf-8').catch(() => undefined) : undefined
       if (source) {
         const fresh = await parseSourceSchema(source.componentFile, framework, page.component)
         if (fresh) {
@@ -185,10 +186,9 @@ export async function lintModules(
           )
         }
       }
-      for (const warning of schemaCoaching(page.component, authored)) {
-        console.warn(`nimpress modules lint: ${warning}`)
-      }
+      recordDiagnostics(schemaCoaching(page.component, authored, { sourceFile: source?.componentFile, sourceText }))
     }
   }
+  flushDiagnostics(cwd)
   return problems
 }

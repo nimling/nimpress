@@ -33,6 +33,7 @@ import type {
   SidebarNode
 } from './types'
 import { buildComponentPageData } from './modules/componentData'
+import { flushDiagnostics } from './modules/schema'
 import { harnessPort } from './modules/harness'
 import { defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig } from './config/load'
@@ -2298,6 +2299,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     async buildStart() {
       await processAll()
+      if (isBuildCommand) flushDiagnostics()
     },
 
     async closeBundle() {
@@ -2350,6 +2352,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         }
         invalidateMeta(devServer)
         invalidateAllBodies(devServer)
+        flushDiagnostics()
         devServer.ws.send({ type: 'full-reload' })
       }
       const onUnlink = async (file: string) => {
@@ -2365,6 +2368,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           }
           invalidateMeta(devServer)
           invalidateAllBodies(devServer)
+          flushDiagnostics()
           devServer.ws.send({ type: 'full-reload' })
           return
         }
@@ -2398,6 +2402,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           })
           process.stdout.write('\x1Bc')
           process.stdout.write(banner + '\n')
+          flushDiagnostics()
         }
       }
 
@@ -2583,6 +2588,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       invalidateMeta(ctx.server)
       invalidateAllBodies(ctx.server)
+      flushDiagnostics()
       ctx.server.ws.send({ type: 'full-reload' })
       return []
     },
