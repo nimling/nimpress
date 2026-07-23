@@ -16,6 +16,11 @@ describe('parseStorySource', () => {
     expect(parseStorySource(`export default vueStory({})`, 'fallback.story.ts').name).toBe('fallback')
   })
 
+  it('reads underscores in the file name as spaces', () => {
+    expect(parseStorySource(`export default vueStory({})`, 'With_Controls.story.ts').name).toBe('With Controls')
+    expect(parseStorySource(`export default vueStory({ name: "Kept_As_Is" })`, 'With_Controls.story.ts').name).toBe('Kept_As_Is')
+  })
+
   it('parses description and slots', () => {
     const story = parseStorySource(
       `export default vueStory({ name: "S", description: 'Says hi', slots: { default: "<b>hi</b>" } })`,

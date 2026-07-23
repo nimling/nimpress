@@ -134,7 +134,7 @@ export default vueStory({
 })
 ```
 
-1. Name resolution: `// story: <name>` comment, then the `name` field, then the file name.
+1. Name resolution: `// story: <name>` comment, then the `name` field, then the file name with underscores read as spaces, so `With_Controls.story.ts` names the story `With Controls`.
 
 2. Svelte stories use `svelteStory` and can override `component` for wrapper demos.
 

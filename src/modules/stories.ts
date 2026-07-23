@@ -35,7 +35,7 @@ export function parseStorySource(raw: string, fileName: string): ComponentStory 
   const props = parseObjectLiteral(raw, 'props')
   const slots = parseObjectLiteral(raw, 'slots') as Record<string, string> | undefined
   return {
-    name: commentName ?? fieldName ?? basename(fileName).replace(/\.story\.tsx?$/, ''),
+    name: commentName ?? fieldName ?? basename(fileName).replace(/\.story\.tsx?$/, '').replace(/_/g, ' '),
     file: fileName,
     description,
     props,

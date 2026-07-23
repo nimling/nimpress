@@ -60,7 +60,7 @@ modules: [
 
 1. A story is a `.story.tsx` file beside the component page, so html sits directly in the render; `.story.ts` also loads. Import `vueStory` or `svelteStory` from `@nimling/nimpress/story` and default export the definition.
 
-2. Name resolution order: `// story: <name>` comment frontmatter, then the `name` field, then the file name.
+2. Name resolution order: `// story: <name>` comment frontmatter, then the `name` field, then the file name with underscores read as spaces, so `With_Controls.story.ts` names the story `With Controls`.
 
 2.1. A story decorates its own sidebar row with an optional `sidebar` object, `sidebar: { name, icon, style }`, the same shape as the frontmatter `sidebar` block. `name` overrides the row label, `icon` is an ascii glyph rendered before it, `style` is inline css on the row. The story link stays keyed on the resolved story name, so only the label changes, never the url.
 
