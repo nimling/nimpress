@@ -8,23 +8,29 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 2. `src/plugin.ts` — Vite plugin entry, separate so consumers can import it in `vite.config.ts` without dragging in browser code.
 
-3. `src/framework/` — app bootstrap, router, stores. Owns `createNimpressApp`.
+3. `src/cli.ts` and `src/cli/` — CLI dispatch and one module per command: init, lint, site, guard, export, modules.
 
-4. `src/layout/` — `AppShell`, `Header`, `Sidebar`, `Breadcrumbs`, `RightToc`. The shell chrome.
+4. `src/modules/` — the component workshop: page collection, schema seed and upsert, story parsing, harness servers, modules lint.
 
-5. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, callouts, code blocks, mermaid. Renderers.
+5. `src/story/`, `src/harness/`, `src/mock/` — the consumer facing story helpers, harness primitives, and mock functions.
 
-6. `src/api/` — OpenAPI renderer. `OpenApiRoot`, `Operation`, `Schema`, `TryPanel`, `CodeExamples`.
+6. `src/framework/` — app bootstrap, router, stores. Owns `createNimpressApp`.
 
-7. `src/search/` — MiniSearch wrapper and modal.
+7. `src/layout/` — `AppShell`, `Header`, `Sidebar`, `Breadcrumbs`, `RightToc`. The shell chrome.
 
-8. `src/auth/` — session login guard against `samna_auth`.
+8. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, callouts, code blocks, mermaid. Renderers.
 
-9. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
+9. `src/api/` — OpenAPI renderer. `OpenApiRoot`, `Operation`, `Schema`, `TryPanel`, `CodeExamples`.
 
-10. `docs/` — concept guides linked from the README. Authors read these before writing docs in consumer repos.
+10. `src/search/` — MiniSearch wrapper and modal.
 
-11. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs.
+11. `src/auth/` — session login guard against `samna_auth`.
+
+12. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
+
+13. `docs/` — concept guides linked from the README. Authors read these before writing docs in consumer repos.
+
+14. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs. Shipped in the package; consumers read them from `node_modules/@nimling/nimpress/.claude/rules/`.
 
 ## Build
 

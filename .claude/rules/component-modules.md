@@ -141,6 +141,8 @@ Every modules subcommand takes `--system=<name>`; it is required only when sever
 
 8. Import and create seed the schema beside `index.md` when none exists. Opaque prop types log warnings naming the component, prop path, and type; fix them by authoring the member in the schema with enum or properties, or by documenting the type in the component file or a sibling `.types.ts` and running update.
 
+8.1. `unknown` is never the fix for an opaque member. Neither the source type nor an authored `tsType` is widened to `unknown` to silence the warning; the member gets its real shape, an enum, properties, typed items, or a real interface in the source. A prop that only exists to hold untyped data is removed instead.
+
 9. `nimpress modules dev [--system=]` runs harness servers. `nimpress dev` starts them all beside the docs.
 
 10. `nimpress modules build [--system=]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every system whose visibility is not `dev-only`.

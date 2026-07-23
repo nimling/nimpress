@@ -2305,8 +2305,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (isBuildCommand) flushDiagnostics()
     },
 
-    async closeBundle() {
-      if (!isBuildCommand) return
+    async closeBundle(error?: Error) {
+      if (!isBuildCommand || error) return
       const src = join(resolvedOutDir, 'index.html')
       const dest = join(resolvedOutDir, '404.html')
       await copyFile(src, dest)

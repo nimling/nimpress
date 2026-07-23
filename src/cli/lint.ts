@@ -82,14 +82,15 @@ export function lintImports(cwd: string, resolved: ResolvedNimpressConfig): stri
         )
         continue
       }
-      if (spec.startsWith('./') || spec.startsWith('../')) {
-        const base = resolve(dirname(file), spec)
+      const target = spec.split('?')[0]
+      if (target.startsWith('./') || target.startsWith('../')) {
+        const base = resolve(dirname(file), target)
         if (!resolvesToFile(base)) problems.push(`${label}: unresolved import ${spec}, fix the path or create the file`)
         continue
       }
-      const alias = aliases.find((a) => spec === a.find || spec.startsWith(a.find + '/'))
+      const alias = aliases.find((a) => target === a.find || target.startsWith(a.find + '/'))
       if (alias) {
-        const base = resolve(cwd, alias.replacement + spec.slice(alias.find.length))
+        const base = resolve(cwd, alias.replacement + target.slice(alias.find.length))
         if (!resolvesToFile(base)) problems.push(`${label}: unresolved import ${spec} via alias ${alias.find}`)
       }
     }
