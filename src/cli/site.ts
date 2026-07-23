@@ -54,14 +54,15 @@ export async function runBuild(cwd: string, resolved: ResolvedNimpressConfig): P
   const clean = () => {
     if (created) rmSync(htmlPath, { force: true })
   }
-  const onSignal = () => process.exit(130)
-  process.once('exit', clean)
+  const onSignal = () => {
+    clean()
+    process.exit(130)
+  }
   process.once('SIGINT', onSignal)
   process.once('SIGTERM', onSignal)
   try {
     await build(buildViteConfig({ cwd, command: 'build', resolved, htmlInput: htmlPath }))
   } finally {
-    process.off('exit', clean)
     process.off('SIGINT', onSignal)
     process.off('SIGTERM', onSignal)
     clean()
