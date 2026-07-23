@@ -6,6 +6,7 @@ export interface StoryDefinition {
   props?: Record<string, unknown>
   slots?: Record<string, string>
   render?: () => unknown
+  sidebar?: { name?: string; icon?: string; style?: string }
 }
 
 export function vueStory(definition: StoryDefinition): StoryDefinition {

@@ -11,6 +11,7 @@ import {
   type ComponentJsonSchema,
   type ControlJsonSchema
 } from './parse/typeMembers'
+import { BOLD, CORAL, DIM, GREY, RESET, SOFT } from '../banner'
 import { parseComponentSchema } from './componentData'
 import { collectComponentPages, type ComponentPageRef } from './pages'
 import { resolveComponentSource } from './resolve'
@@ -172,6 +173,12 @@ const tipFor: Record<SchemaDiagnosticKind, string> = {
   orphan: 'remove the schema member or restore it in the source'
 }
 
+function detailLine(detail: string): string {
+  const opaque = detail.match(/^type (.+) is opaque$/)
+  if (opaque) return `${GREY}type${RESET} ${opaque[1]} ${GREY}is opaque${RESET}`
+  return `${GREY}${detail}${RESET}`
+}
+
 export function flushDiagnostics(cwd: string = process.cwd()): void {
   if (!pendingDiagnostics.length) return
   const byComponent = new Map<string, SchemaDiagnostic[]>()
@@ -180,18 +187,28 @@ export function flushDiagnostics(cwd: string = process.cwd()): void {
     list.push(d)
     byComponent.set(d.component, list)
   }
+  const total = pendingDiagnostics.length
   pendingDiagnostics.length = 0
-  const lines: string[] = []
+  const warningWord = total === 1 ? 'schema warning' : 'schema warnings'
+  const componentWord = byComponent.size === 1 ? 'component' : 'components'
+  const lines: string[] = ['']
+  lines.push(`  ${SOFT}${BOLD}nimpress modules${RESET}  ${GREY}${total} ${warningWord} in ${byComponent.size} ${componentWord}${RESET}`)
+  lines.push('')
   for (const [component, diags] of byComponent) {
     const file = diags.find((d) => d.sourceFile)?.sourceFile
-    lines.push(`nimpress modules: ${component}${file ? `  ${relative(cwd, file)}` : ''}`)
+    lines.push(`  ${CORAL}${BOLD}${component}${RESET}${file ? `  ${DIM}${relative(cwd, file)}${RESET}` : ''}`)
+    const locWidth = Math.max(...diags.map((d) => (d.line ? `L${d.line}` : '·').length))
+    const memberWidth = Math.max(...diags.map((d) => (d.path || '(component)').length))
     for (const d of diags) {
-      const loc = d.line ? `L${d.line}` : '   '
-      lines.push(`  ${loc}  ${d.path || '(component)'}  ${d.detail}`)
+      const loc = (d.line ? `L${d.line}` : '·').padStart(locWidth)
+      const member = (d.path || '(component)').padEnd(memberWidth)
+      lines.push(`    ${GREY}${loc}${RESET}  ${SOFT}${member}${RESET}  ${detailLine(d.detail)}`)
     }
-    const kinds = new Set(diags.map((d) => d.kind))
-    const tips = [...kinds].map((k) => tipFor[k])
-    lines.push(`  → ${tips.join('; ')}, then nimpress modules update ${component}`)
+    for (const kind of new Set(diags.map((d) => d.kind))) {
+      lines.push(`    ${SOFT}→${RESET} ${DIM}${tipFor[kind]}${RESET}`)
+    }
+    lines.push(`    ${SOFT}→${RESET} ${DIM}then run${RESET} nimpress modules update ${component}`)
+    lines.push('')
   }
   console.warn(lines.join('\n'))
 }

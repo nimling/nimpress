@@ -142,6 +142,8 @@ The authoritative AI working rules ship inside the package at \`node_modules/@ni
 
 6. \`file-layout.md\` and \`doc-pages.md\` for where files go.
 
+7. \`paths.md\` for every folder nimpress writes and the one sanctioned scratch layer for verification pages under the cache root.
+
 ## Commands
 
 1. \`nimpress dev\` runs the site and every component harness.

@@ -27,8 +27,10 @@ function stripObjectLiteral(source: string, key: string): string {
 
 export function parseStorySource(raw: string, fileName: string): ComponentStory {
   const commentName = raw.match(/^\s*\/\/\s*story:\s*(.+)$/m)?.[1]?.trim()
-  const fieldName = raw.match(/\bname\s*:\s*['"]([^'"]+)['"]/)?.[1]
-  const head = stripObjectLiteral(stripObjectLiteral(raw, 'props'), 'slots')
+  const withoutData = stripObjectLiteral(stripObjectLiteral(raw, 'props'), 'slots')
+  const sidebar = parseObjectLiteral(withoutData, 'sidebar') as ComponentStory['sidebar']
+  const head = stripObjectLiteral(withoutData, 'sidebar')
+  const fieldName = head.match(/\bname\s*:\s*['"]([^'"]+)['"]/)?.[1]
   const description = head.match(/\bdescription\s*:\s*['"]([^'"]+)['"]/)?.[1]
   const props = parseObjectLiteral(raw, 'props')
   const slots = parseObjectLiteral(raw, 'slots') as Record<string, string> | undefined
@@ -37,7 +39,8 @@ export function parseStorySource(raw: string, fileName: string): ComponentStory 
     file: fileName,
     description,
     props,
-    slots
+    slots,
+    sidebar
   }
 }
 

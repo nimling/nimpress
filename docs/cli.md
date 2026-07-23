@@ -37,7 +37,7 @@ Every folder nimpress writes is set under one optional `paths` block in the conf
 
 1. `paths.out` is the build root, default `dist`.
 
-2. `paths.cache` is the one cache root for every operation, default `node_modules/.nimpress`, layered per feature beneath it: `<cache>/site` for the docs vite cache, `<cache>/modules/<system>` for each harness cache, `<cache>/lint` for the lint verification build. It sits under node_modules like vite's own cache, so nothing ephemeral appears at the repo root.
+2. `paths.cache` is the one cache root for every operation, default `node_modules/.nimpress`, layered per feature beneath it: `<cache>/site` for the docs vite cache, `<cache>/modules/<system>` for each harness cache, `<cache>/lint` for the lint verification build, and `<cache>/verify` as the scratch layer where agents and humans drop throwaway verification pages exercised through the running dev server, a layer nimpress itself never reads or writes. It sits under node_modules like vite's own cache, so nothing ephemeral appears at the repo root.
 
 3. `paths.export` is where `export` collects pages, default `.nimpress`.
 
