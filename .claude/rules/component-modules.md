@@ -62,6 +62,10 @@ modules: [
 
 2. Name resolution order: `// story: <name>` comment frontmatter, then the `name` field, then the file name.
 
+2.1. A story decorates its own sidebar row with an optional `sidebar` object, `sidebar: { name, icon, style }`, the same shape as the frontmatter `sidebar` block. `name` overrides the row label, `icon` is an ascii glyph rendered before it, `style` is inline css on the row. The story link stays keyed on the resolved story name, so only the label changes, never the url.
+
+2.2. Story `name`, `props`, `slots`, and `sidebar` are read by parsing the story file as text, never by executing the module, so their values must be inline literals. An imported or computed value does not resolve; a `props` or `sidebar` that references an import comes through empty. A story that needs an imported value, a raw html or css file loaded with `?raw`, uses `render`, which runs in the browser where imports resolve.
+
 3. A value story carries `props` and optional `slots`; the workshop controls seed from it and drive the component live over the iframe channel with base64 encoded props in the url.
 
 4. An executable story carries `render`, a function returning a mount definition. Vue: an options object with `components`, `setup`, `template`. The harness runs it verbatim; controls do not apply. A story is self contained: it imports the component and holds its own fixture data inline. There is no shared story fixture folder.

@@ -51,10 +51,20 @@ export async function runBuild(cwd: string, resolved: ResolvedNimpressConfig): P
   const htmlPath = join(cwd, 'index.html')
   const created = !existsSync(htmlPath)
   if (created) writeFileSync(htmlPath, indexHtml(resolved))
+  const clean = () => {
+    if (created) rmSync(htmlPath, { force: true })
+  }
+  const onSignal = () => process.exit(130)
+  process.once('exit', clean)
+  process.once('SIGINT', onSignal)
+  process.once('SIGTERM', onSignal)
   try {
     await build(buildViteConfig({ cwd, command: 'build', resolved, htmlInput: htmlPath }))
   } finally {
-    if (created) rmSync(htmlPath, { force: true })
+    process.off('exit', clean)
+    process.off('SIGINT', onSignal)
+    process.off('SIGTERM', onSignal)
+    clean()
   }
   await buildHarnesses(cwd, resolved, deployableSystems(resolved))
 }

@@ -13,12 +13,12 @@ export interface BannerOptions {
   nimpressVersion?: string
 }
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const CORAL = '\x1b[38;2;204;120;92m'
-const SOFT = '\x1b[38;2;229;174;156m'
-const GREY = '\x1b[38;2;160;160;170m'
+export const RESET = '\x1b[0m'
+export const BOLD = '\x1b[1m'
+export const DIM = '\x1b[2m'
+export const CORAL = '\x1b[38;2;204;120;92m'
+export const SOFT = '\x1b[38;2;229;174;156m'
+export const GREY = '\x1b[38;2;160;160;170m'
 
 const ART = [
   '             ███╗   ██╗ ██╗ ███╗   ███╗ ██████╗  ██████╗  ███████╗ ███████╗ ███████╗',
