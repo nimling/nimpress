@@ -44,6 +44,15 @@ describe('lintImports', () => {
     expect(problems[0]).toContain('@/components/Bar')
   })
 
+  it('resolves raw asset imports by stripping the query suffix', () => {
+    repo = makeRepo()
+    file(repo.cwd, 'docs/components/Group/Comp/template/cv.html', '<div></div>\n')
+    file(repo.cwd, 'docs/components/Group/Comp/raw.story.ts', `import cv from "./template/cv.html?raw"\nimport missing from "./template/other.css?raw"\nexport default { cv, missing }\n`)
+    const problems = lintImports(repo.cwd, resolvedConfig())
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('./template/other.css?raw')
+  })
+
   it('ignores package imports', () => {
     repo = makeRepo()
     file(repo.cwd, 'docs/components/Group/Comp/pkg.story.ts', `import { vueStory } from '@nimling/nimpress/story'\nexport default vueStory({ name: 'X' })\n`)

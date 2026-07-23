@@ -32,6 +32,8 @@ Consumers override Nimpress styles by:
 
 2. A per page stylesheet named the same as a markdown file. `guide/index.css` next to `guide/index.md` loads while the route is `/guide` or any path under it. A leaf page's stylesheet loads only on its own page. The author writes normal selectors and they apply only while inside that subtree.
 
+3. A css file that is not a page style, such as a story asset loaded with `?raw`, is named with a leading underscore, `template/_cv.css`. Lint treats underscore css as inert; any other css file must sit next to the markdown page it is named after.
+
 Consumers never need to fork the framework to change visuals.
 
 ## Light and dark
