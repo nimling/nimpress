@@ -2195,8 +2195,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
   function invalidateAllBodies(dev: ViteDevServer): void {
     for (const slug of pages.keys()) {
-      const bodyId = '\0' + PAGE_BODY_PREFIX + urlSlug(slug) + '.js'
-      const compId = '\0' + PAGE_COMPONENT_PREFIX + urlSlug(slug) + '.svelte'
+      const bodyId = PAGE_BODY_PREFIX + urlSlug(slug) + '.js'
+      const compId = PAGE_COMPONENT_PREFIX + urlSlug(slug) + '.svelte'
       const b = dev.moduleGraph.getModuleById(bodyId)
       const c = dev.moduleGraph.getModuleById(compId)
       if (b) dev.moduleGraph.invalidateModule(b)
