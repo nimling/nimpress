@@ -1,6 +1,6 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
-import { createReadStream, existsSync, statSync, readdirSync } from 'node:fs'
+import { createReadStream, existsSync, statSync, readdirSync, readFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
@@ -1821,6 +1821,18 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return undefined
   }
 
+  function resolveIconRef(icon: string | undefined, fromFile: string): string | undefined {
+    if (!icon || !/\.svg$/i.test(icon.trim())) return icon
+    const ref = icon.trim()
+    const target = ref.startsWith('/') ? join(contentRoot, ref) : resolve(dirname(fromFile), ref)
+    try {
+      return readFileSync(target, 'utf8').trim()
+    } catch {
+      console.warn(`[nimpress] sidebar icon ${ref} referenced from ${fromFile} is not readable`)
+      return undefined
+    }
+  }
+
   function buildSidebar(includeGated = false): SidebarNode[] {
     interface TreeNode {
       segment: string
@@ -1834,15 +1846,17 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     for (const p of pages.values()) {
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || (!includeGated && isGated(p)))) continue
-      if (p.effectivePath === '/') continue
-      const segments = p.effectivePath.split('/').filter(Boolean)
       const sidebarMeta = p.frontmatter.sidebar
+      if (p.effectivePath === '/' && !sidebarMeta?.name) continue
+      const segments = p.effectivePath === '/'
+        ? [sidebarMeta!.path ?? sidebarMeta!.name]
+        : p.effectivePath.split('/').filter(Boolean)
       const isFolderIndex = p.filePath.endsWith(`${sep}index.md`)
       if (sidebarMeta?.name && isFolderIndex) {
         const own = '/' + segments.join('/')
         dirMeta.set(own, {
           label: sidebarMeta.name,
-          icon: sidebarMeta.icon ?? dirMeta.get(own)?.icon,
+          icon: resolveIconRef(sidebarMeta.icon, p.filePath) ?? dirMeta.get(own)?.icon,
           style: sidebarMeta.style ?? dirMeta.get(own)?.style
         })
       }
@@ -1868,7 +1882,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         const target = '/' + segments.slice(0, -1).join('/')
         dirMeta.set(target, {
           label: sidebarMeta.name,
-          icon: sidebarMeta.icon ?? dirMeta.get(target)?.icon,
+          icon: resolveIconRef(sidebarMeta.icon, p.filePath) ?? dirMeta.get(target)?.icon,
           style: sidebarMeta.style ?? dirMeta.get(target)?.style
         })
       }
@@ -1885,7 +1899,6 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           link: t.page.effectivePath,
           slug: t.page.slug,
           gate: t.page.frontmatter.gate,
-          icon: t.page.frontmatter.icon,
           order: t.page.frontmatter.order,
           collapsed: t.page.frontmatter.collapsed,
           hidden: pageDevOnly(t.page.frontmatter)
@@ -1954,7 +1967,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             text: story.sidebar?.name ?? story.name,
             link: `${t.page!.effectivePath}/${storyAnchor(story.name)}`,
             slug: `${t.page!.slug}__story__${storyAnchor(story.name)}`,
-            icon: story.sidebar?.icon,
+            icon: resolveIconRef(story.sidebar?.icon, t.page!.filePath),
             style: story.sidebar?.style,
             order: idx
           }))

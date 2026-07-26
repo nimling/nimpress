@@ -19,8 +19,8 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
-| `icon` | string | Optional icon next to the sidebar entry |
-| `sidebar` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL |
+| `icon` | string | Icon field for custom renderers; the sidebar renders `sidebar.icon` |
+| `sidebar` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL. `icon` takes literal text or ascii art, inline `<svg>` markup, or a `.svg` path inlined at build time |
 | `visibility` | `visible` \| `hidden` \| `dev-only` | `hidden` removes the page from sidebar, search, and the build entirely. `dev-only` shows it in `nimpress dev` but excludes it from the built bundle. Defaults to `visible` |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
@@ -46,7 +46,7 @@ Replaces a plain hidden flag with three states, enforced in `src/plugin.ts`:
 
 ## `sidebar`
 
-A top level `sidebar` block places the page under a named sidebar group without moving its folder or changing its URL. `name` is required and renders verbatim. `icon` and `style` decorate the group row. `path` overrides the group's route; without it the route falls back to the physical folder. On a folder `index.md` the block changes and styles the folder's own sidebar entry instead of nesting a group, for every page type. See [sidebar.md](/sidebar).
+A top level `sidebar` block places the page under a named sidebar group without moving its folder or changing its URL. `name` is required and renders verbatim. `icon` and `style` decorate the group row; `icon` takes literal text or ascii art, inline `<svg>` markup, or a path ending in `.svg` resolved against the declaring file, or against `contentDir` when it starts with `/`, and inlined at build time. `path` overrides the group's route; without it the route falls back to the physical folder. On a folder `index.md` the block changes and styles the folder's own sidebar entry instead of nesting a group, for every page type. On the root `index.md` the block inserts the page into the sidebar as the entry for the directory named by `path`, so the root page serves as a clickable top level item. See [sidebar.md](/sidebar).
 
 ```yaml
 sidebar:

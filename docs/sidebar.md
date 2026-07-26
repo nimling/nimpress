@@ -28,6 +28,26 @@ sidebar:
 
 A `sidebar` block on a folder's `index.md` does not nest a group. It changes and styles the folder's own entry: `name` relabels it, `icon` and `style` decorate it. This works on every page type, so any folder entry in the sidebar is stylable from the page that owns it.
 
+## Root index entry
+
+The root `index.md` stays out of the sidebar by default. Giving it a `sidebar` block inserts it: the page becomes the entry for the directory named by `path`, so a top level group header turns into a clickable link opening the root page. Without `path` the page lands as a top level item labeled `name`.
+
+```yaml
+sidebar:
+  name: Components
+  path: components
+```
+
+## Icon formats
+
+The sidebar renders icons only from `sidebar` blocks and story definitions. `sidebar.icon` accepts three forms:
+
+1. Literal text, a glyph like `"▤"` or ascii art, rendered verbatim in the mono font with whitespace preserved.
+
+2. Inline `<svg>` markup, rendered as markup and sized to the text line.
+
+3. A path ending in `.svg`, resolved against the declaring file, or against `contentDir` when it starts with `/`, read at build time and inlined as markup. An unreadable path warns and drops the icon.
+
 ## Ordering
 
 Within a parent, children sort first by `order` from frontmatter, then alphabetically by sidebar text. Add `order: 1` to pin a child to the top of its group.

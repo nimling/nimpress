@@ -24,7 +24,12 @@
   const active = $derived(
     !!route && !!node.link && route.path.replace(/\/$/, '') === node.link.replace(/\/$/, '')
   )
+  const svgIcon = $derived(!!node.icon && node.icon.trimStart().startsWith('<svg'))
 </script>
+
+{#snippet nodeIcon()}
+  {#if node.icon}<span class="np-node-icon">{#if svgIcon}{@html node.icon}{:else}{node.icon}{/if}</span>{/if}
+{/snippet}
 
 {#if visible}
   {#if isGroup}
@@ -32,9 +37,9 @@
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}
-            <a class="np-group-label-link" href={node.link} class:active>{#if node.icon}<span class="np-node-icon">{node.icon}</span>{/if}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+            <a class="np-group-label-link" href={node.link} class:active>{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
-            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{#if node.icon}<span class="np-node-icon">{node.icon}</span>{/if}{node.text}</button>
+            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
           {/if}
           <button
             class="np-group-toggle"
@@ -64,9 +69,9 @@
             onclick={() => {
               if (!open) toggleGroup(groupKey, open)
             }}
-          >{#if node.icon}<span class="np-node-icon">{node.icon}</span>{/if}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+          >{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
-          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{#if node.icon}<span class="np-node-icon">{node.icon}</span>{/if}{node.text}</button>
+          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
         {/if}
         <button
           class="np-subgroup-toggle"
@@ -94,7 +99,7 @@
       style={node.style}
       data-no-routing={node.link?.includes('#') ? '' : undefined}
     >
-      {#if node.icon}<span class="np-node-icon">{node.icon}</span>{/if}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
+      {@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
     </a>
   {/if}
 {/if}
@@ -106,6 +111,14 @@
     display: inline-block;
     margin-right: 6px;
     font-family: var(--np-font-mono);
+    white-space: pre;
+  }
+
+  .np-node-icon :global(svg) {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    vertical-align: -0.125em;
   }
 
   .np-hidden-dot {

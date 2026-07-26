@@ -14,7 +14,9 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 3. `order: number` pins position inside the parent sidebar group. Use sparingly, the default alphabetical order is fine for most cases.
 
-3.1. `sidebar` inserts the page under a named sidebar group without changing its URL: required `name` as the verbatim label, optional `icon` and `style` decorating the group row, optional `path` overriding the group route. On a folder `index.md` the block changes and styles the folder's own sidebar entry instead of nesting a group; this works on every page type. A `.story.ts` file carries the same block on its definition, `sidebar: { name, icon, style }`, to decorate its own story row; see the component modules rule.
+3.1. `sidebar` inserts the page under a named sidebar group without changing its URL: required `name` as the verbatim label, optional `icon` and `style` decorating the group row, optional `path` overriding the group route. On a folder `index.md` the block changes and styles the folder's own sidebar entry instead of nesting a group; this works on every page type. On the root `index.md` the block inserts the page into the sidebar as the entry for the directory named by `path`, making the root page a clickable top level item. A `.story.ts` file carries the same block on its definition, `sidebar: { name, icon, style }`, to decorate its own story row; see the component modules rule.
+
+3.2. `sidebar.icon` accepts literal text or ascii art rendered verbatim in the mono font, inline `<svg>` markup rendered as markup, or a path ending in `.svg` resolved against the declaring file, or against `contentDir` when it starts with `/`, read at build time and inlined. An unreadable path warns and drops the icon. The sidebar renders icons only from `sidebar` blocks and story definitions.
 
 4. `description` gets used as a meta description and a search excerpt. Add it for any page expected to land via search.
 
