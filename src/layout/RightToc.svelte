@@ -127,7 +127,7 @@
   .np-toc-strip-dots { list-style: none; margin: 0; padding: 0; }
   .np-toc-overlay { display: none; }
 
-  @media (max-width: 1280px) {
+  @container (width < 1552px) {
     .np-toc { display: none; }
     .np-toc-strip {
       display: flex;
@@ -210,15 +210,12 @@
     }
   }
 
-  @media (max-width: 1280px) {
+  @container (width < 1552px) {
     .np-toc-wrap {
-      position: fixed;
-      top: calc(var(--np-header-height) + 16px);
-      right: 12px;
       z-index: 40;
     }
   }
-  @media (max-width: 480px) {
+  @container (width < 481px) {
     .np-toc-wrap { display: none; }
   }
 </style>

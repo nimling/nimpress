@@ -302,14 +302,22 @@
     position: relative;
     width: 100%;
     z-index: 1;
+    container-type: inline-size;
   }
 
   .np-page-shell.has-rail .np-toc-rail {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px);
-    width: var(--np-toc-width);
+    display: none;
+  }
+
+  @container (width >= 1552px) {
+    .np-page-shell.has-rail .np-toc-rail {
+      display: block;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: min(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px, 100% - var(--np-toc-width) - 12px);
+      width: var(--np-toc-width);
+    }
   }
 
   .np-toc-rail :global(.np-toc) {
@@ -335,12 +343,6 @@
 
   .np-toc-rail {
     min-width: 0;
-  }
-
-  @media (max-width: 1535px) {
-    .np-page-shell.has-rail .np-toc-rail {
-      display: none;
-    }
   }
 
   .np-changelog-head {

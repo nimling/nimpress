@@ -253,6 +253,7 @@
     position: relative;
     width: 100%;
     z-index: 1;
+    container-type: inline-size;
   }
 
   .np-page {
@@ -269,8 +270,17 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px);
-    width: var(--np-toc-width);
+    right: 12px;
+    width: 10px;
+    pointer-events: none;
+  }
+
+  @container (width >= 1552px) {
+    .np-page-shell.has-rail .np-toc-rail {
+      left: min(50% + min(50%, var(--np-content-max, 1024px) / 2) + 32px, 100% - var(--np-toc-width) - 12px);
+      right: auto;
+      width: var(--np-toc-width);
+    }
   }
 
   .np-issue-head {
@@ -357,18 +367,8 @@
     min-width: 0;
   }
 
-  @media (max-width: 1535px) {
-    .np-page-shell.has-rail .np-toc-rail {
-      position: static;
-      left: auto;
-      width: 0;
-      height: 0;
-      pointer-events: none;
-      overflow: visible;
-    }
-    .np-toc-rail :global(.np-toc-wrap) {
-      pointer-events: auto;
-    }
+  .np-toc-rail :global(.np-toc-wrap) {
+    pointer-events: auto;
   }
 
   .np-page-footer {

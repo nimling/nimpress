@@ -133,7 +133,6 @@
     <main class="np-main">
       {@render children()}
     </main>
-    <div class="np-aside-mirror" aria-hidden="true"></div>
   </div>
   {#if searchOpen}
     <SearchModal onClose={() => (searchOpen = false)} />
@@ -166,19 +165,6 @@
     min-height: 0;
     transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: grid-template-columns;
-  }
-  .np-aside-mirror {
-    height: 0;
-    pointer-events: none;
-    display: none;
-  }
-  @media (min-width: 1536px) {
-    .np-body:has(:global(.np-page-shell.has-rail)) {
-      grid-template-columns: var(--np-sidebar-current) minmax(0, 1fr) var(--np-sidebar-current);
-    }
-    .np-body:has(:global(.np-page-shell.has-rail)) .np-aside-mirror {
-      display: block;
-    }
   }
   .np-aside {
     position: relative;
