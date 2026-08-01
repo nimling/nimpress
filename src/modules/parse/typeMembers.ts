@@ -1,6 +1,8 @@
 import type { ControlSpec } from '../../types'
 import * as mocks from '../../mock'
 
+const SCHEMA_CONTROL_MAX_DEPTH = 12
+
 export interface TypeMember {
   name: string
   type: string
@@ -491,7 +493,7 @@ export function controlFromJsonSchema(
   if (schema.type === 'string') {
     return { name, kind: 'text', type: 'string', required, description, default: schema.default, ...extra }
   }
-  if (schema.type === 'array' && schema.items && depth < 6) {
+  if (schema.type === 'array' && schema.items && depth < SCHEMA_CONTROL_MAX_DEPTH) {
     const item = controlFromJsonSchema('', schema.items, false, depth + 1)
     const annotations: Record<string, unknown> = {}
     if (typeof schema.minimum === 'number') annotations.minimum = schema.minimum
@@ -509,7 +511,7 @@ export function controlFromJsonSchema(
       ...extra
     }
   }
-  if (schema.type === 'object' && !schema.properties && schema.additionalProperties && depth < 6) {
+  if (schema.type === 'object' && !schema.properties && schema.additionalProperties && depth < SCHEMA_CONTROL_MAX_DEPTH) {
     const item = controlFromJsonSchema('', schema.additionalProperties, false, depth + 1)
     return {
       name,
@@ -523,7 +525,7 @@ export function controlFromJsonSchema(
       ...extra
     }
   }
-  if (schema.type === 'object' && schema.properties && depth < 6) {
+  if (schema.type === 'object' && schema.properties && depth < SCHEMA_CONTROL_MAX_DEPTH) {
     const requiredNames = schema.required ?? []
     const members = Object.entries(schema.properties).map(([key, member]) =>
       controlFromJsonSchema(key, member, requiredNames.includes(key), depth + 1)

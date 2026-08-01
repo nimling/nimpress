@@ -40,7 +40,7 @@ modules: [
 
 7. `visibility: dev-only` keeps a system in `nimpress dev` and out of the built bundle.
 
-8. `stage` bounds the component area inside the harness frame: `minWidth`, `maxWidth`, and optional `padding`, numbers as px. When set the area spans the frame like a page column clamped between the bounds.
+8. Sizing is never configured here. The frame centers whatever the story mounts, so a component that needs a width owns it in the harness component or in a wrapping div in the story's own render.
 
 ## The component page
 
@@ -88,13 +88,15 @@ modules: [
 
 1. Control kinds derive from the schema: `text`, `number`, `boolean`, `select` from enums, `object` with nested member rows, `array` with item rows, `record` with key value entries, `function` for callable props, `json` only for opaque leaves. Enum options render as chips in the control info; a long option list collapses to one line that expands in a hover popup.
 
-2. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, firings counting on the event row and printing in the console panel. The default mock stub logs its arguments.
+2. The schema to control walk expands nested members to a depth of 12, held in `SCHEMA_CONTROL_MAX_DEPTH` in `src/modules/parse/typeMembers.ts`. That covers an array of groups holding lanes holding entries holding a style block holding colors, the deepest real component tree. A member past the bound becomes a `json` leaf and the opaque warning names it, so a warning on a member that carries `properties` or `items` is the bound speaking, not the schema.
 
-3. Every event renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events. A default button at the events header resets every handler to the logging stub at once.
+3. Function props and events hold real code: the workshop stores `{ __nimpressFn: "<source>" }` values edited in a CodeMirror editor, the harness compiles the source with the Function constructor and runs it on every call, firings counting on the event row and printing in the console panel. The default mock stub logs its arguments.
 
-4. Mock resolves from the schema through the `@nimling/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed, and option picks exclude values already present so a reclick lands on a fresh option. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
+4. Every event renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events. A default button at the events header resets every handler to the logging stub at once.
 
-5. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header; the panel header also carries default, resetting every control to its schema default and every slot to its declared default. Once the workshop has pushed props to the frame, the pushed set alone drives the component and story props and required defaults no longer fill in underneath, so a cleared prop renders truly empty. The json dialog in the panel head shows the live values as one editable json object plus the schema, with copy and populated counts.
+5. Mock resolves from the schema through the `@nimling/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed, and option picks exclude values already present so a reclick lands on a fresh option. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
+
+6. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header; the panel header also carries default, resetting every control to its schema default and every slot to its declared default. Once the workshop has pushed props to the frame, the pushed set alone drives the component and story props and required defaults no longer fill in underneath, so a cleared prop renders truly empty. The json dialog in the panel head shows the live values as one editable json object plus the schema, with copy and populated counts.
 
 ## The workshop layout
 

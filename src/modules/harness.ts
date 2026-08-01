@@ -3,8 +3,9 @@ import { pathToFileURL } from 'node:url'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, Plugin, PluginOption } from 'vite'
-import type { ModuleFramework, ModuleStageConfig, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
+import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
 import { mergeDeep } from '../config/viteConfig'
+import { chunkCycleGuard } from '../config/chunkCycles'
 import { cacheDir, outDir } from '../config/paths'
 import { resolveComponentSource } from './resolve'
 import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
@@ -425,29 +426,7 @@ export function harnessEntrySource(
     : svelteEntry(target, css, setup, harness, defaults)
 }
 
-function stageDim(v: number | string): string {
-  return typeof v === 'number' ? `${v}px` : v
-}
-
-function stagePadding(stage: ModuleStageConfig | undefined): string {
-  return stage?.padding !== undefined ? stageDim(stage.padding) : '24px'
-}
-
-function stageWidthCss(stage: ModuleStageConfig | undefined): string {
-  if (!stage || (stage.minWidth === undefined && stage.maxWidth === undefined)) return ''
-  const dim = stageDim
-  const bounds = [
-    'display: block;',
-    'align-self: flex-start;',
-    'margin: 0 auto;',
-    'width: 100%;',
-    stage.minWidth !== undefined ? `min-width: ${dim(stage.minWidth)};` : '',
-    stage.maxWidth !== undefined ? `max-width: ${dim(stage.maxWidth)};` : ''
-  ]
-  return ' ' + bounds.filter(Boolean).join(' ')
-}
-
-export function harnessHtml(component: string, scriptSrc: string, cssHrefs: string[], stage?: ModuleStageConfig): string {
+export function harnessHtml(component: string, scriptSrc: string, cssHrefs: string[]): string {
   const links = cssHrefs.map((href) => `    <link rel="stylesheet" href="${href}" />`).join('\n')
   return `<!doctype html>
 <html lang="en">
@@ -462,8 +441,8 @@ export function harnessHtml(component: string, scriptSrc: string, cssHrefs: stri
       html { color-scheme: light !important; }
       body { color: #18181b; }
       html.dark body { color: #e4e4e7; }
-      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: ${stagePadding(stage)}; overflow: auto; display: flex; }
-      #stage { margin: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; will-change: transform;${stageWidthCss(stage)} }
+      #host { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 24px; overflow: auto; display: flex; }
+      #stage { margin: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; will-change: transform; }
     </style>
 ${links ? links + '\n' : ''}  </head>
   <body>
@@ -615,7 +594,7 @@ function harnessPlugin(
         const tail = segments.slice(1).join('/')
         if (tail === '' || tail === 'index.html') {
           const client = `    <script type="module" src="${base}@vite/client"></script>\n  </head>`
-          const html = harnessHtml(component, './entry.js', [], systemConfig.stage).replace('  </head>', client)
+          const html = harnessHtml(component, './entry.js', []).replace('  </head>', client)
           res.statusCode = 200
           res.setHeader('Content-Type', 'text/html')
           res.end(html)
@@ -652,7 +631,7 @@ function harnessPlugin(
         this.emitFile({
           type: 'asset',
           fileName: `${target.component}/index.html`,
-          source: harnessHtml(target.component, base + chunk.fileName, cssHrefs, systemConfig.stage)
+          source: harnessHtml(target.component, base + chunk.fileName, cssHrefs)
         })
       }
     }
@@ -687,7 +666,7 @@ export async function harnessViteConfig(
     publicDir: false,
     appType: 'mpa',
     cacheDir: cacheDir(cwd, resolvedConfig, 'modules', system),
-    plugins: [harnessPlugin(cwd, systemConfig, system, targets, base), framework],
+    plugins: [harnessPlugin(cwd, systemConfig, system, targets, base), framework, chunkCycleGuard()],
     resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
     optimizeDeps: {
       entries: scanEntries,

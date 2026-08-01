@@ -3,6 +3,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
 import type { ResolvedNimpressConfig } from '../types'
 import { cacheDir, outDir } from './paths'
+import { chunkCycleGuard } from './chunkCycles'
 import nimpress from '../plugin'
 
 export function mergeDeep<T>(base: T, override: Partial<T> | undefined): T {
@@ -36,7 +37,8 @@ export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
     plugins: [
       svelte({ compilerOptions: { runes: true, dev: command === 'serve' } }),
       tailwindcss(),
-      nimpress({ ...resolved, modules: Object.values(resolved.modules.systems) })
+      nimpress({ ...resolved, modules: Object.values(resolved.modules.systems) }),
+      chunkCycleGuard()
     ],
     cacheDir: cacheDir(cwd, resolved, 'site'),
     build: {
