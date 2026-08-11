@@ -137,6 +137,8 @@ data:
 
 4. Each issue page has its own URL and renders through the standard page chrome with a kind chip and date header.
 
+5. Each row carries an icon for its kind: a flag for milestone, a box for epic, a sparkle for feature, an alert for bug. The icons live in `issueKindIcon` in `src/plugin.ts` and are not authored per page.
+
 ## Right TOC
 
 1. The roadmap page itself has no right TOC.

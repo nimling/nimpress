@@ -72,7 +72,7 @@ title: How sessions work
 
 1. `gate` marks the page guarded. Any string works; the build's guard function maps it to a guarded bundle and the runtime checks the viewer against it. Public pages omit it.
 
-2. `hidden: true` removes the page from the sidebar, the search index, and direct routing. Use for drafts.
+2. `visibility` controls where the page appears. `hidden` removes it from the sidebar, the search index, and the build. `dev-only` keeps it in `nimpress dev`, leaves it out of the built bundle, and marks its sidebar row with a red dot. Omit the field for a public page.
 
 ## Reading direction
 

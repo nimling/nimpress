@@ -16,7 +16,7 @@ Rules for wiring a repo's docs into the central docs site through the nimpress a
 
 2. A guard step compares `.nimpress` between the current tag and the previous version tag with `git diff`, and the notify runs only when it changed. A `workflow_dispatch` always counts as changed.
 
-3. Mint the token with `actions/create-github-app-token` using `app-id: secrets.APP_ID`, `private-key: secrets.APP_PRIVATE_KEY`, `owner: nimling`, and `repositories: samna`. Pass `steps.app.outputs.token` to `docs-notify@v1` with `docs-repo: nimling/samna`.
+3. Mint the token with `actions/create-github-app-token` using `app-id: secrets.APP_ID`, `private-key: secrets.APP_PRIVATE_KEY`, `owner: nimling`, and `repositories: samna`. Pass `steps.app.outputs.token` to `docs-notify@v2` with `docs-repo: nimling/samna`.
 
 ## Receiver workflow
 
@@ -26,7 +26,7 @@ The receiver is thin. The `docs-sync` action owns the mirror, the version bump, 
 
 2. Mints an organization App token before checkout, then checks out the docs with that token and `fetch-depth: 0`, and checks out the source at the dispatched sha with the same token.
 
-3. Runs `docs-sync@v1` with `token`, `docs-repo`, `docs-dir`, `source-repo`, `source-path`, `content-root`, and optionally `mapping` and `defaults`. Nothing else.
+3. Runs `docs-sync@v2` with `token`, `docs-repo`, `docs-dir`, `source-repo`, `source-path`, `content-root`, and optionally `mapping` and `defaults`. Nothing else.
 
 ## Configuration
 

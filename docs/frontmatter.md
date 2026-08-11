@@ -36,13 +36,13 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 
 ## `visibility`
 
-Replaces a plain hidden flag with three states, enforced in `src/plugin.ts`:
+Three states, enforced in `src/plugin.ts`:
 
 1. `visible` is the default. The page routes, appears in the sidebar, and indexes into search.
 
 2. `hidden` removes the page from the sidebar, from search, and from the build output. Use it for drafts.
 
-3. `dev-only` keeps the page in `nimpress dev` so you can work on it locally, but excludes it from the built bundle. Use it for pages that should never ship, like internal scratch pages.
+3. `dev-only` keeps the page in `nimpress dev` so you can work on it locally, but excludes it from the built bundle. Its sidebar row carries a red dot marking it as local. Use it for pages that should never ship, like internal scratch pages.
 
 ## `sidebar`
 

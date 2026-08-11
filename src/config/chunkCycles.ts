@@ -1,5 +1,7 @@
-import type { Plugin } from 'vite'
-import type { OutputBundle, OutputChunk } from 'rollup'
+import type { Plugin, Rollup } from 'vite'
+
+type OutputBundle = Rollup.OutputBundle
+type OutputChunk = Rollup.OutputChunk
 
 interface ChunkCycle {
   chunks: string[]

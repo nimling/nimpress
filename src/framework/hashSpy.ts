@@ -47,11 +47,11 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
     })
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true })
+  document.addEventListener('scroll', onScroll, { passive: true, capture: true })
   update()
 
   return () => {
-    window.removeEventListener('scroll', onScroll)
+    document.removeEventListener('scroll', onScroll, { capture: true })
     if (raf) cancelAnimationFrame(raf)
   }
 }
