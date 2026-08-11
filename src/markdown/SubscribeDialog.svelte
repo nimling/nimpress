@@ -3,6 +3,7 @@
   import { viewer } from '../framework/stores/viewer'
   import { startLogin } from '../auth/session'
   import { subscribeFeed, subscribeConfigured } from '../subscribe/subscribe'
+  import IconRemove from '../icons/IconRemove.svelte'
 
   let {
     title,
@@ -72,7 +73,7 @@
   >
     <div class="np-subscribe-head">
       <span class="np-subscribe-title">Subscribe to {title}</span>
-      <button class="np-subscribe-close" onclick={onClose} aria-label="Close">Esc</button>
+      <button class="np-subscribe-close" onclick={onClose} aria-label="Close"><IconRemove size={14} /></button>
     </div>
 
     <div class="np-subscribe-body">
@@ -154,13 +155,21 @@
     color: var(--np-text-primary);
   }
   .np-subscribe-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-sm);
     background: none;
     color: var(--np-text-muted);
-    font-size: 12px;
-    padding: 2px 8px;
+    padding: 0;
     cursor: pointer;
+  }
+  .np-subscribe-close:hover {
+    border-color: var(--np-brand);
+    color: var(--np-text-primary);
   }
   .np-subscribe-body {
     display: flex;

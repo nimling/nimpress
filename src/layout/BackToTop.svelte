@@ -4,19 +4,22 @@
   let { threshold = 600 }: { threshold?: number } = $props()
 
   let visible = $state(false)
+  let scroller: Element | null = null
 
-  function onScroll() {
-    visible = window.scrollY > threshold
+  function onScroll(e: Event) {
+    const target = e.target
+    scroller = target instanceof Document ? document.scrollingElement : (target as Element)
+    visible = (scroller?.scrollTop ?? 0) > threshold
   }
 
   function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const target = scroller ?? document.scrollingElement
+    target?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   onMount(() => {
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    return () => document.removeEventListener('scroll', onScroll, { capture: true })
   })
 </script>
 
