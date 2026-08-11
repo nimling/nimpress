@@ -12,7 +12,14 @@ export interface HarnessContext {
 const HARNESS_KEY = Symbol('nimpressHarness')
 
 export function createHarnessContext(): HarnessContext {
-  return $state({ component: null, props: {}, overlay: null, shadow: false, zoom: 1 })
+  const ctx: HarnessContext = $state({
+    component: null,
+    props: {},
+    overlay: null,
+    shadow: false,
+    zoom: 1
+  })
+  return ctx
 }
 
 export function setHarness(ctx: HarnessContext): void {
