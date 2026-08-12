@@ -14,8 +14,26 @@ interface GuardedRoute {
   bundle: string
 }
 
+interface PublishedAsset {
+  path: string
+  file: string
+  bundle: string
+  asset_id: string
+  url: string
+}
+
 let loaded = false
 let gatedBase = '/_guarded'
+let published: PublishedAsset[] = []
+
+// gatedFileUrl resolves a guarded file to the artifact it was published as. The
+// publish step pairs the two, so a build with a pairing fetches by asset and one
+// without it falls back to the bundle folder it was written to.
+function gatedFileUrl(bundle: string, file: string): string {
+  const hit = published.find((a) => a.bundle === bundle && a.file.endsWith(file))
+  if (hit) return hit.url || `${gatedBase}/${hit.asset_id}/data`
+  return `${gatedBase}/${bundle}/${file}`
+}
 
 export function gatedContentBase(): string {
   return gatedBase
@@ -37,10 +55,16 @@ export async function loadGatedContent(): Promise<void> {
   try {
     const accessRes = await fetch('/access.json')
     if (accessRes.ok) {
-      const access = (await accessRes.json()) as { base?: string; prefix?: string; routes?: Record<string, GuardedRoute> }
+      const access = (await accessRes.json()) as {
+        base?: string
+        prefix?: string
+        routes?: Record<string, GuardedRoute>
+        files?: PublishedAsset[]
+      }
       if (access.prefix) gatedBase = access.prefix.replace(/\/$/, '')
       if (access.base) gatedBase = access.base.replace(/\/$/, '')
       routes = access.routes ?? {}
+      published = access.files ?? []
     }
   } catch {}
   const bundles = [...new Set(Object.values(routes).map((r) => r.bundle))]
@@ -52,7 +76,7 @@ export async function loadGatedContent(): Promise<void> {
   for (const bundle of bundles) {
     let res: Response
     try {
-      res = await fetch(`${gatedBase}/${bundle}/manifest.json`, { credentials: 'include' })
+      res = await fetch(gatedFileUrl(bundle, 'manifest.json'), { credentials: 'include' })
     } catch {
       continue
     }
@@ -62,7 +86,7 @@ export async function loadGatedContent(): Promise<void> {
     styles = { ...styles, ...gated.styles }
     sidebar = gated.sidebar
     try {
-      const searchRes = await fetch(`${gatedBase}/${bundle}/search.json`, { credentials: 'include' })
+      const searchRes = await fetch(gatedFileUrl(bundle, 'search.json'), { credentials: 'include' })
       if (searchRes.ok) search = [...search, ...((await searchRes.json()) as SearchEntry[])]
     } catch {}
   }
