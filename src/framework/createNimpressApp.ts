@@ -34,8 +34,9 @@ export function createNimpressApp(options: NimpressAppOptions): NimpressAppInsta
   const auth = options.auth
     ? { ...options.auth, functions: { ...(options.auth.functions ?? {}), ...(options.authFunctions ?? {}) } }
     : undefined
-  const subscribe = options.subscribe
-    ? { ...options.subscribe, functions: { ...(options.subscribe.functions ?? {}), ...(options.subscribeFunctions ?? {}) } }
+  const subscribeFunctions = { ...(options.subscribe?.functions ?? {}), ...(options.subscribeFunctions ?? {}) }
+  const subscribe = options.subscribe || subscribeFunctions.subscribe
+    ? { endpoint: '', appSlug: '', ...(options.subscribe ?? {}), functions: subscribeFunctions }
     : undefined
   return {
     mount(target: HTMLElement) {

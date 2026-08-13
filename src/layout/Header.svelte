@@ -4,8 +4,6 @@
   import { resolvedRoute } from 'sly-svelte-location-router'
   import AccountMenu from '../auth/AccountMenu.svelte'
   import Breadcrumbs from './Breadcrumbs.svelte'
-  import SubscribeDialog from '../markdown/SubscribeDialog.svelte'
-  import { pageFeed } from '../framework/stores/feed'
 
   let {
     onOpenSearch,
@@ -19,8 +17,6 @@
 
   const config = $derived($configStore)
   const isDark = $derived($theme === 'dark')
-  const feed = $derived($pageFeed)
-  let subscribeOpen = $state(false)
   const route = $derived($resolvedRoute)
   const crumbPath = $derived.by(() => {
     const path = route?.path ?? '/'
@@ -57,15 +53,6 @@
   </div>
 
   <div class="np-actions">
-    {#if feed}
-      <button type="button" class="np-subscribe-btn" onclick={() => (subscribeOpen = true)}>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-          <path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 8.73v3.09c5.72 0 10.36 4.64 10.36 10.36h3.09c0-7.43-6.02-13.45-13.45-13.45zM1.82 2.18v3.09c10.34 0 18.73 8.39 18.73 18.73h3.09C23.64 11.95 13.87 2.18 1.82 2.18z"/>
-        </svg>
-        <span class="np-subscribe-label">Subscribe</span>
-      </button>
-    {/if}
-
     <button class="np-search-trigger" onclick={onOpenSearch}>
       <svg class="np-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
@@ -91,41 +78,7 @@
   </div>
 </header>
 
-{#if subscribeOpen && feed}
-  <SubscribeDialog
-    title={feed.title}
-    feedPath={feed.feedPath}
-    emailEnabled={feed.emailEnabled}
-    onClose={() => (subscribeOpen = false)}
-  />
-{/if}
-
 <style>
-  .np-subscribe-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid var(--np-border);
-    border-radius: var(--np-radius-pill);
-    background: none;
-    color: var(--np-text-muted);
-    font-size: 13px;
-    padding: 6px 14px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .np-subscribe-btn:hover {
-    color: var(--np-text-primary);
-    border-color: var(--np-brand);
-  }
-  @media (max-width: 720px) {
-    .np-subscribe-label {
-      display: none;
-    }
-    .np-subscribe-btn {
-      padding: 6px 10px;
-    }
-  }
   .np-header {
     position: sticky;
     top: 0;

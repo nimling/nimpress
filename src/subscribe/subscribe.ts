@@ -15,7 +15,7 @@ function functions(): SubscribeFunctions {
 }
 
 function context(viewer: Viewer): SubscribeContext {
-  const headers: Record<string, string> = { 'Content-Type': 'application/rss+xml' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (config?.appSlug) headers['SAuth-App-Slug'] = config.appSlug
   return {
     endpoint: config?.endpoint ?? '',
@@ -25,18 +25,18 @@ function context(viewer: Viewer): SubscribeContext {
   }
 }
 
-export async function subscribeFeed(viewer: Viewer, feed: string): Promise<void> {
+export async function subscribeFeed(viewer: Viewer, email: string, feedPath: string): Promise<void> {
   if (!config) throw new Error('subscribe is not configured')
   const ctx = context(viewer)
   if (functions().subscribe) {
-    await functions().subscribe!(ctx, feed)
+    await functions().subscribe!(ctx, email, feedPath)
     return
   }
   const res = await fetch(ctx.endpoint, {
     method: 'POST',
     credentials: 'include',
     headers: ctx.headers,
-    body: feed
+    body: JSON.stringify({ email, feed: feedPath })
   })
   if (!res.ok) throw new Error(`subscription request returned ${res.status}`)
 }

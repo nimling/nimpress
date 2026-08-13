@@ -1,7 +1,6 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
-  import { startLogin } from '../auth/session'
   import { subscribeFeed, subscribeConfigured } from '../subscribe/subscribe'
   import IconRemove from '../icons/IconRemove.svelte'
 
@@ -29,6 +28,7 @@
   let sendState = $state<'idle' | 'sending' | 'done' | 'failed'>('idle')
   let copied = $state(false)
   let failure = $state('')
+  let email = $state(v.authenticated ? v.email ?? '' : '')
 
   function onKey(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -42,18 +42,11 @@
     copied = true
   }
 
-  function login() {
-    startLogin(window.location.pathname + window.location.search)
-  }
-
   async function subscribe() {
     sendState = 'sending'
     failure = ''
     try {
-      const feedRes = await fetch(feedPath)
-      if (!feedRes.ok) throw new Error(`feed request returned ${feedRes.status}`)
-      const xml = await feedRes.text()
-      await subscribeFeed(v, xml)
+      await subscribeFeed(v, email, feedPath)
       sendState = 'done'
     } catch (err) {
       sendState = 'failed'
@@ -90,29 +83,22 @@
       {#if emailReady}
         <div class="np-subscribe-section">
           <span class="np-subscribe-label">Email</span>
-          {#if v.authenticated}
-            <div class="np-subscribe-feed-row">
-              <input class="np-subscribe-feed-url" readonly value={v.email ?? ''} />
-              <button
-                class="np-subscribe-btn np-subscribe-primary"
-                disabled={sendState === 'sending' || sendState === 'done'}
-                onclick={subscribe}
-              >
-                {sendState === 'sending' ? 'Subscribing…' : sendState === 'done' ? 'Subscribed' : 'Subscribe'}
-              </button>
-            </div>
-            {#if sendState === 'done'}
-              <p class="np-subscribe-hint">You get an email when a new release ships.</p>
-            {:else if sendState === 'failed'}
-              <p class="np-subscribe-error">{failure}</p>
-            {:else}
-              <p class="np-subscribe-hint">New releases land in your inbox.</p>
-            {/if}
+          <div class="np-subscribe-feed-row">
+            <input class="np-subscribe-feed-url" type="email" bind:value={email} />
+            <button
+              class="np-subscribe-btn np-subscribe-primary"
+              disabled={!email || sendState === 'sending' || sendState === 'done'}
+              onclick={subscribe}
+            >
+              {sendState === 'sending' ? 'Subscribing…' : sendState === 'done' ? 'Subscribed' : 'Subscribe'}
+            </button>
+          </div>
+          {#if sendState === 'done'}
+            <p class="np-subscribe-hint">You get an email when a new release ships.</p>
+          {:else if sendState === 'failed'}
+            <p class="np-subscribe-error">{failure}</p>
           {:else}
-            <div class="np-subscribe-feed-row">
-              <button class="np-subscribe-btn np-subscribe-primary" onclick={login}>Log in to subscribe</button>
-            </div>
-            <p class="np-subscribe-hint">Email subscriptions follow your account.</p>
+            <p class="np-subscribe-hint">New releases land in your inbox.</p>
           {/if}
         </div>
       {/if}

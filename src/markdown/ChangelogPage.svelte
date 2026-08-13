@@ -10,7 +10,7 @@
   import CodeGroup from './CodeGroup.svelte'
   import Actions from './Actions.svelte'
   import Feature from './Feature.svelte'
-  import { setPageFeed } from '../framework/stores/feed'
+  import SubscribeDialog from './SubscribeDialog.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -23,22 +23,11 @@
   const feedEnabled = $derived(page.frontmatter.rss === true || page.frontmatter.subscribe === true)
   const feedPath = $derived.by(() => {
     const gated = page.frontmatter.gate !== undefined
-    const prefix = gated ? `/_guarded/${page.bundle ?? page.frontmatter.gate}` : ''
+    const guardedBase = (config.guardedBase ?? '/_guarded').replace(/\/$/, '')
+    const prefix = gated ? `${guardedBase}/${page.bundle ?? page.frontmatter.gate}` : ''
     return page.path === '/' ? `${prefix}/rss.xml` : `${prefix}${page.path}/rss.xml`
   })
-
-  $effect(() => {
-    if (!feedEnabled) {
-      setPageFeed(null)
-      return
-    }
-    setPageFeed({
-      title: page.frontmatter.title,
-      feedPath,
-      emailEnabled: page.frontmatter.subscribe === true
-    })
-    return () => setPageFeed(null)
-  })
+  let subscribeOpen = $state(false)
 
   $effect(() => {
     if (!feedEnabled) return
@@ -238,6 +227,14 @@
     <article class="np-prose np-changelog" bind:this={container}>
       <div class="np-changelog-head">
         <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
+        {#if feedEnabled}
+          <button type="button" class="np-subscribe-btn" onclick={() => (subscribeOpen = true)}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 8.73v3.09c5.72 0 10.36 4.64 10.36 10.36h3.09c0-7.43-6.02-13.45-13.45-13.45zM1.82 2.18v3.09c10.34 0 18.73 8.39 18.73 18.73h3.09C23.64 11.95 13.87 2.18 1.82 2.18z"/>
+            </svg>
+            <span class="np-subscribe-label">Subscribe</span>
+          </button>
+        {/if}
       </div>
       {#each entries as e, i (keyOf(e, i))}
         {@const open = isOpen(e, i)}
@@ -292,6 +289,15 @@
 
 <BackToTop />
 
+{#if subscribeOpen && feedEnabled}
+  <SubscribeDialog
+    title={page.frontmatter.title}
+    {feedPath}
+    emailEnabled={page.frontmatter.subscribe === true}
+    onClose={() => (subscribeOpen = false)}
+  />
+{/if}
+
 <style>
   .np-page-shell {
     position: relative;
@@ -342,7 +348,7 @@
 
   .np-changelog-head {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
     margin: 0 -8px 32px;
@@ -357,6 +363,25 @@
     color: var(--np-text-primary);
   }
 
+  .np-subscribe-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-pill);
+    background: none;
+    color: var(--np-text-muted);
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .np-subscribe-btn:hover {
+    color: var(--np-text-primary);
+    border-color: var(--np-brand);
+  }
+
   @media (max-width: 720px) {
     .np-changelog-head {
       margin-left: 0;
@@ -364,6 +389,12 @@
     }
     .np-changelog-title {
       font-size: 36px;
+    }
+    .np-subscribe-label {
+      display: none;
+    }
+    .np-subscribe-btn {
+      padding: 6px 10px;
     }
   }
 
