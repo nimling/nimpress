@@ -395,6 +395,7 @@ export interface OidcEndpoints {
 }
 
 export interface RelyingParty {
+  issuer: string
   clientId: string
   scopes: string
   redirectPath: string

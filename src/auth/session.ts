@@ -73,11 +73,13 @@ async function endpoints(): Promise<OidcEndpoints> {
 
 async function relyingParty(): Promise<RelyingParty> {
   const eps = await endpoints()
+  const issuer = config!.issuer
   const clientId = config!.clientId
   const scopes = config!.scopes ?? 'openid profile email'
   const redirectPath = config!.redirectPath ?? '/auth/callback'
   const headers = mergedHeaders()
   return {
+    issuer,
     clientId,
     scopes,
     redirectPath,
