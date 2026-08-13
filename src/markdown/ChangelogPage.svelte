@@ -222,20 +222,22 @@
 {:else}
   <div class="np-page-backdrop np-page-backdrop-changelog" aria-hidden="true"></div>
 {/if}
+<div class="np-changelog-hero">
+  <div class="np-changelog-hero-inner">
+    <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
+    {#if feedEnabled}
+      <button type="button" class="np-subscribe-btn" onclick={() => (subscribeOpen = true)}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+          <path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 8.73v3.09c5.72 0 10.36 4.64 10.36 10.36h3.09c0-7.43-6.02-13.45-13.45-13.45zM1.82 2.18v3.09c10.34 0 18.73 8.39 18.73 18.73h3.09C23.64 11.95 13.87 2.18 1.82 2.18z"/>
+        </svg>
+        <span class="np-subscribe-label">Subscribe</span>
+      </button>
+    {/if}
+  </div>
+</div>
 <div class="np-page-shell" class:has-rail={!page.frontmatter.noToc && tocHeadings.length > 0}>
   <div class="np-page">
     <article class="np-prose np-changelog" bind:this={container}>
-      <div class="np-changelog-head">
-        <h1 class="np-changelog-title">{page.frontmatter.title}</h1>
-        {#if feedEnabled}
-          <button type="button" class="np-subscribe-btn" onclick={() => (subscribeOpen = true)}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-              <path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 8.73v3.09c5.72 0 10.36 4.64 10.36 10.36h3.09c0-7.43-6.02-13.45-13.45-13.45zM1.82 2.18v3.09c10.34 0 18.73 8.39 18.73 18.73h3.09C23.64 11.95 13.87 2.18 1.82 2.18z"/>
-            </svg>
-            <span class="np-subscribe-label">Subscribe</span>
-          </button>
-        {/if}
-      </div>
       {#each entries as e, i (keyOf(e, i))}
         {@const open = isOpen(e, i)}
         <section class="np-changelog-section" class:open>
@@ -333,7 +335,7 @@
     width: 100%;
     max-width: var(--np-content-max, 1024px);
     margin: 0 auto;
-    padding: 96px 32px 0;
+    padding: 48px 32px 0;
     box-sizing: border-box;
     min-width: 0;
   }
@@ -346,15 +348,25 @@
     min-width: 0;
   }
 
-  .np-changelog-head {
+  .np-changelog-hero {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .np-changelog-hero-inner {
     display: flex;
-    align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin: 0 -8px 32px;
+    min-height: 220px;
+    max-width: var(--np-content-max, 1024px);
+    margin: 0 auto;
+    padding: 24px 32px 0;
+    box-sizing: border-box;
   }
 
   .np-changelog-title {
+    align-self: flex-end;
     margin: 0;
     font-size: 48px;
     font-weight: 700;
@@ -366,6 +378,7 @@
   .np-subscribe-btn {
     display: inline-flex;
     align-items: center;
+    align-self: flex-start;
     gap: 6px;
     flex: 0 0 auto;
     border: 1px solid var(--np-border);
@@ -383,9 +396,9 @@
   }
 
   @media (max-width: 720px) {
-    .np-changelog-head {
-      margin-left: 0;
-      margin-right: 0;
+    .np-changelog-hero-inner {
+      min-height: 160px;
+      padding: 16px 24px 0;
     }
     .np-changelog-title {
       font-size: 36px;
