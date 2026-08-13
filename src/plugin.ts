@@ -1180,7 +1180,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const page: SubscribeMapPage = {
         path: p.effectivePath,
         title: p.frontmatter.title,
-        name: p.effectivePath.replace(/\//g, '-').replace(/^-/, ''),
+        name: p.effectivePath === '/' ? 'index' : p.effectivePath.replace(/\//g, '-').replace(/^-/, ''),
         feed: `${gatedPrefix}${basePath}/${feedFileName(0)}`
       }
       if (p.type === 'changelog') {
