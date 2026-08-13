@@ -111,6 +111,47 @@ Wire the CLI into `package.json`:
 
 The full reference with flags and exit behavior lives in [docs/cli.md](./docs/cli.md). The packaged rules under `node_modules/@nimling/nimpress/.claude/rules/` are the working contract for AI agents in consumer repos; `nimpress init` links them from the project's `CLAUDE.md` and `AGENTS.md`.
 
+## Build outputs
+
+`nimpress build` writes the static site into `outDir` plus a set of machine readable maps beside it: `access.json` and `guard.map.json` for the gate flow, described in [docs/auth.md](./docs/auth.md), one `rss.xml` per changelog collection carrying `rss: true` or `subscribe: true`, and `subscribe.map.json` describing every page whose effective frontmatter carries `subscribe: true`. The dev server serves `subscribe.map.json` and the feeds at the same urls.
+
+`subscribe.map.json` is the full current state of the subscribable surface; comparing it against the previous release happens in the pipeline, not in the build. Its shape is stable:
+
+```json
+{
+  "pages": [
+    {
+      "path": "/changelog",
+      "title": "Changelog",
+      "name": "changelog",
+      "feed": "/changelog/rss.xml",
+      "entries": [
+        {
+          "slug": "v1.2.0",
+          "version": "1.2.0",
+          "date": "2026-06-10T00:00:00.000Z",
+          "title": "Faster builds",
+          "description": "Build time cut in half.",
+          "body": "The raw markdown body of the entry."
+        }
+      ]
+    }
+  ]
+}
+```
+
+1. `path` is the page's effective route.
+
+2. `title` is the page title.
+
+3. `name` is the path with slashes turned to dashes and no leading dash, a friendly list name.
+
+4. `feed` is the feed path exactly as the client computes it: `<path>/rss.xml`, prefixed with `/<paths.guarded>/<bundle>` when the page is gated.
+
+5. `entries` is present when the page is a changelog collection, ordered newest first, hidden entries excluded, each carrying the entry slug, version, release date, title, description, and raw markdown body.
+
+Pages are sorted by `path`. The file is always written, with an empty `pages` list when nothing is subscribable.
+
 ## Working on Nimpress itself
 
 | Command | Description |

@@ -235,6 +235,23 @@ interface ProcessedPage {
   componentData?: ComponentPageData
 }
 
+interface SubscribeMapEntry {
+  slug: string
+  version: string
+  date?: string
+  title: string
+  description?: string
+  body: string
+}
+
+interface SubscribeMapPage {
+  path: string
+  title: string
+  name: string
+  feed: string
+  entries?: SubscribeMapEntry[]
+}
+
 function compareVersions(a: string, b: string): number {
   const pa = String(a ?? '').replace(/^v/i, '').split(/[.\-+]/)
   const pb = String(b ?? '').replace(/^v/i, '').split(/[.\-+]/)
@@ -1063,6 +1080,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       result.set(p.slug, p)
     }
 
+    changelogEntryMarkdown.clear()
     for (const [groupKey, entries] of changelogGroups) {
       const parent = groupKey.split('\u0000', 1)[0]
       const path = normalizePath(parent ? '/' + parent : '/')
@@ -1097,9 +1115,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           }
           releaseDate = parsed.toISOString()
         }
+        const entrySlug = version ? `v${version}` : 'unreleased'
+        changelogEntryMarkdown.set(`${mergedSlug}#${entrySlug}`, e.rawText)
         return {
           version,
-          slug: version ? `v${version}` : 'unreleased',
+          slug: entrySlug,
           title: entryTitle,
           description: entryDescription,
           releaseDate,
@@ -1139,10 +1159,47 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     buildChangelogFeeds(result)
 
+    buildSubscribeMap(result)
+
     pages = result
   }
 
   const feedFiles = new Map<string, string>()
+
+  const changelogEntryMarkdown = new Map<string, string>()
+
+  let subscribeMapJson = JSON.stringify({ pages: [] }, null, 2) + '\n'
+
+  function buildSubscribeMap(result: Map<string, ProcessedPage>): void {
+    const mapPages: SubscribeMapPage[] = []
+    for (const p of result.values()) {
+      if (p.frontmatter.subscribe !== true) continue
+      if (pageHiddenEverywhere(p.frontmatter)) continue
+      const basePath = p.effectivePath === '/' ? '' : p.effectivePath
+      const gatedPrefix = isGated(p) ? `/${resolved.paths.guarded}/${bundleFor(p)}` : ''
+      const page: SubscribeMapPage = {
+        path: p.effectivePath,
+        title: p.frontmatter.title,
+        name: p.effectivePath.replace(/\//g, '-').replace(/^-/, ''),
+        feed: `${gatedPrefix}${basePath}/${feedFileName(0)}`
+      }
+      if (p.type === 'changelog') {
+        page.entries = (p.changelogEntries ?? [])
+          .filter((e) => !e.hidden)
+          .map((e) => ({
+            slug: e.slug,
+            version: e.version,
+            date: e.releaseDate,
+            title: e.title,
+            description: e.description,
+            body: changelogEntryMarkdown.get(`${p.slug}#${e.slug}`) ?? ''
+          }))
+      }
+      mapPages.push(page)
+    }
+    mapPages.sort((a, b) => a.path.localeCompare(b.path))
+    subscribeMapJson = JSON.stringify({ pages: mapPages }, null, 2) + '\n'
+  }
 
   function buildChangelogFeeds(result: Map<string, ProcessedPage>): void {
     feedFiles.clear()
@@ -2355,6 +2412,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         await mkdir(dirname(target), { recursive: true })
         await writeFile(target, xml)
       }
+      await writeFile(join(resolvedOutDir, 'subscribe.map.json'), subscribeMapJson)
       await writeStaticArtifacts()
       await writeGuardedArtifacts()
     },
@@ -2522,6 +2580,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         if (feed !== undefined) {
           res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')
           res.end(feed)
+          return
+        }
+        if (url === '/subscribe.map.json') {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(subscribeMapJson)
           return
         }
         const modulesRoute = resolved.modules.route.replace(/\/$/, '')

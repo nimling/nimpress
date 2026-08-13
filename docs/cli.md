@@ -29,7 +29,7 @@ Writes `nimpress.config.ts` with every field documented in JSDoc and examples, u
 
 1. `dev` starts the docs vite server plus one harness server per configured system and prints the urls.
 
-2. `build` emits the static site into `paths.out`, default `dist`, then builds a static harness bundle per system into `<out>/<paths.modules>/<system>/`, default `dist/_components/<system>/`. Systems with `visibility: dev-only` are skipped. Gated pages land in `<out>/<paths.guarded>/<bundle>/`, default `dist/_guarded/<bundle>/`, with `access.json` and `guard.map.json` beside the site.
+2. `build` emits the static site into `paths.out`, default `dist`, then builds a static harness bundle per system into `<out>/<paths.modules>/<system>/`, default `dist/_components/<system>/`. Systems with `visibility: dev-only` are skipped. Gated pages land in `<out>/<paths.guarded>/<bundle>/`, default `dist/_guarded/<bundle>/`, with `access.json` and `guard.map.json` beside the site. `subscribe.map.json` lands beside them, recording every page whose frontmatter carries `subscribe: true` with its feed path and changelog entries; the shape is documented in the README under Build outputs.
 
 ## paths
 
