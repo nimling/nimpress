@@ -46,7 +46,7 @@
     sendState = 'sending'
     failure = ''
     try {
-      await subscribeFeed(v, email, feedPath)
+      await subscribeFeed(v, email, feedUrl)
       sendState = 'done'
     } catch (err) {
       sendState = 'failed'
