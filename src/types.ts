@@ -327,7 +327,7 @@ export interface SubscribeContext {
 }
 
 export interface SubscribeFunctions {
-  subscribe?: (ctx: SubscribeContext, email: string, feed: string) => Promise<void>
+  subscribe?: (ctx: SubscribeContext, email: string, feed: string, name: string) => Promise<void>
 }
 
 export interface SubscribeConfig {

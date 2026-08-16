@@ -27,6 +27,9 @@
     const prefix = gated ? `${guardedBase}/${page.bundle ?? page.frontmatter.gate}` : ''
     return page.path === '/' ? `${prefix}/rss.xml` : `${prefix}${page.path}/rss.xml`
   })
+  const listName = $derived(
+    page.path === '/' ? 'index' : page.path.replace(/\//g, '-').replace(/^-/, '')
+  )
   let subscribeOpen = $state(false)
 
   $effect(() => {
@@ -295,6 +298,7 @@
   <SubscribeDialog
     title={page.frontmatter.title}
     {feedPath}
+    name={listName}
     emailEnabled={page.frontmatter.subscribe === true}
     onClose={() => (subscribeOpen = false)}
   />

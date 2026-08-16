@@ -1177,11 +1177,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (pageHiddenEverywhere(p.frontmatter)) continue
       const basePath = p.effectivePath === '/' ? '' : p.effectivePath
       const gatedPrefix = isGated(p) ? `/${resolved.paths.guarded}/${bundleFor(p)}` : ''
+      const feed = `${gatedPrefix}${basePath}/${feedFileName(0)}`
+      if (!feedFiles.has(feed)) continue
       const page: SubscribeMapPage = {
         path: p.effectivePath,
         title: p.frontmatter.title,
         name: p.effectivePath === '/' ? 'index' : p.effectivePath.replace(/\//g, '-').replace(/^-/, ''),
-        feed: `${gatedPrefix}${basePath}/${feedFileName(0)}`
+        feed
       }
       if (p.type === 'changelog') {
         page.entries = (p.changelogEntries ?? [])

@@ -24,10 +24,19 @@ interface GuardedRoute {
   bundle: string
 }
 
+interface PublishedAsset {
+  path: string
+  file: string
+  bundle: string
+  asset_id: string
+  url: string
+}
+
 interface GuardAccess {
   prefix: string
   base?: string
   routes: Record<string, GuardedRoute>
+  files?: PublishedAsset[]
 }
 
 interface GuardMap {
@@ -88,9 +97,19 @@ export function runGuard(cwd: string, resolved: ResolvedNimpressConfig, args: st
   if (sub === 'apply') {
     const mapPath = flag(args, 'map')
     if (!mapPath) throw new Error('[nimpress] guard apply requires --map=<uploaded mapping json>')
-    const uploaded = JSON.parse(readFileSync(join(cwd, mapPath), 'utf-8')) as { base?: string }
+    const uploaded = JSON.parse(readFileSync(join(cwd, mapPath), 'utf-8')) as {
+      base?: string
+      files?: PublishedAsset[]
+    }
     if (!uploaded.base) throw new Error('[nimpress] guard apply: mapping json carries no base url')
     access.base = uploaded.base.replace(/\/$/, '')
+    access.files = (uploaded.files ?? []).map((a) => ({
+      path: a.path,
+      file: a.file,
+      bundle: a.bundle,
+      asset_id: a.asset_id,
+      url: a.url
+    }))
     writeFileSync(accessPath, JSON.stringify(access, null, 2) + '\n')
     rmSync(guardedDir(dist, resolved), { recursive: true, force: true })
     rmSync(join(dist, 'guard.map.json'), { force: true })

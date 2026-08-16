@@ -29,7 +29,7 @@ let published: PublishedAsset[] = []
 // gatedFileUrl resolves a guarded file to the artifact it was published as. The
 // publish step pairs the two, so a build with a pairing fetches by asset and one
 // without it falls back to the bundle folder it was written to.
-function gatedFileUrl(bundle: string, file: string): string {
+export function gatedFileUrl(bundle: string, file: string): string {
   const hit = published.find((a) => a.bundle === bundle && a.file.endsWith(file))
   if (hit) return hit.url || `${gatedBase}/${hit.asset_id}/data`
   return `${gatedBase}/${bundle}/${file}`

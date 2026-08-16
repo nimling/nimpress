@@ -25,18 +25,23 @@ function context(viewer: Viewer): SubscribeContext {
   }
 }
 
-export async function subscribeFeed(viewer: Viewer, email: string, feed: string): Promise<void> {
+export async function subscribeFeed(
+  viewer: Viewer,
+  email: string,
+  feed: string,
+  name: string
+): Promise<void> {
   if (!config) throw new Error('subscribe is not configured')
   const ctx = context(viewer)
   if (functions().subscribe) {
-    await functions().subscribe!(ctx, email, feed)
+    await functions().subscribe!(ctx, email, feed, name)
     return
   }
   const res = await fetch(ctx.endpoint, {
     method: 'POST',
     credentials: 'include',
     headers: ctx.headers,
-    body: JSON.stringify({ email, feed })
+    body: JSON.stringify({ email, feed, name })
   })
   if (!res.ok) throw new Error(`subscription request returned ${res.status}`)
 }

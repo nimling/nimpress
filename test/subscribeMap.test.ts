@@ -141,6 +141,67 @@ describe('subscribe map', () => {
     expect(gated.entries[0].slug).toBe('v0.1.0')
   })
 
+  it('leaves out subscribe pages that get no feed file written', async () => {
+    repo = makeRepo()
+    previousCwd = process.cwd()
+    file(
+      repo.cwd,
+      'nimpress.config.json',
+      JSON.stringify({ title: 'X', contentDir: 'docs', site: { title: 'X', url: 'https://docs.example.com' } })
+    )
+    file(repo.cwd, 'docs/index.md', '---\ntitle: Home\n---\n\nHome.\n')
+    file(
+      repo.cwd,
+      'docs/changelog/v1.0.0.md',
+      changelogEntry({
+        pageTitle: 'Changelog',
+        version: '1.0.0',
+        date: '2026-05-01',
+        entryTitle: 'First release',
+        description: 'The first release ships.',
+        body: 'Everything starts here.',
+        subscribe: true
+      })
+    )
+    file(repo.cwd, 'docs/guide.md', '---\ntitle: Guide\nsubscribe: true\n---\n\nA guide with no feed.\n')
+    file(
+      repo.cwd,
+      'docs/empty/changelog/v0.0.1.md',
+      `---
+title: Empty changelog
+type: changelog
+subscribe: true
+visibility: dev-only
+data:
+  version: 0.0.1
+  release_date: 2026-02-01
+  title: Hidden start
+  description: The only entry is hidden.
+---
+
+Nothing visible here.
+`
+    )
+    process.chdir(repo.cwd)
+    const plugin = nimpress() as any
+    await plugin.config()
+    plugin.configResolved({ command: 'build', root: repo.cwd, build: { outDir: 'dist' } })
+    await plugin.buildStart()
+    file(repo.cwd, 'dist/index.html', '<!doctype html><html><head></head><body></body></html>')
+    await plugin.closeBundle()
+
+    const map = JSON.parse(readFileSync(join(repo.cwd, 'dist', 'subscribe.map.json'), 'utf-8'))
+    const paths = map.pages.map((p: { path: string }) => p.path)
+    expect(paths).toEqual(['/changelog'])
+    expect(paths).not.toContain('/guide')
+    expect(paths).not.toContain('/empty/changelog')
+    expect(existsSync(join(repo.cwd, 'dist', 'guide', 'rss.xml'))).toBe(false)
+    expect(existsSync(join(repo.cwd, 'dist', 'empty', 'changelog', 'rss.xml'))).toBe(false)
+    for (const page of map.pages as Array<{ feed: string }>) {
+      expect(existsSync(join(repo.cwd, 'dist', ...page.feed.slice(1).split('/')))).toBe(true)
+    }
+  })
+
   it('writes an empty pages list when nothing is subscribable', async () => {
     repo = makeRepo()
     previousCwd = process.cwd()

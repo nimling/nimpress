@@ -6,7 +6,7 @@
   import OpenApiRoot from '../api/OpenApiRoot.svelte'
   import { setPageMeta } from '../framework/pageMeta'
   import { applyPageStyles } from '../framework/pageStyles'
-  import { gatedContentBase, gatedFetch } from '../framework/gated'
+  import { gatedFetch, gatedFileUrl } from '../framework/gated'
   import type { PageBody, PageShell } from '../types'
 
   let { shell }: { shell: PageShell } = $props()
@@ -14,7 +14,10 @@
   setPageMeta(shell)
   applyPageStyles(shell.path)
 
-  const bodyUrl = `${gatedContentBase()}/${shell.bundle ?? 'default'}/body/${shell.slug === '' ? '__root__' : shell.slug}.json`
+  const bodyUrl = gatedFileUrl(
+    shell.bundle ?? 'default',
+    `body/${shell.slug === '' ? '__root__' : shell.slug}.json`
+  )
   const bodyPromise: Promise<{ default: PageBody }> = gatedFetch(bodyUrl).then(
     async (res: Response) => {
       if (!res.ok) throw new Error(`gated body request returned ${res.status}`)

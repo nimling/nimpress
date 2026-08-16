@@ -7,11 +7,13 @@
   let {
     title,
     feedPath,
+    name,
     emailEnabled,
     onClose
   }: {
     title: string
     feedPath: string
+    name: string
     emailEnabled: boolean
     onClose: () => void
   } = $props()
@@ -46,7 +48,7 @@
     sendState = 'sending'
     failure = ''
     try {
-      await subscribeFeed(v, email, feedUrl)
+      await subscribeFeed(v, email, feedUrl, name)
       sendState = 'done'
     } catch (err) {
       sendState = 'failed'
