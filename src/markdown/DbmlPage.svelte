@@ -23,7 +23,12 @@
     {/if}
   </header>
   <div class="np-dbml-canvas">
-    <DbmlBlock schema={page.dbmlSchema ?? ''} error={page.dbmlError ?? ''} height="100%" />
+    <DbmlBlock
+      schema={page.dbmlSchema ?? ''}
+      error={page.dbmlError ?? ''}
+      height="100%"
+      activateOnMount
+    />
   </div>
   {#if effectiveFooter}
     <footer class="np-dbml-footer">{effectiveFooter}</footer>

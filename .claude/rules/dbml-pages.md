@@ -23,9 +23,11 @@ Table users {
 ```
 ````
 
-1. The info line takes an optional JSON object. `height` is the only field, `520px` by default.
+1. The info line takes an optional JSON object. `height` is the only field, `520px` by default. Pick it from the table count: the reader pans by dragging whatever the tables do not cover, so a cramped frame has nothing to grab.
 
 2. The plugin rewrites the fence to `<div class="np-dbml" data-schema="…">` carrying the base64 diagram model, and the page mounts `DbmlBlock` over it.
+
+3. An inline diagram mounts behind a click to explore shield so the frame never captures page scrolling. Clicking it activates the frame and swaps the shield for a gesture hint. `DbmlPage` passes `activateOnMount` because there the diagram is the page.
 
 ## Page type
 
@@ -47,6 +49,12 @@ description: Every table the booking api reads and writes.
 3. The page has no right rail. The diagram fills the viewport under the header.
 
 4. The `.dbml` file lands in the build output beside the page, so readers can open the source.
+
+## The interaction contract
+
+The frame is read only, and that decides which gestures exist. Pan by dragging empty canvas, by scrolling, by the minimap, or by the edge scrollbars. Zoom with ctrl scroll or cmd scroll. Dragging a table does nothing, because moving a table is an edit and the read only store drops edit actions.
+
+Do not describe a diagram as draggable table by table in prose, and do not add controls that fake it. If a schema needs rearranging, change the source order or the layout in `src/dbml/erd.ts`, which is what positions the tables.
 
 ## What the converter maps
 

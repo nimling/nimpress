@@ -28,7 +28,7 @@ Ref: post.user_id > users.id
 ```
 ````
 
-The fence accepts a JSON object on the info line. `height` sizes the frame, `520px` by default.
+The fence accepts a JSON object on the info line. `height` sizes the frame, `520px` by default. Size the frame for the schema: a two table diagram reads fine at `320px`, a ten table one wants `620px` or more, because the pannable area is whatever the tables do not cover.
 
 ````md
 ```dbml {"height":"760px"}
@@ -91,7 +91,21 @@ The `.dbml` file is copied into the build output beside the page, so readers can
 
 ## Interacting
 
-The frame is read only. Pan by dragging, zoom with the wheel, and use the minimap in the corner to jump around a wide schema. The toolbar switches between the diagram, a visualization view, and the generated SQL for the database vendor the schema declares. The fullscreen button sits in the bottom right corner of the frame.
+An inline diagram starts inert behind a `click to explore the schema` shield, so scrolling the page past it never gets captured. Clicking the shield hands the frame the pointer and reveals a gesture hint along the bottom edge. A `type: dbml` page skips the shield; the diagram is the page.
+
+The frame is read only, which shapes the gestures:
+
+1. Drag empty canvas to pan. Dragging a table does nothing, because moving a table is an edit.
+
+2. Scroll to pan vertically, shift scroll to pan horizontally, ctrl scroll or cmd scroll to zoom.
+
+3. Drag the viewport box in the minimap, or click anywhere in the minimap, to jump across a wide schema.
+
+4. Drag the thin scrollbars along the right and bottom edges of the frame.
+
+5. Hold space for the grab cursor.
+
+The toolbar switches between the diagram, a force graph visualization, and the generated SQL for the database vendor the schema declares. The fullscreen button sits in the bottom right corner of the frame.
 
 ## Theme
 
