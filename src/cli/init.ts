@@ -136,7 +136,7 @@ The authoritative AI working rules ship inside the package at \`node_modules/@ni
 
 3. \`component-modules.md\` before touching component pages, stories, controls, or the modules CLI.
 
-4. \`changelog-entries.md\` and \`roadmap-entries.md\` for those page types.
+4. \`changelog-entries.md\`, \`roadmap-entries.md\`, and \`dbml-pages.md\` for those page types.
 
 5. \`docs-sync.md\` and \`deploy.md\` for publishing flows and the export header.
 

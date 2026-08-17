@@ -6,6 +6,7 @@
   import RightToc from '../layout/RightToc.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
+  import DbmlBlock from './DbmlBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
   import Actions from './Actions.svelte'
@@ -100,6 +101,18 @@
       const host = document.createElement('div')
       el.replaceWith(host)
       const instance = mount(MermaidBlock, { target: host, props: { source: graph } })
+      mounted.push({ destroy: () => unmount(instance) })
+    }
+
+    for (const el of Array.from(container.querySelectorAll<HTMLDivElement>('.np-dbml[data-schema]'))) {
+      const host = document.createElement('div')
+      const props = {
+        schema: decodeBase64(el.dataset.schema ?? ''),
+        error: el.dataset.error ?? '',
+        height: el.dataset.height || '520px'
+      }
+      el.replaceWith(host)
+      const instance = mount(DbmlBlock, { target: host, props })
       mounted.push({ destroy: () => unmount(instance) })
     }
 

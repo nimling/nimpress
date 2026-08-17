@@ -145,6 +145,10 @@ Aliases: `curl` and `sh`/`zsh`/`console` render as `bash`. `hurl` renders as `ht
 
 See [mermaid.md](./mermaid.md).
 
+## DBML
+
+A ` ```dbml ` fence renders an interactive entity relationship diagram instead of a code block. See [dbml.md](./dbml.md).
+
 ## Definition lists
 
 See [definition-lists.md](./definition-lists.md).

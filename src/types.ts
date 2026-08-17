@@ -4,6 +4,7 @@ export type PageType =
   | 'changelog'
   | 'hero'
   | 'roadmap'
+  | 'dbml'
   | 'milestone'
   | 'epic'
   | 'feature'
@@ -226,6 +227,8 @@ export interface PageBody {
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
   componentData?: ComponentPageData
+  dbmlSchema?: string
+  dbmlError?: string
 }
 
 export interface PageModule extends PageShell, PageBody {}

@@ -54,6 +54,12 @@
  *   Mermaid host (rehydrated client-side)
  *     .np-mermaid
  *
+ *   DBML host (rehydrated client-side)
+ *     .np-dbml
+ *     .np-dbml-wrapper
+ *     .np-dbml-host
+ *     .np-dbml-toolbar
+ *
  *   Code block component
  *     .np-code
  *     .np-code-bar

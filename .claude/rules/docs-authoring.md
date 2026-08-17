@@ -40,6 +40,8 @@ Rules for writing markdown pages, both inside this repo's `docs/` and inside con
 
 2. Use `:::code-group` when showing the same example in two or more languages.
 
+2.1. A ` ```dbml ` fence renders as an interactive diagram, not as code. Use it for database schemas and use `sql` for statements.
+
 3. Keep code blocks short. Long examples belong in a runnable repo, linked from the docs.
 
 ## Tables

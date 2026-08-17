@@ -8,6 +8,7 @@
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
+  import DbmlBlock from './DbmlBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
 
@@ -1587,6 +1588,19 @@
       const host = document.createElement('div')
       el.replaceWith(host)
       const instance = mount(MermaidBlock, { target: host, props: { source: graph } })
+      mounts.push({ destroy: () => unmount(instance) })
+    }
+    for (const el of Array.from(container.querySelectorAll<HTMLDivElement>('.np-dbml[data-schema]'))) {
+      let schema = ''
+      try {
+        schema = decodeURIComponent(escape(atob(el.dataset.schema ?? '')))
+      } catch {}
+      const host = document.createElement('div')
+      el.replaceWith(host)
+      const instance = mount(DbmlBlock, {
+        target: host,
+        props: { schema, error: el.dataset.error ?? '', height: el.dataset.height || '520px' }
+      })
       mounts.push({ destroy: () => unmount(instance) })
     }
     const groups = container.querySelectorAll<HTMLElement>('.np-code-group')

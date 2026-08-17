@@ -70,6 +70,8 @@ export default defineConfig(({ mode }) => {
               'shiki',
               'minisearch',
               'mermaid',
+              '@dbml/core',
+              '@dineug/erd-editor',
               'path-to-regexp',
               'zod',
               '@nimling/samna-auth-middleware',

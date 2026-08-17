@@ -60,6 +60,8 @@ title: How sessions work
 
 9. Mermaid blocks render `flowchart`, `stateDiagram-v2`, `sequenceDiagram`, `erDiagram` when a flow or state reads more cleanly visually.
 
+10. ` ```dbml ` blocks render an interactive entity relationship diagram. Reach for it over a mermaid `erDiagram` whenever the subject is a real database schema. See `dbml-pages.md`.
+
 ## Linking
 
 1. Relative links within the same section, absolute links across sections.

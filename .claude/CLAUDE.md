@@ -18,19 +18,21 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 7. `src/layout/` — `AppShell`, `Header`, `Sidebar`, `Breadcrumbs`, `RightToc`. The shell chrome.
 
-8. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, callouts, code blocks, mermaid. Renderers.
+8. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, `RoadmapPage`, `ComponentPage`, `DbmlPage`, callouts, code blocks, mermaid, dbml. Renderers.
 
 9. `src/api/` — OpenAPI renderer. `OpenApiRoot`, `Operation`, `Schema`, `TryPanel`, `CodeExamples`.
 
-10. `src/search/` — MiniSearch wrapper and modal.
+10. `src/dbml/` — DBML to diagram model conversion, run at build time by the plugin. `erd.ts` is the only place the mapping lives.
 
-11. `src/auth/` — session login guard against `samna_auth`.
+11. `src/search/` — MiniSearch wrapper and modal.
 
-12. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
+12. `src/auth/` — session login guard against `samna_auth`.
 
-13. `docs/` — concept guides linked from the README. Authors read these before writing docs in consumer repos.
+13. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
 
-14. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs. Shipped in the package; consumers read them from `node_modules/@nimling/nimpress/.claude/rules/`.
+14. `docs/` — concept guides linked from the README. Authors read these before writing docs in consumer repos.
+
+15. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs. Shipped in the package; consumers read them from `node_modules/@nimling/nimpress/.claude/rules/`.
 
 ## Build
 
@@ -57,6 +59,8 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 6. Public class names on rendered chrome stay stable. Rename only across a major bump.
 
 7. Token names stay stable. Add new ones, do not rename.
+
+8. Heavy browser side renderers load through a dynamic import inside the component that owns them, never a static import from shared code. `mermaid` and `@dineug/erd-editor` both follow this.
 
 ## Never
 

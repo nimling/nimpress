@@ -133,6 +133,14 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
           componentDirs.set(dir, file)
         }
       }
+      if (data?.type === 'dbml') {
+        const spec = typeof data.spec === 'string' ? data.spec : ''
+        if (!spec) {
+          problems.push(`${rel}: type dbml needs a spec field pointing at the .dbml file`)
+        } else if (!existsSync(resolve(dir, spec))) {
+          problems.push(`${rel}: spec ${spec} does not resolve, create the file or fix the path`)
+        }
+      }
       if (data?.type === 'changelog' && typeof data.path === 'string') {
         problems.push(`${rel}: changelog entries never set path, the collection mounts at the folder route, remove the path field`)
       }

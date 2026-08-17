@@ -1,0 +1,85 @@
+Project bookable {
+  database_type: 'PostgreSQL'
+  Note: 'A trimmed booking schema, enough to show every shape the renderer draws.'
+}
+
+Table organization [headercolor: #CC785C] {
+  id uuid [pk]
+  name varchar(120) [not null]
+  slug varchar(120) [not null, unique]
+  created_at timestamptz [not null, default: `now()`]
+  Note: 'Tenant root. Every other row hangs off one of these.'
+}
+
+Table location {
+  id uuid [pk]
+  organization_id uuid [not null]
+  parent_id uuid [not null, note: 'Self reference, a top level location points at itself']
+  name varchar(120) [not null]
+  timezone varchar(64) [not null, default: 'Europe/Oslo']
+
+  indexes {
+    (organization_id, name) [unique, name: 'ux_location_org_name']
+  }
+}
+
+Table bookable {
+  id uuid [pk]
+  location_id uuid [not null]
+  kind bookable_kind [not null]
+  name varchar(120) [not null]
+  capacity int [not null, default: 1]
+  deleted_at timestamptz [note: 'Soft delete, never a hard delete']
+  Note: 'A room, a desk, or anything else a person can reserve.'
+}
+
+Table booking {
+  id uuid [pk]
+  bookable_id uuid [not null]
+  booked_by uuid [not null]
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  state booking_state [not null, default: 'confirmed']
+
+  indexes {
+    (bookable_id, starts_at) [name: 'ix_booking_bookable_start']
+  }
+  Note: 'One reservation of one bookable over one window.'
+}
+
+Table booking_guest {
+  booking_id uuid [pk]
+  user_id uuid [pk]
+  responded_at timestamptz
+
+  indexes {
+    (booking_id, user_id) [pk]
+  }
+}
+
+Table samna_user {
+  id uuid [pk]
+  organization_id uuid [not null]
+  email varchar(255) [not null, unique]
+  display_name varchar(120) [not null]
+}
+
+Enum bookable_kind {
+  room
+  desk
+  vehicle
+}
+
+Enum booking_state {
+  confirmed
+  cancelled
+  pending
+}
+
+Ref: location.organization_id > organization.id
+Ref: bookable.location_id > location.id
+Ref: booking.bookable_id > bookable.id
+Ref: booking.booked_by > samna_user.id
+Ref: booking_guest.booking_id > booking.id
+Ref: booking_guest.user_id > samna_user.id
+Ref: samna_user.organization_id > organization.id

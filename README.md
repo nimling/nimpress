@@ -172,11 +172,12 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 | Topic | Guide |
 |-------|-------|
 | CLI reference: every command, flag, and exit code | [docs/cli.md](./docs/cli.md) |
-| Page types: `doc`, `openapi`, `changelog`, `hero`, `roadmap`, `component` | [docs/page-types.md](./docs/page-types.md) |
+| Page types: `doc`, `openapi`, `changelog`, `hero`, `roadmap`, `dbml`, `component` | [docs/page-types.md](./docs/page-types.md) |
 | Component workshop: systems, stories, harness, controls, import CLI | [docs/modules.md](./docs/modules.md) |
 | Markdown support, callouts, actions, features | [docs/markdown.md](./docs/markdown.md) |
 | Definition lists for compact term references | [docs/definition-lists.md](./docs/definition-lists.md) |
 | Mermaid diagrams | [docs/mermaid.md](./docs/mermaid.md) |
+| DBML database diagrams | [docs/dbml.md](./docs/dbml.md) |
 | OpenAPI renderer | [docs/openapi.md](./docs/openapi.md) |
 | Changelog renderer | [docs/changelog.md](./docs/changelog.md) |
 | Hero landing pages | [docs/hero.md](./docs/hero.md) |
@@ -192,7 +193,7 @@ Detailed guides live in [docs/](./docs/). Start there to learn the content model
 
 ## Authoring docs with Claude
 
-The package ships the authoring rules at `node_modules/@nimling/nimpress/.claude/rules/`. They cover how to write each page type: docs, changelog entries, hero pages, roadmap pages, and roadmap issues, plus frontmatter, file layout, and styling.
+The package ships the authoring rules at `node_modules/@nimling/nimpress/.claude/rules/`. They cover how to write each page type: docs, changelog entries, hero pages, roadmap pages, roadmap issues, and dbml pages, plus frontmatter, file layout, and styling.
 
 Claude does not auto load rules from inside `node_modules`. So in the repo that consumes Nimpress, add a pointer in your root `CLAUDE.md` so Claude can find them:
 
@@ -204,6 +205,7 @@ When writing or editing markdown under the docs content directory, follow the Ni
 - `docs-authoring.md`, `doc-pages.md`, `page-types.md`, `frontmatter.md`, `file-layout.md` for general pages
 - `changelog-entries.md` for changelog entries
 - `roadmap-entries.md` for roadmap pages and issue pages
+- `dbml-pages.md` for database diagram pages and inline dbml fences
 - `component-modules.md` for component pages, stories, and the workshop
 - `style.md` for theming and overrides
 ```
@@ -224,8 +226,9 @@ nimpress/
 │   ├── config/             Config load, defaults, schema, Vite and html
 │   ├── framework/          App bootstrap, router, stores
 │   ├── layout/             Shell, header, sidebar, breadcrumbs, right TOC
-│   ├── markdown/           Page, ChangelogPage, HeroPage, callouts, code blocks
+│   ├── markdown/           Page, ChangelogPage, HeroPage, DbmlPage, callouts, code blocks
 │   ├── api/                OpenAPI renderer
+│   ├── dbml/               DBML to diagram model conversion, run at build time
 │   ├── search/             MiniSearch wrapper and modal
 │   ├── auth/               Session login guard
 │   └── styles/             Tokens and preflight

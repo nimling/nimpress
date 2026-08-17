@@ -64,6 +64,18 @@ Issue page types. Each file is one standalone page at its own URL, listed under 
 
 3. The body is a regular doc page that renders with a kind chip and date header above the markdown.
 
+## `dbml`
+
+A full page entity relationship viewer. Use when:
+
+1. The page exists to show the shape of a database.
+
+2. The schema is maintained as a `.dbml` file next to the markdown file.
+
+3. The reader should pan, zoom, and read column level detail rather than look at a static picture.
+
+Frontmatter needs `spec` pointing at the `.dbml` file. For a diagram inside a page that is mostly prose, use the inline ` ```dbml ` fence instead of this type. See [dbml-pages.md](./dbml-pages.md).
+
 ## `component`
 
 A live component workshop page. Use when:
@@ -86,6 +98,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: roadmap
    ├─ Is it one item on a roadmap timeline?
    │  └─ Yes  → type: milestone | epic | feature | bug
+   ├─ Is it a full page database diagram?
+   │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
    ├─ Is it a beacon style landing page?

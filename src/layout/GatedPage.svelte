@@ -3,6 +3,7 @@
   import ChangelogPage from '../markdown/ChangelogPage.svelte'
   import HeroPage from '../markdown/HeroPage.svelte'
   import RoadmapPage from '../markdown/RoadmapPage.svelte'
+  import DbmlPage from '../markdown/DbmlPage.svelte'
   import OpenApiRoot from '../api/OpenApiRoot.svelte'
   import { setPageMeta } from '../framework/pageMeta'
   import { applyPageStyles } from '../framework/pageStyles'
@@ -38,6 +39,8 @@
       <ChangelogPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'roadmap'}
       <RoadmapPage page={{ ...shell, ...mod.default }} />
+    {:else if shell.type === 'dbml'}
+      <DbmlPage page={{ ...shell, ...mod.default }} />
     {:else}
       <Page page={{ ...shell, ...mod.default }} />
     {/if}

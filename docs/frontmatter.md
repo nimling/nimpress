@@ -15,7 +15,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `slug` | string | Short label rendered in the sidebar, falls back to `title` |
 | `type` | page type | Renderer selection, defaults to `doc`, see [page-types.md](/page-types) |
 | `path` | string | Route override, default derived from the file location |
-| `spec` | string | Required when `type: openapi`, path to the spec JSON, relative to the markdown file |
+| `spec` | string | Required when `type: openapi` or `type: dbml`, path to the spec JSON or the `.dbml` file, relative to the markdown file |
 | `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
@@ -87,7 +87,9 @@ Arbitrary object handed to the renderer the page selected.
 
 4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. See [modules.md](/modules).
 
-5. Custom renderers read whatever they need.
+5. `type: dbml` reads nothing from `data`. The schema comes from `spec`. See [dbml.md](/dbml).
+
+6. Custom renderers read whatever they need.
 
 ## Path derivation
 

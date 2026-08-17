@@ -5,7 +5,7 @@ sidebar:
   name: Core
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Ten types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Eleven types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -103,6 +103,21 @@ data:
   parent: ./q2-milestone.md
 ---
 ```
+
+## `dbml`
+
+A full page entity relationship viewer built from one DBML file. `spec` points at the `.dbml` file relative to the markdown file. The markdown body renders as the page header and the interactive diagram fills the rest of the viewport.
+
+```yaml
+---
+title: Bookable schema
+type: dbml
+spec: ./bookable.dbml
+description: Every table the booking api reads and writes.
+---
+```
+
+See [dbml.md](/dbml) for what renders, the inline ` ```dbml ` fence, and the interaction surface.
 
 ## `component`
 

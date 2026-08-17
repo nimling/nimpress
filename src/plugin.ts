@@ -32,6 +32,7 @@ import type {
   SearchEntry,
   SidebarNode
 } from './types'
+import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics } from './modules/schema'
 import { harnessPort } from './modules/harness'
@@ -140,6 +141,7 @@ const frontmatterSchema = z.object({
     z.literal('changelog'),
     z.literal('hero'),
     z.literal('roadmap'),
+    z.literal('dbml'),
     z.literal('milestone'),
     z.literal('epic'),
     z.literal('feature'),
@@ -192,6 +194,9 @@ function frontmatterIssues(data: unknown, body = 'x'): string[] {
   if (fm.type === 'openapi' && !fm.spec) {
     issues.push('type openapi requires a spec field')
   }
+  if (fm.type === 'dbml' && !fm.spec) {
+    issues.push('type dbml requires a spec field')
+  }
   if (fm.type === 'changelog') {
     if (d.version === undefined || String(d.version).trim() === '') issues.push('changelog requires data.version')
     if (d.release_date === undefined || Number.isNaN(new Date(String(d.release_date)).getTime())) {
@@ -233,6 +238,9 @@ interface ProcessedPage {
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
   componentData?: ComponentPageData
+  dbmlSchema?: string
+  dbmlSource?: string
+  dbmlError?: string
 }
 
 interface SubscribeMapEntry {
@@ -490,11 +498,61 @@ function encodeAttr(value: string): string {
     .replace(/>/g, '&gt;')
 }
 
-function rewriteMermaid(source: string): string {
-  return source.replace(/```mermaid\n([\s\S]*?)```/g, (_, body) => {
-    const encoded = Buffer.from(body, 'utf-8').toString('base64')
-    return `<div class="np-mermaid" data-graph="${encoded}"></div>`
-  })
+function mermaidPlaceholder(body: string): string {
+  const encoded = Buffer.from(body, 'utf-8').toString('base64')
+  return `<div class="np-mermaid" data-graph="${encoded}"></div>`
+}
+
+function dbmlPlaceholder(body: string, info: string, file: string): string {
+  const options = info.startsWith('{') ? safeParseJson(info, info) : {}
+  let payload = ''
+  let failure = ''
+  try {
+    payload = dbmlToErdJson(body)
+  } catch (err) {
+    failure = err instanceof DbmlError ? err.message : String(err)
+    console.warn(`[nimpress] invalid dbml in ${file}:\n${failure}`)
+  }
+  const encoded = Buffer.from(payload, 'utf-8').toString('base64')
+  const height = typeof options.height === 'string' ? options.height : ''
+  const attrs = [
+    `data-schema="${encoded}"`,
+    failure ? `data-error="${encodeAttr(failure)}"` : '',
+    height ? `data-height="${encodeAttr(height)}"` : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return `<div class="np-dbml" ${attrs}></div>`
+}
+
+function rewriteDiagramFences(source: string, file: string): string {
+  const lines = source.split('\n')
+  const out: string[] = []
+  let cursor = 0
+  while (cursor < lines.length) {
+    const open = /^(\s*)(`{3,}|~{3,})(.*)$/.exec(lines[cursor])
+    if (!open) {
+      out.push(lines[cursor])
+      cursor += 1
+      continue
+    }
+    const [, indent, marker, rest] = open
+    const closing = new RegExp(`^\\s*\\${marker[0]}{${marker.length},}\\s*$`)
+    let end = cursor + 1
+    while (end < lines.length && !closing.test(lines[end])) end += 1
+    const info = rest.trim()
+    const lang = info.split(/\s+/)[0].toLowerCase()
+    const body = lines.slice(cursor + 1, end).join('\n')
+    if (lang === 'mermaid') {
+      out.push(`${indent}${mermaidPlaceholder(body ? `${body}\n` : body)}`)
+    } else if (lang === 'dbml') {
+      out.push(`${indent}${dbmlPlaceholder(body, info.slice(lang.length).trim(), file)}`)
+    } else {
+      out.push(...lines.slice(cursor, Math.min(end + 1, lines.length)))
+    }
+    cursor = end + 1
+  }
+  return out.join('\n')
 }
 
 function extractInlineText(token: { content?: string; children?: unknown[] } | undefined): string {
@@ -902,7 +960,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const hl = await ensureHighlighter()
     const md = buildMarkdownIt(hl, embedContext())
-    const prepared = rewriteMermaid(content)
+    const prepared = rewriteDiagramFences(content, file)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared)
 
@@ -915,6 +973,26 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         specPath = isAbsolute(fm.spec) ? fm.spec : resolve(dirname(file), fm.spec)
         const raw = await loadSpec(file, fm.spec)
         openApiSpec = raw ? flattenSpecForEmbed(raw, md) ?? undefined : undefined
+      }
+    }
+
+    let dbmlSchema: string | undefined
+    let dbmlSource: string | undefined
+    let dbmlError: string | undefined
+    if (type === 'dbml') {
+      if (!fm.spec) {
+        console.warn(`[nimpress] page ${file} has type dbml but no spec field`)
+      } else {
+        specPath = isAbsolute(fm.spec) ? fm.spec : resolve(dirname(file), fm.spec)
+        try {
+          dbmlSource = await readFile(specPath, 'utf-8')
+          dbmlSchema = dbmlToErdJson(dbmlSource)
+        } catch (err) {
+          dbmlError = err instanceof DbmlError ? err.message : String(err)
+          const detail = `${file} -> ${fm.spec}\n  ${dbmlError}`
+          if (isBuildCommand) throw new Error(`[nimpress] invalid dbml in ${detail}`)
+          console.warn(`[nimpress] invalid dbml in ${detail}`)
+        }
       }
     }
 
@@ -953,7 +1031,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       rawText: content,
       pageCss,
       openApiSpec,
-      componentData
+      componentData,
+      dbmlSchema,
+      dbmlSource,
+      dbmlError
     }
   }
 
@@ -1696,7 +1777,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           openApiSpec: p.openApiSpec,
           changelogEntries: p.changelogEntries,
           roadmapEntries: p.roadmapEntries,
-          componentData: p.componentData
+          componentData: p.componentData,
+          dbmlSchema: p.dbmlSchema,
+          dbmlError: p.dbmlError
         }
         const bodyFile = join(dir, 'body', `${urlSlug(p.slug)}.json`)
         await mkdir(dirname(bodyFile), { recursive: true })
@@ -2141,7 +2224,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             .filter(Boolean)
             .join(' ')
         : ''
-      const body = [baseBody, specBody, roadmapBody, componentBody].filter(Boolean).join(' \n ')
+      const dbmlBody = p.dbmlSource ? p.dbmlSource.replace(/[{}\[\]'"`,]/g, ' ') : ''
+      const body = [baseBody, specBody, roadmapBody, componentBody, dbmlBody].filter(Boolean).join(' \n ')
       out.push({
         slug,
         path: p.effectivePath,
@@ -2318,7 +2402,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       openApiSpec: p.openApiSpec,
       changelogEntries: p.changelogEntries,
       roadmapEntries: p.roadmapEntries,
-      componentData: p.componentData
+      componentData: p.componentData,
+      dbmlSchema: p.dbmlSchema,
+      dbmlError: p.dbmlError
     }
     return `export default ${JSON.stringify(payload)}\n`
   }
@@ -2335,7 +2421,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
   import type { PageBody } from '@nimling/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -2357,6 +2443,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       <RoadmapPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'component'}
       <ComponentPage page={{ ...shell, ...mod.default }} />
+    {:else if shell.type === 'dbml'}
+      <DbmlPage page={{ ...shell, ...mod.default }} />
     {:else}
       <Page page={{ ...shell, ...mod.default }} />
     {/if}

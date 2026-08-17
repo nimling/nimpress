@@ -35,6 +35,12 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.0
         version: 6.43.0
+      '@dbml/core':
+        specifier: ^10.1.0
+        version: 10.1.0
+      '@dineug/erd-editor':
+        specifier: ^3.3.1
+        version: 3.3.1
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -202,6 +208,17 @@ packages:
 
   '@codemirror/view@6.43.0':
     resolution: {integrity: sha512-V7ZCLQO3Jus9hzh2jVCCPW3mO4IBMr43O37PqSUYautJSnnJF41YlgLw21x0fLJTYvJ+Vkm6Gp+qKGH9pltgXA==}
+
+  '@dbml/core@10.1.0':
+    resolution: {integrity: sha512-7Zkxisgo3bOyAAluy7pY4PdMnNNSeeiTve9NVCZVGguV9t5sKgZMowOj12RNWZXvuLIgR59fWM89uEe4KVDv+A==}
+    engines: {node: '>=16'}
+
+  '@dbml/parse@10.1.0':
+    resolution: {integrity: sha512-Yy8Xr5mdUpXxg+gRlD8w7UEpZydLuBrOWpqOxqZw8NEPy84HeT/8vkdjSvj5Fdt0nCoz6vcOHdrXkclrdJ+ruQ==}
+    engines: {node: '>=18'}
+
+  '@dineug/erd-editor@3.3.1':
+    resolution: {integrity: sha512-UTeNC8GEP/0Tj6mtR+Rd1GTR/j0Fr0u0z0WQmlRfSGjztIUTVCrQbfBG/xpTQvHmKDyfHB5SRmArxQceYbMb8w==}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -961,6 +978,10 @@ packages:
   alien-signals@0.4.14:
     resolution: {integrity: sha512-itUAVzhczTmP2U5yX67xVpsbbOiquusbWVyA9N+sy6+r6YVbFkahXvNCeEPWEOMhwDYwbVbGHFkVL03N9I5g+Q==}
 
+  antlr4@4.13.2:
+    resolution: {integrity: sha512-QiVbZhyy4xAZ17UPEuG3YTOt8ZaoeOR1CvEAqrEsDBsOqINslaB147i9xqljZqoyf5S+EUlGStaj+t22LT9MOg==}
+    engines: {node: '>=16'}
+
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
 
@@ -1557,6 +1578,13 @@ packages:
   lodash-es@4.18.1:
     resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
 
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
+
+  luxon@3.7.2:
+    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
+    engines: {node: '>=12'}
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -1660,6 +1688,9 @@ packages:
   package-manager-detector@1.6.0:
     resolution: {integrity: sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA==}
 
+  parsimmon@1.18.1:
+    resolution: {integrity: sha512-u7p959wLfGAhJpSDJVYXoyMCXWYwHia78HhRBWqk7AIbxdmlrfdp5wX0l3xv/iTSH5HvhN9K7o26hwwpgS5Nmw==}
+
   path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
 
@@ -1697,6 +1728,10 @@ packages:
     resolution: {integrity: sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==}
     engines: {node: '>=18'}
     hasBin: true
+
+  pluralize@8.0.0:
+    resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
+    engines: {node: '>=4'}
 
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
@@ -2145,6 +2180,24 @@ snapshots:
       crelt: 1.0.6
       style-mod: 4.1.3
       w3c-keyname: 2.2.8
+
+  '@dbml/core@10.1.0':
+    dependencies:
+      '@dbml/parse': 10.1.0
+      antlr4: 4.13.2
+      lodash: 4.18.1
+      lodash-es: 4.18.1
+      luxon: 3.7.2
+      parsimmon: 1.18.1
+      pluralize: 8.0.0
+
+  '@dbml/parse@10.1.0':
+    dependencies:
+      lodash-es: 4.18.1
+      luxon: 3.7.2
+      pathe: 2.0.3
+
+  '@dineug/erd-editor@3.3.1': {}
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
@@ -2861,6 +2914,8 @@ snapshots:
 
   alien-signals@0.4.14: {}
 
+  antlr4@4.13.2: {}
+
   argparse@1.0.10:
     dependencies:
       sprintf-js: 1.0.3
@@ -3421,6 +3476,10 @@ snapshots:
 
   lodash-es@4.18.1: {}
 
+  lodash@4.18.1: {}
+
+  luxon@3.7.2: {}
+
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -3545,6 +3604,8 @@ snapshots:
 
   package-manager-detector@1.6.0: {}
 
+  parsimmon@1.18.1: {}
+
   path-browserify@1.0.1: {}
 
   path-data-parser@0.1.0: {}
@@ -3578,6 +3639,8 @@ snapshots:
       playwright-core: 1.60.0
     optionalDependencies:
       fsevents: 2.3.2
+
+  pluralize@8.0.0: {}
 
   points-on-curve@0.2.0: {}
 
