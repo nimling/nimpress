@@ -8,7 +8,7 @@
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
-  import DbmlBlock from './DbmlBlock.svelte'
+  import DBMLBlock from './DBMLBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
 
@@ -1597,7 +1597,7 @@
       } catch {}
       const host = document.createElement('div')
       el.replaceWith(host)
-      const instance = mount(DbmlBlock, {
+      const instance = mount(DBMLBlock, {
         target: host,
         props: { schema, error: el.dataset.error ?? '', height: el.dataset.height || '520px' }
       })
@@ -2079,14 +2079,6 @@
     pointer-events: auto;
     z-index: 2;
   }
-  .np-roadmap-spine-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-  }
   .np-roadmap-spine-path {
     fill: none;
     stroke: var(--np-text-muted);
@@ -2101,30 +2093,6 @@
     stroke-linecap: round;
     opacity: 0.85;
   }
-  .np-rm-edge {
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .np-rm-edge-parent-child {
-    stroke: color-mix(in srgb, var(--np-brand) 50%, transparent);
-    stroke-width: 1.4;
-    stroke-dasharray: 3 4;
-    opacity: 0.85;
-  }
-  .np-rm-edge-branch {
-    stroke: color-mix(in srgb, var(--np-text-muted) 75%, transparent);
-    stroke-width: 1.6;
-    stroke-dasharray: 2 6;
-    opacity: 0.9;
-  }
-  .np-rm-edge-child-branch {
-    stroke: color-mix(in srgb, var(--np-text-muted) 45%, transparent);
-    stroke-width: 1;
-    stroke-dasharray: 1 5;
-    opacity: 0.7;
-  }
-
   .np-roadmap-today {
     position: absolute;
     width: 0;
@@ -2174,47 +2142,6 @@
     pointer-events: none;
     line-height: 0;
     filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--np-brand) 30%, transparent));
-  }
-
-  .np-roadmap-marker {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    height: 0;
-    display: flex;
-    align-items: center;
-    pointer-events: auto;
-    text-decoration: none;
-    z-index: 2;
-    white-space: nowrap;
-  }
-  .np-roadmap-marker-line {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 0;
-    border-top: 1px dotted var(--np-border);
-    opacity: 0.9;
-    transition: border-color 0.15s ease, opacity 0.15s ease;
-  }
-  .np-roadmap-marker-label {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--np-text-muted);
-    font-family: var(--np-font-mono);
-    font-size: 10px;
-    letter-spacing: 0.04em;
-    transition: color 0.15s ease;
-  }
-  .np-roadmap-marker-left .np-roadmap-marker-label { right: calc(50% + 28px); }
-  .np-roadmap-marker-right .np-roadmap-marker-label { left: calc(50% + 28px); }
-  .np-roadmap-marker:hover .np-roadmap-marker-label {
-    color: var(--np-brand);
-  }
-  .np-roadmap-marker:hover .np-roadmap-marker-line {
-    border-color: var(--np-brand);
-    opacity: 1;
   }
 
   .np-roadmap-modal-root {

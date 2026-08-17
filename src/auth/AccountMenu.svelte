@@ -3,7 +3,7 @@
   import { startLogin, authConfigured } from './session'
 
   let open = $state(false)
-  let root: HTMLDivElement
+  let root = $state<HTMLDivElement | undefined>(undefined)
 
   const v = $derived($viewer)
   const initial = $derived(

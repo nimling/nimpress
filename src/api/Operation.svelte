@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, getContext } from 'svelte'
+  import { onMount, getContext, untrack } from 'svelte'
   import MethodBadge from './MethodBadge.svelte'
   import ParamRow from './ParamRow.svelte'
   import Schema from './Schema.svelte'
@@ -36,7 +36,7 @@
   const reqSchema = $derived(reqBody?.content?.['application/json']?.schema)
   const responses = $derived(op.responses as Record<string, any> | undefined)
 
-  let expanded = $state(!collapsedDefault)
+  let expanded = $state(untrack(() => !collapsedDefault))
 
   const initialServer = (() => {
     const list = servers ?? []
@@ -82,7 +82,7 @@
       try { localStorage.removeItem(cacheKey) } catch {}
     }
   }
-  const baseState = createTryState(op, initialServer, securitySchemes, getRegistry())
+  const baseState = untrack(() => createTryState(op, initialServer, securitySchemes, getRegistry()))
   const cached = readCached()
   let tryState = $state(cached ? { ...baseState, ...cached } : baseState)
   $effect(() => { writeCached(tryState) })

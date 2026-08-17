@@ -38,9 +38,6 @@ importers:
       '@dbml/core':
         specifier: ^10.1.0
         version: 10.1.0
-      '@dineug/erd-editor':
-        specifier: ^3.3.1
-        version: 3.3.1
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -50,6 +47,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.17
         version: 4.3.0(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      '@xyflow/svelte':
+        specifier: ^1.6.3
+        version: 1.6.3(svelte@5.56.3)
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -216,9 +216,6 @@ packages:
   '@dbml/parse@10.1.0':
     resolution: {integrity: sha512-Yy8Xr5mdUpXxg+gRlD8w7UEpZydLuBrOWpqOxqZw8NEPy84HeT/8vkdjSvj5Fdt0nCoz6vcOHdrXkclrdJ+ruQ==}
     engines: {node: '>=18'}
-
-  '@dineug/erd-editor@3.3.1':
-    resolution: {integrity: sha512-UTeNC8GEP/0Tj6mtR+Rd1GTR/j0Fr0u0z0WQmlRfSGjztIUTVCrQbfBG/xpTQvHmKDyfHB5SRmArxQceYbMb8w==}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -623,6 +620,11 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@svelte-put/shortcut@4.2.0':
+    resolution: {integrity: sha512-hqNLo4yEc++SLgAkZUvuwMxIAsii9qjQtTuzfcYVf3xRxa+0HFcfaWFK7LdU3l+15s9SYVNbPB0qQj9CHFqSuw==}
+    peerDependencies:
+      svelte: ^5.1.0
+
   '@sveltejs/acorn-typescript@1.0.10':
     resolution: {integrity: sha512-4WfKk68eTih+MiJD4fSbxN7E8kVBmTMPWHUPYjvl2N0rMs53YLTT8/YjKU5Dtnz5LqDjl7LEw4U7lXR2W3J5WA==}
     peerDependencies:
@@ -950,6 +952,14 @@ packages:
 
   '@vue/shared@3.5.35':
     resolution: {integrity: sha512-zSbjL7gRXwks2ZQLRGCajBtBXEOXW9Ddhn/HvSdrGkE2dqGnumzW8XtusRrxrE9LvqtiqDXQ+A60Hp6mvdYxfA==}
+
+  '@xyflow/svelte@1.6.3':
+    resolution: {integrity: sha512-JmnTJswUyzJ7wW6aW2DOhm/UFNMIXh3bQF6fKdlBN1Cnqys6cQkUlH6IjDhy8qaEE69yFHJuj3tuNnCcsd+e5g==}
+    peerDependencies:
+      svelte: ^5.25.0
+
+  '@xyflow/system@0.0.80':
+    resolution: {integrity: sha512-ywc3ZqG91brzWrH1WlwMdIX4goOfrpBy6AbLdVSaof/Xx9l138ijIKRExM6EkMro2F+OImGmSiA/WKcXvKVcfA==}
 
   acorn@8.16.0:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
@@ -2197,8 +2207,6 @@ snapshots:
       luxon: 3.7.2
       pathe: 2.0.3
 
-  '@dineug/erd-editor@3.3.1': {}
-
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
 
@@ -2531,6 +2539,10 @@ snapshots:
   '@shikijs/vscode-textmate@10.0.2': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@svelte-put/shortcut@4.2.0(svelte@5.56.3)':
+    dependencies:
+      svelte: 5.56.3
 
   '@sveltejs/acorn-typescript@1.0.10(acorn@8.16.0)':
     dependencies:
@@ -2894,6 +2906,24 @@ snapshots:
       typescript: 5.9.3
 
   '@vue/shared@3.5.35': {}
+
+  '@xyflow/svelte@1.6.3(svelte@5.56.3)':
+    dependencies:
+      '@svelte-put/shortcut': 4.2.0(svelte@5.56.3)
+      '@xyflow/system': 0.0.80
+      svelte: 5.56.3
+
+  '@xyflow/system@0.0.80':
+    dependencies:
+      '@types/d3-drag': 3.0.7
+      '@types/d3-interpolate': 3.0.4
+      '@types/d3-selection': 3.0.11
+      '@types/d3-transition': 3.0.9
+      '@types/d3-zoom': 3.0.8
+      d3-drag: 3.0.0
+      d3-interpolate: 3.0.1
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
 
   acorn@8.16.0: {}
 

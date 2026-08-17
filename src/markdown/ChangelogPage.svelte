@@ -6,7 +6,7 @@
   import RightToc from '../layout/RightToc.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
-  import DbmlBlock from './DbmlBlock.svelte'
+  import DBMLBlock from './DBMLBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
   import Actions from './Actions.svelte'
@@ -112,7 +112,7 @@
         height: el.dataset.height || '520px'
       }
       el.replaceWith(host)
-      const instance = mount(DbmlBlock, { target: host, props })
+      const instance = mount(DBMLBlock, { target: host, props })
       mounted.push({ destroy: () => unmount(instance) })
     }
 

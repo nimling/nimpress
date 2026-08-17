@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => {
               'minisearch',
               'mermaid',
               '@dbml/core',
-              '@dineug/erd-editor',
+              '@xyflow/svelte',
               'path-to-regexp',
               'zod',
               '@nimling/samna-auth-middleware',

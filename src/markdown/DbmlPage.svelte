@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageModule } from '../types'
   import { configStore } from '../framework/configStore'
-  import DbmlBlock from './DbmlBlock.svelte'
+  import DBMLBlock from './DBMLBlock.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -23,7 +23,7 @@
     {/if}
   </header>
   <div class="np-dbml-canvas">
-    <DbmlBlock
+    <DBMLBlock
       schema={page.dbmlSchema ?? ''}
       error={page.dbmlError ?? ''}
       height="100%"

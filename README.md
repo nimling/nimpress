@@ -160,7 +160,7 @@ Pages are sorted by `path`. The file is always written, with an empty `pages` li
 | `just build` | Build the library bundle into `dist/` |
 | `just check` | Run svelte-check and tsc |
 | `just test` | Run the actions go tests, the CLI vitest suite, and the type checks |
-| `just dev` | Run the linked consumer site |
+| `just dev` | Serve this repo's `docs/` with a watching library rebuild |
 | `just deploy` | Patch version bump, tag, and trigger the publish workflow |
 | `just deploy-minor` | Minor version bump and publish |
 | `just deploy-major` | Major version bump and publish |

@@ -6,6 +6,7 @@ import { lintContent } from '../plugin'
 import { lintModules } from '../modules/lint'
 import { cacheDir } from '../config/paths'
 import { walkFiles, hasFlag, finishLint } from './shared'
+import { runBuild } from './site'
 
 const scannedExtensions = ['.ts', '.tsx', '.js', '.mjs', '.vue', '.svelte']
 const resolveSuffixes = ['', '.ts', '.tsx', '.js', '.mjs', '.vue', '.svelte', '/index.ts', '/index.js']
@@ -209,7 +210,6 @@ async function lintBuild(cwd: string, resolved: ResolvedNimpressConfig): Promise
   }
   process.once('SIGINT', onSignal)
   process.once('SIGTERM', onSignal)
-  const { runBuild } = await import('./site')
   try {
     await runBuild(cwd, { ...resolved, paths: { ...resolved.paths, out } })
     return []

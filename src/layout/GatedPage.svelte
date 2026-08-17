@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import Page from '../markdown/Page.svelte'
   import ChangelogPage from '../markdown/ChangelogPage.svelte'
   import HeroPage from '../markdown/HeroPage.svelte'
@@ -12,12 +13,13 @@
 
   let { shell }: { shell: PageShell } = $props()
 
-  setPageMeta(shell)
-  applyPageStyles(shell.path)
+  untrack(() => {
+    setPageMeta(shell)
+    applyPageStyles(shell.path)
+  })
 
-  const bodyUrl = gatedFileUrl(
-    shell.bundle ?? 'default',
-    `body/${shell.slug === '' ? '__root__' : shell.slug}.json`
+  const bodyUrl = untrack(() =>
+    gatedFileUrl(shell.bundle ?? 'default', `body/${shell.slug === '' ? '__root__' : shell.slug}.json`)
   )
   const bodyPromise: Promise<{ default: PageBody }> = gatedFetch(bodyUrl).then(
     async (res: Response) => {

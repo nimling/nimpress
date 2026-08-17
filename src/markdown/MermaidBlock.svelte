@@ -13,7 +13,7 @@
   let panX = $state(0)
   let panY = $state(0)
   let fullscreen = $state(false)
-  let dragging = false
+  let dragging = $state(false)
   let dragStartX = 0
   let dragStartY = 0
   let baseX = 0
@@ -135,6 +135,7 @@
   <div
     class="np-mermaid-viewport"
     class:np-mermaid-dragging={dragging}
+    role="presentation"
     bind:this={viewport}
     onwheel={onWheel}
     onpointerdown={onPointerDown}

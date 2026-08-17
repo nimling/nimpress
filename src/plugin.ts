@@ -34,7 +34,7 @@ import type {
 } from './types'
 import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
-import { flushDiagnostics } from './modules/schema'
+import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
 import { defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig } from './config/load'
@@ -2648,7 +2648,6 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
                 res.end('invalid schema target')
                 return
               }
-              const { parseSchemaText, renderSchemaText } = await import('./modules/schema')
               const form = target.endsWith('.yml') ? ('yml' as const) : ('json' as const)
               const parsed = parseSchemaText(await readFile(target, 'utf-8'), form)
               for (const [name, value] of Object.entries(body.defaults ?? {})) {

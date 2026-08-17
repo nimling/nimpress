@@ -5,6 +5,7 @@ import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { resolveComponentSource } from './resolve'
 import { collectComponentPages } from './pages'
 import { readComponentStories } from './stories'
+import { parseSourceSchema, writeComponentSchema } from './schema'
 
 function detectFramework(componentFile: string): ModuleFramework | null {
   const ext = extname(componentFile)
@@ -112,7 +113,6 @@ import { ${component} } from "${pkg ?? system}";
   const source = resolveComponentSource(cwd, resolved.modules, system, component)
   if (source) {
     const framework = frameworkFlag ?? detectFramework(source.componentFile) ?? systemConfig.framework
-    const { parseSourceSchema, writeComponentSchema } = await import('./schema')
     await writeComponentSchema(dir, component, await parseSourceSchema(source.componentFile, framework, component))
     await generateAutoStory(cwd, resolved, system, component, frameworkFlag)
   } else {

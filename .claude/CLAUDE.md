@@ -40,7 +40,7 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 2. `just build` — `vite build --mode library`, emits `dist/nimpress.es.js`, `dist/plugin.es.js`, `dist/tailwind.preset.js`, `dist/style.css`, and `dist/*.d.ts`.
 
-3. `just dev` — runs the linked consumer site.
+3. `just dev` — serves this repo's own `docs/` against the built `dist/`, rebuilding the library on every source change and reloading the page. Set `NIMPRESS_CONSUMER=../docs` to point it at a linked consumer site instead. Needs `just build` to have run once.
 
 4. `just bump` — patch bump via sbump and push tag.
 
@@ -60,7 +60,7 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 7. Token names stay stable. Add new ones, do not rename.
 
-8. Heavy browser side renderers load through a dynamic import inside the component that owns them, never a static import from shared code. `mermaid` and `@dineug/erd-editor` both follow this.
+8. Heavy browser side renderers load through a dynamic import inside the component that owns them, never a static import from shared code. `mermaid` and `@xyflow/svelte` both follow this.
 
 ## Never
 

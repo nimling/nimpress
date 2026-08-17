@@ -1,19 +1,29 @@
 import { createServer, mergeConfig } from 'vite'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
-import { realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { loadNimpressConfig, buildViteConfig } from '../dist/cli.es.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
-const consumer = path.resolve(root, process.env.NIMPRESS_CONSUMER ?? '../docs')
+const consumer = path.resolve(root, process.env.NIMPRESS_CONSUMER ?? '.')
 const distDir = path.join(root, 'dist')
 
-let linked = false
-try {
-  linked = realpathSync(path.join(consumer, 'node_modules/@nimling/nimpress')) === root
-} catch {}
+if (!existsSync(path.join(distDir, 'cli.es.js'))) {
+  console.error('nimpress dev: dist is missing, run just build first')
+  process.exit(1)
+}
+
+const { loadNimpressConfig, buildViteConfig } = await import(
+  path.join(distDir, 'cli.es.js')
+)
+
+let linked = consumer === root
+if (!linked) {
+  try {
+    linked = realpathSync(path.join(consumer, 'node_modules/@nimling/nimpress')) === root
+  } catch {}
+}
 
 process.chdir(consumer)
 

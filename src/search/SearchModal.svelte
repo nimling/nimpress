@@ -182,14 +182,15 @@
 
 <div
   class="np-search-backdrop"
-  onclick={onClose}
+  onclick={(e) => { if (e.target === e.currentTarget) onClose() }}
   role="presentation"
 >
   <div
     class="np-search-modal"
     role="dialog"
+    aria-modal="true"
     aria-label="Search"
-    onclick={(e) => e.stopPropagation()}
+    tabindex="-1"
   >
     <div class="np-search-head">
       <span class="np-search-icon" aria-hidden="true">⌕</span>

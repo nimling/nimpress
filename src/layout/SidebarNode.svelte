@@ -3,13 +3,14 @@
   import { viewer } from '../framework/stores/viewer'
   import { viewerCanAccess } from '../auth/guard'
   import { resolvedRoute } from 'sly-svelte-location-router'
-  import type { SidebarNode } from '../types'
+  import SidebarNode from './SidebarNode.svelte'
+  import type { SidebarNode as SidebarNodeType } from '../types'
 
   let {
     node,
     depth = 0,
     groupKey
-  }: { node: SidebarNode; depth?: number; groupKey: string } = $props()
+  }: { node: SidebarNodeType; depth?: number; groupKey: string } = $props()
 
   const route = $derived($resolvedRoute)
   const stored = $derived($sidebarState[groupKey])
@@ -53,7 +54,7 @@
           <ul class="np-items">
             {#each node.items! as child, i (child.link ?? child.slug ?? `${groupKey}-${i}`)}
               <li>
-                <svelte:self node={child} depth={depth + 1} groupKey={`${groupKey}/${child.link ?? child.slug ?? `i${i}`}`} />
+                <SidebarNode node={child} depth={depth + 1} groupKey={`${groupKey}/${child.link ?? child.slug ?? `i${i}`}`} />
               </li>
             {/each}
           </ul>
@@ -85,7 +86,7 @@
         <ul class="np-subitems">
           {#each node.items! as child, i (child.link ?? child.slug ?? `${groupKey}-${i}`)}
             <li>
-              <svelte:self node={child} depth={depth + 1} groupKey={`${groupKey}/${child.link ?? child.slug ?? `i${i}`}`} />
+              <SidebarNode node={child} depth={depth + 1} groupKey={`${groupKey}/${child.link ?? child.slug ?? `i${i}`}`} />
             </li>
           {/each}
         </ul>

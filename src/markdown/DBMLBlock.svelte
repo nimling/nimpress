@@ -2,6 +2,8 @@
   import { onMount } from 'svelte'
   import { theme } from '../framework/stores/theme'
   import FullscreenIcon from '../icons/FullscreenIcon.svelte'
+  import type { ErdDiagram } from '../dbml/erd'
+  import '@xyflow/svelte/dist/style.css'
 
   let {
     schema,
@@ -11,45 +13,65 @@
   }: { schema: string; error?: string; height?: string; activateOnMount?: boolean } = $props()
 
   let wrapper: HTMLDivElement
-  let host = $state<HTMLDivElement | undefined>(undefined)
-  let editor: HTMLElement | null = null
   let fullscreen = $state(false)
-  let buildFailure = $state('')
   let activated = $state(false)
+  let buildFailure = $state('')
+  let flow = $state<Record<string, any> | null>(null)
+  let nodeTypes = $state.raw<Record<string, any>>({})
+  let nodes = $state.raw<any[]>([])
+  let edges = $state.raw<any[]>([])
+  let tableCount = $state(0)
 
   const active = $derived(activateOnMount || activated)
   const failure = $derived(error || buildFailure)
+  const colorMode = $derived($theme === 'dark' ? 'dark' : 'light')
+  const Flow = $derived(flow?.SvelteFlow)
+  const Background = $derived(flow?.Background)
+  const Controls = $derived(flow?.Controls)
+  const MiniMap = $derived(flow?.MiniMap)
 
   async function build() {
-    if (!host || editor || error) return
+    if (error || flow) return
     try {
-      await import('@dineug/erd-editor')
-      await customElements.whenDefined('erd-editor')
-      const element = document.createElement('erd-editor') as HTMLElement & {
-        readonly: boolean
-        setInitialValue: (value: string) => void
-        setPresetTheme: (options: Record<string, string>) => void
-        destroy: () => void
-      }
-      element.style.cssText = 'display:block;width:100%;height:100%'
-      host.appendChild(element)
-      element.setInitialValue(schema)
-      element.readonly = true
-      editor = element
-      applyTheme()
+      const diagram = JSON.parse(schema) as ErdDiagram
+      const [module, table, note] = await Promise.all([
+        import('@xyflow/svelte'),
+        import('./DbmlTable.svelte'),
+        import('./DbmlNote.svelte')
+      ])
+      nodeTypes = { table: table.default, note: note.default }
+      tableCount = diagram.tables.length
+      nodes = [
+        ...diagram.tables.map((entry) => ({
+          id: entry.id,
+          type: 'table',
+          position: { x: entry.x, y: entry.y },
+          width: entry.width,
+          data: entry
+        })),
+        ...diagram.notes.map((entry) => ({
+          id: entry.id,
+          type: 'note',
+          position: { x: entry.x, y: entry.y },
+          width: entry.width,
+          data: entry
+        }))
+      ]
+      edges = diagram.edges.map((entry) => ({
+        id: entry.id,
+        source: entry.source,
+        target: entry.target,
+        sourceHandle: entry.sourceHandle,
+        targetHandle: entry.targetHandle,
+        type: 'default',
+        markerEnd: entry.many
+          ? { type: module.MarkerType.ArrowClosed, width: 14, height: 14 }
+          : undefined
+      }))
+      flow = module
     } catch (err) {
       buildFailure = String(err)
     }
-  }
-
-  function applyTheme() {
-    const element = editor as (HTMLElement & { setPresetTheme: (o: Record<string, string>) => void }) | null
-    if (!element?.setPresetTheme) return
-    element.setPresetTheme({
-      appearance: $theme === 'dark' ? 'dark' : 'light',
-      grayColor: 'slate',
-      accentColor: 'bronze'
-    })
   }
 
   async function toggleFullscreen() {
@@ -76,15 +98,7 @@
     return () => {
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('fullscreenchange', onFsChange)
-      const element = editor as (HTMLElement & { destroy: () => void }) | null
-      element?.destroy?.()
-      editor = null
     }
-  })
-
-  $effect(() => {
-    $theme
-    applyTheme()
   })
 </script>
 
@@ -97,9 +111,33 @@
   {#if failure}
     <pre class="np-dbml-error">{failure}</pre>
   {:else}
-    <div class="np-dbml-host" bind:this={host}></div>
+    <div class="np-dbml-host">
+      {#if Flow}
+        <Flow
+          bind:nodes
+          bind:edges
+          {nodeTypes}
+          {colorMode}
+          fitView
+          fitViewOptions={{ padding: 0.16, maxZoom: 1 }}
+          minZoom={0.12}
+          maxZoom={2}
+          nodesConnectable={false}
+          edgesFocusable={false}
+          zoomOnScroll={active}
+          preventScrolling={active}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background gap={22} size={1} />
+          <Controls showLock={false} position="top-left" />
+          {#if tableCount > 3}
+            <MiniMap pannable zoomable position="bottom-right" width={150} height={92} />
+          {/if}
+        </Flow>
+      {/if}
+    </div>
     {#if active}
-      <p class="np-dbml-hint">drag empty canvas or scroll to pan · ctrl scroll to zoom · minimap to jump</p>
+      <p class="np-dbml-hint">drag to pan · drag a table to move it · scroll to zoom</p>
     {:else}
       <button class="np-dbml-shield" type="button" onclick={() => (activated = true)}>
         <span class="np-dbml-shield-label">click to explore the schema</span>
@@ -119,7 +157,7 @@
     margin: 16px 0;
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-md);
-    background-color: var(--np-bg-surface);
+    background-color: var(--np-bg);
     overflow: hidden;
     height: var(--np-dbml-height, 520px);
   }
@@ -132,6 +170,48 @@
   .np-dbml-host {
     position: absolute;
     inset: 0;
+  }
+  .np-dbml-host :global(.svelte-flow) {
+    --xy-background-color: var(--np-bg);
+    --xy-background-pattern-color: var(--np-divider);
+    --xy-edge-stroke: var(--np-border-strong);
+    --xy-edge-stroke-selected: var(--np-brand);
+    --xy-edge-stroke-width: 1.5;
+    --xy-controls-button-background-color: var(--np-bg-surface);
+    --xy-controls-button-background-color-hover: var(--np-table-row-hover);
+    --xy-controls-button-color: var(--np-text-secondary);
+    --xy-controls-button-color-hover: var(--np-brand);
+    --xy-controls-button-border-color: var(--np-border);
+    --xy-minimap-background-color: var(--np-bg-surface);
+    --xy-minimap-mask-background-color: color-mix(in srgb, var(--np-bg) 62%, transparent);
+    --xy-minimap-node-background-color: var(--np-border-strong);
+    background-color: var(--np-bg);
+  }
+  .np-dbml-host :global(.svelte-flow__node) {
+    font-family: var(--np-font-sans);
+  }
+  .np-dbml-host :global(.svelte-flow__node.selected .np-erd-table) {
+    border-color: var(--np-brand);
+    box-shadow: 0 0 0 2px var(--np-brand-soft);
+  }
+  .np-dbml-host :global(.svelte-flow__edge-path) {
+    stroke: var(--np-border-strong);
+  }
+  .np-dbml-host :global(.svelte-flow__edge.selected .svelte-flow__edge-path),
+  .np-dbml-host :global(.svelte-flow__edge:hover .svelte-flow__edge-path) {
+    stroke: var(--np-brand);
+    stroke-width: 2;
+  }
+  .np-dbml-host :global(.svelte-flow__arrowhead polyline) {
+    stroke: var(--np-border-strong);
+    fill: var(--np-border-strong);
+  }
+  .np-dbml-host :global(.svelte-flow__controls),
+  .np-dbml-host :global(.svelte-flow__minimap) {
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-sm);
+    box-shadow: var(--np-shadow-card);
+    overflow: hidden;
   }
   .np-dbml-error {
     margin: 0;
@@ -149,7 +229,7 @@
   .np-dbml-shield {
     position: absolute;
     inset: 0;
-    z-index: 3;
+    z-index: 6;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -183,9 +263,10 @@
   .np-dbml-hint {
     position: absolute;
     bottom: 10px;
-    left: 12px;
+    left: 50%;
+    transform: translateX(-50%);
     margin: 0;
-    z-index: 2;
+    z-index: 5;
     padding: 3px 8px;
     border-radius: var(--np-radius-sm);
     background-color: color-mix(in srgb, var(--np-bg-surface) 88%, transparent);
@@ -196,7 +277,7 @@
   }
   .np-dbml-toolbar {
     position: absolute;
-    bottom: 8px;
+    top: 8px;
     right: 8px;
     display: flex;
     gap: 4px;
@@ -204,7 +285,7 @@
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-sm);
     padding: 4px;
-    z-index: 2;
+    z-index: 5;
   }
   .np-dbml-toolbar button {
     width: 28px;

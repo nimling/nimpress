@@ -93,26 +93,26 @@ The `.dbml` file is copied into the build output beside the page, so readers can
 
 An inline diagram starts inert behind a `click to explore the schema` shield, so scrolling the page past it never gets captured. Clicking the shield hands the frame the pointer and reveals a gesture hint along the bottom edge. A `type: dbml` page skips the shield; the diagram is the page.
 
-The frame is read only, which shapes the gestures:
+The gestures:
 
-1. Drag empty canvas to pan. Dragging a table does nothing, because moving a table is an edit.
+1. Drag empty canvas to pan.
 
-2. Scroll to pan vertically, shift scroll to pan horizontally, ctrl scroll or cmd scroll to zoom.
+2. Drag a table to move it. The move is view only and is never written back to the `.dbml` file.
 
-3. Drag the viewport box in the minimap, or click anywhere in the minimap, to jump across a wide schema.
+3. Scroll to zoom, or use the zoom in, zoom out, and fit buttons in the top left corner.
 
-4. Drag the thin scrollbars along the right and bottom edges of the frame.
+4. Drag the viewport box in the minimap, or click anywhere in the minimap, to jump across a wide schema.
 
-5. Hold space for the grab cursor.
+5. Click a relationship line or a table to highlight it.
 
-The toolbar switches between the diagram, a force graph visualization, and the generated SQL for the database vendor the schema declares. The fullscreen button sits in the bottom right corner of the frame.
+The fullscreen button sits in the top right corner of the frame.
 
 ## Theme
 
-The diagram follows the site theme. Switching between light and dark repaints the canvas without a reload.
+The diagram follows the site theme. Every table card, column row, and relationship line reads its colors from `tokens.css`, so a site that overrides the tokens gets a diagram in its own palette, and switching between light and dark repaints the canvas without a reload.
 
 ## How it works
 
-The plugin parses the DBML with `@dbml/core` at build time and emits the diagram model into the page payload, so the browser never parses DBML. At runtime the page mounts `DbmlBlock`, which lazily imports the `@dineug/erd-editor` custom element and hands it the model.
+The plugin parses the DBML with `@dbml/core` at build time, converts it into tables, columns, relationships, notes, and their positions, and emits that model into the page payload, so the browser never parses DBML. At runtime the page mounts `DBMLBlock`, which lazily imports `@xyflow/svelte` and the two node components and renders the model as a canvas.
 
 An invalid schema fails the build with the line and column of the first diagnostic. In dev it prints the same diagnostic and renders it in the frame.

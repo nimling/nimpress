@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
 
   let {
     seed,
@@ -21,7 +21,7 @@
     strokeWidth?: number
   } = $props()
 
-  const clipId = `np-blob-clip-${seed.replace(/[^a-zA-Z0-9]/g, '-')}`
+  const clipId = untrack(() => `np-blob-clip-${seed.replace(/[^a-zA-Z0-9]/g, '-')}`)
 
   let host: HTMLDivElement
   let measuredW = $state(320)

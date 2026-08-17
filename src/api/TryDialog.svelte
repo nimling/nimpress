@@ -29,7 +29,7 @@
   let tryStates = $state<Record<string, TryState>>({})
   let suppressUrlUpdate = false
   let dropdownOpen = $state(false)
-  let dropdownEl: HTMLDivElement | null = null
+  let dropdownEl = $state<HTMLDivElement | null>(null)
   let rightTab = $state<'body' | 'response'>('body')
   let response = $state<{ status: number | null; body: string; error: string | null; sending: boolean }>({
     status: null,
@@ -293,8 +293,8 @@
 </script>
 
 {#if open && selectedOp}
-  <div use:portal class="np-try-backdrop" role="dialog" aria-modal="true" onclick={onBackdrop}>
-    <div class="np-try-dialog">
+  <div use:portal class="np-try-backdrop" role="presentation" onclick={onBackdrop}>
+    <div class="np-try-dialog" role="dialog" aria-modal="true" aria-label="Try it" tabindex="-1">
       <header class="np-try-dialog-head np-try-dialog-head-actions">
         <span class="np-try-dialog-title">Try it</span>
         <div class="np-try-dialog-actions">

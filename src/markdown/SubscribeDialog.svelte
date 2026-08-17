@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { configStore } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { subscribeFeed, subscribeConfigured } from '../subscribe/subscribe'
@@ -30,7 +31,7 @@
   let sendState = $state<'idle' | 'sending' | 'done' | 'failed'>('idle')
   let copied = $state(false)
   let failure = $state('')
-  let email = $state(v.authenticated ? v.email ?? '' : '')
+  let email = $state(untrack(() => (v.authenticated ? v.email ?? '' : '')))
 
   function onKey(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -59,12 +60,17 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="np-subscribe-backdrop" onclick={onClose} role="presentation">
+<div
+  class="np-subscribe-backdrop"
+  onclick={(e) => { if (e.target === e.currentTarget) onClose() }}
+  role="presentation"
+>
   <div
     class="np-subscribe-modal"
     role="dialog"
+    aria-modal="true"
     aria-label="Subscribe"
-    onclick={(e) => e.stopPropagation()}
+    tabindex="-1"
   >
     <div class="np-subscribe-head">
       <span class="np-subscribe-title">Subscribe to {title}</span>

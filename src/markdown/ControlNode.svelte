@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import type { ControlSpec } from '../types'
   import { isFnValue, type MockFnValue } from '../mock'
   import { mockValue } from '../modules/parse/typeMembers'
@@ -26,7 +27,7 @@
     onrename?: (next: string) => void
   } = $props()
 
-  let jsonDraft = $state(value === undefined ? '' : JSON.stringify(value, null, 2))
+  let jsonDraft = $state(untrack(() => (value === undefined ? '' : JSON.stringify(value, null, 2))))
   let jsonError = $state(false)
   let inputOpen = $state(true)
 

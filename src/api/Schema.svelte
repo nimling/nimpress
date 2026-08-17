@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from 'svelte'
+  import { getContext, untrack } from 'svelte'
   import Schema from './Schema.svelte'
   import { SCHEMAS_CONTEXT, resolveRef, leafSchema, describeSchema, type SchemaRegistry } from './refs'
 
@@ -16,7 +16,7 @@
   const meta = $derived(describeSchema(schema, reg))
   const properties = $derived(leafSchema(schema, reg)?.properties as Record<string, unknown> | undefined)
 
-  let expanded = $state(depth < 1)
+  let expanded = $state(untrack(() => depth < 1))
 </script>
 
 <div class="np-schema">
