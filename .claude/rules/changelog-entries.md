@@ -224,6 +224,6 @@ The reader cares that the docs Try-It and the response panels show meaningful bo
 
 2. Each entry is a row of `[version pill] [data.title] [chevron]`. Clicking the row expands the body.
 
-3. The first entry expands by default. A direct hash like `/path#v1.4.2` expands that entry and scrolls to it.
+3. Every entry starts collapsed. A direct hash like `/path#v1.4.2` expands that entry and scrolls to it.
 
 4. The right rail TOC lists every version as a level 2 heading. The left sidebar adds one child entry per version under the collection page, each pointing at the hash anchor.

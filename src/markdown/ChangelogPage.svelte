@@ -61,7 +61,7 @@
   function isOpen(e: ChangelogEntry, i: number): boolean {
     const k = keyOf(e, i)
     if (k in openMap) return openMap[k]
-    return true
+    return k === hashSlug
   }
 
   function toggle(e: ChangelogEntry, i: number) {
@@ -229,6 +229,7 @@
   $effect(() => {
     page.slug
     openMap
+    hashSlug
     void hydrate()
   })
 </script>

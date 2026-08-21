@@ -13,20 +13,25 @@
     const loaders = config.pageLoader ?? {}
     const routes: Routes = {}
 
+    function assign(path: string, value: Routes[string]): void {
+      routes[path] = value
+      if (path.length > 1 && path.endsWith('/')) routes[path.slice(0, -1)] = value
+    }
+
     for (const [slug, meta] of Object.entries(pages)) {
       if (meta.redirect) {
-        routes[withBase(meta.path)] = withBase(meta.redirect)
+        assign(withBase(meta.path), withBase(meta.redirect))
         continue
       }
       const loader = loaders[slug]
       if (!loader) continue
-      routes[withBase(meta.path)] = {
+      assign(withBase(meta.path), {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
           ? pageGuard({ gate: meta.gate })
           : undefined
-      }
+      })
     }
 
     for (const [path, slug] of Object.entries(config.manifest?.byPath ?? {})) {
@@ -34,20 +39,20 @@
       const meta = pages[slug]
       const loader = loaders[slug]
       if (!meta || meta.redirect || !loader) continue
-      routes[withBase(path)] = {
+      assign(withBase(path), {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
           ? pageGuard({ gate: meta.gate })
           : undefined
-      }
+      })
     }
 
     if (!routes[withBase('/')]) {
-      routes[withBase('/')] = {
+      assign(withBase('/'), {
         name: 'home',
         component: () => Promise.resolve({ default: HomePage })
-      }
+      })
     }
 
     return routes

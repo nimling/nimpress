@@ -1,6 +1,6 @@
 ---
 title: Page types
-order: 3
+order: 19
 ---
 
 Every markdown file selects a renderer through the `type` frontmatter field. Eleven types exist. Omit the field and the page is a `doc`.
