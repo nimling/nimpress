@@ -21,3 +21,7 @@ Every heavy renderer loads through a dynamic import inside the component that ow
 ## Adding your own
 
 The renderers are components, not a plugin surface. A site that needs a shape nimpress does not ship writes it as a Svelte component and mounts it through a component page, described in [Component modules](/modules).
+
+## Restyling a renderer
+
+The diagram cards, the reference surface, and the inline component frame are all nimpress markup styled from tokens, so a site can restyle any of them. See [Renderers styling](/styling/renderers).

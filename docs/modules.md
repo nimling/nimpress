@@ -210,3 +210,7 @@ The system rides along as `--system=<name>` on every subcommand and is required 
 1. Build output is fully static: the site plus `dist/_components/<system>/` per system, same paths as dev, no server required.
 
 2. Component pages gate like any page: `gate` in frontmatter moves the page into the guarded bundle flow, and the harness bundles deploy with the site.
+
+## Restyling the workshop
+
+The toolbar, the frame, the props panel, and the console carry documented classes. See [Page types styling](/styling/page-types).

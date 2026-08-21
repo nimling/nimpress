@@ -6,6 +6,21 @@ import { fileURLToPath } from 'node:url'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+function cascadeLayer(name: string) {
+  return {
+    name: 'nimpress:cascade-layer',
+    enforce: 'post' as const,
+    generateBundle(_options: unknown, bundle: Record<string, any>) {
+      for (const asset of Object.values(bundle)) {
+        if (asset.type !== 'asset' || !asset.fileName.endsWith('.css')) continue
+        const css = String(asset.source)
+        if (css.startsWith(`@layer ${name}`)) continue
+        asset.source = `@layer ${name} {\n${css}\n}\n`
+      }
+    }
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const isLibrary = mode === 'library'
 
@@ -19,6 +34,7 @@ export default defineConfig(({ mode }) => {
       }),
       ...(isLibrary
         ? [
+            cascadeLayer('nimpress'),
             dts({
               root: path.resolve(dirname),
               outDir: path.resolve(dirname, 'dist'),

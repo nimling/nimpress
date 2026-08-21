@@ -24,6 +24,16 @@ If none of those apply, keep the literal value in the component.
 
 3. The class set on rendered chrome is the public API. Renames go through a major version bump.
 
+## The cascade layer
+
+Every stylesheet the library build emits is wrapped in `@layer nimpress` by the `nimpress:cascade-layer` plugin in `vite.config.ts`. An unlayered consumer rule therefore beats any nimpress rule regardless of specificity, so a plain `.np-card { }` wins against the scoped `.np-card.svelte-hash` nimpress ships.
+
+1. Never write `!important` in library CSS or tell a consumer to. The layer already puts them ahead.
+
+2. Never wrap consumer facing output in a layer. Page stylesheets are injected as raw `<style>` elements by `src/framework/pageStyles.ts` and must stay unlayered.
+
+3. The class set on rendered chrome is the public override surface, documented per area under `docs/styling/`. Adding a class to a component means adding it there in the same change.
+
 ## Overrides from consumers
 
 Consumers override Nimpress styles by:
@@ -59,3 +69,5 @@ No spacing token system. Spacing is per component. Keep values to multiples of 4
 3. Do not introduce a CSS in JS library. Svelte's scoped `<style>` is the carrier.
 
 4. Do not add `!important`. If you reach for it, the cascade is fighting your structure, fix the structure.
+
+5. Do not remove the cascade layer wrap. Without it the documented class surface is not overridable and the styling docs become a lie.

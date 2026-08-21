@@ -141,3 +141,7 @@ See [modules.md](/modules) for systems, stories, controls, the harness, and the 
 ## Grouping and duplicate routes
 
 Pages of type `changelog` are grouped by `(parent folder, title)` and collapse into one collection page mounted at the folder's route. Pages of any other type that share an effective route raise a build error, so duplicate routes never reach the runtime.
+
+## Restyling a page type
+
+Every page type renders its chrome through documented classes you can override from your own stylesheet. See [Page types styling](/styling/page-types).

@@ -40,3 +40,7 @@ MiniSearch defaults with prefix matching enabled. Title and headings carry highe
 2. The corpus is rebuilt every time markdown changes, so HMR keeps it fresh during local development.
 
 3. Stop word lists and stemmers are MiniSearch defaults. Customize through the `buildIndex` options if your domain needs it.
+
+## Restyling search
+
+The trigger, the modal, and every result row carry documented classes. See [Search styling](/styling/search).

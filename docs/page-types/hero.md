@@ -71,3 +71,7 @@ Tokens overridable in your own CSS.
 ## Where to use
 
 The recommended landing pages: home, Solutions, Tools, Libraries, API. Any page that opens a new area of the docs is a hero candidate.
+
+## Restyling the band
+
+The band, the eyebrow, the tagline, the lead, and the art all carry documented classes. See [Page types styling](/styling/page-types).

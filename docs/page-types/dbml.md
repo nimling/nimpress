@@ -64,3 +64,7 @@ The diagram itself, what the converter maps from DBML, how the tables are laid o
 ## See it
 
 [Schema viewer](/examples/schema-viewer) is a working page with the band, the buttons, and a schema worth panning around.
+
+## Restyling the page
+
+The band, the buttons, and the diagram canvas carry documented classes. See [Page types styling](/styling/page-types) and [Renderers styling](/styling/renderers).

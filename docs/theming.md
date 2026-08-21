@@ -73,3 +73,7 @@ createNimpressApp({
 ## Tailwind preset
 
 `@nimtech/nimpress/tailwind` exports a preset matching the token palette. Extend it in your `tailwind.config.ts` to author utilities that match the framework chrome.
+
+## Overriding a class
+
+When a token cannot express the change, target the class instead. Everything nimpress ships sits in the `nimpress` cascade layer, so a plain rule in your own stylesheet wins without `!important`. The complete class reference, 529 of them grouped by area, is in [Styling](/styling).

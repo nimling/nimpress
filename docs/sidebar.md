@@ -77,3 +77,7 @@ Any `type: openapi` page adds one child entry per spec tag. Each tag link is `<p
 ## Changelog version entries
 
 Any `type: changelog` collection page adds one child entry per release. Each entry's text is `v<version>` and the link is `<page path>#v<version>`. Clicking the sidebar entry navigates to the collection page and expands that release, scrolling it into view via the same hash routing the right rail TOC uses.
+
+## Restyling the sidebar
+
+Every row, group header, chevron, and icon carries a documented class. See [Shell styling](/styling/shell).

@@ -64,3 +64,7 @@ Each operation card has a left column with the description, parameters, request 
 ## Schemas
 
 Schemas render with a compact tree of property rows including type, format, required flag, and rendered description. Nested objects expand inline.
+
+## Restyling the reference
+
+Every card, badge, table, and panel carries a documented class. See [Renderers styling](/styling/renderers).

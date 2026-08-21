@@ -61,3 +61,7 @@ Authors maintain one markdown file per release in version control. The reader se
 ## Reserved fields
 
 `data.version`, `data.title`, and `data.description` are read by the renderer. Anything else under `data` is ignored by the renderer but available to consumers reading frontmatter from the page module.
+
+## Restyling the entries
+
+The hero, each entry row, the version pill, and the expanded body carry documented classes. See [Page types styling](/styling/page-types).
