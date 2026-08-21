@@ -19,6 +19,11 @@
     stored !== undefined ? !stored : node.collapsed === false
   )
   const isGroup = $derived(!!(node.items && node.items.length))
+  const anchorChildren = $derived(
+    !!node.link &&
+      !!node.items?.length &&
+      node.items.every((child) => (child.link ?? '').startsWith(`${node.link}#`))
+  )
   const v = $derived($viewer)
   const visible = $derived(
     viewerCanAccess({ gate: node.gate }, v)
@@ -35,7 +40,7 @@
 
 {#if visible}
   {#if isGroup}
-    {#if depth === 0}
+    {#if depth === 0 && !anchorChildren}
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}

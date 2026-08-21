@@ -1,9 +1,7 @@
 ---
 title: Getting started
 description: Install nimpress, write a config, run the CLI, and deploy the built site.
-order: 0
-sidebar:
-  name: Core
+order: 2
 ---
 
 Nimpress turns a folder of markdown into a docs site. A site needs one config file and the `nimpress` CLI. The CLI owns Vite, so there is no build to wire by hand.

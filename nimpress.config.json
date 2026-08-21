@@ -1,5 +1,6 @@
 {
   "title": "Nimpress",
+  "logo": "/assets/logo.svg",
   "github": "https://github.com/nimling/nimpress",
   "base": "/nimpress/",
   "contentDir": "docs",

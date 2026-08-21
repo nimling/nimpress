@@ -1,8 +1,6 @@
 ---
 title: Mermaid
-order: 3
-sidebar:
-  name: Authoring
+order: 24
 ---
 
 Fenced ` ```mermaid ` blocks render through the bundled `MermaidBlock` component.

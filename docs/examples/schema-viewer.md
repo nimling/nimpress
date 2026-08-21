@@ -1,10 +1,8 @@
 ---
 title: Schema viewer
 type: dbml
-spec: ./dbml-example.dbml
-order: 11
-sidebar:
-  name: Authoring
+spec: ./schema.dbml
+order: 32
 description: A live type dbml page showing a trimmed booking schema.
 data:
   eyebrow: Database

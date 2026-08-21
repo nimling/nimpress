@@ -1,6 +1,6 @@
 ---
 title: Auth
-order: 2
+order: 51
 sidebar:
   name: Pipeline
 ---

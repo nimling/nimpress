@@ -1,6 +1,6 @@
 ---
 title: Component modules
-order: 1
+order: 40
 sidebar:
   name: Components
 ---

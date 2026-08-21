@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageBody, PageShell } from '../types'
+  import { withBase } from '../framework/configStore'
   import Page from './Page.svelte'
 
   let {
@@ -31,13 +32,13 @@
   class:np-hero-side={sideBySide}
 >
   {#if banner}
-    <div class="np-hero-banner" style:background-image={`url('${banner}')`}></div>
+    <div class="np-hero-banner" style:background-image={`url('${withBase(banner)}')`}></div>
   {/if}
 
   <div class="np-hero-inner">
     <div class="np-hero-copy">
       {#if logo}
-        <img class="np-hero-logo" src={logo} alt="" />
+        <img class="np-hero-logo" src={withBase(logo)} alt="" />
       {/if}
       {#if eyebrow}
         <p class="np-hero-eyebrow">{eyebrow}</p>

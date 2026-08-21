@@ -55,11 +55,11 @@
 <div class="np-dbml-page">
   <header class={`np-dbml-head np-dbml-head-${align}`} class:has-banner={!!banner}>
     {#if banner}
-      <div class="np-dbml-banner" style:background-image={`url('${banner}')`}></div>
+      <div class="np-dbml-banner" style:background-image={`url('${withBase(banner)}')`}></div>
     {/if}
     <div class="np-dbml-head-inner">
       {#if logo}
-        <img class="np-dbml-logo" src={logo} alt="" />
+        <img class="np-dbml-logo" src={withBase(logo)} alt="" />
       {/if}
       {#if eyebrow}
         <p class="np-dbml-eyebrow">{eyebrow}</p>

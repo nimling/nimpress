@@ -18,7 +18,7 @@
   const entries = $derived<RoadmapEntry[]>(page.roadmapEntries ?? [])
   const config = $derived($configStore)
   const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
-  const background = $derived(page.frontmatter.background)
+  const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
 
   let container: HTMLElement
@@ -1681,7 +1681,7 @@
 </script>
 
 {#if renderBackground}
-  <div class="np-page-background" style:background-image={`url('${background}')`}></div>
+  <div class="np-page-background" style:background-image={`url('${withBase(background)}')`}></div>
 {/if}
 <div class="np-page-shell np-roadmap-shell">
   <div class="np-page np-roadmap-page">

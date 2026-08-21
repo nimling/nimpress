@@ -41,7 +41,7 @@
   </button>
   <a class="np-brand" href={withBase('/')}>
     {#if config.logo}
-      <img src={config.logo} alt={config.title} />
+      <img src={withBase(config.logo)} alt={config.title} />
     {/if}
     <span>{config.title}</span>
   </a>

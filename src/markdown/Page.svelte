@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte'
   import { mount, unmount } from 'svelte'
   import type { PageModule } from '../types'
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import RightToc from '../layout/RightToc.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
@@ -21,7 +21,7 @@
 
   const config = $derived($configStore)
   const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
-  const background = $derived(page.frontmatter.background)
+  const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background && page.type !== 'hero')
   const issueKind = $derived(
     page.type === 'milestone' || page.type === 'epic' || page.type === 'feature' || page.type === 'bug'
@@ -223,7 +223,7 @@
 </script>
 
 {#if renderBackground}
-  <div class="np-page-background" style:background-image={`url('${background}')`}></div>
+  <div class="np-page-background" style:background-image={`url('${withBase(background)}')`}></div>
 {:else}
   <div class="np-page-backdrop np-page-backdrop-doc" aria-hidden="true"></div>
 {/if}
@@ -232,7 +232,7 @@
     {#if issueKind}
       <header class="np-issue-head" class:has-banner={!!issueBanner}>
         {#if issueBanner}
-          <div class="np-issue-banner" style:background-image={`url('${issueBanner}')`}></div>
+          <div class="np-issue-banner" style:background-image={`url('${withBase(issueBanner)}')`}></div>
         {/if}
         <span class="np-issue-kind np-issue-kind-{issueKind}">{issueKind}</span>
         {#if issueDate}

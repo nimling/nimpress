@@ -1,8 +1,6 @@
 ---
 title: Page types
-order: 1
-sidebar:
-  name: Core
+order: 3
 ---
 
 Every markdown file selects a renderer through the `type` frontmatter field. Eleven types exist. Omit the field and the page is a `doc`.
@@ -29,7 +27,7 @@ spec: ./bookable.json
 ---
 ```
 
-See [openapi.md](/openapi) for the rendered structure.
+See [OpenAPI pages](/page-types/openapi) for the rendered structure.
 
 ## `changelog`
 
@@ -47,7 +45,7 @@ data:
 ---
 ```
 
-See [Changelog renderer](/changelog-renderer) for the rendered structure, grouping rules, and version sort.
+See [Changelog renderer](/page-types/changelog) for the rendered structure, grouping rules, and version sort.
 
 ## `hero`
 
@@ -70,7 +68,7 @@ data:
 :::
 ```
 
-See [hero.md](/hero) for the band field reference.
+See [Hero pages](/page-types/hero) for the band field reference.
 
 ## `roadmap`
 
@@ -121,7 +119,7 @@ data:
 ---
 ```
 
-See [dbml.md](/dbml) for what renders, the inline ` ```dbml ` fence, and the interaction surface.
+See [DBML pages](/page-types/dbml) for what renders, the inline ` ```dbml ` fence, and the interaction surface.
 
 ## `component`
 

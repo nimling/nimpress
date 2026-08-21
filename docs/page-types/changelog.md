@@ -1,8 +1,6 @@
 ---
 title: Changelog renderer
-order: 5
-sidebar:
-  name: Authoring
+order: 13
 ---
 
 Multiple markdown files collapse into one long changelog page when they share a `title` and live in the same folder, each with `type: changelog`. Each file is one release entry on the resulting page.

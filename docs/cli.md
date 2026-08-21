@@ -2,9 +2,7 @@
 title: CLI reference
 description: Every nimpress command, its arguments, flags, and exit behavior.
 tags: cli, lint, modules, build, guard, export
-order: 5
-sidebar:
-  name: Core
+order: 8
 ---
 
 The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, linting, building, exporting, guarding, and the component workshop. Every command runs from the consumer repo root and reads `nimpress.config.ts`, `nimpress.config.js`, `nimpress.config.mjs`, or `nimpress.config.json`. Long value flags take their value with an equals sign, `--target=central`.

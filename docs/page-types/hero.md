@@ -1,8 +1,6 @@
 ---
 title: Hero pages
-order: 4
-sidebar:
-  name: Authoring
+order: 12
 ---
 
 Oversized landing pages with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top of the page. Everything below it is the markdown body, rendered through the standard prose shell. Action buttons and feature grids live inside that body using the directives in [markdown.md](./markdown.md).

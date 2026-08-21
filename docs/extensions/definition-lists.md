@@ -1,8 +1,6 @@
 ---
 title: Definition lists
-order: 2
-sidebar:
-  name: Authoring
+order: 22
 ---
 
 Compact term and description pairs. Useful for glossaries, metric reference pages, and field listings where a fenced code block would feel too heavy. Supported via `markdown-it-deflist`, the PHP Markdown Extra extension.

@@ -1,8 +1,6 @@
 ---
 title: Theming
-order: 1
-sidebar:
-  name: Styling
+order: 6
 ---
 
 Nimpress styles flow through CSS custom properties. Override the ones you want in your own stylesheet, no fork required.

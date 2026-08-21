@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick, mount, unmount } from 'svelte'
   import type { PageModule, ChangelogEntry } from '../types'
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import RightToc from '../layout/RightToc.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
@@ -18,7 +18,7 @@
   const entries = $derived<ChangelogEntry[]>(page.changelogEntries ?? [])
   const config = $derived($configStore)
   const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
-  const background = $derived(page.frontmatter.background)
+  const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
   const tocHeadings = $derived(page.headings ?? [])
   const feedEnabled = $derived(page.frontmatter.rss === true || page.frontmatter.subscribe === true)
@@ -234,7 +234,7 @@
 </script>
 
 {#if renderBackground}
-  <div class="np-page-background" style:background-image={`url('${background}')`}></div>
+  <div class="np-page-background" style:background-image={`url('${withBase(background)}')`}></div>
 {:else}
   <div class="np-page-backdrop np-page-backdrop-changelog" aria-hidden="true"></div>
 {/if}

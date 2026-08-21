@@ -1,8 +1,6 @@
 ---
 title: Search
-order: 8
-sidebar:
-  name: Authoring
+order: 9
 ---
 
 Local, client side, no external service. Powered by MiniSearch.

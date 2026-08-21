@@ -1,8 +1,6 @@
 ---
 title: Sidebar
-order: 3
-sidebar:
-  name: Core
+order: 5
 ---
 
 The sidebar is derived from the content tree. There is no separate config to maintain.

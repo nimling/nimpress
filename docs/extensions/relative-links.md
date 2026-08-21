@@ -1,8 +1,6 @@
 ---
 title: Relative links
-order: 7
-sidebar:
-  name: Authoring
+order: 23
 ---
 
 Authoring links between markdown pages.
@@ -24,7 +22,7 @@ The runtime router resolves `./setup` relative to the current route, not the fil
 ## To another section
 
 ```md
-[OpenAPI renderer](/docs/openapi)
+[OpenAPI pages](/page-types/openapi)
 ```
 
 Absolute paths are always relative to the site root.

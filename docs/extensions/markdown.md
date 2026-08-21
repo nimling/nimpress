@@ -1,8 +1,6 @@
 ---
 title: Markdown
-order: 1
-sidebar:
-  name: Authoring
+order: 21
 ---
 
 Built on `markdown-it` with a focused set of plugins. CommonMark plus the extensions below.
@@ -95,7 +93,7 @@ A row of primary, secondary, or ghost buttons. Each item is a markdown link foll
 :::actions {"align":"start"}
 [Get started](/guide){"variant":"primary"}
 [GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
-[Learn more](/docs/theming){"variant":"ghost"}
+[Learn more](/theming){"variant":"ghost"}
 :::
 ````
 
