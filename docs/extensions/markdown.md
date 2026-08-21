@@ -174,4 +174,4 @@ The `:::component` directive renders a live component from a configured module s
 
 3. `:::component MarButton` is the shorthand for the bare component with its default controls.
 
-See [modules.md](./modules.md) for systems and the harness.
+See [Component modules](/modules) for systems and the harness.

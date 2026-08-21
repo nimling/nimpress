@@ -4,7 +4,7 @@ order: 16
 description: One DBML file rendered as a full page database diagram with a hero band above it.
 ---
 
-A `type: dbml` page turns one `.dbml` file into a full page viewer. For a diagram inside a page that is mostly prose, use the inline fence described in [DBML](/extensions/dbml) instead.
+`type: dbml` turns one `.dbml` file into a page whose whole purpose is the schema. For a diagram inside a page that is mostly prose, use the inline fence in [DBML](/extensions/dbml) instead.
 
 ## Frontmatter
 
@@ -20,23 +20,47 @@ data:
   download: Download the schema
   fullscreen: Open fullscreen
 ---
+
+The markdown body renders under the lead, still inside the content column.
 ```
 
-`spec` is required and resolves relative to the markdown file.
+`spec` is required and resolves relative to the markdown file. Lint fails when it is missing or does not resolve.
 
-## The band
-
-The page opens with a hero band carrying the title, the description, `data.eyebrow`, `data.lead`, `data.logo`, `data.banner`, and the markdown body, all inside the same centered column a doc page uses. Only the diagram runs full width.
+## Header fields
 
 | Field | Effect |
 |---|---|
-| `data.download` | Label on the button handing over the `.dbml` source, `false` removes it |
-| `data.fullscreen` | Label on the button opening the diagram fullscreen, `false` removes it |
-| `data.actions` | Extra links, each with `text`, `link`, and a `variant` |
-| `data.height` | Diagram height, the viewport below the site header by default |
+| `title` | The hero title. |
+| `description` | The line under the title. |
+| `data.eyebrow` | A small uppercase label above the title. |
+| `data.lead` | A paragraph under the description. |
+| `data.logo` | An image above the eyebrow, resolved against the site base. |
+| `data.banner` | A background image behind the band, resolved against the site base. |
+| `data.align` | `start`, `center`, or `end`. `start` by default. |
+| `data.download` | The download button label. `Download` by default, `false` removes the button. |
+| `data.fullscreen` | The fullscreen button label. `Fullscreen` by default, `false` removes the button. |
+| `data.actions` | Extra links, each with `text`, `link`, and a `variant` of `primary`, `secondary`, or `ghost`. |
+| `data.height` | The diagram height. The viewport under the site header by default. |
+| `footer` | A centered line under the diagram. |
 
-The page has no right rail, and the `.dbml` file lands in the build output beside the page so the download hands over the real file.
+## Layout
+
+The band holds the logo, the eyebrow, the title, the description, the lead, the markdown body, and the buttons, all inside the same centered content column a doc page uses. Only the diagram runs full width, edge to edge with no padding and no rounded corners, filling the space below the site header when the reader scrolls to it.
+
+The page has no right rail. A long markdown body belongs on a sibling doc page linked from the band, not here.
+
+## The buttons
+
+The download button hands the reader the `.dbml` source under its own file name. The `.dbml` file is copied into the build output beside the page, so the download is the real file rather than a copy embedded in the page payload.
+
+The fullscreen button opens the diagram fullscreen, the same as the control inside the frame.
+
+`data.actions` adds ordinary links beside them, which is where a link to the migration guide or the API reference goes.
+
+## The diagram
+
+The diagram itself, what the converter maps from DBML, how the tables are laid out, how a column click navigates, and how to author the source are all in [DBML](/extensions/dbml). A `type: dbml` page and a ` ```dbml ` fence render through the same component and behave identically, except that the page arms the frame on mount because there the diagram is the page.
 
 ## See it
 
-The [schema viewer example](/examples/schema-viewer) is a working page, and [DBML](/extensions/dbml) covers what the converter maps and how to author the source.
+[Schema viewer](/examples/schema-viewer) is a working page with the band, the buttons, and a schema worth panning around.

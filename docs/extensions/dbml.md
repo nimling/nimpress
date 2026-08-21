@@ -56,44 +56,7 @@ Ref: post.user_id > users.id
 
 ## Full page viewer
 
-Keep the schema in its own `.dbml` file and point a page at it. The page opens with a hero band carrying the title, the description, and the page buttons, inside the same centered content column every other page uses. The diagram sits below it, edge to edge, filling the viewport under the site header.
-
-```md
----
-title: Bookable schema
-type: dbml
-spec: ./bookable.dbml
-description: Every table the booking api reads and writes.
-data:
-  eyebrow: Database
-  lead: Rooms, desks, and bookings, with the claimius columns every registered table carries.
-  download: Download the schema
-  fullscreen: Open fullscreen
----
-
-The markdown body renders under the lead, still inside the content column.
-```
-
-The `.dbml` file is copied into the build output beside the page, so readers can open the source directly. [Schema viewer](./dbml-example.md) is one such page.
-
-### Header fields
-
-| Field | Effect |
-|---|---|
-| `title` | The hero title. |
-| `description` | The line under the title. |
-| `data.eyebrow` | A small uppercase label above the title. |
-| `data.lead` | A paragraph under the description. |
-| `data.logo` | An image above the eyebrow. |
-| `data.banner` | A background image behind the band. |
-| `data.align` | `start`, `center`, or `end`. `start` by default. |
-| `data.download` | The download button label. `Download` by default, `false` removes the button. |
-| `data.fullscreen` | The fullscreen button label. `Fullscreen` by default, `false` removes the button. |
-| `data.actions` | Extra links, each with `text`, `link`, and a `variant` of `primary`, `secondary`, or `ghost`. |
-| `data.height` | The diagram height. The viewport under the site header by default. |
-| `footer` | A centered line under the diagram. |
-
-The download button hands the reader the `.dbml` source under its own file name. The fullscreen button opens the diagram fullscreen, the same as the button inside the frame.
+A schema that deserves a page of its own gets `type: dbml`, which opens with a hero band and runs the diagram edge to edge below it. The frontmatter contract, the header fields, and the buttons are in [DBML pages](/page-types/dbml). Everything below applies to both forms.
 
 ## Column links
 

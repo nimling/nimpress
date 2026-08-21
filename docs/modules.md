@@ -65,39 +65,17 @@ export default defineConfig({
 
 ## The component page
 
-```markdown
----
-title: MarButton
-type: component
-data:
-  system: nimtech
-  component: MarButton
-  package: "@nimling/components-nimtech"
----
+Each component gets one `type: component` page in its own folder, with the sibling story files as its stories:
 
-## Usage
-
-...any prose, code, mermaid, callouts, everything nimpress markdown supports...
+```
+docs/components/Forms/Button/
+├── index.md            type: component
+├── schema.json
+├── default.story.tsx
+└── With_Icon.story.tsx
 ```
 
-1. One `type: component` per folder, enforced at build.
-
-2. Grouping comes from two sources. Physical folders: `docs/components/Inputs/MarTextInput/index.md` renders an Inputs group in the sidebar. Frontmatter: a top level `sidebar` block places the page under a named group at the outer level, sibling to the physical group folders, standing in for the page's parent folder in the sidebar without changing its folder or its URL.
-
-3. The `sidebar` block carries the group definition. `name` is required and is the sidebar label, rendered verbatim. `icon` is an optional ascii icon rendered before the group label. `style` is optional inline css applied to the group row. Pages sharing a `name` land in the same group, latest `icon` and `style` definition wins. A `name` matching the page's own folder decorates that physical group instead of moving the page:
-
-```yaml
-sidebar:
-  name: Inputs
-  icon: "▤"
-  style: "color: var(--np-brand)"
-```
-
-4. The component's CLAUDE.md renders on the page, editable in place during local dev, readonly everywhere else.
-
-5. The overview page keeps the standard content width. Stories open the full workshop screen.
-
-6. The overview body opens with the `## Usage` import, then prose describing the component, expected on every component page. The live preview frame renders below the body automatically with a link into the workshop, followed by the CLAUDE.md section; neither is authored in the markdown.
+The frontmatter contract, the grouping rules, the `## Usage` body convention, and what renders below it are in [Component pages](/page-types/component).
 
 ## Stories
 

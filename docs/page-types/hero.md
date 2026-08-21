@@ -3,7 +3,7 @@ title: Hero pages
 order: 12
 ---
 
-Oversized landing pages with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top of the page. Everything below it is the markdown body, rendered through the standard prose shell. Action buttons and feature grids live inside that body using the directives in [markdown.md](./markdown.md).
+Oversized landing pages with a title, eyebrow, tagline, and optional image or banner. The hero band sits at the top of the page. Everything below it is the markdown body, rendered through the standard prose shell. Action buttons and feature grids live inside that body using the directives in [Markdown](/extensions/markdown).
 
 ## Frontmatter
 
@@ -49,7 +49,7 @@ to render buttons and a feature grid below the hero band.
 
 ## Body
 
-The hero page renders the markdown body below the band. Authors compose action buttons and feature grids using directives from [markdown.md](./markdown.md):
+The hero page renders the markdown body below the band. Authors compose action buttons and feature grids using directives from [Markdown](/extensions/markdown):
 
 ````md
 :::actions
