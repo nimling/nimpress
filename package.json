@@ -1,6 +1,6 @@
 {
   "name": "@nimtech/nimpress",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Svelte 5 docs framework that supports it all.",
   "author": "nimling",
   "license": "Apache-2.0",
