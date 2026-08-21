@@ -1,12 +1,12 @@
 # Docs sync pipeline
 
-Rules for wiring a repo's docs into the central docs site through the nimpress actions. The actions live in `nimling/nimpress/actions`, the docs site is `nimling/samna`, and the shared GitHub App carries the cross repo trust.
+Rules for wiring a repo's docs into the central docs site through the nimpress actions. The actions live in `nimling/nimpress/actions`, the docs site is the repo the pipeline is pointed at, and the shared GitHub App carries the cross repo trust. The reference is [Publishing a repo's docs to the central site](https://nimling.github.io/nimpress/actions).
 
 ## The shape
 
-1. A source repo keeps its docs in a `.nimpress` folder at its root. That folder is the content that syncs.
+1. A source repo keeps its docs in an export folder at its root, `.nimpress` by default. The `export-dir` input on `docs-notify` names another. That folder is the content that syncs.
 
-2. The source repo has a consumer workflow `.github/workflows/docs.yml` that triggers on a version tag, not on a branch push, and guards on whether `.nimpress` changed since the previous version tag.
+2. The source repo has a consumer workflow `.github/workflows/docs.yml` that triggers on a version tag, not on a branch push, and guards on whether the export folder changed since the previous version tag.
 
 3. The docs site has the receiver `.github/workflows/docs-sync.yml` and optionally the mapping `nimpress.sources.json` at its root.
 
@@ -14,9 +14,9 @@ Rules for wiring a repo's docs into the central docs site through the nimpress a
 
 1. Trigger is `on: push: tags: ['v*']` plus `workflow_dispatch`. Never trigger docs publish on a plain branch push.
 
-2. A guard step compares `.nimpress` between the current tag and the previous version tag with `git diff`, and the notify runs only when it changed. A `workflow_dispatch` always counts as changed.
+2. A guard step compares the export folder between the current tag and the previous version tag with `git diff`, and the notify runs only when it changed. The folder name lives in one workflow level variable that both the guard and the `export-dir` input read. A `workflow_dispatch` always counts as changed.
 
-3. Mint the token with `actions/create-github-app-token` using `app-id: secrets.APP_ID`, `private-key: secrets.APP_PRIVATE_KEY`, `owner: nimling`, and `repositories: samna`. Pass `steps.app.outputs.token` to `docs-notify@v2` with `docs-repo: nimling/samna`.
+3. Mint the token with `actions/create-github-app-token` using `app-id: secrets.APP_ID`, `private-key: secrets.APP_PRIVATE_KEY`, `owner: nimling`, and `repositories:` naming the docs site. Pass `steps.app.outputs.token` to `docs-notify@v2` with `docs-repo:` naming the same repo.
 
 ## Receiver workflow
 

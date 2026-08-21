@@ -4,7 +4,7 @@
   import type { Routes } from 'sly-svelte-location-router'
   import App from './App.svelte'
   import HomePage from './HomePage.svelte'
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   import { pageGuard } from '../auth/guard'
 
   function buildRoutes(): Routes {
@@ -15,12 +15,12 @@
 
     for (const [slug, meta] of Object.entries(pages)) {
       if (meta.redirect) {
-        routes[meta.path] = meta.redirect
+        routes[withBase(meta.path)] = withBase(meta.redirect)
         continue
       }
       const loader = loaders[slug]
       if (!loader) continue
-      routes[meta.path] = {
+      routes[withBase(meta.path)] = {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
@@ -30,11 +30,11 @@
     }
 
     for (const [path, slug] of Object.entries(config.manifest?.byPath ?? {})) {
-      if (routes[path]) continue
+      if (routes[withBase(path)]) continue
       const meta = pages[slug]
       const loader = loaders[slug]
       if (!meta || meta.redirect || !loader) continue
-      routes[path] = {
+      routes[withBase(path)] = {
         name: slug || 'index',
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
@@ -43,8 +43,8 @@
       }
     }
 
-    if (!routes['/']) {
-      routes['/'] = {
+    if (!routes[withBase('/')]) {
+      routes[withBase('/')] = {
         name: 'home',
         component: () => Promise.resolve({ default: HomePage })
       }
@@ -54,10 +54,11 @@
   }
 
   const routes = buildRoutes()
+  const fallback = withBase('/')
 </script>
 
 <App>
-  <Router {routes} fallback="/">
+  <Router {routes} {fallback}>
     <div class="np-loading">
       <span class="np-spinner"></span>
     </div>

@@ -59,3 +59,27 @@ The body returns HTML containing placeholder markers for components: `<div class
 2. Duplicate effective paths throw at build time. The exception is multiple `changelog` pages sharing one path, which collapse into one rendered page.
 
 3. Invalid frontmatter logs a warning and the page falls back to a title taken from the filename. Unknown frontmatter fields warn but do not fail.
+
+## Output
+
+A build writes the site into the output folder, `dist` by default and `paths.out` when set.
+
+1. `index.html` and a copy of it as `404.html`, so a static host routes a deep link back into the app.
+
+2. `.nojekyll`, so a host that runs Jekyll over the output still serves the folders whose names start with an underscore.
+
+3. Every non markdown file under `contentDir`, at the same relative path, so an image or a `.dbml` file sits beside the page that uses it.
+
+4. The assets folder, the feeds, the sitemap, the search index, the guarded bundles, and one harness bundle per component system.
+
+## Serving under a subfolder
+
+`base` in the config states the url prefix the whole site is served under, `/` by default. It reaches the vite build, the router, every generated link, the markdown links and images, the search results, the feeds and canonical urls, the guarded fetches, and the harness bundles. A project page on GitHub Pages sets it to the repository name:
+
+```ts
+export default defineConfig({
+  base: '/nimpress/'
+})
+```
+
+Nothing else in the content changes. Links stay written from the site root, and the build resolves them under the prefix.

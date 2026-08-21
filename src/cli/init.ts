@@ -4,12 +4,12 @@ import { defaultConfig } from '../config/defaults'
 import { hasFlag } from './shared'
 
 function annotatedConfig(): string {
-  return `import { defineConfig } from '@nimling/nimpress/plugin'
+  return `import { defineConfig } from '@nimtech/nimpress/plugin'
 
 /**
  * Every field has a default, so a config can be as small as a title.
  * Hover any field for its full description and an example, the types
- * ship with @nimling/nimpress. Uncomment what you need.
+ * ship with @nimtech/nimpress. Uncomment what you need.
  */
 export default defineConfig({
   /** Site title shown in the header and the tab. */
@@ -111,7 +111,7 @@ function jsonSeed(): string {
   return (
     JSON.stringify(
       {
-        $schema: './node_modules/@nimling/nimpress/config.schema.json',
+        $schema: './node_modules/@nimtech/nimpress/config.schema.json',
         title: defaultConfig.title,
         contentDir: defaultConfig.contentDir,
         assetsDir: defaultConfig.assetsDir,
@@ -126,9 +126,11 @@ function jsonSeed(): string {
 function agentGuide(contentDir: string): string {
   return `# Nimpress project
 
-This site is built with @nimling/nimpress. Content lives in \`${contentDir}/\` as markdown with typed frontmatter.
+This site is built with @nimtech/nimpress. Content lives in \`${contentDir}/\` as markdown with typed frontmatter.
 
-The authoritative AI working rules ship inside the package at \`node_modules/@nimling/nimpress/.claude/rules/\`. Read the relevant rule before writing:
+The full documentation is at https://nimling.github.io/nimpress/.
+
+The authoritative AI working rules ship inside the package at \`node_modules/@nimtech/nimpress/.claude/rules/\`. Read the relevant rule before writing:
 
 1. \`frontmatter.md\` and \`page-types.md\` before creating or editing any page.
 
@@ -191,7 +193,7 @@ export function runInit(cwd: string): void {
     const target = join(cwd, name)
     if (!existsSync(target)) {
       writeFileSync(target, guide)
-      console.log(`nimpress init: ${name} written, pointing at the packaged rules in node_modules/@nimling/nimpress/.claude/rules/`)
+      console.log(`nimpress init: ${name} written, pointing at the packaged rules in node_modules/@nimtech/nimpress/.claude/rules/`)
     }
   }
 }

@@ -58,7 +58,7 @@ Ref: post.user_id > users.id
 
 ## Full page viewer
 
-Keep the schema in its own `.dbml` file and point a page at it. The markdown body renders as the page header, the diagram fills the rest of the viewport.
+Keep the schema in its own `.dbml` file and point a page at it. The page opens with a hero band carrying the title, the description, and the page buttons, inside the same centered content column every other page uses. The diagram sits below it, edge to edge, filling the viewport under the site header.
 
 ```md
 ---
@@ -66,12 +66,62 @@ title: Bookable schema
 type: dbml
 spec: ./bookable.dbml
 description: Every table the booking api reads and writes.
+data:
+  eyebrow: Database
+  lead: Rooms, desks, and bookings, with the claimius columns every registered table carries.
+  download: Download the schema
+  fullscreen: Open fullscreen
 ---
 
-Rooms, desks, and bookings, with the claimius columns every registered table carries.
+The markdown body renders under the lead, still inside the content column.
 ```
 
 The `.dbml` file is copied into the build output beside the page, so readers can open the source directly. [Schema viewer](./dbml-example.md) is one such page.
+
+### Header fields
+
+| Field | Effect |
+|---|---|
+| `title` | The hero title. |
+| `description` | The line under the title. |
+| `data.eyebrow` | A small uppercase label above the title. |
+| `data.lead` | A paragraph under the description. |
+| `data.logo` | An image above the eyebrow. |
+| `data.banner` | A background image behind the band. |
+| `data.align` | `start`, `center`, or `end`. `start` by default. |
+| `data.download` | The download button label. `Download` by default, `false` removes the button. |
+| `data.fullscreen` | The fullscreen button label. `Fullscreen` by default, `false` removes the button. |
+| `data.actions` | Extra links, each with `text`, `link`, and a `variant` of `primary`, `secondary`, or `ghost`. |
+| `data.height` | The diagram height. The viewport under the site header by default. |
+| `footer` | A centered line under the diagram. |
+
+The download button hands the reader the `.dbml` source under its own file name. The fullscreen button opens the diagram fullscreen, the same as the button inside the frame.
+
+## Column links
+
+A column that carries a link or a foreign key is clickable in the diagram.
+
+1. A foreign key column moves the canvas to the table it points at and selects it.
+
+2. A markdown link in the column note overrides that. A target matching a table name moves the canvas to that table. Any other target is a page link: a site path navigates, a full url opens in a new tab, and a `#anchor` scrolls the current page.
+
+3. The link label renders as a pill on the column row. The rest of the note stays as the hover title.
+
+This is how a `jsonb` column documents its payload. Draw the payload as a table of its own and point the column at it.
+
+```dbml {"height":"440px"}
+Table booking {
+  id uuid [pk]
+  answers jsonb [note: 'Answers to the booking form, shaped by [booking_answers](booking_answers)']
+  source varchar(40) [note: 'Where the reservation came from, described under [page types](/page-types)']
+}
+
+Table booking_answers {
+  question_id uuid [not null]
+  answer text [not null]
+  Note: 'The shape inside booking.answers. No table of its own in Postgres.'
+}
+```
 
 ## What renders
 
@@ -105,7 +155,13 @@ The gestures:
 
 5. Click a relationship line or a table to highlight it.
 
+6. Click a column that carries a link or a foreign key to follow it.
+
 The fullscreen button sits in the top right corner of the frame.
+
+## Layout
+
+The build places the tables before the browser sees them. Connected tables land in one group, each group laid out in columns by distance from its busiest table, and a final pass pushes any two cards that would touch apart, so tables, sticky notes, and index footers never overlap on first paint. Dragging a table afterwards is the reader's own arrangement and is never written back.
 
 ## Theme
 

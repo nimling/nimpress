@@ -4,14 +4,15 @@ type: hero
 noToc: true
 data:
   eyebrow: Documentation framework
-  tagline: A Svelte 5 docs framework with content driven routing, a markdown pipeline, an OpenAPI renderer, and a component workshop.
+  tagline: Svelte 5 docs framework that supports it all.
   align: start
 ---
 
 :::actions
-[Page types](/page-types){"variant":"primary"}
-[Component modules](/modules){"variant":"secondary"}
-[GitHub](https://github.com/nimling/nimpress){"variant":"secondary"}
+[Getting started](/getting-started){"variant":"primary"}
+[Page types](/page-types){"variant":"secondary"}
+[Changelog](/changelog){"variant":"secondary"}
+[GitHub](https://github.com/nimling/nimpress){"variant":"ghost"}
 :::
 
 ::::features
@@ -32,7 +33,11 @@ Every surface is a CSS custom property with a light and a dark value. Override t
 :::
 
 :::feature {"title":"Cross repo publishing","link":"/actions"}
-A repo keeps its docs beside its code and ships them into the central site on a version tag through the nimpress docs-sync actions.
+A repo keeps its docs beside its code and ships them into a central site on a version tag through the nimpress docs-sync actions.
+:::
+
+:::feature {"title":"Database diagrams","link":"/dbml"}
+A schema written in DBML renders as an interactive diagram, inline in a page or as a page of its own, with every column clickable.
 :::
 
 :::feature {"title":"Session gating","link":"/auth"}
@@ -40,6 +45,6 @@ Gate any page with one frontmatter field. Gated pages build into guarded bundles
 :::
 ::::
 
-Nimpress is published as `@nimling/nimpress` and its CLI owns Vite: there is no Vite config to write and no app to mount by hand. A consumer needs one `nimpress.config` file where every field has a default, so a config can be as small as a title.
+Nimpress is published as `@nimtech/nimpress` and its CLI owns Vite: there is no Vite config to write and no app to mount by hand. A site needs one `nimpress.config` file where every field has a default, so a config can be as small as a title.
 
-This site is itself a nimpress site. Its source is the `docs/` folder of the nimpress repository.
+This site is itself a nimpress site, built from the `docs/` folder of the nimpress repository and published on every release. Every page here is also an example of the feature it documents.

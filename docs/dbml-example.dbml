@@ -40,11 +40,20 @@ Table booking {
   starts_at timestamptz [not null]
   ends_at timestamptz [not null]
   state booking_state [not null, default: 'confirmed']
+  answers jsonb [note: 'Answers to the booking form, shaped by [booking_answers](booking_answers)']
+  source varchar(40) [note: 'Where the reservation came from, listed under [page types](/page-types)']
 
   indexes {
     (bookable_id, starts_at) [name: 'ix_booking_bookable_start']
   }
   Note: 'One reservation of one bookable over one window.'
+}
+
+Table booking_answers [headercolor: #6B7FD7] {
+  question_id uuid [not null]
+  answer text [not null]
+  answered_at timestamptz [not null]
+  Note: 'The shape inside booking.answers. No table of its own in Postgres.'
 }
 
 Table booking_guest {

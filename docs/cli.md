@@ -23,7 +23,7 @@ The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, l
 
 ## init
 
-Writes `nimpress.config.ts` with every field documented in JSDoc and examples, uncommenting is the whole setup; `--json` writes `nimpress.config.json` instead, with a `$schema` reference to the packaged `config.schema.json` so editors show the same descriptions. Seeds the content folder with a home page when it is empty, and writes `CLAUDE.md` and `AGENTS.md` pointing at the packaged AI rules under `node_modules/@nimling/nimpress/.claude/rules/`. Existing files are never overwritten.
+Writes `nimpress.config.ts` with every field documented in JSDoc and examples, uncommenting is the whole setup; `--json` writes `nimpress.config.json` instead, with a `$schema` reference to the packaged `config.schema.json` so editors show the same descriptions. Seeds the content folder with a home page when it is empty, and writes `CLAUDE.md` and `AGENTS.md` pointing at the packaged AI rules under `node_modules/@nimtech/nimpress/.claude/rules/`. Existing files are never overwritten.
 
 ## dev and build
 

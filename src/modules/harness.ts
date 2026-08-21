@@ -7,6 +7,7 @@ import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpre
 import { mergeDeep } from '../config/viteConfig'
 import { chunkCycleGuard } from '../config/chunkCycles'
 import { cacheDir, outDir } from '../config/paths'
+import { joinBase } from '../config/base'
 import { resolveComponentSource } from './resolve'
 import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './parse/typeMembers'
 import { parseSchemaText, schemaFileIn } from './schema'
@@ -234,7 +235,7 @@ function vueEntry(target: HarnessTarget, css: string[], setup: string | undefine
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
     : 'const HarnessOverride = null'
   return `import { createApp, h } from 'vue'
-import { DefaultHarness, ComponentStory, createHarnessContext, HARNESS_KEY } from '@nimling/nimpress/harness/vue'
+import { DefaultHarness, ComponentStory, createHarnessContext, HARNESS_KEY } from '@nimtech/nimpress/harness/vue'
 ${cssImports}
 ${setupImport(setup)}
 ${harnessImport}
@@ -331,7 +332,7 @@ function svelteEntry(target: HarnessTarget, css: string[], setup: string | undef
     ? `import HarnessOverride from ${JSON.stringify(harness)}`
     : 'const HarnessOverride = null'
   return `import { mount, createRawSnippet } from 'svelte'
-import { DefaultHarness, HarnessRoot, createHarnessContext } from '@nimling/nimpress/harness/svelte'
+import { DefaultHarness, HarnessRoot, createHarnessContext } from '@nimtech/nimpress/harness/svelte'
 ${cssImports}
 ${setupImport(setup)}
 ${harnessImport}
@@ -655,7 +656,8 @@ export async function harnessViteConfig(
   const framework = await loadFrameworkPlugin(cwd, systemConfig.framework)
   const sourceRoot = systemConfig.source ? resolve(cwd, systemConfig.source) : cwd
   const routeBase = modules.route.replace(/\/$/, '')
-  const base = `${routeBase}/${system}/`
+  const harnessRoute = `${routeBase}/${system}/`
+  const base = command === 'build' ? joinBase(resolvedConfig.base, harnessRoute) : harnessRoute
   const scanEntries = targets
     .filter((t) => isAbsolute(t.importSpec))
     .map((t) => t.importSpec)
@@ -671,7 +673,7 @@ export async function harnessViteConfig(
     optimizeDeps: {
       entries: scanEntries,
       include: systemConfig.framework === 'vue' ? ['vue'] : [],
-      exclude: ['@nimling/nimpress/harness/vue', '@nimling/nimpress/harness/svelte']
+      exclude: ['@nimtech/nimpress/harness/vue', '@nimtech/nimpress/harness/svelte']
     },
     server: {
       host: '127.0.0.1',

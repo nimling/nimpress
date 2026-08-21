@@ -15,7 +15,7 @@ title: Bookable API
 description: HTTP API reference for the Bookable service.
 meta:
   description: Override of the page level description for SEO only.
-  canonical: https://developer.samna.io/api/bookable
+  canonical: https://docs.example.io/api/bookable
   robots: index,follow
   keywords: [booking, api, openapi]
   author: Samna
@@ -30,8 +30,8 @@ meta:
     locale: en_US
   twitter:
     card: summary_large_image
-    site: '@samnaio'
-    creator: '@samnaio'
+    site: '@example'
+    creator: '@example'
     title: Bookable API
     description: HTTP API reference for the Bookable service.
     image: /og/bookable.png
@@ -65,10 +65,10 @@ createNimpressApp({
   contentRoot: 'docs',
   site: {
     title: 'Samna Developer Docs',
-    url: 'https://developer.samna.io',
+    url: 'https://docs.example.io',
     description: 'API references, libraries, and tools.',
     ogImage: '/og/default.png',
-    twitterSite: '@samnaio',
+    twitterSite: '@example',
     locale: 'en_US'
   },
   manifest,

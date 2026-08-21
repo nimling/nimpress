@@ -5,6 +5,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  EXPORT_DIR: .nimpress
+
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -22,7 +25,7 @@ jobs:
             exit 0
           fi
           prev=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
-          if [ -z "$prev" ] || git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- .nimpress | grep -q .; then
+          if [ -z "$prev" ] || git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- "$EXPORT_DIR" | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -36,11 +39,12 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: nimling
-          repositories: samna
+          repositories: docs-site
 
       - name: Notify docs
         if: steps.changed.outputs.changed == 'true'
         uses: nimling/nimpress/actions/docs-notify@v2
         with:
-          docs-repo: nimling/samna
+          docs-repo: nimling/docs-site
           token: ${{ steps.app.outputs.token }}
+          export-dir: ${{ env.EXPORT_DIR }}

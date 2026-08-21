@@ -30,7 +30,7 @@ Rules for writing markdown pages, both inside this repo's `docs/` and inside con
 
 ## Links
 
-1. Prefer relative links within the same section, absolute links across sections. See `docs/relative-links.md`.
+1. Prefer relative links within the same section, absolute links across sections. See [Relative links](https://nimling.github.io/nimpress/relative-links).
 
 2. Use the page title as the link text. Avoid `click here`.
 
@@ -75,7 +75,7 @@ term_name
 : One line description.
 ```
 
-See `docs/definition-lists.md`.
+See [Definition lists](https://nimling.github.io/nimpress/definition-lists).
 
 ## When to write what
 
@@ -85,6 +85,6 @@ See `docs/definition-lists.md`.
 
 3. Reference: dense table of fields, options, or APIs. Tables and definition lists carry most of the content.
 
-4. Changelog entry: one markdown file per release, `type: changelog`, `data.version` set. See `docs/changelog.md`.
+4. Changelog entry: one markdown file per release, `type: changelog`, `data.version` set. See [Changelog renderer](https://nimling.github.io/nimpress/changelog-renderer).
 
-5. Landing page: `type: hero` with a tagline and feature grid. See `docs/hero.md`.
+5. Landing page: `type: hero` with a tagline and feature grid. See [Hero](https://nimling.github.io/nimpress/hero).

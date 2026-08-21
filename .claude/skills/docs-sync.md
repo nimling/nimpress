@@ -1,12 +1,12 @@
 # docs-sync
 
-Wire a repo onto the central docs pipeline so its `.nimpress` docs ship to `nimling/samna` on a version tag.
+Wire a repo onto the central docs pipeline so its export folder ships to the docs site on a version tag. Ask which repo is the docs site before writing anything. The reference is [Publishing a repo's docs to the central site](https://nimling.github.io/nimpress/actions).
 
 When the user asks to connect a repo to the docs site, or to set up docs sync, run these steps in order. Stop on the first failure and surface it.
 
 ## 1. Add the content folder
 
-Create `.nimpress/index.md` at the repo root if it does not exist, with valid frontmatter:
+Create `<export-dir>/index.md` at the repo root if it does not exist, `.nimpress` unless the user names another folder, with valid frontmatter:
 
 ```md
 ---
@@ -33,6 +33,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  EXPORT_DIR: .nimpress
+
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -47,7 +50,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           prev=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
-          if [ -z "$prev" ] || git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- .nimpress | grep -q .; then
+          if [ -z "$prev" ] || git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- "$EXPORT_DIR" | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -59,12 +62,13 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: nimling
-          repositories: samna
+          repositories: <docs site repo name>
       - if: steps.changed.outputs.changed == 'true'
-        uses: nimling/nimpress/actions/docs-notify@v1
+        uses: nimling/nimpress/actions/docs-notify@v2
         with:
-          docs-repo: nimling/samna
+          docs-repo: nimling/<docs site repo name>
           token: ${{ steps.app.outputs.token }}
+          export-dir: ${{ env.EXPORT_DIR }}
 ```
 
 ## 3. Ignore the key

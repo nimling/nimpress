@@ -1,4 +1,4 @@
-import { configStore } from './configStore'
+import { configStore, withBase } from './configStore'
 import type {
   Frontmatter,
   OpenGraphMeta,
@@ -58,9 +58,9 @@ function readGuardedBase(): string {
 function absoluteUrl(path: string | undefined, site?: SiteMeta): string | undefined {
   if (!path) return undefined
   if (/^https?:\/\//.test(path)) return path
-  if (!site?.url) return path
-  const base = site.url.replace(/\/$/, '')
-  return base + (path.startsWith('/') ? path : '/' + path)
+  const routed = withBase(path.startsWith('/') ? path : '/' + path)
+  if (!site?.url) return routed
+  return site.url.replace(/\/$/, '') + routed
 }
 
 export function setPageMeta(shell: PageShell) {

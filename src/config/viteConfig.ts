@@ -31,6 +31,7 @@ export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
   const { cwd, command, resolved, htmlInput } = opts
   const base: InlineConfig = {
     root: cwd,
+    base: resolved.base,
     configFile: false,
     publicDir: false,
     appType: 'custom',

@@ -43,7 +43,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/default.story.tsx',
-      `import { vueStory } from '@nimling/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
+      `import { vueStory } from '@nimtech/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
     )
     expect(await lintModules(repo.cwd, vueSystem())).toHaveLength(0)
   })
@@ -55,7 +55,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/foo.story.ts',
-      `import { svelteStory } from '@nimling/nimpress/story'\nexport default svelteStory({ name: 'Foo' })\n`
+      `import { svelteStory } from '@nimtech/nimpress/story'\nexport default svelteStory({ name: 'Foo' })\n`
     )
     const problems = await lintModules(repo.cwd, vueSystem())
     expect(problems.some((p) => p.includes('uses svelteStory inside the vue system sys'))).toBe(true)
@@ -68,7 +68,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/foo.story.ts',
-      `import { vueStory } from '@nimling/nimpress/story'\nimport Widget from './Widget.svelte'\nexport default vueStory({ name: 'Foo', harness: Widget })\n`
+      `import { vueStory } from '@nimtech/nimpress/story'\nimport Widget from './Widget.svelte'\nexport default vueStory({ name: 'Foo', harness: Widget })\n`
     )
     const problems = await lintModules(repo.cwd, vueSystem())
     expect(problems.some((p) => p.includes('imports ./Widget.svelte inside the vue system sys'))).toBe(true)
@@ -85,7 +85,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/foo.story.ts',
-      `import { vueStory } from '@nimling/nimpress/story'\nexport default vueStory({ name: 'Foo', props: { label: 'x', bogus: 1 } })\n`
+      `import { vueStory } from '@nimtech/nimpress/story'\nexport default vueStory({ name: 'Foo', props: { label: 'x', bogus: 1 } })\n`
     )
     const problems = await lintModules(repo.cwd, vueSystem())
     expect(problems.some((p) => p.includes('prop bogus is absent from the schema'))).toBe(true)
@@ -100,7 +100,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/foo.story.ts',
-      `import { vueStory } from '@nimling/nimpress/story'\nimport H from "../harness.vue"\nexport default vueStory({ name: 'Foo', harness: H, props: { modelValue: 'x' } })\n`
+      `import { vueStory } from '@nimtech/nimpress/story'\nimport H from "../harness.vue"\nexport default vueStory({ name: 'Foo', harness: H, props: { modelValue: 'x' } })\n`
     )
     const problems = await lintModules(repo.cwd, vueSystem())
     expect(problems).toHaveLength(0)
@@ -119,7 +119,7 @@ describe('lintModules', () => {
     file(
       repo.cwd,
       'docs/components/Components/Foo/default.story.tsx',
-      `import { vueStory } from '@nimling/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
+      `import { vueStory } from '@nimtech/nimpress/story'\n\n// story: Default\nexport default vueStory({ name: "Default" })\n`
     )
     const before = await lintModules(repo.cwd, resolved)
     expect(before.some((p) => p.includes('prop label is missing from the schema') && p.includes('modules update Foo'))).toBe(true)

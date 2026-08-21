@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withBase } from '../framework/configStore'
   interface ActionItem {
     text: string
     link: string
@@ -17,7 +18,7 @@
 <div class={`np-actions np-actions-${align}`}>
   {#each items as a, i (a.link || `act-${i}`)}
     <a
-      href={a.link}
+      href={withBase(a.link)}
       class={`np-action np-action-${a.variant ?? 'primary'}`}
     >
       {a.text}

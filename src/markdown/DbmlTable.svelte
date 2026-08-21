@@ -1,8 +1,19 @@
 <script lang="ts">
   import { Handle, Position } from '@xyflow/svelte'
-  import type { ErdTable } from '../dbml/erd'
+  import type { ErdColumn, ErdTable } from '../dbml/erd'
 
   let { data }: { data: ErdTable } = $props()
+
+  function open(event: MouseEvent, column: ErdColumn) {
+    if (!column.link && !column.target) return
+    event.stopPropagation()
+    ;(event.currentTarget as HTMLElement).dispatchEvent(
+      new CustomEvent('np-erd-open', {
+        bubbles: true,
+        detail: { link: column.link, target: column.target, table: data.id, column: column.name }
+      })
+    )
+  }
 </script>
 
 <div class="np-erd-table" style:--np-erd-accent={data.color || 'var(--np-brand)'}>
@@ -17,13 +28,33 @@
       <li class="np-erd-column" class:np-erd-column-key={column.pk}>
         <Handle type="source" position={Position.Left} id={`l-${index}`} />
         <Handle type="target" position={Position.Left} id={`l-${index}`} />
-        <span class="np-erd-column-name" title={column.note}>{column.name}</span>
-        <span class="np-erd-column-flags">
-          {#if column.pk}<span class="np-erd-flag np-erd-flag-pk">PK</span>{/if}
-          {#if column.fk}<span class="np-erd-flag np-erd-flag-fk">FK</span>{/if}
-          {#if column.unique && !column.pk}<span class="np-erd-flag">U</span>{/if}
-        </span>
-        <span class="np-erd-column-type">{column.type}</span>
+        {#if column.link || column.target}
+          <button
+            type="button"
+            class="np-erd-column-hit nodrag"
+            title={column.note || column.link || 'Open'}
+            onclick={(event) => open(event, column)}
+          >
+            <span class="np-erd-column-name">{column.name}</span>
+            <span class="np-erd-column-flags">
+              {#if column.pk}<span class="np-erd-flag np-erd-flag-pk">PK</span>{/if}
+              {#if column.fk}<span class="np-erd-flag np-erd-flag-fk">FK</span>{/if}
+              {#if column.unique && !column.pk}<span class="np-erd-flag">U</span>{/if}
+            </span>
+            {#if column.linkLabel}
+              <span class="np-erd-column-link">{column.linkLabel}</span>
+            {/if}
+            <span class="np-erd-column-type">{column.type}</span>
+          </button>
+        {:else}
+          <span class="np-erd-column-name" title={column.note}>{column.name}</span>
+          <span class="np-erd-column-flags">
+            {#if column.pk}<span class="np-erd-flag np-erd-flag-pk">PK</span>{/if}
+            {#if column.fk}<span class="np-erd-flag np-erd-flag-fk">FK</span>{/if}
+            {#if column.unique && !column.pk}<span class="np-erd-flag">U</span>{/if}
+          </span>
+          <span class="np-erd-column-type">{column.type}</span>
+        {/if}
         <Handle type="source" position={Position.Right} id={`r-${index}`} />
         <Handle type="target" position={Position.Right} id={`r-${index}`} />
       </li>
@@ -86,6 +117,31 @@
     font-size: 12px;
     line-height: 1;
   }
+  .np-erd-column-hit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    margin: 0 -12px;
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .np-erd-column-hit:hover {
+    background-color: color-mix(in srgb, var(--np-brand) 12%, transparent);
+  }
+  .np-erd-column-hit:hover .np-erd-column-name {
+    color: var(--np-brand);
+  }
+  .np-erd-column-hit:focus-visible {
+    outline: 2px solid var(--np-brand);
+    outline-offset: -2px;
+  }
   .np-erd-column-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -119,6 +175,19 @@
   .np-erd-flag-fk {
     background-color: color-mix(in srgb, var(--np-note) 16%, transparent);
     color: var(--np-note);
+  }
+  .np-erd-column-link {
+    flex: 0 0 auto;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 1px 6px;
+    border-radius: var(--np-radius-pill);
+    background-color: var(--np-brand-soft);
+    color: var(--np-brand);
+    font-size: 9px;
+    font-weight: 650;
   }
   .np-erd-column-type {
     flex: 0 0 auto;

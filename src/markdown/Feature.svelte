@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withBase } from '../framework/configStore'
   let {
     title = '',
     icon = '',
@@ -21,7 +22,7 @@
   )
 </script>
 
-<svelte:element this={link ? 'a' : 'div'} class="np-feature-card" href={link || undefined}>
+<svelte:element this={link ? 'a' : 'div'} class="np-feature-card" href={link ? withBase(link) : undefined}>
   {#if icon}
     {#if isImage && /\.svg(\?.*)?$/i.test(icon)}
       <span

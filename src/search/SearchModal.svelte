@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { buildIndex, searchIndex } from './indexer'
   import { navigate } from 'sly-svelte-location-router'
@@ -62,7 +62,7 @@
 
   function go(slug: string) {
     onClose()
-    navigate('/' + slug)
+    navigate(withBase('/' + slug))
   }
 
   function escapeHtml(s: string): string {

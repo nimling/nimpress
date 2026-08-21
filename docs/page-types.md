@@ -47,7 +47,7 @@ data:
 ---
 ```
 
-See [changelog.md](/changelog) for the rendered structure, grouping rules, and version sort.
+See [Changelog renderer](/changelog-renderer) for the rendered structure, grouping rules, and version sort.
 
 ## `hero`
 
@@ -106,7 +106,7 @@ data:
 
 ## `dbml`
 
-A full page entity relationship viewer built from one DBML file. `spec` points at the `.dbml` file relative to the markdown file. The markdown body renders as the page header and the interactive diagram fills the rest of the viewport.
+A full page entity relationship viewer built from one DBML file. `spec` points at the `.dbml` file relative to the markdown file. A hero band carries the title, the description, the markdown body, and the page buttons in the centered content column, and the interactive diagram runs edge to edge below it.
 
 ```yaml
 ---
@@ -114,6 +114,10 @@ title: Bookable schema
 type: dbml
 spec: ./bookable.dbml
 description: Every table the booking api reads and writes.
+data:
+  eyebrow: Database
+  download: Download the schema
+  fullscreen: Open fullscreen
 ---
 ```
 

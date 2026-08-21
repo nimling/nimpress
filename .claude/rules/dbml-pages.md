@@ -41,22 +41,31 @@ title: Bookable schema
 type: dbml
 spec: ./bookable.dbml
 description: Every table the booking api reads and writes.
+data:
+  eyebrow: Database
+  lead: Rooms, desks, and bookings.
+  download: Download the schema
+  fullscreen: Open fullscreen
 ---
 ```
 
 1. `spec` is required and resolves relative to the markdown file. Lint fails when it is missing or does not resolve.
 
-2. The markdown body renders as the page header above the diagram. Keep it to a paragraph or two; the diagram is the page.
+2. The page opens with a hero band. Title, description, `data.eyebrow`, `data.lead`, `data.logo`, `data.banner`, and `data.align` shape it, and the markdown body renders under them. Every one of those sits in the same centered content column as a doc page, so only the diagram is full width.
 
-3. The page has no right rail. The diagram fills the viewport under the header.
+3. The band carries the page buttons. `data.download` labels the button handing over the `.dbml` source, `data.fullscreen` labels the button opening the diagram fullscreen, and `false` on either removes that button. `data.actions` adds links, each with `text`, `link`, and a `variant` of `primary`, `secondary`, or `ghost`.
 
-4. The `.dbml` file lands in the build output beside the page, so readers can open the source.
+4. The page has no right rail. The diagram runs edge to edge under the band with no padding, no margin, and no rounded corners, and fills the viewport below the site header. `data.height` overrides that height.
+
+5. The `.dbml` file lands in the build output beside the page, so readers can open the source.
 
 ## The interaction contract
 
 Pan by dragging empty canvas or by the minimap. Zoom with the scroll wheel, with the control buttons, or by the minimap. Drag a table to move it, which is a view only rearrangement and is never written back to the `.dbml` file.
 
-The starting layout comes from `src/dbml/erd.ts`, which positions the tables at build time. A schema that always reads badly is fixed there or in the source order, not by asking readers to drag.
+Click a column carrying a link or a foreign key to follow it. A foreign key column centers the table it points at and selects it. A markdown link in the column note overrides that: a target naming a table centers that table, and any other target is a page link, navigating for a site path, opening a new tab for a full url, and scrolling for a `#anchor`.
+
+The starting layout comes from `src/dbml/erd.ts`, which positions the tables at build time and separates any two cards that would touch. Cards never overlap on first paint. A schema that still reads badly is fixed there or in the source order, not by asking readers to drag.
 
 Scroll zoom is armed only once the frame is active, so an inline diagram never captures page scrolling before the reader clicks it.
 
@@ -76,6 +85,8 @@ Scroll zoom is armed only once the frame is active, so an inline diagram never c
 
 7. Schema qualified table names when the schema is not `public`.
 
+8. A markdown link inside a column note as the column's click target, its label as a pill on the row, and the remaining note text as the hover title.
+
 ## Authoring the source
 
 1. One `.dbml` file per page. Do not split a schema across files and stitch it in the markdown.
@@ -83,6 +94,8 @@ Scroll zoom is armed only once the frame is active, so an inline diagram never c
 2. Write a `Note` on every table. It renders as a second line inside the table header, so a schema with notes reads without hovering anything.
 
 3. Write column notes too. A column note becomes the hover title on that row.
+
+3.1. Draw a `jsonb` payload as a table of its own and link the column at it from the column note, `[booking_answers](booking_answers)`. The payload table carries a `Note` saying it has no table of its own in the database.
 
 4. Name every index. An unnamed index renders under a generated label in the table footer.
 
@@ -99,5 +112,7 @@ Scroll zoom is armed only once the frame is active, so an inline diagram never c
 3.1. Colors written into the node components as literals. The cards read `tokens.css` so light and dark both work.
 
 4. A `type: dbml` page with a long markdown body. Move the prose to a sibling `doc` page and link to it.
+
+4.1. A `type: dbml` page whose header text runs the full window width. The band is centered in the content column; only the diagram is full width.
 
 5. A schema pasted into a fenced ` ```sql ` block as a stand in for a diagram.

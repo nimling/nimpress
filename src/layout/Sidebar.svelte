@@ -3,6 +3,7 @@
   import { configStore } from '../framework/configStore'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import { sidebarState, setGroupOpen } from '../framework/stores/sidebar'
+  import { withoutBase } from '../framework/configStore'
   import SidebarNode from './SidebarNode.svelte'
   import type { SidebarNode as SidebarNodeType } from '../types'
 
@@ -11,7 +12,7 @@
   let nav: HTMLElement
 
   const sidebar = $derived($configStore.manifest?.sidebar ?? [])
-  const routePath = $derived($resolvedRoute?.path ?? '/')
+  const routePath = $derived(withoutBase($resolvedRoute?.path ?? '/'))
 
   function findChain(
     nodes: SidebarNodeType[],

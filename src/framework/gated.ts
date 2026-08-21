@@ -1,5 +1,5 @@
 import { handleUnauthenticated } from '../auth/session'
-import { configStore } from './configStore'
+import { configStore, withBase } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
 import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
 
@@ -31,8 +31,8 @@ let published: PublishedAsset[] = []
 // without it falls back to the bundle folder it was written to.
 export function gatedFileUrl(bundle: string, file: string): string {
   const hit = published.find((a) => a.bundle === bundle && a.file.endsWith(file))
-  if (hit) return hit.url || `${gatedBase}/${hit.asset_id}/data`
-  return `${gatedBase}/${bundle}/${file}`
+  if (hit) return hit.url || withBase(`${gatedBase}/${hit.asset_id}/data`)
+  return withBase(`${gatedBase}/${bundle}/${file}`)
 }
 
 export function gatedContentBase(): string {
@@ -53,7 +53,7 @@ export async function loadGatedContent(): Promise<void> {
   if (loaded) return
   let routes: Record<string, GuardedRoute> = {}
   try {
-    const accessRes = await fetch('/access.json')
+    const accessRes = await fetch(withBase('/access.json'))
     if (accessRes.ok) {
       const access = (await accessRes.json()) as {
         base?: string

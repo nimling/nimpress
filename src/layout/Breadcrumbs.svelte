@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
 
   let { path = '' }: { path?: string } = $props()
 
@@ -28,7 +28,7 @@
         <span class="np-crumbs-sep" aria-hidden="true">/</span>
       {/if}
       {#if crumb.link}
-        <a class="np-crumbs-item" href={crumb.link}>{crumb.text}</a>
+        <a class="np-crumbs-item" href={withBase(crumb.link)}>{crumb.text}</a>
       {:else}
         <span class="np-crumbs-item np-crumbs-current">{crumb.text}</span>
       {/if}

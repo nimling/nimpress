@@ -87,7 +87,7 @@ Arbitrary object handed to the renderer the page selected.
 
 4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. See [modules.md](/modules).
 
-5. `type: dbml` reads nothing from `data`. The schema comes from `spec`. See [dbml.md](/dbml).
+5. `type: dbml` takes the schema from `spec` and shapes its header from `data.eyebrow`, `data.lead`, `data.logo`, `data.banner`, `data.align`, `data.download`, `data.fullscreen`, `data.actions`, and `data.height`. See [dbml.md](/dbml).
 
 6. Custom renderers read whatever they need.
 
@@ -99,7 +99,7 @@ A frontmatter `path` overrides this entirely.
 
 ## Duplicate paths
 
-Two pages sharing the same effective `path` raise a build error. `type: changelog` entries do not declare `path` at all; they are grouped by `(parent folder, title)` and collapse into one rendered page mounted at the folder's path. See [changelog.md](/changelog).
+Two pages sharing the same effective `path` raise a build error. `type: changelog` entries do not declare `path` at all; they are grouped by `(parent folder, title)` and collapse into one rendered page mounted at the folder's path. See [Changelog renderer](/changelog-renderer).
 
 ## Outside contentDir
 

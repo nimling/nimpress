@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withBase } from '../framework/configStore'
   import { theme } from '../framework/stores/theme'
 
   let {
@@ -37,7 +38,7 @@
     if (slots) params.set('slots', encode(slots))
     params.set('theme', $theme)
     const query = params.toString()
-    return `${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}/${query ? `?${query}` : ''}`
+    return withBase(`${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}/${query ? `?${query}` : ''}`)
   })
 
   $effect(() => {

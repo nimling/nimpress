@@ -4,6 +4,7 @@
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import { navigate } from 'sly-svelte-location-router'
+  import { withBase } from '../framework/configStore'
   import BackToTop from '../layout/BackToTop.svelte'
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
@@ -1508,11 +1509,11 @@
       }
     }
     e.preventDefault()
-    navigate(entry.href)
+    navigate(withBase(entry.href))
   }
 
   function onRocketClick() {
-    if (changelogHref) navigate(changelogHref)
+    if (changelogHref) navigate(withBase(changelogHref))
   }
 
   function measure() {
@@ -1852,7 +1853,7 @@
       <ul class="np-roadmap-aside-changelog">
         {#each modalView.changelog as ref (ref.entrySlug)}
           <li>
-            <a href={ref.entrySlug}>
+            <a href={withBase(ref.entrySlug)}>
               <span class="np-roadmap-aside-version">v{ref.version}</span>
               <span class="np-roadmap-aside-ref-title">{ref.title}</span>
               {#if ref.releaseDate}

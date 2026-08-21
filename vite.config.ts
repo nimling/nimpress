@@ -74,7 +74,6 @@ export default defineConfig(({ mode }) => {
               '@xyflow/svelte',
               'path-to-regexp',
               'zod',
-              '@nimling/samna-auth-middleware',
               'codemirror',
               '@codemirror/state',
               '@codemirror/view',

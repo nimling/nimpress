@@ -55,7 +55,7 @@ describe('lintImports', () => {
 
   it('ignores package imports', () => {
     repo = makeRepo()
-    file(repo.cwd, 'docs/components/Group/Comp/pkg.story.ts', `import { vueStory } from '@nimling/nimpress/story'\nexport default vueStory({ name: 'X' })\n`)
+    file(repo.cwd, 'docs/components/Group/Comp/pkg.story.ts', `import { vueStory } from '@nimtech/nimpress/story'\nexport default vueStory({ name: 'X' })\n`)
     expect(lintImports(repo.cwd, resolvedConfig())).toHaveLength(0)
   })
 })

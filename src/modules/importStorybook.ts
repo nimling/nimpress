@@ -571,7 +571,7 @@ function storySource(
 ): string {
   const helper = framework === 'vue' ? 'vueStory' : 'svelteStory'
   if (story.renderFn) {
-    return `import { ${helper} } from '@nimling/nimpress/story'
+    return `import { ${helper} } from '@nimtech/nimpress/story'
 ${module.imports}
 
 ${module.declarations}
@@ -584,7 +584,7 @@ export default ${helper}({
 })
 `
   }
-  return `import { ${helper} } from '@nimling/nimpress/story'
+  return `import { ${helper} } from '@nimtech/nimpress/story'
 
 // story: ${displayName}
 export default ${helper}({

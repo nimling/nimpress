@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase, withoutBase } from '../framework/configStore'
   import { theme, toggleTheme } from '../framework/stores/theme'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import AccountMenu from '../auth/AccountMenu.svelte'
@@ -19,7 +19,7 @@
   const isDark = $derived($theme === 'dark')
   const route = $derived($resolvedRoute)
   const crumbPath = $derived.by(() => {
-    const path = route?.path ?? '/'
+    const path = withoutBase(route?.path ?? '/')
     if (path === '/' || path === '') return ''
     return path.replace(/\/$/, '')
   })
@@ -39,7 +39,7 @@
       <span class="np-menu-line np-menu-line-bot"></span>
     </span>
   </button>
-  <a class="np-brand" href="/">
+  <a class="np-brand" href={withBase('/')}>
     {#if config.logo}
       <img src={config.logo} alt={config.title} />
     {/if}

@@ -21,7 +21,7 @@ const { loadNimpressConfig, buildViteConfig } = await import(
 let linked = consumer === root
 if (!linked) {
   try {
-    linked = realpathSync(path.join(consumer, 'node_modules/@nimling/nimpress')) === root
+    linked = realpathSync(path.join(consumer, 'node_modules/@nimtech/nimpress')) === root
   } catch {}
 }
 
@@ -37,7 +37,7 @@ if (linked) {
 
 const { resolved } = await loadNimpressConfig(consumer)
 const config = mergeConfig(buildViteConfig({ cwd: consumer, command: 'serve', resolved }), {
-  ...(linked ? { optimizeDeps: { exclude: ['@nimling/nimpress'] } } : {}),
+  ...(linked ? { optimizeDeps: { exclude: ['@nimtech/nimpress'] } } : {}),
   server: { fs: { allow: [root, consumer] } }
 })
 

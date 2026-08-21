@@ -48,13 +48,13 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 2. `type: changelog` requires `data.version: '1.2.3'`, `data.release_date` as an RFC 3339 date, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. The route comes from the folder, so entries carry no `path` field. Optional `data.issue: <relative path>` plus `data.status` link the entry to a roadmap issue. See [changelog-entries.md](./changelog-entries.md).
 
-3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids compose as `:::actions` and `:::features` in the markdown body, `data` carries only the band fields. See `docs/hero.md` and `docs/markdown.md`.
+3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids compose as `:::actions` and `:::features` in the markdown body, `data` carries only the band fields. See [Hero](https://nimling.github.io/nimpress/hero) and [Markdown](https://nimling.github.io/nimpress/markdown).
 
 4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
 
 5. `type: milestone | epic | feature | bug` (issue pages) require `title`, `description`, and `data.date` as an RFC 3339 string. Optional `data.parent` references another issue by relative filename. Each issue page renders at its own URL with a kind chip and date header. See [roadmap-entries.md](./roadmap-entries.md).
 
-6. `type: dbml` requires `spec: ./path/to/schema.dbml` relative to the markdown file. The markdown body renders as the page header above the diagram. See [dbml-pages.md](./dbml-pages.md).
+6. `type: dbml` requires `spec: ./path/to/schema.dbml` relative to the markdown file. The title, the description, and the markdown body render inside a hero band above the diagram, shaped by `data.eyebrow`, `data.lead`, `data.logo`, `data.banner`, and `data.align`, with `data.download`, `data.fullscreen`, and `data.actions` for its buttons and `data.height` for the diagram. See [dbml-pages.md](./dbml-pages.md).
 
 7. `type: component` requires `data.system` naming a configured module system and `data.component` naming the component. Optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. One `type: component` page per folder; the sibling story files are its stories. See [component-modules.md](./component-modules.md).
 
@@ -80,7 +80,7 @@ meta:
     headline: My page
 ```
 
-Structured payloads beyond `meta` live inside `data` as structured objects, never as loose top level fields. Defaults flow from `frontmatter.description` and the site level `site` config in `createNimpressApp`. Full reference in `docs/seo.md`.
+Structured payloads beyond `meta` live inside `data` as structured objects, never as loose top level fields. Defaults flow from `frontmatter.description` and the site level `site` config in `createNimpressApp`. Full reference in [SEO](https://nimling.github.io/nimpress/seo).
 
 ## Gating
 

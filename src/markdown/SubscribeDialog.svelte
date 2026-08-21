@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte'
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { subscribeFeed, subscribeConfigured } from '../subscribe/subscribe'
   import IconRemove from '../icons/IconRemove.svelte'
@@ -22,9 +22,10 @@
   const config = $derived($configStore)
   const v = $derived($viewer)
   const feedUrl = $derived.by(() => {
+    const routed = withBase(feedPath)
     const base = config.site?.url?.replace(/\/$/, '')
-    if (base) return `${base}${feedPath}`
-    return new URL(feedPath, window.location.origin).href
+    if (base) return `${base}${routed}`
+    return new URL(routed, window.location.origin).href
   })
   const emailReady = $derived(emailEnabled && subscribeConfigured())
 

@@ -15,6 +15,9 @@ dev:
 build:
     pnpm run build:lib
 
+site:
+    node bin/nimpress.mjs build
+
 check:
     pnpm run type-check
 

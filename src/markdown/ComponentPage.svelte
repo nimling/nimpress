@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
+  import { withBase, withoutBase } from '../framework/configStore'
   import type { ComponentStory, PageModule } from '../types'
   import { mockValue, schemaToJsonSchema } from '../modules/parse/typeMembers'
   import { fnSource, isFnValue } from '../mock'
@@ -30,7 +31,7 @@
   const emits = $derived(page.componentData?.schema?.emits ?? [])
 
   const view = $derived.by(() => {
-    const path = ($resolvedRoute?.path ?? '').replace(/\/$/, '')
+    const path = withoutBase($resolvedRoute?.path ?? '').replace(/\/$/, '')
     const base = page.path.replace(/\/$/, '')
     if (path.startsWith(`${base}/`)) {
       const anchor = path.slice(base.length + 1)
@@ -405,7 +406,7 @@
     const params = new URLSearchParams()
     if (stories.length) params.set('story', stories[0].file.replace(/\.story\.tsx?$/, ''))
     params.set('theme', $theme)
-    return `${data.harnessPath}?${params.toString()}`
+    return withBase(`${data.harnessPath}?${params.toString()}`)
   })
 
   const storySrc = $derived.by(() => {
@@ -417,7 +418,7 @@
     params.set('emits', encodeParam(untrack(() => emitsPayload())))
     params.set('theme', untrack(() => frameTheme))
     if (untrack(() => shadowOn)) params.set('shadow', '1')
-    return `${data.harnessPath}?${params.toString()}`
+    return withBase(`${data.harnessPath}?${params.toString()}`)
   })
 
   function push() {
@@ -714,7 +715,7 @@
           <div class="np-component-preview-head">
             <h2>Preview</h2>
             {#if stories.length}
-              <a class="np-component-preview-open" href="{page.path}/{storyAnchor(stories[0].name)}">open in the workshop</a>
+              <a class="np-component-preview-open" href={withBase(`${page.path}/${storyAnchor(stories[0].name)}`)}>open in the workshop</a>
             {/if}
           </div>
           <div class="np-component-preview-frame">
@@ -830,7 +831,7 @@
     {/snippet}
     <div class="np-ws-toolbar">
       <span class="np-ws-crumb">
-        <a href={page.path}>{page.frontmatter.title}</a>
+        <a href={withBase(page.path)}>{page.frontmatter.title}</a>
         <span class="np-ws-crumb-sep">/</span>
         <strong>{activeStory.name}</strong>
         {#if activeStory.description}

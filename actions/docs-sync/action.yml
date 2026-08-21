@@ -1,5 +1,5 @@
 name: Sync nimpress docs
-description: Mirror a source repo .nimpress folder into the docs tree and commit, tag, or open a pull request
+description: Mirror a source repo export folder into the docs tree and commit, tag, or open a pull request
 inputs:
   token:
     description: A token that can push to the docs repo and open pull requests
@@ -14,7 +14,7 @@ inputs:
     description: Full name of the source repo
     required: true
   source-path:
-    description: Absolute path to the checked out .nimpress folder
+    description: Absolute path to the checked out export folder
     required: true
   content-root:
     description: Absolute path to the docs content root the targets resolve under

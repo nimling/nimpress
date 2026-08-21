@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withBase } from '../framework/configStore'
   import { onMount, tick } from 'svelte'
   import RoadmapBlob from './RoadmapBlob.svelte'
   import type { RoadmapEntry, RoadmapKind } from '../types'
@@ -95,7 +96,7 @@
 <a
   bind:this={hostEl}
   class="np-rm-node np-rm-node-{side} np-rm-node-{entry.kind} np-rm-node-{entry.status}"
-  href={entry.href}
+  href={withBase(entry.href)}
   id={entry.slug}
   style:left={`${x}px`}
   style:top={`${y}px`}

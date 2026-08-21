@@ -4,6 +4,7 @@ import { loadConfigFromFile } from 'vite'
 import type { NimpressUserConfig, ResolvedNimpressConfig } from '../types'
 import { defaultConfig } from './defaults'
 import { parseUserConfig } from './schema'
+import { normalizeBase } from './base'
 
 const candidates = ['nimpress.config.ts', 'nimpress.config.js', 'nimpress.config.mjs', 'nimpress.config.json']
 
@@ -51,6 +52,7 @@ export async function loadNimpressConfig(
   let resolved = mergeDeep(defaultConfig, foundConfig as Partial<ResolvedNimpressConfig> | undefined)
   resolved = mergeDeep(resolved, inlineConfig as Partial<ResolvedNimpressConfig> | undefined)
   resolved.css = typeof resolved.css === 'string' ? [resolved.css] : resolved.css ?? []
+  resolved.base = normalizeBase(resolved.base)
   const userModules = inline?.modules ?? found?.config?.modules
   resolved.modules = {
     dir: defaultConfig.modules.dir,
@@ -66,6 +68,7 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     logo: resolved.logo,
     github: resolved.github,
     brand: resolved.brand,
+    base: resolved.base,
     contentRoot: resolved.contentDir,
     navRoutes: resolved.navRoutes,
     auth: resolved.auth,

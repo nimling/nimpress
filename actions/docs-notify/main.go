@@ -30,9 +30,13 @@ func main() {
 	if contentDir == "" {
 		contentDir = "docs"
 	}
+	exportDir := os.Getenv("NIMPRESS_EXPORT_DIR")
+	if exportDir == "" {
+		exportDir = ".nimpress"
+	}
 	mode := ""
-	nimpressDir := filepath.Join(workspace, ".nimpress")
-	if info, err := os.Stat(nimpressDir); err == nil && info.IsDir() {
+	sourceDir := filepath.Join(workspace, filepath.FromSlash(exportDir))
+	if info, err := os.Stat(sourceDir); err == nil && info.IsDir() {
 		mode = "nimpress"
 	} else {
 		marked, err := docssync.FindExports(filepath.Join(workspace, contentDir), "")
@@ -41,15 +45,16 @@ func main() {
 		}
 	}
 	if mode == "" {
-		fail("nothing to publish: no .nimpress folder at " + nimpressDir + " and no pages marked with the export frontmatter header under " + contentDir)
+		fail("nothing to publish: no folder at " + sourceDir + " and no pages marked with the export frontmatter header under " + contentDir)
 	}
 	payload := map[string]any{
 		"event_type": eventType,
 		"client_payload": map[string]string{
-			"repo": sourceRepo,
-			"sha":  sha,
-			"ref":  ref,
-			"mode": mode,
+			"repo":       sourceRepo,
+			"sha":        sha,
+			"ref":        ref,
+			"mode":       mode,
+			"export_dir": exportDir,
 		},
 	}
 	body, err := json.Marshal(payload)

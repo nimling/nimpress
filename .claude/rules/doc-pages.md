@@ -56,7 +56,7 @@ title: How sessions work
 
 7. Callouts are `:::tip`, `:::note`, `:::warning`, `:::info`, `:::check`. Three on a page is a lot.
 
-8. Definition lists for reference grids of terms with one line descriptions. See `docs/definition-lists.md`.
+8. Definition lists for reference grids of terms with one line descriptions. See [Definition lists](https://nimling.github.io/nimpress/definition-lists).
 
 9. Mermaid blocks render `flowchart`, `stateDiagram-v2`, `sequenceDiagram`, `erDiagram` when a flow or state reads more cleanly visually.
 

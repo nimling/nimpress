@@ -1,6 +1,6 @@
 # Deploy
 
-The release pipeline for `@nimling/nimpress`. Run from the repo root.
+The release pipeline for `@nimtech/nimpress`. Run from the repo root.
 
 ## Steps in order
 
@@ -13,6 +13,16 @@ The release pipeline for `@nimling/nimpress`. Run from the repo root.
 4. `git push` to `origin/main`.
 
 5. `just deploy` to invoke `sbump` which bumps the patch version, writes the tag, and pushes both.
+
+## What the tag triggers
+
+1. `Generate and publish nimpress` builds the library, runs the tests, and publishes the package to npm under the `@nimtech` scope. It is public, so a consumer installs it with no registry configuration and no token.
+
+2. `Release nimpress actions` validates the Go actions and moves the major tag onto the release.
+
+3. `Publish the docs site` builds `docs/` with the freshly built library and deploys it to GitHub Pages at `nimling.github.io/nimpress`. The site build writes into `dist/site` so it never clears the library output, and the `base` field in `nimpress.config.json` is what makes the project page path resolve.
+
+A release that changes a user visible surface carries its changelog entry in `docs/changelog/` in the same commit, one file per release. The entry contract is in `changelog-entries.md`.
 
 ## Variants
 

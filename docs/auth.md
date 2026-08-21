@@ -5,19 +5,21 @@ sidebar:
   name: Pipeline
 ---
 
-Page level gating through `samna_auth`. Sessions arrive via cookies. There is no client secret in the browser.
+Page level gating against any OIDC provider. Sessions arrive via cookies. There is no client secret in the browser.
 
 ## How it works
 
-The runtime calls `@nimling/samna-auth-middleware` (TypeScript edge client) to:
+The runtime owns the session on its own and pulls in no auth package. It:
 
-1. Read the session cookie issued by the prophet at `samna_auth`.
+1. Reads the session cookie issued by the provider at the configured `authEndpoint`.
 
-2. Validate the JWT against the JWKS for the configured authority.
+2. Calls the provider `userinfo` endpoint with `credentials: 'include'` to resolve the viewer.
 
-3. Expose a `viewer` store with the resolved user.
+3. Exposes a `viewer` store with that user.
 
 The viewer store is consumed by `AccountMenu`, `pageGuard`, and any component that wants to react to login state.
+
+The `auth` block in `nimpress.config` names the endpoints, so any provider speaking OIDC over cookies works. Sites inside the Nimtech stack point it at `samna_auth` and reach for `@nimling/samna-auth-middleware` on their own edge; nimpress neither depends on it nor loads it.
 
 ## Page gating
 
@@ -38,7 +40,7 @@ Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot
 
 ## Login flow
 
-`startLogin(returnTo)` redirects to `<authEndpoint>/api/auth/login?clientSlug=<clientSlug>&returnTo=<encoded>`. After login, the prophet sets the session cookie on the docs origin and redirects back.
+`startLogin(returnTo)` redirects to `<authEndpoint>/api/auth/login?clientSlug=<clientSlug>&returnTo=<encoded>`. After login, the provider sets the session cookie on the docs origin and redirects back.
 
 ## Logout
 
@@ -62,7 +64,7 @@ This is the last step before publishing a site that mixes public and gated pages
 
 ## Threat model
 
-1. No client id, no client secret, no token refresh path in the browser. The prophet owns all of them.
+1. No client id, no client secret, no token refresh path in the browser. The provider owns all of them.
 
 2. The viewer surface is read only. Claims cannot be elevated client side.
 

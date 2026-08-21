@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { navigate } from 'sly-svelte-location-router'
   import { theme } from '../framework/stores/theme'
+  import { withBase } from '../framework/configStore'
   import FullscreenIcon from '../icons/FullscreenIcon.svelte'
   import type { ErdDiagram } from '../dbml/erd'
   import '@xyflow/svelte/dist/style.css'
@@ -9,8 +11,15 @@
     schema,
     error = '',
     height = '520px',
-    activateOnMount = false
-  }: { schema: string; error?: string; height?: string; activateOnMount?: boolean } = $props()
+    activateOnMount = false,
+    flush = false
+  }: {
+    schema: string
+    error?: string
+    height?: string
+    activateOnMount?: boolean
+    flush?: boolean
+  } = $props()
 
   let wrapper: HTMLDivElement
   let fullscreen = $state(false)
@@ -20,6 +29,7 @@
   let nodeTypes = $state.raw<Record<string, any>>({})
   let nodes = $state.raw<any[]>([])
   let edges = $state.raw<any[]>([])
+  let viewport = $state.raw<{ x: number; y: number; zoom: number } | undefined>(undefined)
   let tableCount = $state(0)
 
   const active = $derived(activateOnMount || activated)
@@ -74,7 +84,7 @@
     }
   }
 
-  async function toggleFullscreen() {
+  export async function toggleFullscreen() {
     if (!wrapper) return
     if (document.fullscreenElement === wrapper) {
       await document.exitFullscreen()
@@ -85,6 +95,34 @@
     }
   }
 
+  function focusTable(id: string) {
+    const node = nodes.find((entry) => entry.id === id)
+    if (!node || !wrapper) return
+    const rect = wrapper.getBoundingClientRect()
+    const zoom = Math.min(1.1, Math.max(0.7, viewport?.zoom ?? 1))
+    const width = Number(node.width ?? node.data?.width ?? 240)
+    const nodeHeight = Number(node.data?.height ?? 200)
+    viewport = {
+      x: rect.width / 2 - (node.position.x + width / 2) * zoom,
+      y: rect.height / 2 - (node.position.y + nodeHeight / 2) * zoom,
+      zoom
+    }
+    nodes = nodes.map((entry) => ({ ...entry, selected: entry.id === id }))
+  }
+
+  async function openLink(href: string) {
+    if (/^[a-z]+:\/\//i.test(href) || href.startsWith('//')) {
+      window.open(href, '_blank', 'noopener')
+      return
+    }
+    if (fullscreen) await toggleFullscreen()
+    if (href.startsWith('#')) {
+      document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    navigate(withBase(href))
+  }
+
   onMount(() => {
     void build()
     const onKey = (e: KeyboardEvent) => {
@@ -93,9 +131,19 @@
     const onFsChange = () => {
       fullscreen = document.fullscreenElement === wrapper
     }
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<{ link?: string; target?: string }>).detail
+      if (detail?.target) {
+        focusTable(detail.target)
+        return
+      }
+      if (detail?.link) void openLink(detail.link)
+    }
+    wrapper?.addEventListener('np-erd-open', onOpen)
     document.addEventListener('keydown', onKey)
     document.addEventListener('fullscreenchange', onFsChange)
     return () => {
+      wrapper?.removeEventListener('np-erd-open', onOpen)
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('fullscreenchange', onFsChange)
     }
@@ -105,6 +153,7 @@
 <div
   class="np-dbml-wrapper"
   class:np-dbml-fullscreen={fullscreen}
+  class:np-dbml-flush={flush}
   style:--np-dbml-height={height}
   bind:this={wrapper}
 >
@@ -116,6 +165,7 @@
         <Flow
           bind:nodes
           bind:edges
+          bind:viewport
           {nodeTypes}
           {colorMode}
           fitView
@@ -166,6 +216,11 @@
     border: 0;
     border-radius: 0;
     height: 100vh;
+  }
+  .np-dbml-flush {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
   .np-dbml-host {
     position: absolute;

@@ -4,7 +4,7 @@ import { parseStorySource } from '../src/modules/stories'
 describe('parseStorySource', () => {
   it('prefers the story comment name', () => {
     const story = parseStorySource(
-      `import { vueStory } from '@nimling/nimpress/story'\n// story: Card\nexport default vueStory({ name: "Other", props: { label: "x" } })\n`,
+      `import { vueStory } from '@nimtech/nimpress/story'\n// story: Card\nexport default vueStory({ name: "Other", props: { label: "x" } })\n`,
       'card.story.ts'
     )
     expect(story.name).toBe('Card')

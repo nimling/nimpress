@@ -29,7 +29,7 @@ Every token has a light and a dark value. The dark theme overrides them under `:
 
 ## Overriding tokens
 
-Add a stylesheet in your consumer app and import it after `@nimling/nimpress/style.css`:
+Add a stylesheet in your consumer app and import it after `@nimtech/nimpress/style.css`:
 
 ```css
 :root {
@@ -74,4 +74,4 @@ createNimpressApp({
 
 ## Tailwind preset
 
-`@nimling/nimpress/tailwind` exports a preset matching the token palette. Extend it in your `tailwind.config.ts` to author utilities that match the framework chrome.
+`@nimtech/nimpress/tailwind` exports a preset matching the token palette. Extend it in your `tailwind.config.ts` to author utilities that match the framework chrome.

@@ -30,7 +30,7 @@ modules: [
 
 4.1. `harness` points at the system harness component wrapping every story, a `.ts`, `.tsx`, `.vue`, or `.svelte` path. There is no filename discovery; a harness exists only where the config or a story declares it.
 
-4.2. The frame is a composition of harness primitives imported from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`. `ComponentHarness` is the root, `ComponentStory` is the mount point where nimpress renders the component under test, `ComponentHarnessEffects` wraps its children and applies the toolbar drop shadow, `ComponentHarnessOverlay` mounts the system overlay root. The default composition is `ComponentHarness` wrapping `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it, and it runs when a system declares no harness.
+4.2. The frame is a composition of harness primitives imported from `@nimtech/nimpress/harness/vue` or `@nimtech/nimpress/harness/svelte`. `ComponentHarness` is the root, `ComponentStory` is the mount point where nimpress renders the component under test, `ComponentHarnessEffects` wraps its children and applies the toolbar drop shadow, `ComponentHarnessOverlay` mounts the system overlay root. The default composition is `ComponentHarness` wrapping `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it, and it runs when a system declares no harness.
 
 4.3. A custom harness imports the primitives and arranges them freely, wrapping `ComponentStory` in a layout, adding providers, reordering, or omitting a piece. nimpress feeds the component, its props, slots, and overlay into the tree, so `ComponentStory` always resolves it. The checkerboard background, zoom, and vision filters are workshop chrome around the iframe, not harness primitives, and stay on the toolbar.
 
@@ -58,7 +58,7 @@ modules: [
 
 ## Stories
 
-1. A story is a `.story.tsx` file beside the component page, so html sits directly in the render; `.story.ts` also loads. Import `vueStory` or `svelteStory` from `@nimling/nimpress/story` and default export the definition.
+1. A story is a `.story.tsx` file beside the component page, so html sits directly in the render; `.story.ts` also loads. Import `vueStory` or `svelteStory` from `@nimtech/nimpress/story` and default export the definition.
 
 2. Name resolution order: `// story: <name>` comment frontmatter, then the `name` field, then the file name with underscores read as spaces, so `With_Controls.story.ts` names the story `With Controls`.
 
@@ -94,7 +94,7 @@ modules: [
 
 4. Every event renders as its own control row under the events header: the handler source sits in an always visible code editor spanning the row, mock resets it to the logging stub, clear detaches the event, a chevron hides the editor per row. A story starts with logging stubs attached to all events. A default button at the events header resets every handler to the logging stub at once.
 
-5. Mock resolves from the schema through the `@nimling/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed, and option picks exclude values already present so a reclick lands on a fresh option. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
+5. Mock resolves from the schema through the `@nimtech/nimpress/mock` named exports: the `mock` name stored per member picks the function, `mockEmail`, `mockParagraph`, `mockInt`, `mockOption`, `mockEvent`, and the rest, all star wars flavored. Reclicking regenerates via a seed, and option picks exclude values already present so a reclick lands on a fresh option. Per row mock fills one prop; the panel header mock fills everything empty including handlers.
 
 6. Control values persist to localStorage per system, component, and story. Clear per row or clear all from the panel header; the panel header also carries default, resetting every control to its schema default and every slot to its declared default. Once the workshop has pushed props to the frame, the pushed set alone drives the component and story props and required defaults no longer fill in underneath, so a cleared prop renders truly empty. The json dialog in the panel head shows the live values as one editable json object plus the schema, with copy and populated counts.
 

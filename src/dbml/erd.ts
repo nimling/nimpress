@@ -1,21 +1,32 @@
 import { exporter } from '@dbml/core'
 
-const HEADER_HEIGHT = 40
-const ROW_HEIGHT = 26
-const INDEX_HEIGHT = 20
-const TABLE_PADDING = 10
-const TABLE_GAP_X = 90
-const TABLE_GAP_Y = 70
+const ROW_HEIGHT = 27
+const INDEX_LINE = 14
+const INDEX_PADDING = 16
+const HEADER_PADDING = 20
+const HEADER_LINE = 17
+const HEADER_NOTE_LINE = 14
+const TABLE_GAP_X = 110
+const TABLE_GAP_Y = 60
+const COMPONENT_GAP_Y = 120
 const CANVAS_MARGIN = 40
 const TABLE_MIN_WIDTH = 200
-const TABLE_MAX_WIDTH = 400
+const TABLE_MAX_WIDTH = 420
+const TABLE_SIDE_PADDING = 24
 const NAME_CHAR = 7.6
 const TYPE_CHAR = 6.6
+const HEADER_CHAR = 7.4
+const HEADER_NOTE_CHAR = 5.4
+const INDEX_CHAR = 5.8
+const LINK_CHAR = 6.2
 const FLAG_WIDTH = 34
 const TABLE_CHROME = 48
+const COLUMN_LIMIT = 8
 const NOTE_WIDTH = 260
 const NOTE_LINE = 18
-const NOTE_MIN_HEIGHT = 90
+const NOTE_CHAR = 6.2
+const NOTE_TITLE_HEIGHT = 30
+const NOTE_PADDING = 24
 const NOTE_GAP = 24
 
 interface DbmlType {
@@ -119,6 +130,9 @@ export interface ErdColumn {
   unique: boolean
   notNull: boolean
   increment: boolean
+  link: string
+  linkLabel: string
+  target: string
 }
 
 export interface ErdIndex {
@@ -156,6 +170,7 @@ export interface ErdNote {
   x: number
   y: number
   width: number
+  height: number
 }
 
 export interface ErdDiagram {
@@ -202,6 +217,33 @@ function defaultText(field: DbmlField): string {
   return String(raw.value)
 }
 
+const NOTE_LINK = /\[([^\]]+)\]\(([^)\s]+)\)/
+
+interface NoteLink {
+  note: string
+  label: string
+  href: string
+}
+
+function readNoteLink(raw: string): NoteLink {
+  const text = String(raw ?? '').trim()
+  const match = NOTE_LINK.exec(text)
+  if (!match) return { note: text, label: '', href: '' }
+  return {
+    note: text.replace(match[0], '').replace(/\s{2,}/g, ' ').trim(),
+    label: match[1].trim(),
+    href: match[2].trim()
+  }
+}
+
+function lineCount(text: string, charWidth: number, boxWidth: number): number {
+  if (!text) return 0
+  const perLine = Math.max(1, Math.floor(boxWidth / charWidth))
+  return text
+    .split('\n')
+    .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.trim().length / perLine)), 0)
+}
+
 function longest(values: string[]): number {
   return values.reduce((max, value) => Math.max(max, value.length), 0)
 }
@@ -209,18 +251,69 @@ function longest(values: string[]): number {
 function tableWidth(name: string, columns: ErdColumn[]): number {
   const nameWidth = longest(columns.map((c) => c.name)) * NAME_CHAR
   const typeWidth = longest(columns.map((c) => c.type)) * TYPE_CHAR
+  const linkWidth = longest(columns.map((c) => c.linkLabel)) * LINK_CHAR
   const flags = columns.some((c) => c.pk || c.fk) ? FLAG_WIDTH : 0
-  const body = Math.round(nameWidth + typeWidth + flags + TABLE_CHROME)
-  const header = Math.round(name.length * 8 + 32)
+  const body = Math.round(nameWidth + typeWidth + linkWidth + flags + TABLE_CHROME)
+  const header = Math.round(name.length * HEADER_CHAR + 32)
   return Math.min(TABLE_MAX_WIDTH, Math.max(TABLE_MIN_WIDTH, body, header))
 }
 
 function tableHeight(table: ErdTable): number {
-  const rows = HEADER_HEIGHT + Math.max(table.columns.length, 1) * ROW_HEIGHT + TABLE_PADDING
-  return table.indexes.length ? rows + 8 + table.indexes.length * INDEX_HEIGHT : rows
+  const inner = table.width - TABLE_SIDE_PADDING
+  const headLines = Math.max(1, lineCount(table.name, HEADER_CHAR, inner))
+  const noteLines = lineCount(table.note, HEADER_NOTE_CHAR, inner)
+  const head = HEADER_PADDING + headLines * HEADER_LINE + noteLines * HEADER_NOTE_LINE
+  const rows = Math.max(table.columns.length, 1) * ROW_HEIGHT
+  const indexLines = table.indexes.reduce(
+    (sum, index) =>
+      sum + lineCount(`${index.unique ? 'unique' : 'index'} ${index.columns.join(', ')}`, INDEX_CHAR, inner),
+    0
+  )
+  const indexes = table.indexes.length ? INDEX_PADDING + indexLines * INDEX_LINE : 0
+  return Math.round(head + rows + indexes + 2)
 }
 
-function orderTables(tables: ErdTable[], links: Array<[string, string]>): ErdTable[] {
+function noteHeight(note: ErdNote): number {
+  const inner = note.width - NOTE_PADDING
+  const bodyLines = lineCount(note.body, NOTE_CHAR, inner)
+  const title = note.title ? NOTE_TITLE_HEIGHT : 0
+  return Math.round(NOTE_PADDING + title + Math.max(1, bodyLines) * NOTE_LINE)
+}
+
+interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function overlaps(a: Box, b: Box, gap: number): boolean {
+  return (
+    a.x < b.x + b.width + gap &&
+    b.x < a.x + a.width + gap &&
+    a.y < b.y + b.height + gap &&
+    b.y < a.y + a.height + gap
+  )
+}
+
+function separate(boxes: Box[], gap: number): void {
+  const order = [...boxes].sort((a, b) => a.y - b.y || a.x - b.x)
+  for (let i = 1; i < order.length; i++) {
+    let moved = true
+    let guard = 0
+    while (moved && guard < order.length) {
+      moved = false
+      guard += 1
+      for (let j = 0; j < i; j++) {
+        if (!overlaps(order[i], order[j], gap)) continue
+        order[i].y = order[j].y + order[j].height + gap
+        moved = true
+      }
+    }
+  }
+}
+
+function componentsOf(tables: ErdTable[], links: Array<[string, string]>): ErdTable[][] {
   const neighbours = new Map<string, Set<string>>()
   for (const table of tables) neighbours.set(table.id, new Set())
   for (const [a, b] of links) {
@@ -230,23 +323,92 @@ function orderTables(tables: ErdTable[], links: Array<[string, string]>): ErdTab
   }
   const byId = new Map(tables.map((table) => [table.id, table]))
   const seen = new Set<string>()
-  const ordered: ErdTable[] = []
-  for (const root of tables) {
+  const groups: ErdTable[][] = []
+  const roots = [...tables].sort(
+    (a, b) => (neighbours.get(b.id)?.size ?? 0) - (neighbours.get(a.id)?.size ?? 0)
+  )
+  for (const root of roots) {
     if (seen.has(root.id)) continue
+    const group: ErdTable[] = []
     const queue = [root.id]
     seen.add(root.id)
     while (queue.length) {
       const current = queue.shift() as string
       const table = byId.get(current)
-      if (table) ordered.push(table)
-      for (const next of neighbours.get(current) ?? []) {
-        if (seen.has(next)) continue
-        seen.add(next)
-        queue.push(next)
+      if (table) group.push(table)
+      const next = [...(neighbours.get(current) ?? [])].sort(
+        (a, b) => (neighbours.get(b)?.size ?? 0) - (neighbours.get(a)?.size ?? 0)
+      )
+      for (const id of next) {
+        if (seen.has(id)) continue
+        seen.add(id)
+        queue.push(id)
       }
     }
+    groups.push(group)
   }
-  return ordered
+  return groups
+}
+
+function levelsOf(group: ErdTable[], links: Array<[string, string]>): ErdTable[][] {
+  const ids = new Set(group.map((table) => table.id))
+  const neighbours = new Map<string, Set<string>>()
+  for (const table of group) neighbours.set(table.id, new Set())
+  for (const [a, b] of links) {
+    if (a === b || !ids.has(a) || !ids.has(b)) continue
+    neighbours.get(a)?.add(b)
+    neighbours.get(b)?.add(a)
+  }
+  const depth = new Map<string, number>()
+  const root = group[0]
+  depth.set(root.id, 0)
+  const queue = [root.id]
+  while (queue.length) {
+    const current = queue.shift() as string
+    for (const next of neighbours.get(current) ?? []) {
+      if (depth.has(next)) continue
+      depth.set(next, (depth.get(current) ?? 0) + 1)
+      queue.push(next)
+    }
+  }
+  const byDepth = new Map<number, ErdTable[]>()
+  for (const table of group) {
+    const level = depth.get(table.id) ?? 0
+    const list = byDepth.get(level) ?? []
+    list.push(table)
+    byDepth.set(level, list)
+  }
+  const columns: ErdTable[][] = []
+  for (const level of [...byDepth.keys()].sort((a, b) => a - b)) {
+    const tables = byDepth.get(level) ?? []
+    for (let start = 0; start < tables.length; start += COLUMN_LIMIT) {
+      columns.push(tables.slice(start, start + COLUMN_LIMIT))
+    }
+  }
+  return columns
+}
+
+function placeTables(tables: ErdTable[], links: Array<[string, string]>): ErdTable[] {
+  const placed: ErdTable[] = []
+  let cursorY = CANVAS_MARGIN
+  for (const group of componentsOf(tables, links)) {
+    let cursorX = CANVAS_MARGIN
+    let bottom = cursorY
+    for (const column of levelsOf(group, links)) {
+      const columnWidth = Math.max(...column.map((table) => table.width))
+      let y = cursorY
+      for (const table of column) {
+        table.x = cursorX + Math.round((columnWidth - table.width) / 2)
+        table.y = y
+        y += table.height + TABLE_GAP_Y
+        bottom = Math.max(bottom, table.y + table.height)
+        placed.push(table)
+      }
+      cursorX += columnWidth + TABLE_GAP_X
+    }
+    cursorY = bottom + COMPONENT_GAP_Y
+  }
+  return placed
 }
 
 export function dbmlToDiagram(source: string): ErdDiagram {
@@ -295,18 +457,22 @@ export function dbmlToDiagram(source: string): ErdDiagram {
       const field = model.fields[String(fieldId)]
       if (!field) return
       const pk = Boolean(field.pk) || compositeKeys.has(field.id)
+      const noteLink = readNoteLink(field.note ?? '')
       columnIndexByField.set(field.id, columns.length)
       tableIdByField.set(field.id, id)
       columns.push({
         name: field.name,
         type: typeText(field),
-        note: field.note ?? '',
+        note: noteLink.note,
         default: defaultText(field),
         pk,
         fk: false,
         unique: Boolean(field.unique),
         notNull: pk || Boolean(field.not_null),
-        increment: Boolean(field.increment)
+        increment: Boolean(field.increment),
+        link: noteLink.href,
+        linkLabel: noteLink.label,
+        target: ''
       })
     })
 
@@ -342,6 +508,18 @@ export function dbmlToDiagram(source: string): ErdDiagram {
     tables.push(table)
     tableById.set(id, table)
     tableIdByName.set(raw.name, id)
+    tableIdByName.set(name, id)
+  }
+
+  for (const table of tables) {
+    for (const column of table.columns) {
+      if (!column.link) continue
+      const bare = column.link.replace(/^#/, '')
+      const targetId = tableIdByName.get(bare) ?? tableIdByName.get(column.link)
+      if (!targetId || targetId === table.id) continue
+      column.target = targetId
+      column.link = ''
+    }
   }
 
   interface Link {
@@ -369,7 +547,10 @@ export function dbmlToDiagram(source: string): ErdDiagram {
     for (const fieldId of child.fieldIds) {
       const table = tableById.get(tableIdByField.get(fieldId) ?? '')
       const columnIndex = columnIndexByField.get(fieldId)
-      if (table && columnIndex !== undefined) table.columns[columnIndex].fk = true
+      if (!table || columnIndex === undefined) continue
+      const column = table.columns[columnIndex]
+      column.fk = true
+      if (!column.target && !column.link) column.target = parentTableId
     }
     links.push({
       id: `edge-${ref.id}`,
@@ -381,26 +562,34 @@ export function dbmlToDiagram(source: string): ErdDiagram {
     })
   }
 
-  const ordered = orderTables(
+  const ordered = placeTables(
     tables,
     links.map((link) => [link.parent, link.child] as [string, string])
   )
-  const perRow = Math.max(1, Math.ceil(Math.sqrt(ordered.length || 1)))
-  let cursorY = CANVAS_MARGIN
-  let widest = CANVAS_MARGIN
-  for (let start = 0; start < ordered.length; start += perRow) {
-    const row = ordered.slice(start, start + perRow)
-    let cursorX = CANVAS_MARGIN
-    let rowHeight = 0
-    for (const table of row) {
-      table.x = cursorX
-      table.y = cursorY
-      cursorX += table.width + TABLE_GAP_X
-      widest = Math.max(widest, table.x + table.width)
-      rowHeight = Math.max(rowHeight, table.height)
+  const laidOut = ordered.length ? ordered : tables
+
+  const notes: ErdNote[] = []
+  const widest = laidOut.reduce((max, table) => Math.max(max, table.x + table.width), CANVAS_MARGIN)
+  let noteY = CANVAS_MARGIN
+  const noteX = widest + CANVAS_MARGIN + TABLE_GAP_X
+  for (const raw of Object.values(model.notes).sort((a, b) => a.id - b.id)) {
+    const body = String(raw.content ?? '').trim()
+    if (!body) continue
+    const note: ErdNote = {
+      id: `note-${raw.id}`,
+      title: raw.name ?? '',
+      body,
+      x: noteX,
+      y: noteY,
+      width: NOTE_WIDTH,
+      height: 0
     }
-    cursorY += rowHeight + TABLE_GAP_Y
+    note.height = noteHeight(note)
+    notes.push(note)
+    noteY += note.height + NOTE_GAP
   }
+
+  separate([...laidOut, ...notes], NOTE_GAP)
 
   const edges: ErdEdge[] = []
   for (const link of links) {
@@ -419,26 +608,9 @@ export function dbmlToDiagram(source: string): ErdDiagram {
     })
   }
 
-  const notes: ErdNote[] = []
-  let noteY = CANVAS_MARGIN
-  const noteX = widest + CANVAS_MARGIN + TABLE_GAP_X
-  for (const raw of Object.values(model.notes).sort((a, b) => a.id - b.id)) {
-    const body = String(raw.content ?? '').trim()
-    if (!body) continue
-    notes.push({
-      id: `note-${raw.id}`,
-      title: raw.name ?? '',
-      body,
-      x: noteX,
-      y: noteY,
-      width: NOTE_WIDTH
-    })
-    noteY += Math.max(NOTE_MIN_HEIGHT, 48 + body.split('\n').length * NOTE_LINE) + NOTE_GAP
-  }
-
   return {
     database: database?.name ?? '',
-    tables: ordered.length ? ordered : tables,
+    tables: laidOut,
     edges,
     notes
   }

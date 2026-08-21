@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { configStore } from '../framework/configStore'
+  import { configStore, withBase } from '../framework/configStore'
   const config = $derived($configStore)
 </script>
 
@@ -8,7 +8,7 @@
   <p>Documentation for the ecosystem.</p>
   <div class="np-cards">
     {#each (config.navRoutes ?? []) as r (r.link)}
-      <a class="np-card" href={r.link}>
+      <a class="np-card" href={withBase(r.link)}>
         <h3>{r.text}</h3>
       </a>
     {/each}

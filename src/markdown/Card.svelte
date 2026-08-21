@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withBase } from '../framework/configStore'
   import type { Snippet } from 'svelte'
 
   let {
@@ -11,7 +12,7 @@
 
 <svelte:element
   this={href ? 'a' : 'div'}
-  href={href}
+  href={href ? withBase(href) : undefined}
   class="np-card"
 >
   {#if icon}<div class="np-card-icon">{icon}</div>{/if}

@@ -98,6 +98,7 @@ export const userConfigSchema = z.object({
     }).passthrough().optional()
   }).passthrough().optional(),
   site: siteSchema.optional(),
+  base: z.string().optional(),
   contentDir: z.string().optional(),
   assetsDir: z.string().optional(),
   assetUrlBase: z.string().optional(),

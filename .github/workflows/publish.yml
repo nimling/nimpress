@@ -16,11 +16,10 @@ jobs:
 
     permissions:
       contents: read
-      packages: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -28,25 +27,22 @@ jobs:
           version: 10.18.3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
 
       - name: Test
         run: pnpm test
 
       - name: Build
         run: pnpm build:lib
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
 
-      - name: Publish
+      - name: Resolve the version
+        id: version
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
@@ -54,8 +50,17 @@ jobs:
             VERSION=${{ github.event.inputs.tag }}
             VERSION=${VERSION#v}
           fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          pnpm version "$VERSION" --no-git-tag-version --allow-same-version
 
-          pnpm version $VERSION --no-git-tag-version --allow-same-version
-          pnpm publish --no-git-checks
+      - name: Authenticate with npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          scope: "@nimtech"
+
+      - name: Publish to npm
+        run: pnpm publish --registry=https://registry.npmjs.org --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

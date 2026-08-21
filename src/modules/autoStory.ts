@@ -39,7 +39,7 @@ export async function generateAutoStory(
     )
   }
   const helper = framework === 'vue' ? 'vueStory' : 'svelteStory'
-  const content = `import { ${helper} } from '@nimling/nimpress/story'
+  const content = `import { ${helper} } from '@nimtech/nimpress/story'
 
 // story: Default
 export default ${helper}({
@@ -119,7 +119,7 @@ import { ${component} } from "${pkg ?? system}";
     const helper = systemConfig.framework === 'vue' ? 'vueStory' : 'svelteStory'
     await writeFile(
       join(dir, 'default.story.tsx'),
-      `import { ${helper} } from '@nimling/nimpress/story'
+      `import { ${helper} } from '@nimtech/nimpress/story'
 
 // story: Default
 export default ${helper}({

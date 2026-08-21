@@ -74,7 +74,7 @@ A full page entity relationship viewer. Use when:
 
 3. The reader should pan, zoom, and read column level detail rather than look at a static picture.
 
-Frontmatter needs `spec` pointing at the `.dbml` file. For a diagram inside a page that is mostly prose, use the inline ` ```dbml ` fence instead of this type. See [dbml-pages.md](./dbml-pages.md).
+Frontmatter needs `spec` pointing at the `.dbml` file, and `data` shapes the hero band and its buttons. For a diagram inside a page that is mostly prose, use the inline ` ```dbml ` fence instead of this type. See [dbml-pages.md](./dbml-pages.md).
 
 ## `component`
 

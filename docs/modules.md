@@ -21,7 +21,7 @@ The component workshop: present a component library inside a nimpress site with 
 
 ```ts
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from '@nimling/nimpress/plugin'
+import { defineConfig } from '@nimtech/nimpress/plugin'
 
 export default defineConfig({
   title: 'Nimtech Components',
@@ -57,7 +57,7 @@ export default defineConfig({
 
 5. The harness mounts the component bare, and everything a library needs around its components is declared. `setup` points at a module bootstrapping the app: the default export carries `install(app)`, run on every created app before mount, and `companion`, a component rendered beside every story; a svelte system exports a function run once. Overlay roots, plugin installs, and providers all arrive through `setup` or the harness, never through discovery.
 
-6. The frame is composed from harness primitives, importable from `@nimling/nimpress/harness/vue` or `@nimling/nimpress/harness/svelte`, so you can rearrange it. `ComponentHarness` is the root; `ComponentStory` is where the component under test renders; `ComponentHarnessEffects` applies the toolbar drop shadow to whatever it wraps; `ComponentHarnessOverlay` mounts the system overlay root. The default is `ComponentHarness` around `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it. Point the `harness` config key at your own component, a `.ts`, `.tsx`, `.vue`, or `.svelte` path, to import these and arrange them yourself, wrapping the story in a layout, reordering, or omitting a piece; nimpress feeds the component, props, slots, and overlay in so `ComponentStory` always resolves. A value story nests its own harness inside the system one through the `harness` field on `vueStory` and `svelteStory`; a render story includes the shared harness component directly in its markup and owns its sizing there. The checkerboard, zoom, and vision filters are workshop chrome around the iframe, not primitives, and stay on the toolbar.
+6. The frame is composed from harness primitives, importable from `@nimtech/nimpress/harness/vue` or `@nimtech/nimpress/harness/svelte`, so you can rearrange it. `ComponentHarness` is the root; `ComponentStory` is where the component under test renders; `ComponentHarnessEffects` applies the toolbar drop shadow to whatever it wraps; `ComponentHarnessOverlay` mounts the system overlay root. The default is `ComponentHarness` around `ComponentHarnessEffects` around `ComponentStory` with `ComponentHarnessOverlay` beside it. Point the `harness` config key at your own component, a `.ts`, `.tsx`, `.vue`, or `.svelte` path, to import these and arrange them yourself, wrapping the story in a layout, reordering, or omitting a piece; nimpress feeds the component, props, slots, and overlay in so `ComponentStory` always resolves. A value story nests its own harness inside the system one through the `harness` field on `vueStory` and `svelteStory`; a render story includes the shared harness component directly in its markup and owns its sizing there. The checkerboard, zoom, and vision filters are workshop chrome around the iframe, not primitives, and stay on the toolbar.
 
 7. The consumer `vite` block merges into the harness config; aliases and plugins follow the components.
 
@@ -104,7 +104,7 @@ sidebar:
 A value story, controls seed from the props and drive the component live:
 
 ```ts
-import { vueStory } from '@nimling/nimpress/story'
+import { vueStory } from '@nimtech/nimpress/story'
 
 // story: Primary
 export default vueStory({
@@ -116,7 +116,7 @@ export default vueStory({
 An executable story, the render function mounts verbatim inside the harness:
 
 ```ts
-import { vueStory } from '@nimling/nimpress/story'
+import { vueStory } from '@nimtech/nimpress/story'
 import { ref } from 'vue'
 import MarBlockEditor from '@/components/MarBlockEditor'
 

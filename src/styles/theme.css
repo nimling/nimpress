@@ -1,5 +1,5 @@
 /*
- * @nimling/nimpress/theme.css
+ * @nimtech/nimpress/theme.css
  *
  * Theme override template for the markdown renderer.
  *
@@ -13,8 +13,8 @@
  * then comment out any block you want the framework to keep owning.
  *
  *   @import 'tailwindcss';
- *   @import '@nimling/nimpress/style.css';
- *   @import '@nimling/nimpress/theme.css';
+ *   @import '@nimtech/nimpress/style.css';
+ *   @import '@nimtech/nimpress/theme.css';
  *
  * Class inventory used by the markdown renderer:
  *

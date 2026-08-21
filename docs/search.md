@@ -33,7 +33,7 @@ MiniSearch defaults with prefix matching enabled. Title and headings carry highe
 
 ## Custom index
 
-`buildIndex` is exported from `@nimling/nimpress`. Replace the runtime call to plug a different ranking, a different store, or a remote search backend. The modal accepts a search function so swapping the store is a one liner.
+`buildIndex` is exported from `@nimtech/nimpress`. Replace the runtime call to plug a different ranking, a different store, or a remote search backend. The modal accepts a search function so swapping the store is a one liner.
 
 ## Limitations
 

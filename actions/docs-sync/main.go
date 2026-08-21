@@ -28,7 +28,7 @@ func main() {
 		}
 	}
 	if info, err := os.Stat(source); err != nil || !info.IsDir() {
-		fail("no .nimpress folder at " + source)
+		fail("no source folder at " + source)
 	}
 
 	cfg, err := docssync.ParseConfig(defaultsRaw)

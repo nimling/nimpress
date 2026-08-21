@@ -1,14 +1,14 @@
 # deploy
 
-Ship a new version of `@nimling/nimpress` to GitHub Packages.
+Ship a new version of `@nimtech/nimpress` to npm.
 
 When the user says "deploy" in this repo, execute these steps in order. Stop on the first failure and surface the error.
 
 ## Prerequisites
 
-1. Local `.env` at the repo root with `NODE_AUTH_TOKEN=<personal access token with read:packages>`. The justfile loads it via `set dotenv-load` so `pnpm install` can resolve `@nimling/samna-auth-middleware`.
+1. GitHub Actions secret named `NPM_TOKEN` set on this repo, an npm automation token that can publish under the `@nimling` scope. The publish workflow consumes it as `NODE_AUTH_TOKEN` for the npm registry step.
 
-2. GitHub Actions secret named `PACKAGES_TOKEN` set on this repo. The publish workflow consumes it as `NODE_AUTH_TOKEN`. A default `GITHUB_TOKEN` is not enough because the workflow needs read access to a package owned by a sibling repo.
+2. Nothing else. `pnpm install` resolves every dependency from the public registry.
 
 ## 1. Build the library
 
@@ -46,7 +46,7 @@ If the working tree has nothing to commit, skip the commit but still push so the
 just deploy
 ```
 
-Calls `sbump patch --json package.json@.version --push-version --auto --workflow`. Patch bump, tag write, tag push. The GitHub Actions workflow at `.github/workflows/publish.yml` picks up the tag and publishes to GitHub Packages.
+Calls `sbump patch --json package.json@.version --push-version --auto --workflow`. Patch bump, tag write, tag push. The tag starts three workflows: `publish.yml` publishes the package to npm, `pages.yml` builds `docs/` and deploys it to GitHub Pages, and `release-actions.yml` validates the Go actions and moves the major tag.
 
 For minor or major releases use `just deploy-minor` or `just deploy-major` instead.
 

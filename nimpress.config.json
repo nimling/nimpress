@@ -1,7 +1,16 @@
 {
   "title": "Nimpress",
   "github": "https://github.com/nimling/nimpress",
+  "base": "/nimpress/",
   "contentDir": "docs",
+  "paths": {
+    "out": "dist/site"
+  },
+  "site": {
+    "title": "Nimpress",
+    "url": "https://nimling.github.io",
+    "description": "Svelte 5 docs framework that supports it all."
+  },
   "brand": {
     "primary": "#CC785C",
     "primaryHover": "#B86A52"

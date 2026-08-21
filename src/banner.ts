@@ -62,7 +62,7 @@ function readNimpressVersion(): string {
       try {
         const raw = readFileSync(p, 'utf-8')
         const json = JSON.parse(raw)
-        if (json?.name === '@nimling/nimpress' && typeof json.version === 'string') return json.version
+        if (json?.name === '@nimtech/nimpress' && typeof json.version === 'string') return json.version
       } catch {}
     }
   } catch {}

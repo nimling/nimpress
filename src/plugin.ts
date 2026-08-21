@@ -3,7 +3,7 @@ import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promi
 import { createReadStream, existsSync, statSync, readdirSync, readFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { execFileSync } from 'node:child_process'
-import { resolve, relative, join, sep, dirname, isAbsolute, extname } from 'node:path'
+import { resolve, relative, join, sep, dirname, basename, isAbsolute, extname } from 'node:path'
 import { createHash } from 'node:crypto'
 import matter from 'gray-matter'
 import MarkdownIt from 'markdown-it'
@@ -38,6 +38,7 @@ import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/s
 import { harnessPort } from './modules/harness'
 import { defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig } from './config/load'
+import { joinBase, stripBase } from './config/base'
 import { indexHtml } from './config/html'
 
 const VIRTUAL_MANIFEST = 'virtual:nimpress/manifest'
@@ -240,6 +241,7 @@ interface ProcessedPage {
   componentData?: ComponentPageData
   dbmlSchema?: string
   dbmlSource?: string
+  dbmlFile?: string
   dbmlError?: string
 }
 
@@ -339,7 +341,11 @@ type ContainerOpts = {
   validate?: (params: string) => boolean
 }
 
-function buildMarkdownIt(highlighter: Highlighter, embed: { route: string; system?: string } = { route: '/_components' }): MarkdownIt {
+function buildMarkdownIt(
+  highlighter: Highlighter,
+  embed: { route: string; system?: string } = { route: '/_components' },
+  base = '/'
+): MarkdownIt {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -364,6 +370,22 @@ function buildMarkdownIt(highlighter: Highlighter, embed: { route: string; syste
       }
     }
   })
+
+  type RenderRule = NonNullable<MarkdownIt['renderer']['rules'][string]>
+  const renderToken: RenderRule = (tokens, idx, options, _env, self) =>
+    self.renderToken(tokens, idx, options)
+  const linkRule = md.renderer.rules.link_open ?? renderToken
+  md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    const href = tokens[idx].attrGet('href')
+    if (href) tokens[idx].attrSet('href', joinBase(base, href))
+    return linkRule(tokens, idx, options, env, self)
+  }
+  const imageRule = md.renderer.rules.image ?? renderToken
+  md.renderer.rules.image = (tokens, idx, options, env, self) => {
+    const src = tokens[idx].attrGet('src')
+    if (src) tokens[idx].attrSet('src', joinBase(base, src))
+    return imageRule(tokens, idx, options, env, self)
+  }
 
   md.use(anchor, {
     slugify,
@@ -959,7 +981,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const hl = await ensureHighlighter()
-    const md = buildMarkdownIt(hl, embedContext())
+    const md = buildMarkdownIt(hl, embedContext(), resolved.base)
     const prepared = rewriteDiagramFences(content, file)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared)
@@ -978,12 +1000,14 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     let dbmlSchema: string | undefined
     let dbmlSource: string | undefined
+    let dbmlFile: string | undefined
     let dbmlError: string | undefined
     if (type === 'dbml') {
       if (!fm.spec) {
         console.warn(`[nimpress] page ${file} has type dbml but no spec field`)
       } else {
         specPath = isAbsolute(fm.spec) ? fm.spec : resolve(dirname(file), fm.spec)
+        dbmlFile = basename(specPath)
         try {
           dbmlSource = await readFile(specPath, 'utf-8')
           dbmlSchema = dbmlToErdJson(dbmlSource)
@@ -1034,6 +1058,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       componentData,
       dbmlSchema,
       dbmlSource,
+      dbmlFile,
       dbmlError
     }
   }
@@ -1297,7 +1322,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const entries = (p.changelogEntries ?? []).filter((e) => !e.hidden)
       if (entries.length === 0) continue
       const basePath = p.effectivePath === '/' ? '' : p.effectivePath
-      const pageUrl = `${siteUrl}${basePath || '/'}`
+      const pageUrl = `${siteUrl}${joinBase(resolved.base, basePath || '/')}`
       const gatedPrefix = isGated(p) ? `/${resolved.paths.guarded}/${bundleFor(p)}` : ''
       const feedPath = (index: number) => `${gatedPrefix}${basePath}/${feedFileName(index)}`
       const dates = entries
@@ -1331,21 +1356,21 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       for (let index = 0; index < pageCount; index++) {
         const slice = entries.slice(index * FEED_PAGE_SIZE, (index + 1) * FEED_PAGE_SIZE)
         const links: string[] = [
-          `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index)}`)}" rel="self" type="application/rss+xml"/>`
+          `<atom:link href="${xmlEscape(`${siteUrl}${joinBase(resolved.base, feedPath(index))}`)}" rel="self" type="application/rss+xml"/>`
         ]
         if (index > 0) {
           links.push(
-            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(0)}`)}" rel="current" type="application/rss+xml"/>`
+            `<atom:link href="${xmlEscape(`${siteUrl}${joinBase(resolved.base, feedPath(0))}`)}" rel="current" type="application/rss+xml"/>`
           )
         }
         if (index + 1 < pageCount) {
           links.push(
-            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index + 1)}`)}" rel="prev-archive" type="application/rss+xml"/>`
+            `<atom:link href="${xmlEscape(`${siteUrl}${joinBase(resolved.base, feedPath(index + 1))}`)}" rel="prev-archive" type="application/rss+xml"/>`
           )
         }
         if (index > 1) {
           links.push(
-            `<atom:link href="${xmlEscape(`${siteUrl}${feedPath(index - 1)}`)}" rel="next-archive" type="application/rss+xml"/>`
+            `<atom:link href="${xmlEscape(`${siteUrl}${joinBase(resolved.base, feedPath(index - 1))}`)}" rel="next-archive" type="application/rss+xml"/>`
           )
         }
         const items = slice.map((e) => {
@@ -1430,9 +1455,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   }
 
   function siteAbsolute(path: string): string | undefined {
-    const base = resolved.site?.url?.replace(/\/$/, '')
-    if (!base) return undefined
-    return base + (path.startsWith('/') ? path : '/' + path)
+    const origin = resolved.site?.url?.replace(/\/$/, '')
+    if (!origin) return undefined
+    return origin + joinBase(resolved.base, path.startsWith('/') ? path : '/' + path)
   }
 
   function gitLastModified(filePath: string): string | undefined {
@@ -1539,15 +1564,15 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       graph.push({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        '@id': `${siteUrl}/#website`,
+        '@id': `${siteUrl}${joinBase(resolved.base, '/')}#website`,
         name: site.title,
-        url: `${siteUrl}/`,
+        url: `${siteUrl}${joinBase(resolved.base, '/')}`,
         description: site.description
       })
     }
     if (canonical && p.effectivePath !== '/') {
       const crumbs: { name: string; item?: string }[] = [
-        { name: site?.title ?? 'Home', item: siteUrl ? `${siteUrl}/` : undefined }
+        { name: site?.title ?? 'Home', item: siteUrl ? `${siteUrl}${joinBase(resolved.base, '/')}` : undefined }
       ]
       const segments = p.effectivePath.split('/').filter(Boolean)
       let acc = ''
@@ -1574,7 +1599,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       headline: title,
       description,
       url: canonical,
-      isPartOf: siteUrl ? `${siteUrl}/#website` : undefined,
+      isPartOf: siteUrl ? `${siteUrl}${joinBase(resolved.base, '/')}#website` : undefined,
       dateModified: gitLastModified(p.filePath)
     })
     if (fmMeta.jsonLd) graph.push(fmMeta.jsonLd)
@@ -1610,7 +1635,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (!siteUrl) return undefined
     const locales = resolved.meta?.localeAlternates ?? []
     const urls = list.map((p) => {
-      const loc = `${siteUrl}${p.effectivePath === '/' ? '/' : p.effectivePath}`
+      const loc = `${siteUrl}${joinBase(resolved.base, p.effectivePath === '/' ? '/' : p.effectivePath)}`
       const depth = p.effectivePath.split('/').filter(Boolean).length
       const priority = depth === 0 ? '1.0' : depth === 1 ? '0.8' : '0.6'
       const changefreq = depth === 0 ? 'weekly' : 'monthly'
@@ -1779,6 +1804,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           roadmapEntries: p.roadmapEntries,
           componentData: p.componentData,
           dbmlSchema: p.dbmlSchema,
+          dbmlSource: p.dbmlSource,
+          dbmlFile: p.dbmlFile,
           dbmlError: p.dbmlError
         }
         const bodyFile = join(dir, 'body', `${urlSlug(p.slug)}.json`)
@@ -2404,6 +2431,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       roadmapEntries: p.roadmapEntries,
       componentData: p.componentData,
       dbmlSchema: p.dbmlSchema,
+      dbmlSource: p.dbmlSource,
+      dbmlFile: p.dbmlFile,
       dbmlError: p.dbmlError
     }
     return `export default ${JSON.stringify(payload)}\n`
@@ -2421,8 +2450,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimling/nimpress'
-  import type { PageBody } from '@nimling/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimtech/nimpress'
+  import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
   applyPageStyles(shell.path)
@@ -2456,7 +2485,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   }
 
   return {
-    name: '@nimling/nimpress:markdown',
+    name: '@nimtech/nimpress:markdown',
 
     async config() {
       const loaded = await loadNimpressConfig(process.cwd(), inline)
@@ -2481,6 +2510,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const src = join(resolvedOutDir, 'index.html')
       const dest = join(resolvedOutDir, '404.html')
       await copyFile(src, dest)
+      await writeFile(join(resolvedOutDir, '.nojekyll'), '')
       if (existsSync(contentRoot)) {
         await cp(contentRoot, resolvedOutDir, {
           recursive: true,
@@ -2588,7 +2618,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         '.css': 'text/css', '.js': 'text/javascript', '.txt': 'text/plain',
         '.woff': 'font/woff', '.woff2': 'font/woff2', '.mp4': 'video/mp4'
       }
-      const base = resolved.assetUrlBase
+      const assetBase = resolved.assetUrlBase
 
       const serveFile = (root: string, rel: string, res: import('node:http').ServerResponse): boolean => {
         if (!rel || rel.endsWith('.md')) return false
@@ -2600,7 +2630,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
 
       devServer.middlewares.use((req, res, next) => {
-        const url = (req.url ?? '').split('?')[0]
+        const raw = (req.url ?? '').split('?')[0]
+        const url = stripBase(resolved.base, raw)
         if (url.startsWith('/@') || url.startsWith('/node_modules/')) return next()
         if (url === '/__nimpress/claude-md' && req.method === 'PUT') {
           const chunks: Buffer[] = []
@@ -2690,7 +2721,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             {
               host: '127.0.0.1',
               port: harnessPort(resolved.modules, system),
-              path: req.url ?? '/',
+              path: `${url}${(req.url ?? '').includes('?') ? `?${(req.url ?? '').split('?').slice(1).join('?')}` : ''}`,
               method: req.method,
               headers: req.headers
             },
@@ -2709,9 +2740,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           req.pipe(upstream)
           return
         }
-        const baseMatch = base === '/' || url === base || url.startsWith(base + '/')
+        const baseMatch = assetBase === '/' || url === assetBase || url.startsWith(assetBase + '/')
         if (baseMatch) {
-          const stripped = base === '/' ? url : url.slice(base.length)
+          const stripped = assetBase === '/' ? url : url.slice(assetBase.length)
           if (serveFile(assetsRoot, stripped.replace(/^\/+/, ''), res)) return
         }
         if (serveFile(contentRoot, url.replace(/^\/+/, ''), res)) return
@@ -2806,9 +2837,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           ? `import { authFunctions, subscribeFunctions } from ${JSON.stringify(clientPath)}`
           : ''
         const clientArgs = clientPath ? ', authFunctions, subscribeFunctions' : ''
-        return `import '@nimling/nimpress/app.css'
+        return `import '@nimtech/nimpress/app.css'
 ${cssImports}
-import { createNimpressApp } from '@nimling/nimpress'
+import { createNimpressApp } from '@nimtech/nimpress'
 import config from 'virtual:nimpress/config'
 import manifest from 'virtual:nimpress/manifest'
 import searchIndex from 'virtual:nimpress/search'

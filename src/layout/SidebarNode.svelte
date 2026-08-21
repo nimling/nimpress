@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sidebarState, toggleGroup } from '../framework/stores/sidebar'
+  import { withBase, withoutBase } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { viewerCanAccess } from '../auth/guard'
   import { resolvedRoute } from 'sly-svelte-location-router'
@@ -23,7 +24,7 @@
     viewerCanAccess({ gate: node.gate }, v)
   )
   const active = $derived(
-    !!route && !!node.link && route.path.replace(/\/$/, '') === node.link.replace(/\/$/, '')
+    !!route && !!node.link && withoutBase(route.path).replace(/\/$/, '') === node.link.replace(/\/$/, '')
   )
   const svgIcon = $derived(!!node.icon && node.icon.trimStart().startsWith('<svg'))
 </script>
@@ -38,7 +39,7 @@
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}
-            <a class="np-group-label-link" href={node.link} class:active>{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+            <a class="np-group-label-link" href={withBase(node.link)} class:active>{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
             <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
           {/if}
@@ -65,7 +66,7 @@
         {#if node.link}
           <a
             class="np-link np-subgroup-link"
-            href={node.link}
+            href={withBase(node.link)}
             class:active
             onclick={() => {
               if (!open) toggleGroup(groupKey, open)
@@ -94,7 +95,7 @@
     {/if}
   {:else}
     <a
-      href={node.link ?? '#'}
+      href={node.link ? withBase(node.link) : '#'}
       class="np-link"
       class:active
       style={node.style}

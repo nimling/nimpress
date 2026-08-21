@@ -1,6 +1,6 @@
 # Nimpress
 
-Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling repos through `link:../nimpress` during development and through GitHub Packages once published.
+Reusable Svelte 5 docs framework. Library mode Vite build. Consumed through the `@nimtech/nimpress` package, public on npm. Its own documentation lives in `docs/`, is built with nimpress itself, and publishes to GitHub Pages at `nimling.github.io/nimpress` on every version tag.
 
 ## What lives here
 
@@ -30,9 +30,9 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 13. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
 
-14. `docs/` — concept guides linked from the README. Authors read these before writing docs in consumer repos.
+14. `docs/` — the nimpress documentation itself, every feature, guide, and release entry under `docs/changelog/`. It is built with nimpress and published to GitHub Pages on every version tag, and it never ships inside the library build. Authors read these before writing docs in consumer repos.
 
-15. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs. Shipped in the package; consumers read them from `node_modules/@nimling/nimpress/.claude/rules/`.
+15. `.claude/rules/` — rules that apply when authoring or editing nimpress source or consumer docs. Shipped in the package; consumers read them from `node_modules/@nimtech/nimpress/.claude/rules/`.
 
 ## Build
 
@@ -40,7 +40,9 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed by sibling r
 
 2. `just build` — `vite build --mode library`, emits `dist/nimpress.es.js`, `dist/plugin.es.js`, `dist/tailwind.preset.js`, `dist/style.css`, and `dist/*.d.ts`.
 
-3. `just dev` — serves this repo's own `docs/` against the built `dist/`, rebuilding the library on every source change and reloading the page. Set `NIMPRESS_CONSUMER=../docs` to point it at a linked consumer site instead. Needs `just build` to have run once.
+3. `just dev` — serves this repo's own `docs/` against the built `dist/`, rebuilding the library on every source change and reloading the page. Set `NIMPRESS_CONSUMER=../other-site` to point it at another site instead. Needs `just build` to have run once.
+
+3.1. `node bin/nimpress.mjs build` — builds this repo's `docs/` into `dist/site` with the built library, the same command the Pages workflow runs. The site sits under the `/nimpress/` base because that is the project page path.
 
 4. `just bump` — patch bump via sbump and push tag.
 

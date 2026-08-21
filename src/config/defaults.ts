@@ -10,6 +10,7 @@ export const defaultPaths: ResolvedPaths = {
 
 export const defaultConfig: ResolvedNimpressConfig = {
   title: 'Nimpress',
+  base: '/',
   contentDir: 'docs',
   assetsDir: 'assets',
   assetUrlBase: '/assets',

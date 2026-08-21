@@ -228,6 +228,8 @@ export interface PageBody {
   roadmapEntries?: RoadmapEntry[]
   componentData?: ComponentPageData
   dbmlSchema?: string
+  dbmlSource?: string
+  dbmlFile?: string
   dbmlError?: string
 }
 
@@ -444,6 +446,7 @@ export interface NimpressConfig {
   logo?: string
   github?: string
   brand?: NimpressBrandConfig
+  base?: string
   contentRoot: string
   navRoutes?: NavRoute[]
   auth?: AuthConfig
@@ -513,6 +516,8 @@ export interface NimpressUserConfig {
   meta?: NimpressMetaConfig
   /** Canonical site identity used for absolute urls, sitemap, and social cards. @example { "title": "Docs", "url": "https://developer.example.io" } */
   site?: SiteMeta
+  /** Url prefix the whole site is served under, for a project page or a subfolder deploy. @example "/nimpress/" */
+  base?: string
   /** Folder holding the markdown content. @example "docs" */
   contentDir?: string
   /** Root assets folder copied into the build. @example "assets" */
@@ -549,6 +554,7 @@ export interface ResolvedNimpressConfig {
   subscribe?: SubscribeConfig
   meta?: NimpressMetaConfig
   site?: SiteMeta
+  base: string
   contentDir: string
   assetsDir: string
   assetUrlBase: string
