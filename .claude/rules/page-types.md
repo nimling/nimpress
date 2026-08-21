@@ -12,7 +12,7 @@ Use only when:
 
 1. The page exists to document an HTTP API.
 
-2. There is a maintained OpenAPI 3.1 spec next to the markdown file.
+2. There is a maintained OpenAPI 3.1 spec next to the markdown file, as JSON or as YAML.
 
 3. The reader expects per operation deep links such as `#operation/PostBookable`.
 

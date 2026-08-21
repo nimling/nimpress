@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: Pastry API
+  version: 1.4.0
+  description: A small api for ordering pastries, here to demonstrate the renderer.
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+tags:
+  - name: Pastries
+    description: Reading the catalogue.
+  - name: Orders
+    description: Placing and tracking an order.
+paths:
+  /pastries:
+    get:
+      operationId: GetPastries
+      summary: List every pastry
+      tags: [Pastries]
+      parameters:
+        - name: limit
+          in: query
+          description: How many rows to return.
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: The catalogue.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pastry'
+  /orders:
+    post:
+      operationId: PostOrder
+      summary: Place an order
+      tags: [Orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: The order was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: The body did not validate.
+components:
+  schemas:
+    Pastry:
+      type: object
+      required: [id, name, price]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        price:
+          type: number
+          description: Price in minor units.
+    OrderRequest:
+      type: object
+      required: [pastry_id, quantity]
+      properties:
+        pastry_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [received, baking, ready]

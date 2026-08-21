@@ -14,6 +14,7 @@ import deflist from 'markdown-it-deflist'
 import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
 import { z } from 'zod'
+import { parse as parseYamlText } from 'yaml'
 import { createHighlighter, type Highlighter } from 'shiki'
 import { buildBanner, readConsumerPackage } from './banner'
 import type {
@@ -236,6 +237,8 @@ interface ProcessedPage {
   rawText: string
   pageCss?: string
   openApiSpec?: unknown
+  openApiFile?: string
+  openApiUrl?: string
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
   componentData?: ComponentPageData
@@ -272,6 +275,12 @@ function compareVersions(a: string, b: string): number {
     if (ai !== bi) return ai - bi
   }
   return 0
+}
+
+function contentUrl(root: string, file: string): string | undefined {
+  const rel = relative(root, file).split(sep).join('/')
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) return undefined
+  return `/${rel}`
 }
 
 function slugFromPath(root: string, file: string): string {
@@ -694,13 +703,17 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return highlighter
   }
 
+  function parseSpecText(raw: string, file: string): unknown {
+    return /\.ya?ml$/i.test(file) ? parseYamlText(raw) : JSON.parse(raw)
+  }
+
   async function loadSpec(mdFile: string, specRef: string): Promise<unknown | null> {
     try {
       const target = isAbsolute(specRef)
         ? specRef
         : resolve(dirname(mdFile), specRef)
       const raw = await readFile(target, 'utf-8')
-      const top = JSON.parse(raw) as any
+      const top = parseSpecText(raw, target) as any
       await inlineExternalRefs(top, dirname(target))
       return top
     } catch (err) {
@@ -718,7 +731,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const loadJsonFile = async (absPath: string): Promise<any> => {
       const raw = await readFile(absPath, 'utf-8')
-      return JSON.parse(raw)
+      return parseSpecText(raw, absPath)
     }
 
     const ensureSchema = async (absPath: string): Promise<string> => {
@@ -987,12 +1000,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const html = md.render(prepared)
 
     let openApiSpec: unknown | undefined
+    let openApiFile: string | undefined
+    let openApiUrl: string | undefined
     let specPath: string | undefined
     if (type === 'openapi') {
       if (!fm.spec) {
         console.warn(`[nimpress] page ${file} has type openapi but no spec field`)
       } else {
         specPath = isAbsolute(fm.spec) ? fm.spec : resolve(dirname(file), fm.spec)
+        openApiFile = basename(specPath)
+        openApiUrl = contentUrl(contentRoot, specPath)
         const raw = await loadSpec(file, fm.spec)
         openApiSpec = raw ? flattenSpecForEmbed(raw, md) ?? undefined : undefined
       }
@@ -1055,6 +1072,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       rawText: content,
       pageCss,
       openApiSpec,
+      openApiFile,
+      openApiUrl,
       componentData,
       dbmlSchema,
       dbmlSource,
@@ -1800,6 +1819,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           html: p.html,
           headings: p.headings,
           openApiSpec: p.openApiSpec,
+          openApiFile: p.openApiFile,
+          openApiUrl: p.openApiUrl,
           changelogEntries: p.changelogEntries,
           roadmapEntries: p.roadmapEntries,
           componentData: p.componentData,
@@ -2427,6 +2448,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       html: p.html,
       headings: p.headings,
       openApiSpec: p.openApiSpec,
+      openApiFile: p.openApiFile,
+      openApiUrl: p.openApiUrl,
       changelogEntries: p.changelogEntries,
       roadmapEntries: p.roadmapEntries,
       componentData: p.componentData,
@@ -2465,7 +2488,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     <div class="np-page-loading" aria-busy="true"></div>
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
-      <OpenApiRoot spec={mod.default.openApiSpec} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+      <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
     {:else if shell.type === 'changelog'}
       <ChangelogPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'roadmap'}

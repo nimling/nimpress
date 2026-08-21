@@ -224,6 +224,8 @@ export interface PageBody {
   html: string
   headings: Heading[]
   openApiSpec?: unknown
+  openApiFile?: string
+  openApiUrl?: string
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
   componentData?: ComponentPageData

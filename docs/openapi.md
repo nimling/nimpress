@@ -17,7 +17,17 @@ spec: ./bookable.json
 ---
 ```
 
-`spec` is resolved relative to the markdown file. The plugin loads it at build time, resolves every `$ref`, and pre renders markdown in description fields so descriptions support the full markdown pipeline.
+`spec` is resolved relative to the markdown file and reads as JSON or YAML, picked from the file extension. The plugin loads it at build time, resolves every `$ref`, and pre renders markdown in description fields so descriptions support the full markdown pipeline.
+
+## Downloading the specification
+
+The page header carries a download control beside the collapse buttons. It opens a menu with two entries, one per format, and hands the reader the specification under the source file name with the chosen extension.
+
+1. The source format is served as authored, byte for byte.
+
+2. The other format is converted in the browser, so a YAML source downloads as JSON and a JSON source downloads as YAML.
+
+3. The specification file itself is copied into the build output beside the page, so the download reads the real file rather than a copy embedded in the page payload.
 
 ## Layout
 

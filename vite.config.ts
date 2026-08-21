@@ -74,6 +74,7 @@ export default defineConfig(({ mode }) => {
               '@xyflow/svelte',
               'path-to-regexp',
               'zod',
+              'yaml',
               'codemirror',
               '@codemirror/state',
               '@codemirror/view',

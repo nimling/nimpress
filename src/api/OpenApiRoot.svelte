@@ -4,7 +4,8 @@
   import Schema from './Schema.svelte'
   import TryDialog from './TryDialog.svelte'
   import BackToTop from '../layout/BackToTop.svelte'
-  import { configStore } from '../framework/configStore'
+  import IconDownload from '../icons/IconDownload.svelte'
+  import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
   import { SCHEMAS_CONTEXT, type SchemaRegistry } from './refs'
@@ -12,9 +13,17 @@
 
   let {
     spec,
+    specFile,
+    specUrl,
     title,
     frontmatter
-  }: { spec: unknown; title?: string; frontmatter?: Frontmatter } = $props()
+  }: {
+    spec: unknown
+    specFile?: string
+    specUrl?: string
+    title?: string
+    frontmatter?: Frontmatter
+  } = $props()
 
   const config = $derived($configStore)
   const effectiveFooter = $derived(frontmatter?.footer ?? config.footer)
@@ -25,6 +34,45 @@
   const securitySchemes = $derived(flat?.securitySchemes ?? {})
   const schemas = $derived<SchemaRegistry>(flat?.schemas ?? {})
   setContext<() => SchemaRegistry>(SCHEMAS_CONTEXT, () => schemas)
+
+  let downloadOpen = $state(false)
+  let downloadError = $state('')
+  const specBase = $derived((specFile ?? 'openapi').replace(/\.(json|ya?ml)$/i, ''))
+  const specIsYaml = $derived(/\.ya?ml$/i.test(specFile ?? ''))
+
+  async function downloadSpec(format: 'json' | 'yaml') {
+    downloadOpen = false
+    downloadError = ''
+    if (!specUrl) return
+    try {
+      const res = await fetch(withBase(specUrl))
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const source = await res.text()
+      let body = source
+      if (format === 'json' && specIsYaml) {
+        const { parse } = await import('yaml')
+        body = JSON.stringify(parse(source), null, 2)
+      } else if (format === 'yaml' && !specIsYaml) {
+        const { stringify } = await import('yaml')
+        body = stringify(JSON.parse(source))
+      }
+      const type = format === 'json' ? 'application/json' : 'application/yaml'
+      const url = URL.createObjectURL(new Blob([body], { type }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${specBase}.${format}`
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      downloadError = err instanceof Error ? err.message : String(err)
+    }
+  }
+
+  function closeDownload(event: MouseEvent) {
+    const target = event.target as HTMLElement | null
+    if (target?.closest('.np-api-download')) return
+    downloadOpen = false
+  }
 
   function slugify(s: string): string {
     return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown'
@@ -198,6 +246,8 @@
   })
 </script>
 
+<svelte:window onclick={closeDownload} />
+
 {#if flat}
   <div class="np-api">
     <header class="np-api-header np-prose">
@@ -205,6 +255,34 @@
         <h1>{title ?? flat.title}</h1>
         {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
         <div class="np-api-actions">
+          {#if specUrl}
+            <div class="np-api-download">
+              <button
+                type="button"
+                class="np-api-collapse-all"
+                aria-haspopup="menu"
+                aria-expanded={downloadOpen}
+                onclick={() => (downloadOpen = !downloadOpen)}
+                title="Download the specification"
+              >
+                <IconDownload />
+                <span>Download</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {#if downloadOpen}
+                <div class="np-api-download-menu" role="menu">
+                  <button type="button" role="menuitem" onclick={() => downloadSpec('yaml')}>
+                    {specBase}.yaml
+                  </button>
+                  <button type="button" role="menuitem" onclick={() => downloadSpec('json')}>
+                    {specBase}.json
+                  </button>
+                </div>
+              {/if}
+            </div>
+          {/if}
           <button type="button" class="np-api-collapse-all" onclick={toggleEndpoints} title={endpointsCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               {#if endpointsCollapsed}
@@ -244,6 +322,9 @@
             {/each}
           </tbody>
         </table>
+      {/if}
+      {#if downloadError}
+        <p class="np-api-download-error">The specification could not be downloaded: {downloadError}</p>
       {/if}
       {#if flat.description_html}
         <div class="np-api-desc">{@html flat.description_html}</div>
@@ -371,6 +452,51 @@
     cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   }
+  .np-api-download {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .np-api-download-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
+    min-width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    background-color: var(--np-bg-card);
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-md);
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
+  }
+
+  .np-api-download-menu button {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--np-text-secondary);
+    background: none;
+    border: 0;
+    border-radius: var(--np-radius-sm);
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+
+  .np-api-download-menu button:hover,
+  .np-api-download-menu button:focus-visible {
+    color: var(--np-text);
+    background-color: var(--np-bg-surface);
+  }
+
+  .np-api-download-error {
+    color: var(--np-danger);
+    font-size: 14px;
+  }
+
   .np-api-collapse-all:hover {
     color: var(--np-text-primary);
     border-color: var(--np-brand);
