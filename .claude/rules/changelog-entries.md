@@ -102,7 +102,7 @@ The collection page lives at `/solutions/bookable/changelog`. Each file shares `
 
 ## Version sort
 
-Newest first. Parsed as dot delimited numeric segments. `1.10.0` ranks above `1.2.9`. Pre release suffixes are not parsed, they sort last among same base versions.
+Newest first. The release part is parsed as dot delimited numeric segments, so `1.10.0` ranks above `1.2.9`. A release ranks above its own prereleases, so `1.0.0` ranks above `1.0.0-rc.1`. Prerelease identifiers are compared left to right, and a run of digits inside one compares as a number, so `1.0.0-alpha0175` ranks above `1.0.0-alpha0099` and `1.0.0-rc.10` ranks above `1.0.0-rc.2`. Build metadata after a plus is ignored.
 
 ## Entry body
 

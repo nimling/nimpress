@@ -20,7 +20,7 @@ data:
 
 1. Top level `title` is the page heading and the grouping key. Every entry file in the same folder uses the exact same string.
 
-2. `data.version` is required. Versions sort newest first, parsed as dot delimited numeric segments, with an optional leading `v`.
+2. `data.version` is required. Versions sort newest first, parsed as dot delimited numeric segments, with an optional leading `v`. A release ranks above its own prereleases, and prerelease identifiers compare left to right with any run of digits inside one compared as a number, so `1.0.0-alpha0175` ranks above `1.0.0-alpha0099`.
 
 3. `data.title` is the per release headline rendered next to the version pill in the entry header.
 

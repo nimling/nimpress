@@ -273,14 +273,51 @@ interface SubscribeMapPage {
   entries?: SubscribeMapEntry[]
 }
 
-function compareVersions(a: string, b: string): number {
-  const pa = String(a ?? '').replace(/^v/i, '').split(/[.\-+]/)
-  const pb = String(b ?? '').replace(/^v/i, '').split(/[.\-+]/)
-  const len = Math.max(pa.length, pb.length)
-  for (let i = 0; i < len; i++) {
-    const ai = parseInt(pa[i] ?? '0', 10) || 0
-    const bi = parseInt(pb[i] ?? '0', 10) || 0
+export function compareVersions(a: string, b: string): number {
+  const parse = (v: string) => {
+    const s = String(v ?? '').replace(/^v/i, '').replace(/\+.*$/, '')
+    const dash = s.indexOf('-')
+    return {
+      base: (dash === -1 ? s : s.slice(0, dash)).split('.'),
+      pre: dash === -1 ? '' : s.slice(dash + 1)
+    }
+  }
+  const natural = (x: string, y: string): number => {
+    const rx = x.match(/\d+|\D+/g) ?? []
+    const ry = y.match(/\d+|\D+/g) ?? []
+    for (let i = 0; i < Math.max(rx.length, ry.length); i++) {
+      const l = rx[i]
+      const r = ry[i]
+      if (l === undefined) return -1
+      if (r === undefined) return 1
+      if (/^\d+$/.test(l) && /^\d+$/.test(r)) {
+        const d = parseInt(l, 10) - parseInt(r, 10)
+        if (d !== 0) return d
+      } else if (l !== r) {
+        return l < r ? -1 : 1
+      }
+    }
+    return 0
+  }
+  const va = parse(a)
+  const vb = parse(b)
+  for (let i = 0; i < Math.max(va.base.length, vb.base.length); i++) {
+    const ai = parseInt(va.base[i] ?? '0', 10) || 0
+    const bi = parseInt(vb.base[i] ?? '0', 10) || 0
     if (ai !== bi) return ai - bi
+  }
+  if (!va.pre && !vb.pre) return 0
+  if (!va.pre) return 1
+  if (!vb.pre) return -1
+  const ta = va.pre.split('.')
+  const tb = vb.pre.split('.')
+  for (let i = 0; i < Math.max(ta.length, tb.length); i++) {
+    const l = ta[i]
+    const r = tb[i]
+    if (l === undefined) return -1
+    if (r === undefined) return 1
+    const c = natural(l, r)
+    if (c !== 0) return c
   }
   return 0
 }
