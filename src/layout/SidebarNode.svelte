@@ -28,8 +28,10 @@
   const visible = $derived(
     viewerCanAccess({ gate: node.gate }, v)
   )
+  const external = $derived(!!node.external)
+  const href = $derived(node.link ? (external ? node.link : withBase(node.link)) : '#')
   const active = $derived(
-    !!route && !!node.link && withoutBase(route.path).replace(/\/$/, '') === node.link.replace(/\/$/, '')
+    !external && !!route && !!node.link && withoutBase(route.path).replace(/\/$/, '') === node.link.replace(/\/$/, '')
   )
   const svgIcon = $derived(!!node.icon && node.icon.trimStart().startsWith('<svg'))
 </script>
@@ -38,13 +40,17 @@
   {#if node.icon}<span class="np-node-icon">{#if svgIcon}{@html node.icon}{:else}{node.icon}{/if}</span>{/if}
 {/snippet}
 
+{#snippet outbound()}
+  {#if external}<span class="np-external" aria-hidden="true">↗</span>{/if}
+{/snippet}
+
 {#if visible}
   {#if isGroup}
     {#if depth === 0 && !anchorChildren}
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}
-            <a class="np-group-label-link" href={withBase(node.link)} class:active>{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+            <a class="np-group-label-link" {href} class:active target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} data-no-routing={external ? '' : undefined}>{@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
             <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
           {/if}
@@ -71,12 +77,15 @@
         {#if node.link}
           <a
             class="np-link np-subgroup-link"
-            href={withBase(node.link)}
+            {href}
             class:active
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noreferrer' : undefined}
+            data-no-routing={external ? '' : undefined}
             onclick={() => {
               if (!open) toggleGroup(groupKey, open)
             }}
-          >{@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+          >{@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
           <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
         {/if}
@@ -100,13 +109,15 @@
     {/if}
   {:else}
     <a
-      href={node.link ? withBase(node.link) : '#'}
+      {href}
       class="np-link"
       class:active
       style={node.style}
-      data-no-routing={node.link?.includes('#') ? '' : undefined}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+      data-no-routing={external || node.link?.includes('#') ? '' : undefined}
     >
-      {@render nodeIcon()}{node.text}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
+      {@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
     </a>
   {/if}
 {/if}
@@ -126,6 +137,12 @@
     height: 1em;
     display: inline-block;
     vertical-align: -0.125em;
+  }
+
+  .np-external {
+    margin-left: 4px;
+    font-size: 0.85em;
+    opacity: 0.6;
   }
 
   .np-hidden-dot {

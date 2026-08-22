@@ -15,6 +15,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `path` | string | Route override, default derived from the file location |
 | `spec` | string | Required when `type: openapi` or `type: dbml`, path to the spec JSON or the `.dbml` file, relative to the markdown file |
 | `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
+| `link` | string | Absolute url. The file becomes a sidebar entry that opens that url in a new tab and routes to no page of its own |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
 | `icon` | string | Icon field for custom renderers; the sidebar renders `sidebar.icon` |
@@ -52,6 +53,22 @@ sidebar:
   icon: "▤"
   style: "color: var(--np-brand)"
 ```
+
+## `link`
+
+An absolute url turns the file into a sidebar entry pointing outward. The file carries frontmatter and no body, it produces no route, no search entry, and no page in the build, and its position in the sidebar comes from where the file sits exactly as it does for a normal page. `title` or `sidebar.name` is the label, `order` places it, and `sidebar.icon` and `sidebar.style` decorate it.
+
+```yaml
+---
+title: Samna docs
+link: https://developer.samna.io
+order: 90
+sidebar:
+  icon: /assets/samna.svg
+---
+```
+
+The rendered entry opens in a new tab with `rel="noreferrer"`, carries an outbound glyph, and never highlights as the active route. `redirect` is the internal counterpart: it routes into a page on this site and sends the visitor to another path on this site.
 
 ## `gate`
 

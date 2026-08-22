@@ -176,6 +176,7 @@ export interface Frontmatter {
   path?: string
   spec?: string
   gate?: string
+  link?: string
   description?: string
   order?: number
   icon?: string
@@ -240,6 +241,7 @@ export interface PageModule extends PageShell, PageBody {}
 export interface SidebarNode {
   text: string
   link?: string
+  external?: boolean
   slug?: string
   gate?: string
   icon?: string

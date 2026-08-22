@@ -153,6 +153,7 @@ const frontmatterSchema = z.object({
   path: z.string().optional(),
   spec: z.string().optional(),
   gate: z.string().optional(),
+  link: z.string().optional(),
   description: z.string().optional(),
   order: z.number().optional(),
   icon: z.string().optional(),
@@ -187,6 +188,12 @@ function frontmatterIssues(data: unknown, body = 'x'): string[] {
   }
   const fm = parsed.data
   const d = (fm.data ?? {}) as Record<string, unknown>
+  if (fm.link) {
+    if (!fm.title && !fm.sidebar?.name) issues.push('a link page needs a title or a sidebar.name for its label')
+    if (!/^[a-z][a-z0-9+.-]*:\/\/|^mailto:|^tel:/i.test(fm.link)) issues.push('link: must be an absolute url')
+    if (body.trim() !== '') issues.push('a link page carries no body, the entry opens link instead of a page')
+    return issues
+  }
   const decorationOnly = (data as Record<string, unknown>).type === undefined && body.trim() === ''
   if (decorationOnly) {
     if (!fm.sidebar?.name) issues.push('a page without a type and without a body needs a sidebar.name to decorate its group')
@@ -231,6 +238,7 @@ interface ProcessedPage {
   effectivePath: string
   type: PageType
   sidebarOnly?: boolean
+  linkTo?: string
   frontmatter: Frontmatter
   html: string
   headings: Heading[]
@@ -976,7 +984,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const slug = slugFromPath(contentRoot, file)
     const type: PageType = fm.type ?? 'doc'
     const effectivePath = normalizePath(fm.path ?? defaultPathFromSlug(slug))
-    const sidebarOnly = (data as Record<string, unknown>).type === undefined && content.trim() === ''
+    const linkTo = typeof fm.link === 'string' && fm.link.trim() !== '' ? fm.link.trim() : undefined
+    const sidebarOnly = !!linkTo || ((data as Record<string, unknown>).type === undefined && content.trim() === '')
 
     const defaults = resolved.defaultFrontmatter ?? {}
     const defaultExcludes = resolved.defaultFrontmatterExclude ?? []
@@ -1066,6 +1075,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       effectivePath,
       type,
       sidebarOnly,
+      linkTo,
       frontmatter: fm,
       html,
       headings,
@@ -2061,7 +2071,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           style: sidebarMeta.style ?? dirMeta.get(own)?.style
         })
       }
-      if (p.sidebarOnly) continue
+      if (p.sidebarOnly && !p.linkTo) continue
       const groupSeg = isFolderIndex ? undefined : (sidebarMeta?.path ?? sidebarMeta?.name)
       if (groupSeg && segments[segments.length - 2] !== groupSeg) {
         if (segments.length >= 3) segments.splice(segments.length - 2, 1, groupSeg)
@@ -2097,7 +2107,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (t.page) {
         const node: SidebarNode = {
           text: pageLabel(t.page),
-          link: t.page.effectivePath,
+          link: t.page.linkTo ?? t.page.effectivePath,
+          external: t.page.linkTo ? true : undefined,
           slug: t.page.slug,
           gate: t.page.frontmatter.gate,
           order: t.page.frontmatter.order,

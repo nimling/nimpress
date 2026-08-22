@@ -36,6 +36,22 @@ sidebar:
   path: components
 ```
 
+## External link entries
+
+A page whose frontmatter carries `link` with an absolute url becomes a sidebar entry that opens that url. It is an ordinary content file with no body: it produces no route, no search entry, and nothing in the build output, and it takes its place in the tree from where the file sits, exactly like every other page.
+
+```yaml
+---
+title: Samna docs
+link: https://developer.samna.io
+order: 90
+sidebar:
+  icon: /assets/samna.svg
+---
+```
+
+The entry opens in a new tab with `rel="noreferrer"`, carries an outbound glyph, and never highlights as active. `title` or `slug` is the label, `order` places it among its siblings, and `sidebar.icon` and `sidebar.style` decorate it. Put the file at the content root for a top level entry, or inside a folder to place it in that group. On a folder `index.md` the whole group header becomes the outbound link while its children stay internal.
+
 ## Icon formats
 
 The sidebar renders icons only from `sidebar` blocks and story definitions. `sidebar.icon` accepts three forms:
