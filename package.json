@@ -55,6 +55,7 @@
     "src/harness",
     "src/mock",
     ".claude/rules",
+    ".claude/skills/nimpress/SKILL.md",
     "config.schema.json"
   ],
   "scripts": {

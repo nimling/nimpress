@@ -5,6 +5,8 @@ import { runDev, runBuild } from './cli/site'
 import { runGuard } from './cli/guard'
 import { runModules } from './cli/modules'
 import { runExport } from './cli/export'
+import { runSkill } from './cli/skill'
+import { runCompletion } from './cli/completion'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -16,6 +18,14 @@ export async function run(argv: string[]): Promise<void> {
   const cwd = process.cwd()
   if (cmd === 'init') {
     runInit(cwd)
+    return
+  }
+  if (cmd === 'skill') {
+    runSkill(cwd, args)
+    return
+  }
+  if (cmd === 'completion') {
+    runCompletion(cwd, args)
     return
   }
   const { resolved } = await loadNimpressConfig(cwd)
