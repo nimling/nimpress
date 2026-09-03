@@ -37,6 +37,8 @@
   --np-danger: #EF4444;
   --np-abstract: #0EA5E9;
   --np-success: #22C55E;
+  --np-mark-bg: #FDE68A;
+  --np-lightbox-backdrop: rgb(9 9 11 / 0.82);
   --np-question: #84CC16;
   --np-failure: #F43F5E;
   --np-bug: #EC4899;
@@ -99,6 +101,8 @@ html.dark {
 
   --np-abstract: #38BDF8;
   --np-success: #4ADE80;
+  --np-mark-bg: #713F12;
+  --np-lightbox-backdrop: rgb(0 0 0 / 0.86);
   --np-question: #A3E635;
   --np-failure: #FB7185;
   --np-bug: #F472B6;

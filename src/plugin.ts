@@ -13,6 +13,9 @@ import container from 'markdown-it-container'
 import deflist from 'markdown-it-deflist'
 import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
+import mark from 'markdown-it-mark'
+import sub from 'markdown-it-sub'
+import sup from 'markdown-it-sup'
 import { z } from 'zod'
 import { parse as parseYamlText } from 'yaml'
 import { createHighlighter, type Highlighter, type ShikiTransformer, type ThemedToken } from 'shiki'
@@ -404,6 +407,98 @@ type ContainerOpts = {
   validate?: (params: string) => boolean
 }
 
+const KEY_GLYPHS: Record<string, string> = {
+  ctrl: 'Ctrl',
+  control: 'Ctrl',
+  alt: 'Alt',
+  option: '⌥',
+  opt: '⌥',
+  shift: '⇧',
+  cmd: '⌘',
+  command: '⌘',
+  meta: '⌘',
+  win: '⊞',
+  windows: '⊞',
+  super: '⊞',
+  enter: '↵',
+  return: '↵',
+  tab: '⇥',
+  esc: 'Esc',
+  escape: 'Esc',
+  space: 'Space',
+  backspace: '⌫',
+  delete: 'Del',
+  del: 'Del',
+  up: '↑',
+  down: '↓',
+  left: '←',
+  right: '→',
+  home: 'Home',
+  end: 'End',
+  pgup: 'PgUp',
+  pgdn: 'PgDn',
+  plus: '+',
+  minus: '−'
+}
+
+function keyLabel(name: string): string {
+  const key = name.trim().toLowerCase()
+  if (KEY_GLYPHS[key]) return KEY_GLYPHS[key]
+  return key.length === 1 ? key.toUpperCase() : key.charAt(0).toUpperCase() + key.slice(1)
+}
+
+const insRule: Parameters<MarkdownIt['inline']['ruler']['before']>[2] = (state, silent) => {
+  const src = state.src
+  const start = state.pos
+  if (src.charCodeAt(start) !== 0x5e || src.charCodeAt(start + 1) !== 0x5e) return false
+  const end = src.indexOf('^^', start + 2)
+  if (end < 0 || end === start + 2) return false
+  const body = src.slice(start + 2, end)
+  if (/\n/.test(body) || body.startsWith(' ') || body.endsWith(' ')) return false
+  if (!silent) {
+    state.push('ins_open', 'ins', 1)
+    const text = state.push('text', '', 0)
+    text.content = body
+    state.push('ins_close', 'ins', -1)
+  }
+  state.pos = end + 2
+  return true
+}
+
+const keysRule: Parameters<MarkdownIt['inline']['ruler']['before']>[2] = (state, silent) => {
+  const src = state.src
+  const start = state.pos
+  if (src.charCodeAt(start) !== 0x2b || src.charCodeAt(start + 1) !== 0x2b) return false
+  const end = src.indexOf('++', start + 2)
+  if (end < 0 || end === start + 2) return false
+  const body = src.slice(start + 2, end)
+  if (!/^[a-z0-9+\- ]+$/i.test(body) || /\n/.test(body)) return false
+  const names = body.split('+').map((name) => name.trim()).filter(Boolean)
+  if (names.length === 0) return false
+  if (!silent) {
+    const token = state.push('html_inline', '', 0)
+    token.content = `<span class="np-keys">${names
+      .map((name) => `<kbd class="np-key">${state.md.utils.escapeHtml(keyLabel(name))}</kbd>`)
+      .join('<span class="np-key-join">+</span>')}</span>`
+  }
+  state.pos = end + 2
+  return true
+}
+
+const figuresRule: Parameters<MarkdownIt['core']['ruler']['push']>[1] = (state) => {
+  const tokens = state.tokens
+  for (let i = 0; i + 2 < tokens.length; i++) {
+    if (tokens[i].type !== 'paragraph_open' || tokens[i + 1].type !== 'inline' || tokens[i + 2].type !== 'paragraph_close') continue
+    const children = tokens[i + 1].children ?? []
+    const meaningful = children.filter((child) => !(child.type === 'text' && child.content.trim() === ''))
+    if (meaningful.length !== 1 || meaningful[0].type !== 'image' || !meaningful[0].attrGet('title')) continue
+    meaningful[0].meta = { ...(meaningful[0].meta ?? {}), figure: true }
+    tokens[i].tag = 'figure'
+    tokens[i + 2].tag = 'figure'
+    tokens[i].attrJoin('class', 'np-figure')
+  }
+}
+
 function buildMarkdownIt(
   highlighter: Highlighter,
   embed: { route: string; system?: string } = { route: '/_components' },
@@ -479,9 +574,28 @@ function buildMarkdownIt(
   }
   const imageRule = md.renderer.rules.image ?? renderToken
   md.renderer.rules.image = (tokens, idx, options, env, self) => {
-    const src = tokens[idx].attrGet('src')
-    if (src) tokens[idx].attrSet('src', joinBase(base, src))
-    return imageRule(tokens, idx, options, env, self)
+    const token = tokens[idx]
+    const src = token.attrGet('src')
+    if (src) {
+      const theme = /#only-(light|dark)$/.exec(src)
+      if (theme) {
+        token.attrSet('src', joinBase(base, src.slice(0, -theme[0].length)))
+        token.attrJoin('class', `np-img-${theme[1]}`)
+      } else {
+        token.attrSet('src', joinBase(base, src))
+      }
+    }
+    const align = token.attrGet('align')
+    if (align === 'left' || align === 'right') {
+      token.attrs = (token.attrs ?? []).filter(([name]) => name !== 'align')
+      token.attrJoin('class', `np-img-${align}`)
+    }
+    const state = env as { imageCount?: number }
+    state.imageCount = (state.imageCount ?? 0) + 1
+    if (state.imageCount > 1 && !token.attrGet('loading')) token.attrSet('loading', 'lazy')
+    const html = imageRule(tokens, idx, options, env, self)
+    const caption = token.meta?.figure ? token.attrGet('title') : null
+    return caption ? `${html}<figcaption class="np-figcaption">${md.utils.escapeHtml(caption)}</figcaption>` : html
   }
 
   md.use(anchor, {
@@ -492,6 +606,14 @@ function buildMarkdownIt(
   md.use(deflist)
   md.use(footnote)
   md.use(taskLists, { enabled: true })
+  md.use(mark)
+  md.inline.ruler.before('emphasis', 'np_ins', insRule)
+  md.renderer.rules.s_open = () => '<del>'
+  md.renderer.rules.s_close = () => '</del>'
+  md.use(sub)
+  md.use(sup)
+  md.inline.ruler.before('emphasis', 'np_keys', keysRule)
+  md.core.ruler.push('np_figures', figuresRule)
 
   const useContainer = (name: string, opts: ContainerOpts) => {
     ;(md.use as (...args: unknown[]) => MarkdownIt)(container, name, opts)

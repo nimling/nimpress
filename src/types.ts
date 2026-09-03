@@ -508,6 +508,8 @@ export interface NimpressConfig {
   feedback?: NimpressFeedbackConfig
   status?: Record<string, string>
   tabs?: NimpressTabsConfig
+  /** Image behavior in the prose. lightbox opens every image full size on click. @example { "lightbox": true } */
+  images?: NimpressImagesConfig
   guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
@@ -548,6 +550,11 @@ export interface NimpressBannerConfig {
   version?: string
 }
 
+export interface NimpressImagesConfig {
+  /** Opens every image in the prose in a lightbox on click; without it only images carrying the zoom class open. */
+  lightbox?: boolean
+}
+
 export interface NimpressTabsConfig {
   /** Selects the same label in every tab group on the site when one is clicked, remembered across pages. */
   linked?: boolean
@@ -574,6 +581,7 @@ export interface NimpressUserConfig {
   status?: Record<string, string>
   /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. @example { "linked": true } */
   tabs?: NimpressTabsConfig
+  images?: NimpressImagesConfig
   /** Extra header navigation routes. @example [{ "text": "API", "link": "/api" }] */
   navRoutes?: NavRoute[]
   /** OAuth 2.0 session login and the build time guard function for gated pages. */
@@ -623,6 +631,7 @@ export interface ResolvedNimpressConfig {
   feedback?: NimpressFeedbackConfig
   status: Record<string, string>
   tabs: NimpressTabsConfig
+  images: NimpressImagesConfig
   navRoutes?: NavRoute[]
   auth?: AuthConfig
   client?: string

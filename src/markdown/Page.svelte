@@ -14,6 +14,7 @@
   import Feature from './Feature.svelte'
   import ComponentEmbed from './ComponentEmbed.svelte'
   import Feedback from './Feedback.svelte'
+  import Lightbox from './Lightbox.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -59,6 +60,29 @@
     }))
   })
   const showFeedback = $derived(!hidden.has('feedback') && !!config.feedback && !issueKind)
+  let lightbox: { destroy: () => void } | null = null
+  function closeLightbox() {
+    lightbox?.destroy()
+    lightbox = null
+  }
+  function onProseClick(event: MouseEvent) {
+    const image = (event.target as HTMLElement).closest<HTMLImageElement>('img')
+    if (!image || image.closest('a')) return
+    if (!config.images?.lightbox && !image.classList.contains('zoom')) return
+    event.preventDefault()
+    closeLightbox()
+    const instance = mount(Lightbox, { target: document.body, props: { src: image.currentSrc || image.src, alt: image.alt, onClose: closeLightbox } })
+    lightbox = { destroy: () => unmount(instance) }
+  }
+  $effect(() => {
+    const el = container
+    if (!el) return
+    el.addEventListener('click', onProseClick)
+    return () => {
+      el.removeEventListener('click', onProseClick)
+      closeLightbox()
+    }
+  })
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -304,7 +328,7 @@
         {/each}
       </div>
     {/if}
-    <article class="np-prose" bind:this={container}>
+    <article class="np-prose" class:np-prose-lightbox={!!config.images?.lightbox} bind:this={container}>
       {@html page.html}
     </article>
     {#if showFeedback}

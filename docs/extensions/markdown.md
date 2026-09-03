@@ -380,6 +380,91 @@ See [definition-lists.md](./definition-lists.md).
 
 `markdown-it-task-lists` enabled. Use `- [ ]` and `- [x]`.
 
+## Formatting
+
+nimpress provides support for several HTML elements that can be used to highlight sections of a document or apply specific formatting. Highlighting, insertion, deletion, sub and superscripts, and keyboard keys are on without configuration.
+
+### Highlight text
+
+Text can be highlighted with a simple syntax, which is more convenient than directly using the corresponding `mark`, `ins`, and `del` HTML tags:
+
+```md
+- ==This was marked==
+- ^^This was inserted^^
+- ~~This was deleted~~
+```
+
+### Sub- and superscripts
+
+Text can be sub- and superscripted with a simple syntax, which is more convenient than directly using the corresponding `sub` and `sup` HTML tags:
+
+```md
+- H~2~O
+- A^T^A
+```
+
+### Add keyboard keys
+
+Keyboard keys can be rendered with a simple syntax. Consecutive keys are separated by a plus sign, and names such as `ctrl`, `cmd`, `shift`, `enter`, and `esc` render as their glyphs:
+
+```md
+++ctrl+alt+del++
+```
+
+## Images
+
+While images are first-class citizens of markdown and part of the core syntax, it can be difficult to work with them. nimpress makes working with images more comfortable, providing styles for image alignment and image captions.
+
+### Image alignment
+
+Images can be aligned by adding the respective alignment direction via the `align` attribute, `align=left` or `align=right`. The image floats beside the paragraphs that follow it until the next heading:
+
+```md
+![Image title](./image.png){align=left}
+```
+
+### Image captions
+
+An image alone in a paragraph with a title renders as a figure with the title as its caption:
+
+```md
+![Image title](./image.png "Image caption")
+```
+
+### Image lazy-loading
+
+Every image after the first one on a page carries `loading="lazy"`, so browsers fetch it only when the reader scrolls near it. Nothing needs to be written for it.
+
+### Light and dark mode
+
+If you want to show different images for light and dark color schemes, you can append a `#only-light` or `#only-dark` hash fragment to the image URL:
+
+```md
+![Image title](./image-light.png#only-light)
+![Image title](./image-dark.png#only-dark)
+```
+
+### Lightbox and zoom
+
+An image with the `zoom` class opens full size in a lightbox on click, closed by escape or a click outside:
+
+```md
+![Image title](./image.png){.zoom}
+```
+
+To open every image in the prose that way, add the following lines to your configuration:
+
+```json
+{
+  "images": {
+    "lightbox": true
+  }
+}
+```
+
+See [Formatting and images](/examples/formatting) for every form rendered.
+
+
 ## Live components
 
 The `:::component` directive renders a live component from a configured module system inline in any page, through the same iframe harness the workshop uses:

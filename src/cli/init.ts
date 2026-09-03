@@ -60,6 +60,9 @@ export default defineConfig({
   /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. */
   // tabs: { linked: true },
 
+  /** Image behavior in the prose. lightbox opens every image full size on click; without it only images carrying the zoom class open. */
+  // images: { lightbox: true },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 

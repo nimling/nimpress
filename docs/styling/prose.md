@@ -6,7 +6,7 @@ description: The content column and every element the markdown pipeline produces
 
 The content column and every element the markdown pipeline produces, including code blocks, tabs, callouts, cards, action rows, and feature grids.
 
-97 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+112 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -26,10 +26,20 @@ The content column and every element the markdown pipeline produces, including c
 | `np-code` |
 | `np-code-group` |
 | `np-code-mount` |
+| `np-figcaption` |
+| `np-figure` |
+| `np-img-dark` |
+| `np-img-left` |
+| `np-img-light` |
+| `np-img-right` |
+| `np-key` |
+| `np-key-join` |
+| `np-keys` |
 | `np-page-action` |
 | `np-page-action-edit` |
 | `np-page-action-view` |
 | `np-page-actions` |
+| `np-prose-lightbox` |
 | `np-component-embed` |
 | `np-component-embed-mounted` |
 | `np-dbml` |
@@ -60,6 +70,17 @@ The content column and every element the markdown pipeline produces, including c
 | `np-tabs-mount` |
 | `np-tabs-panel` |
 | `np-toc-rail` |
+
+## Lightbox
+
+`src/markdown/Lightbox.svelte`
+
+| Class |
+|---|
+| `np-lightbox` |
+| `np-lightbox-backdrop` |
+| `np-lightbox-close` |
+| `np-lightbox-image` |
 
 ## Feedback
 

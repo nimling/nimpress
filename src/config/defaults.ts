@@ -12,6 +12,7 @@ export const defaultConfig: ResolvedNimpressConfig = {
   title: 'Nimpress',
   status: { new: 'Recently added', deprecated: 'Deprecated' },
   tabs: { linked: false },
+  images: { lightbox: false },
   base: '/',
   contentDir: 'docs',
   assetsDir: 'assets',

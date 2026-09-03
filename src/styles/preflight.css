@@ -585,3 +585,80 @@
   border-radius: var(--np-radius-md);
   margin: 24px;
 }
+
+.np-prose mark {
+  background-color: var(--np-mark-bg);
+  color: inherit;
+  padding: 0 3px;
+  border-radius: var(--np-radius-sm);
+}
+
+.np-prose ins {
+  text-decoration: underline;
+  text-decoration-color: var(--np-success);
+  text-decoration-thickness: 2px;
+}
+
+.np-prose del {
+  text-decoration-color: var(--np-danger);
+}
+
+.np-prose sub,
+.np-prose sup {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.np-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.np-key-join {
+  color: var(--np-text-faint);
+  font-size: 12px;
+}
+
+.np-prose img.np-img-left {
+  float: left;
+  margin: 4px 24px 12px 0;
+  max-width: 45%;
+}
+
+.np-prose img.np-img-right {
+  float: right;
+  margin: 4px 0 12px 24px;
+  max-width: 45%;
+}
+
+.np-prose h2,
+.np-prose h3 {
+  clear: both;
+}
+
+.np-prose figure.np-figure {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.np-prose figure.np-figure img {
+  margin: 0 auto;
+}
+
+.np-prose .np-figcaption {
+  margin-top: 8px;
+  color: var(--np-text-faint);
+  font-size: 13px;
+}
+
+html.dark .np-prose img.np-img-light,
+html:not(.dark) .np-prose img.np-img-dark {
+  display: none;
+}
+
+.np-prose img.zoom,
+.np-prose-lightbox img {
+  cursor: zoom-in;
+}

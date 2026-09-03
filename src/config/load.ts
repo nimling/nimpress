@@ -80,6 +80,7 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     feedback: resolved.feedback,
     status: resolved.status,
     tabs: resolved.tabs,
+    images: resolved.images,
     guardedBase: `/${resolved.paths.guarded}`
   }
 }
