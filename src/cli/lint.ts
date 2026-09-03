@@ -105,6 +105,7 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
   if (!existsSync(root)) return [`${resolved.contentDir}: contentDir does not exist`]
 
   const componentDirs = new Map<string, string>()
+  let notFoundFile: string | undefined
   const mdByDir = new Map<string, string[]>()
 
   for (const file of walkFiles(root)) {
@@ -123,8 +124,16 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
       let data: Record<string, unknown> | undefined
       try {
         data = matter(readFileSync(file, 'utf-8')).data as Record<string, unknown>
+        if (typeof data.type === 'number') data.type = String(data.type)
       } catch {
         continue
+      }
+      if (data?.type === '404') {
+        if (notFoundFile) {
+          problems.push(`${rel}: second type 404 page in the site, ${relative(root, notFoundFile).split(sep).join('/')} already owns it, one not found page per site`)
+        } else {
+          notFoundFile = file
+        }
       }
       if (data?.type === 'component') {
         const other = componentDirs.get(dir)

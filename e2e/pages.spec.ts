@@ -15,7 +15,7 @@ test('every page in the sitemap renders without errors', async ({ page, request 
   }
 })
 
-test('an unknown route serves the not found page', async ({ page }) => {
+test('an unknown route answers with the not found status', async ({ page }) => {
   const response = await page.goto('does-not-exist')
   expect(response?.status()).toBe(404)
 })

@@ -59,7 +59,9 @@
   }
 
   const routes = buildRoutes()
-  const fallback = withBase('/')
+  const notFound = Object.entries(get(configStore).manifest?.pages ?? {}).find(([, meta]) => meta.type === '404')
+  const notFoundLoader = notFound ? get(configStore).pageLoader?.[notFound[0]] : undefined
+  const fallback = (notFoundLoader ?? withBase('/')) as Routes[string]
 </script>
 
 <App>

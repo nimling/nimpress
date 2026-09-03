@@ -149,6 +149,7 @@ const frontmatterSchema = z.object({
     z.literal('changelog'),
     z.literal('hero'),
     z.literal('fullpage'),
+    z.literal('404'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -1538,6 +1539,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   async function processFile(file: string): Promise<ProcessedPage | null> {
     const raw = await readFile(file, 'utf-8')
     const { data, content } = matter(raw)
+    if (typeof data.type === 'number') data.type = String(data.type)
 
     const issues = frontmatterIssues(data, content)
     if (issues.length) {
@@ -1735,6 +1737,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const changelogGroups = new Map<string, ProcessedPage[]>()
     const roadmapGroups = new Map<string, ProcessedPage[]>()
     const componentDirs = new Map<string, string>()
+    let notFoundPage: string | undefined
     const allProcessed: ProcessedPage[] = []
 
     const fileSet = new Set(files)
@@ -1763,6 +1766,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (p.type === 'roadmap') {
         const groupKey = String(p.filePath)
         roadmapGroups.set(groupKey, [p])
+      }
+      if (p.type === '404') {
+        if (notFoundPage && notFoundPage !== p.filePath) {
+          throw new Error(`[nimpress] one type 404 page per site: ${notFoundPage} and ${p.filePath}`)
+        }
+        notFoundPage = p.filePath
       }
       if (p.type === 'component') {
         const dir = dirname(p.filePath)
@@ -2078,7 +2087,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function jsonLdTypeFor(type: PageType): string {
     if (type === 'changelog' || type === 'roadmap') return 'CollectionPage'
     if (type === 'openapi') return 'APIReference'
-    if (type === 'hero' || type === 'fullpage') return 'WebPage'
+    if (type === 'hero' || type === 'fullpage' || type === '404') return 'WebPage'
     return 'TechArticle'
   }
 
@@ -2334,11 +2343,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       await writeFile(target, html)
     }
     await writeFile(join(resolvedOutDir, 'robots.txt'), buildRobots())
-    const sitemap = buildSitemap(list)
+    const indexed = list.filter((p) => p.type !== '404')
+    const sitemap = buildSitemap(indexed)
     if (sitemap) await writeFile(join(resolvedOutDir, 'sitemap.xml'), sitemap)
-    await writeFile(join(resolvedOutDir, 'llms.txt'), buildLlms(list))
+    await writeFile(join(resolvedOutDir, 'llms.txt'), buildLlms(indexed))
     if (metaCfg.llms?.full) {
-      await writeFile(join(resolvedOutDir, 'llms-full.txt'), buildLlmsFull(list))
+      await writeFile(join(resolvedOutDir, 'llms-full.txt'), buildLlmsFull(indexed))
     }
     if (metaCfg.webmanifest) {
       await writeFile(join(resolvedOutDir, 'site.webmanifest'), JSON.stringify(metaCfg.webmanifest, null, 2) + '\n')
@@ -2632,6 +2642,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     for (const p of pages.values()) {
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || (!includeGated && isGated(p)))) continue
+      if (p.type === '404' && !p.frontmatter.sidebar?.name) continue
       const sidebarMeta = p.frontmatter.sidebar
       if (p.effectivePath === '/' && !sidebarMeta?.name) continue
       const segments = p.effectivePath === '/'
@@ -2846,6 +2857,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       : pages
     for (const [slug, p] of source) {
       if (p.sidebarOnly) continue
+      if (p.type === '404') continue
       if (gatedOnly) {
         if (pageExcludedFromBuild(p.frontmatter) || !isGated(p)) continue
       } else if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
@@ -3062,15 +3074,30 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
   applyPageStyles(shell.path)
   const bodyPromise: Promise<{ default: PageBody }> = import(${JSON.stringify(bodyId)})
+  const missing = $derived.by(() => {
+    if (shell.type === '404') return null
+    const config = $configStore
+    const path = withoutBase($resolvedRoute?.path ?? '/').replace(/\\/$/, '') || '/'
+    if (config.manifest?.byPath?.[path] !== undefined) return null
+    const entry = Object.entries(config.manifest?.pages ?? {}).find(([, meta]) => meta.type === '404')
+    const loader = entry ? config.pageLoader?.[entry[0]] : undefined
+    return loader ? (loader as () => Promise<{ default: any }>) : null
+  })
 </script>
 
-{#if shell.type === 'hero'}
+{#if missing}
+  {#await missing()}
+    <div class="np-page-loading" aria-busy="true"></div>
+  {:then found}
+    <found.default />
+  {/await}
+{:else if shell.type === 'hero'}
   <HeroPage page={shell} {bodyPromise} />
 {:else if shell.type === 'fullpage'}
   <FullPage page={shell} {bodyPromise} />
@@ -3080,6 +3107,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+    {:else if shell.type === '404'}
+      <NotFoundPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'changelog'}
       <ChangelogPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'roadmap'}
@@ -3148,6 +3177,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       await writeFile(join(resolvedOutDir, 'subscribe.map.json'), subscribeMapJson)
       await writeStaticArtifacts()
+      const notFound = Array.from(pages.values()).find((p) => p.type === '404' && !pageExcludedFromBuild(p.frontmatter) && !isGated(p))
+      if (notFound) {
+        await copyFile(join(resolvedOutDir, notFound.effectivePath.replace(/^\//, ''), 'index.html'), join(resolvedOutDir, '404.html'))
+      }
       await writeGuardedArtifacts()
     },
 
@@ -3521,6 +3554,7 @@ export async function lintContent(cwd: string, contentDir: string): Promise<stri
       continue
     }
     const { data, content } = matter(raw)
+    if (typeof data.type === 'number') data.type = String(data.type)
     for (const issue of frontmatterIssues(data, content)) {
       problems.push(`${relative(root, file).split(sep).join('/')}: ${issue}`)
     }

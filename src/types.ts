@@ -4,6 +4,7 @@ export type PageType =
   | 'changelog'
   | 'hero'
   | 'fullpage'
+  | '404'
   | 'roadmap'
   | 'dbml'
   | 'milestone'

@@ -3,7 +3,7 @@ title: Page types
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Twelve types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Thirteen types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -86,6 +86,19 @@ data:
 ```
 
 See [Full pages](/page-types/fullpage) for the band fields and the body.
+
+## `404`
+
+The not found page of the site. The build writes it as `404.html` at the output root beside its own route, the app routes an unknown path to it, and it stays out of the sidebar, the search index, and the sitemap. One per site.
+
+```yaml
+---
+title: This page does not exist
+type: 404
+---
+```
+
+See [Not found page](/page-types/404) for where it is served.
 
 ## `roadmap`
 

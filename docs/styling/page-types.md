@@ -6,7 +6,7 @@ description: Hero bands, changelog entries, roadmap timelines, database pages, a
 
 Hero bands, changelog entries, roadmap timelines, database pages, and the component workshop, all the chrome a page type adds around the prose.
 
-210 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+215 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -58,6 +58,18 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-fullpage-logo` |
 | `np-fullpage-tagline` |
 | `np-fullpage-title` |
+
+## NotFoundPage
+
+`src/markdown/NotFoundPage.svelte`
+
+| Class |
+|---|
+| `np-notfound` |
+| `np-notfound-body` |
+| `np-notfound-code` |
+| `np-notfound-head` |
+| `np-notfound-title` |
 
 ## ChangelogPage
 

@@ -52,6 +52,10 @@ Use for:
 
 The type hides the sidebar, the breadcrumbs, the rail, and the previous and next links by itself, and the band plus the body span the viewport. Do not use `fullpage` for a page the reader will read top to bottom; a `hero` keeps the shell for that.
 
+## `404`
+
+Use for exactly one page per site: the not found page the build serves for every address with no page behind it. The body carries the prose and an action row back into the site. Never place it in the sidebar unless the site wants a visible link to it.
+
 ## `roadmap`
 
 Use when:
@@ -112,6 +116,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it the not found page of the site?
+   │  └─ Yes  → type: 404
    ├─ Is it a landing page with none of the shell chrome?
    │  └─ Yes  → type: fullpage
    ├─ Is it a beacon style landing page?
