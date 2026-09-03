@@ -109,9 +109,9 @@ See [Definition lists](https://nimling.github.io/nimpress/authoring/definition-l
 
 ## Page skeleton
 
-Every feature page in `docs/` follows one shape, the shape the setup and authoring pages of zensical.org use.
+Every feature page in `docs/` follows one shape.
 
-1. A definition paragraph opens the page: what the thing is, why it matters in documentation, and what nimpress provides. A definition sentence quoted from a reference keeps its adjectives and dashes; the voice rules above do not rewrite a quotation.
+1. A definition paragraph opens the page: what the thing is, why it matters in documentation, and what nimpress provides. A definition sentence borrowed from a reference keeps its adjectives and dashes; the voice rules above do not rewrite it.
 
 2. `## Configuration` follows when a switch exists, with one H3 per option. A configuration paragraph ends with "Add the following lines to your configuration:" and a fenced json block of the config field.
 
