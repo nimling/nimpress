@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import { readFile, readdir, copyFile, cp, mkdir, writeFile } from 'node:fs/promises'
 import { createReadStream, existsSync, statSync, readdirSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { request as httpRequest } from 'node:http'
 import { execFileSync } from 'node:child_process'
 import { resolve, relative, join, sep, dirname, basename, isAbsolute, extname } from 'node:path'
@@ -16,6 +17,7 @@ import taskLists from 'markdown-it-task-lists'
 import mark from 'markdown-it-mark'
 import sub from 'markdown-it-sub'
 import sup from 'markdown-it-sup'
+import { full as emoji } from 'markdown-it-emoji'
 import { z } from 'zod'
 import { parse as parseYamlText } from 'yaml'
 import { createHighlighter, type Highlighter, type ShikiTransformer, type ThemedToken } from 'shiki'
@@ -499,10 +501,173 @@ const figuresRule: Parameters<MarkdownIt['core']['ruler']['push']>[1] = (state) 
   }
 }
 
+export interface MarkdownFeatures {
+  math?: boolean
+  icons?: string
+}
+
+const ICON_SHORTCODE = /^:([a-z0-9]+(?:-[a-z0-9]+)*):/
+const requireFromPlugin = createRequire(import.meta.url)
+
+function lucideDir(): string {
+  try {
+    return dirname(requireFromPlugin.resolve('lucide-static/icons/a-arrow-down.svg'))
+  } catch {
+    return resolve(process.cwd(), 'node_modules', 'lucide-static', 'icons')
+  }
+}
+
+const iconCache = new Map<string, string | null>()
+
+function loadIconSvg(name: string, iconsDir?: string): string | null {
+  const key = `${iconsDir ?? ''}:${name}`
+  const cached = iconCache.get(key)
+  if (cached !== undefined) return cached
+  let file: string | null = null
+  if (name.startsWith('lucide-')) file = join(lucideDir(), `${name.slice('lucide-'.length)}.svg`)
+  else if (iconsDir) file = resolve(process.cwd(), iconsDir, `${name}.svg`)
+  let svg: string | null = null
+  if (file && existsSync(file)) {
+    svg = readFileSync(file, 'utf8')
+      .replace(/<\?xml[^>]*>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\s+(width|height)="[^"]*"/g, '')
+      .replace(/<svg/, '<svg aria-hidden="true" focusable="false"')
+      .trim()
+  }
+  iconCache.set(key, svg)
+  return svg
+}
+
+function iconAttrs(spec: string): Array<[string, string]> {
+  const attrs: Array<[string, string]> = []
+  const classes: string[] = []
+  for (const part of spec.trim().split(/\s+/).filter(Boolean)) {
+    if (part.startsWith('.')) classes.push(part.slice(1))
+    else if (part.startsWith('#')) attrs.push(['id', part.slice(1)])
+    else if (part.includes('=')) {
+      const at = part.indexOf('=')
+      attrs.push([part.slice(0, at), part.slice(at + 1).replace(/^"|"$/g, '')])
+    }
+  }
+  if (classes.length) attrs.push(['class', classes.join(' ')])
+  return attrs
+}
+
+function makeIconRule(iconsDir?: string): Parameters<MarkdownIt['inline']['ruler']['before']>[2] {
+  return (state, silent) => {
+    if (state.src.charCodeAt(state.pos) !== 0x3a) return false
+    const match = ICON_SHORTCODE.exec(state.src.slice(state.pos))
+    if (!match) return false
+    const name = match[1]
+    const svg = loadIconSvg(name, iconsDir)
+    if (!svg) {
+      if (name.startsWith('lucide-')) console.warn(`[nimpress] icon :${name}: is not a lucide icon; the shortcode stays as text`)
+      return false
+    }
+    let end = state.pos + match[0].length
+    let attrs: Array<[string, string]> = []
+    const rest = state.src.slice(end)
+    const attrMatch = /^\{([^}\n]*)\}/.exec(rest)
+    if (attrMatch) {
+      attrs = iconAttrs(attrMatch[1])
+      end += attrMatch[0].length
+    }
+    if (!silent) {
+      const token = state.push('np_icon', 'span', 0)
+      token.content = svg
+      token.attrSet('data-icon', name)
+      token.attrJoin('class', 'np-icon')
+      for (const [key, value] of attrs) {
+        if (key === 'class') token.attrJoin('class', value)
+        else token.attrSet(key, value)
+      }
+    }
+    state.pos = end
+    return true
+  }
+}
+
+function encodeMath(source: string): string {
+  return Buffer.from(source, 'utf-8').toString('base64')
+}
+
+const mathBlockRule: Parameters<MarkdownIt['block']['ruler']['before']>[2] = (state, startLine, endLine, silent) => {
+  const start = state.bMarks[startLine] + state.tShift[startLine]
+  const max = state.eMarks[startLine]
+  if (state.src.slice(start, start + 2) !== '$$') return false
+  const firstLine = state.src.slice(start + 2, max)
+  if (firstLine.trim().endsWith('$$') && firstLine.trim().length > 2) {
+    if (silent) return true
+    const token = state.push('np_math_block', 'div', 0)
+    token.content = firstLine.trim().slice(0, -2).trim()
+    token.map = [startLine, startLine + 1]
+    state.line = startLine + 1
+    return true
+  }
+  let line = startLine + 1
+  const lines: string[] = []
+  if (firstLine.trim()) lines.push(firstLine)
+  let closed = false
+  for (; line < endLine; line++) {
+    const lineStart = state.bMarks[line] + state.tShift[line]
+    const lineEnd = state.eMarks[line]
+    const text = state.src.slice(lineStart, lineEnd)
+    if (text.trim() === '$$') {
+      closed = true
+      break
+    }
+    if (text.trim().endsWith('$$')) {
+      lines.push(text.trim().slice(0, -2))
+      closed = true
+      break
+    }
+    lines.push(text)
+  }
+  if (!closed) return false
+  if (silent) return true
+  const token = state.push('np_math_block', 'div', 0)
+  token.content = lines.join('\n').trim()
+  token.map = [startLine, line + 1]
+  state.line = line + 1
+  return true
+}
+
+const mathInlineRule: Parameters<MarkdownIt['inline']['ruler']['before']>[2] = (state, silent) => {
+  const src = state.src
+  const start = state.pos
+  if (src.charCodeAt(start) !== 0x24 || src.charCodeAt(start + 1) === 0x24) return false
+  if (start > 0 && src.charCodeAt(start - 1) === 0x5c) return false
+  const after = src.charCodeAt(start + 1)
+  if (Number.isNaN(after) || after === 0x20 || after === 0x0a) return false
+  let end = start + 1
+  while (end < src.length) {
+    end = src.indexOf('$', end)
+    if (end < 0) return false
+    if (src.charCodeAt(end - 1) === 0x5c) {
+      end += 1
+      continue
+    }
+    break
+  }
+  if (end <= start + 1) return false
+  const body = src.slice(start + 1, end)
+  if (body.endsWith(' ') || body.includes('\n')) return false
+  const next = src.charCodeAt(end + 1)
+  if (next >= 0x30 && next <= 0x39) return false
+  if (!silent) {
+    const token = state.push('np_math_inline', 'span', 0)
+    token.content = body
+  }
+  state.pos = end + 1
+  return true
+}
+
 function buildMarkdownIt(
   highlighter: Highlighter,
   embed: { route: string; system?: string } = { route: '/_components' },
-  base = '/'
+  base = '/',
+  features: MarkdownFeatures = { math: true }
 ): MarkdownIt {
   const md = new MarkdownIt({
     html: true,
@@ -614,6 +779,15 @@ function buildMarkdownIt(
   md.use(sup)
   md.inline.ruler.before('emphasis', 'np_keys', keysRule)
   md.core.ruler.push('np_figures', figuresRule)
+  md.inline.ruler.before('emphasis', 'np_icon', makeIconRule(features.icons))
+  md.use(emoji)
+  md.renderer.rules.np_icon = (tokens, idx, _options, _env, self) => `<span${self.renderAttrs(tokens[idx])}>${tokens[idx].content}</span>`
+  if (features.math !== false) {
+    md.block.ruler.before('fence', 'np_math_block', mathBlockRule, { alt: ['paragraph', 'reference', 'blockquote', 'list'] })
+    md.inline.ruler.before('emphasis', 'np_math_inline', mathInlineRule)
+    md.renderer.rules.np_math_block = (tokens, idx) => `<div class="np-math np-math-display" data-math="${encodeMath(tokens[idx].content)}"></div>\n`
+    md.renderer.rules.np_math_inline = (tokens, idx) => `<span class="np-math" data-math="${encodeMath(tokens[idx].content)}"></span>`
+  }
 
   const useContainer = (name: string, opts: ContainerOpts) => {
     ;(md.use as (...args: unknown[]) => MarkdownIt)(container, name, opts)
@@ -1397,7 +1571,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const hl = await ensureHighlighter()
-    const md = buildMarkdownIt(hl, embedContext(), resolved.base)
+    const md = buildMarkdownIt(hl, embedContext(), resolved.base, { math: resolved.math, icons: resolved.icons })
     const prepared = rewriteDiagramFences(content, file)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared)
@@ -2427,6 +2601,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   }
 
   function resolveIconRef(icon: string | undefined, fromFile: string): string | undefined {
+    const shortcode = icon ? /^:([a-z0-9]+(?:-[a-z0-9]+)*):$/.exec(icon.trim()) : null
+    if (shortcode) {
+      const svg = loadIconSvg(shortcode[1], resolved.icons)
+      if (!svg) console.warn(`[nimpress] icon ${icon} referenced from ${fromFile} is not a known shortcode`)
+      return svg ?? undefined
+    }
     if (!icon || !/\.svg$/i.test(icon.trim())) return icon
     const ref = icon.trim()
     const target = ref.startsWith('/') ? join(contentRoot, ref) : resolve(dirname(fromFile), ref)
@@ -3256,7 +3436,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (id === '\0' + VIRTUAL_CONFIG) {
         const runtime = runtimeConfig(resolved)
-        const inline = runtime.announce || runtime.feedback ? buildMarkdownIt(await ensureHighlighter(), embedContext(), resolved.base) : null
+        const inline = runtime.announce || runtime.feedback ? buildMarkdownIt(await ensureHighlighter(), embedContext(), resolved.base, { math: resolved.math, icons: resolved.icons }) : null
         if (runtime.feedback && inline) {
           runtime.feedback = {
             ...runtime.feedback,

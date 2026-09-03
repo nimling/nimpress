@@ -32,3 +32,10 @@ declare module 'markdown-it-sup' {
   const plugin: PluginSimple
   export default plugin
 }
+
+declare module 'markdown-it-emoji' {
+  import type { PluginSimple } from 'markdown-it'
+  export const full: PluginSimple
+  export const light: PluginSimple
+  export const bare: PluginSimple
+}

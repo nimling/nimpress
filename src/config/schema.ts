@@ -70,6 +70,8 @@ export const userConfigSchema = z.object({
   status: z.record(z.string()).optional(),
   tabs: z.object({ linked: z.boolean().optional() }).optional(),
   images: z.object({ lightbox: z.boolean().optional() }).optional(),
+  icons: z.string().optional(),
+  math: z.boolean().optional(),
   navRoutes: z.array(navRouteSchema).optional(),
   auth: z.object({
     issuer: z.string(),

@@ -63,6 +63,12 @@ export default defineConfig({
   /** Image behavior in the prose. lightbox opens every image full size on click; without it only images carrying the zoom class open. */
   // images: { lightbox: true },
 
+  /** Folder of custom svg icons a :name: shortcode resolves in, beside the lucide set. */
+  // icons: './assets/icons',
+
+  /** Math syntax in the prose. false turns off $...$ and $$...$$ for sites that write dollar signs. */
+  // math: false,
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 

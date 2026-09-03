@@ -26,6 +26,7 @@
       { "icon": "👎", "name": "This page could be improved", "data": "0", "note": "Thanks for your feedback! Help us improve this page by [opening an issue](https://github.com/nimling/nimpress)." }
     ]
   },
+  "icons": "./assets/icons",
   "announce": {
     "text": "Version 2.4 brings seven new page types and the zensical authoring surface.",
     "link": "/changelog",

@@ -465,6 +465,99 @@ To open every image in the prose that way, add the following lines to your confi
 See [Formatting and images](/examples/formatting) for every form rendered.
 
 
+## Icons and emojis
+
+One of the best features of nimpress is the possibility to use more than 2,000 icons and thousands of emojis in your project documentation with practically zero additional effort. Moreover, custom icons can be added and used in your configuration and documents.
+
+### Use emojis
+
+Emojis can be integrated in markdown by putting the shortcode of the emoji between two colons:
+
+```md
+:rocket:
+```
+
+### Use icons
+
+Icons can be used similar to emojis, by referencing a lucide icon name with the `lucide-` prefix. The svg is inlined at build time inside a `np-icon` span, so it follows the text color and size:
+
+```md
+:lucide-braces:
+```
+
+A site adds its own icons by pointing the `icons` config field at a folder of svg files. `:name:` then resolves to `<icons>/name.svg`. Add the following lines to your configuration:
+
+```json
+{
+  "icons": "./assets/icons"
+}
+```
+
+The same shortcode works in `sidebar.icon` and in the footer `social` icons. An unknown shortcode stays as text, and a `lucide-` name that does not exist prints a warning during the build.
+
+### with colors
+
+Custom CSS classes can be added to icons in braces after the shortcode, and a rule in the site stylesheet colors them:
+
+```md
+:lucide-heart:{.brand}
+```
+
+```css
+.np-icon.brand {
+  color: var(--np-brand);
+}
+```
+
+The `lg` class ships with nimpress and grows the icon to one and a half times the text size.
+
+### with animations
+
+Similar to adding colors, it's just as easy to add animations to icons by using an additional style sheet, defining a `@keyframes` rule and adding a dedicated CSS class to the icon:
+
+```css
+@keyframes heart {
+  0%, 40%, 80%, 100% { transform: scale(1); }
+  20%, 60% { transform: scale(1.15); }
+}
+.np-icon.heart {
+  animation: heart 1000ms infinite;
+}
+```
+
+## Math
+
+KaTeX is a lightweight library that focuses on speed and simplicity. nimpress renders every formula with it as MathML in the browser, so no stylesheet and no fonts are loaded, and the katex code reaches only pages that carry math.
+
+### Use block syntax
+
+Blocks must be enclosed in `$$...$$` on separate lines:
+
+```md
+$$
+\frac{n!}{k!(n-k)!} = \binom{n}{k}
+$$
+```
+
+### Use inline block syntax
+
+Inline blocks must be enclosed in `$...$` with no space inside the dollar signs, so a price such as `$5` stays text:
+
+```md
+The mass energy equivalence $E = mc^2$ sits inside a sentence.
+```
+
+A site that writes dollar signs in prose turns the syntax off. Add the following lines to your configuration:
+
+```json
+{
+  "math": false
+}
+```
+
+See [Icons and math](/examples/icons-math) for every form rendered.
+
+
 ## Live components
 
 The `:::component` directive renders a live component from a configured module system inline in any page, through the same iframe harness the workshop uses:

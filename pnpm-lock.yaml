@@ -56,6 +56,12 @@ importers:
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      katex:
+        specifier: 0.18.5
+        version: 0.18.5
+      lucide-static:
+        specifier: 1.40.0
+        version: 1.40.0
       markdown-it:
         specifier: ^14.1.0
         version: 14.2.0
@@ -71,6 +77,9 @@ importers:
       markdown-it-deflist:
         specifier: ^3.0.0
         version: 3.0.1
+      markdown-it-emoji:
+        specifier: 3.1.0
+        version: 3.1.0
       markdown-it-footnote:
         specifier: ^4.0.0
         version: 4.0.0
@@ -123,6 +132,9 @@ importers:
       '@tsconfig/svelte':
         specifier: ^5.0.4
         version: 5.0.8
+      '@types/katex':
+        specifier: ^0.16.8
+        version: 0.16.8
       '@types/markdown-it':
         specifier: ^14.1.2
         version: 14.1.2
@@ -878,6 +890,9 @@ packages:
   '@types/hast@3.0.4':
     resolution: {integrity: sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ==}
 
+  '@types/katex@0.16.8':
+    resolution: {integrity: sha512-trgaNyfU+Xh2Tc+ABIb44a5AYUpicB3uwirOioeOkNPPbmgRNtcWyDeeFRzjPZENO9Vq8gvVqfhaaXWLlevVwg==}
+
   '@types/linkify-it@3.0.5':
     resolution: {integrity: sha512-yg6E+u0/+Zjva+buc3EIb+29XEg4wltq7cSmd4Uc2EE/1nUVmxyzpX6gUXD0V8jIrG0r7YeOGVIbYRkxeooCtw==}
 
@@ -1095,6 +1110,10 @@ packages:
 
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+
+  commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
 
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
@@ -1510,6 +1529,10 @@ packages:
     resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
     hasBin: true
 
+  katex@0.18.5:
+    resolution: {integrity: sha512-1FU5H3RjGJVj6GT9fMjf2uMIXmPQp232aXS3UEeQzf0dxefHg/CKMvNB3DuOC46LFG/E5PNxrE8dOwB782FDGg==}
+    hasBin: true
+
   khroma@2.1.0:
     resolution: {integrity: sha512-Ls993zuzfayK269Svk9hzpeGUKob/sIgZzyHYdjQoAdQetRKpOLj+k/QQQ/6Qi0Yz65mlROrfd+Ev+1+7dz9Kw==}
 
@@ -1616,6 +1639,9 @@ packages:
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
+  lucide-static@1.40.0:
+    resolution: {integrity: sha512-ln37Ng6A709exLQH4pBxrbl6FAUk/ZBLTJnLrj02HN/Bb84eUGzlA2JjMglScI0TEab6vH2UVs0hm4vGgLzTrQ==}
+
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
     engines: {node: '>=12'}
@@ -1640,6 +1666,9 @@ packages:
 
   markdown-it-deflist@3.0.1:
     resolution: {integrity: sha512-pPtXxihDMi9jrwLLQ+Jra/FM20F/FFJWiVjXf0Js6Lwp7LFj+MuK6cUJNMVTRL+n9d/JqF4MEqYZwSMgVodK5g==}
+
+  markdown-it-emoji@3.1.0:
+    resolution: {integrity: sha512-NhmMEH2ywduD4Nty1E8uB5NqfLhAT1VR0dyvoJyStKOqCzbZmVdn/+8wj7zpDsb/fLBikpCPsWwxqKlvMmbz4g==}
 
   markdown-it-footnote@4.0.0:
     resolution: {integrity: sha512-WYJ7urf+khJYl3DqofQpYfEYkZKbmXmwxQV8c8mO/hGIhgZ1wOe7R4HLFNwqx7TjILbnC98fuyeSsin19JdFcQ==}
@@ -2829,6 +2858,8 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
 
+  '@types/katex@0.16.8': {}
+
   '@types/linkify-it@3.0.5': {}
 
   '@types/linkify-it@5.0.0': {}
@@ -3069,6 +3100,8 @@ snapshots:
       '@codemirror/view': 6.43.0
 
   comma-separated-tokens@2.0.3: {}
+
+  commander@15.0.0: {}
 
   commander@7.2.0: {}
 
@@ -3484,6 +3517,10 @@ snapshots:
     dependencies:
       commander: 8.3.0
 
+  katex@0.18.5:
+    dependencies:
+      commander: 15.0.0
+
   khroma@2.1.0: {}
 
   kind-of@6.0.3: {}
@@ -3561,6 +3598,8 @@ snapshots:
 
   lodash@4.18.1: {}
 
+  lucide-static@1.40.0: {}
+
   luxon@3.7.2: {}
 
   magic-string@0.30.21:
@@ -3579,6 +3618,8 @@ snapshots:
   markdown-it-container@4.0.0: {}
 
   markdown-it-deflist@3.0.1: {}
+
+  markdown-it-emoji@3.1.0: {}
 
   markdown-it-footnote@4.0.0: {}
 

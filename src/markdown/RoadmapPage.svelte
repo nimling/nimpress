@@ -9,6 +9,7 @@
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
   import MermaidBlock from './MermaidBlock.svelte'
+  import MathBlock from './MathBlock.svelte'
   import DBMLBlock from './DBMLBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
@@ -1580,6 +1581,16 @@
     mounts = []
     await tick()
     if (!container) return
+    const maths = container.querySelectorAll<HTMLElement>('.np-math[data-math]')
+    for (const el of Array.from(maths)) {
+      const source = decodeURIComponent(escape(atob(el.dataset.math ?? '')))
+      const display = el.classList.contains('np-math-display')
+      const host = document.createElement(display ? 'div' : 'span')
+      el.replaceWith(host)
+      const instance = mount(MathBlock, { target: host, props: { source, display } })
+      mounts.push({ destroy: () => unmount(instance) })
+    }
+
     const mermaids = container.querySelectorAll<HTMLDivElement>('.np-mermaid[data-graph]')
     for (const el of Array.from(mermaids)) {
       const raw = el.dataset.graph ?? ''

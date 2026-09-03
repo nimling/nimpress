@@ -6,7 +6,7 @@ description: The content column and every element the markdown pipeline produces
 
 The content column and every element the markdown pipeline produces, including code blocks, tabs, callouts, cards, action rows, and feature grids.
 
-112 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+116 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -28,6 +28,7 @@ The content column and every element the markdown pipeline produces, including c
 | `np-code-mount` |
 | `np-figcaption` |
 | `np-figure` |
+| `np-icon` |
 | `np-img-dark` |
 | `np-img-left` |
 | `np-img-light` |
@@ -35,6 +36,7 @@ The content column and every element the markdown pipeline produces, including c
 | `np-key` |
 | `np-key-join` |
 | `np-keys` |
+| `np-math` |
 | `np-page-action` |
 | `np-page-action-edit` |
 | `np-page-action-view` |
@@ -70,6 +72,16 @@ The content column and every element the markdown pipeline produces, including c
 | `np-tabs-mount` |
 | `np-tabs-panel` |
 | `np-toc-rail` |
+
+## MathBlock
+
+`src/markdown/MathBlock.svelte`
+
+| Class |
+|---|
+| `np-math` |
+| `np-math-display` |
+| `np-math-error` |
 
 ## Lightbox
 

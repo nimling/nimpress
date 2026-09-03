@@ -19,6 +19,7 @@ Every page under this section is a full flow with the real files rather than a f
 | [Content tabs](/examples/tabs) | A code group, a tab group of any content, a callout inside a tab, nested groups, linked groups, and an anchor link |
 | [Code blocks](/examples/code-blocks) | A titled fence, line numbers from a start, highlighted lines, and annotations that open a tip |
 | [Formatting and images](/examples/formatting) | Highlights, inserts, sub and superscripts, keyboard keys, floated and captioned images, theme variants, and a lightbox |
+| [Icons and math](/examples/icons-math) | Lucide icons and emoji by shortcode, a custom icon, and formulas rendered by katex |
 
 ## How to read them
 

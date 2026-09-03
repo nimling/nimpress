@@ -510,6 +510,10 @@ export interface NimpressConfig {
   tabs?: NimpressTabsConfig
   /** Image behavior in the prose. lightbox opens every image full size on click. @example { "lightbox": true } */
   images?: NimpressImagesConfig
+  /** Folder of custom svg icons a :name: shortcode resolves in, beside the lucide set. @example "./assets/icons" */
+  icons?: string
+  /** Math syntax in the prose, $...$ inline and $$...$$ display, rendered by katex. false turns it off for sites that write dollar signs. */
+  math?: boolean
   guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
@@ -632,6 +636,8 @@ export interface ResolvedNimpressConfig {
   status: Record<string, string>
   tabs: NimpressTabsConfig
   images: NimpressImagesConfig
+  icons?: string
+  math: boolean
   navRoutes?: NavRoute[]
   auth?: AuthConfig
   client?: string
