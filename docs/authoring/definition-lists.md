@@ -5,6 +5,7 @@ description: A compact reference grid of terms and one line descriptions written
 order: 22
 ---
 
+When definition lists are enabled, lists of arbitrary key value pairs, e.g. the parameters of functions or modules, can be enumerated with a simple syntax, a term on one line and its description on the next starting with a colon. nimpress renders them as a compact reference grid, and a whole page of them is a [glossary](/page-types/glossary).
 Compact term and description pairs. Useful for glossaries, metric reference pages, and field listings where a fenced code block would feel too heavy. Supported via `markdown-it-deflist`, the PHP Markdown Extra extension.
 
 ## Syntax

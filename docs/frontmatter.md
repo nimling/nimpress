@@ -7,7 +7,7 @@ tags: Authoring, Frontmatter
 order: 4
 ---
 
-YAML at the top of every markdown file, parsed with `gray-matter` and validated with `zod`. Unknown fields warn but do not fail the build.
+nimpress supports the inclusion of metadata in the frontmatter of a markdown file that is stripped from the file contents before the rest of the content is handed over to the markdown parser. It selects the renderer, names the page, places it in the sidebar, and carries the data a page type reads. The block is YAML, parsed with `gray-matter` and validated with `zod`; unknown fields warn but do not fail the build.
 
 ## Fields
 

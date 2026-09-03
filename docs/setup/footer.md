@@ -8,6 +8,8 @@ description: The copyright notice, the previous and next page links, the social 
 
 The footer of your documentation hosts the copyright notice, links to the previous and next page, as well as links to your social media profiles, all of which can be enabled via configuration. `footer` is an object; `text` is the site wide line rendered under every page and overridable with the `footer` frontmatter field.
 
+## Configuration
+
 ### Navigation
 
 The footer can include links to the previous and next page of the current page, in sidebar order. Add the following lines to your configuration:
@@ -65,6 +67,8 @@ The footer displays a Built with nimpress notice to denote how the site was gene
   }
 }
 ```
+
+## Usage
 
 ### Hiding prev/next links
 
