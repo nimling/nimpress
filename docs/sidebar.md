@@ -1,5 +1,6 @@
 ---
 title: Sidebar
+tags: Setup, Navigation
 order: 5
 ---
 

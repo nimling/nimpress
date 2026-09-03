@@ -1,5 +1,6 @@
 ---
 title: DBML
+tags: Authoring, Diagrams
 order: 25
 description: Render a database schema written in DBML as an interactive entity relationship diagram, inline in any page or as a full page viewer.
 ---

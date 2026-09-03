@@ -6,7 +6,7 @@ description: The content column and every element the markdown pipeline produces
 
 The content column and every element the markdown pipeline produces, including code blocks, tabs, callouts, cards, action rows, and feature grids.
 
-116 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+120 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -41,6 +41,10 @@ The content column and every element the markdown pipeline produces, including c
 | `np-page-action-edit` |
 | `np-page-action-view` |
 | `np-page-actions` |
+| `np-tag` |
+| `np-tag-icon` |
+| `np-tag-label` |
+| `np-tags` |
 | `np-prose-lightbox` |
 | `np-component-embed` |
 | `np-component-embed-mounted` |

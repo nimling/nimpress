@@ -9,10 +9,13 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
   const root: ParentNode = opts.root ?? document
   const topOffset = opts.topOffset ?? 96
   let raf = 0
+  const pathname = window.location.pathname
   let lastHash = window.location.hash
   let foreign = lastHash !== ''
+  let owned = false
 
   const update = () => {
+    if (window.location.pathname !== pathname) return
     const targets = Array.from(root.querySelectorAll<HTMLElement>(opts.selector)).filter((el) => el.id)
     if (!targets.length) return
     if (foreign) {
@@ -31,7 +34,7 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
     if (!best) {
       const first = targets[0]
       const firstTop = first.getBoundingClientRect().top
-      if (firstTop > topOffset && lastHash) {
+      if (firstTop > topOffset && lastHash && owned) {
         lastHash = ''
         window.history.replaceState(null, '', window.location.pathname + window.location.search)
       }
@@ -40,6 +43,7 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
     const next = '#' + best.id
     if (next !== lastHash) {
       lastHash = next
+      owned = true
       window.history.replaceState(null, '', window.location.pathname + window.location.search + next)
     }
   }

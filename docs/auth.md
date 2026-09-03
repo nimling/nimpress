@@ -1,5 +1,6 @@
 ---
 title: Auth
+tags: Setup, Access
 order: 51
 sidebar:
   name: Pipeline

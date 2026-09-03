@@ -1,7 +1,7 @@
 ---
 title: Nimpress
 type: hero
-hide: [toc, feedback]
+hide: [toc, feedback, tags]
 order: 1
 sidebar:
   name: Overview

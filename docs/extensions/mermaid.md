@@ -1,5 +1,6 @@
 ---
 title: Mermaid
+tags: Authoring, Diagrams
 description: Flowcharts, sequence, state, and class diagrams rendered from a fenced block on the pages that use one.
 order: 24
 ---

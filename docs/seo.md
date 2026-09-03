@@ -1,5 +1,6 @@
 ---
 title: SEO and social cards
+tags: Setup, SEO
 order: 10
 ---
 

@@ -6,6 +6,7 @@ export type PageType =
   | 'fullpage'
   | '404'
   | 'section'
+  | 'tags'
   | 'roadmap'
   | 'dbml'
   | 'milestone'
@@ -259,10 +260,32 @@ export interface SidebarNode {
   items?: SidebarNode[]
 }
 
+export interface ManifestTagPage {
+  slug: string
+  title: string
+  path: string
+  description?: string
+}
+
+export interface ManifestTag {
+  name: string
+  slug: string
+  icon?: string
+  pages: ManifestTagPage[]
+}
+
+export interface NimpressTagsConfig {
+  /** Tag identifier to icon, in the three forms sidebar.icon accepts; default is the icon of every tag without one. @example { "default": ":lucide-tag:", "api": ":lucide-plug:" } */
+  icons?: Record<string, string>
+  /** Tag name to identifier, so a group of tags shares one icon. @example { "OpenAPI": "api", "Endpoints": "api" } */
+  map?: Record<string, string>
+}
+
 export interface Manifest {
   pages: Record<string, PageMeta>
   byPath: Record<string, string>
   sidebar: SidebarNode[]
+  tags?: ManifestTag[]
   site?: SiteMeta
   styles?: Record<string, string>
 }
@@ -288,6 +311,7 @@ export interface PageMeta {
   hidden?: boolean
   hide?: PageElement[]
   source?: string
+  tags?: string[]
   redirect?: string
   meta?: PageMetaTags
 }
@@ -517,6 +541,8 @@ export interface NimpressConfig {
   icons?: string
   /** Math syntax in the prose, $...$ inline and $$...$$ display, rendered by katex. false turns it off for sites that write dollar signs. */
   math?: boolean
+  /** Tag icons and the tag to identifier map behind the tag row and the tags page. */
+  tags?: NimpressTagsConfig
   guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
@@ -641,6 +667,7 @@ export interface ResolvedNimpressConfig {
   images: NimpressImagesConfig
   icons?: string
   math: boolean
+  tags?: NimpressTagsConfig
   navRoutes?: NavRoute[]
   auth?: AuthConfig
   client?: string

@@ -1,5 +1,6 @@
 ---
 title: Definition lists
+tags: Authoring, Markdown
 description: A compact reference grid of terms and one line descriptions written as plain markdown.
 order: 22
 ---

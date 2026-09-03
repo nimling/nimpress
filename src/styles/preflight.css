@@ -689,3 +689,42 @@ html:not(.dark) .np-prose img.np-img-dark {
   overflow-x: auto;
   text-align: center;
 }
+
+.np-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 40px;
+}
+
+.np-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--np-border);
+  border-radius: var(--np-radius-pill);
+  background-color: var(--np-bg-surface);
+  color: var(--np-text-muted);
+  font-size: 12px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+a.np-tag:hover {
+  border-color: var(--np-brand);
+  color: var(--np-brand);
+}
+
+.np-tag-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.np-tag-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+}

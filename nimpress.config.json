@@ -27,6 +27,10 @@
     ]
   },
   "icons": "./assets/icons",
+  "tags": {
+    "icons": { "default": ":lucide-tag:", "setup": ":lucide-settings:", "authoring": ":lucide-pen-line:", "types": ":lucide-layout-template:" },
+    "map": { "Setup": "setup", "Authoring": "authoring", "Page types": "types" }
+  },
   "announce": {
     "text": "Version 2.4 brings seven new page types and the zensical authoring surface.",
     "link": "/changelog",

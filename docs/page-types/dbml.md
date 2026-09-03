@@ -1,5 +1,6 @@
 ---
 title: DBML pages
+tags: Page types, Diagrams
 order: 16
 description: One DBML file rendered as a full page database diagram with a hero band above it.
 ---

@@ -1,5 +1,6 @@
 ---
 title: Search
+tags: Setup, Search
 order: 9
 ---
 

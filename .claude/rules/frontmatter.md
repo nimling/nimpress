@@ -45,6 +45,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A landing page under the header alone, no sidebar, no rail, full width | `fullpage` |
 | The not found page the build serves for an unknown address | `404` |
 | A folder index that lists its children as a card grid | `section` |
+| The listing of every tag with its pages | `tags` |
 | A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
 | An interactive entity relationship diagram of a database | `dbml` |
 | A live workshop page for one component in a library | `component` |
@@ -62,6 +63,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 3.2. `type: 404` needs `title` alone. The build writes the page as `404.html` at the output root, the app routes an unknown path to it, and it stays out of the sidebar, search, and the sitemap. One per site. See [Not found page](https://nimling.github.io/nimpress/page-types/404).
 
 3.3. `type: section` belongs on a folder `index.md` and reads `data.columns` and `data.depth`. The body renders first and every child page follows as a card in sidebar order. See [Section pages](https://nimling.github.io/nimpress/page-types/section).
+
+3.4. `type: tags` needs `title` alone and lists every tag with its pages under the body. One per site. Every page shows its `tags` at the bottom, hidden with `hide: [tags]`, and the `tags` config block maps tags to identifiers and identifiers to icons. See [Tags page](https://nimling.github.io/nimpress/page-types/tags).
 
 4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
 

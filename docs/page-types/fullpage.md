@@ -1,5 +1,6 @@
 ---
 title: Full pages
+tags: Page types
 order: 12.5
 description: A landing page that renders under the header alone, with no sidebar, no breadcrumbs, and no rail, and a body that spans the viewport.
 ---

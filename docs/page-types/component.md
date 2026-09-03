@@ -1,5 +1,6 @@
 ---
 title: Component pages
+tags: Page types
 order: 17
 description: One page per component, rendering it live with controls, stories, and its own documentation.
 ---

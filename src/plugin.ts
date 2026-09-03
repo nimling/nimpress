@@ -31,6 +31,7 @@ import type {
   PageMeta,
   PageType,
   PageElement,
+  ManifestTag,
   ResolvedNimpressConfig,
   RoadmapChangelogRef,
   RoadmapEntry,
@@ -151,6 +152,7 @@ const frontmatterSchema = z.object({
     z.literal('fullpage'),
     z.literal('404'),
     z.literal('section'),
+    z.literal('tags'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -1739,6 +1741,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const roadmapGroups = new Map<string, ProcessedPage[]>()
     const componentDirs = new Map<string, string>()
     let notFoundPage: string | undefined
+    let tagsPage: string | undefined
     const allProcessed: ProcessedPage[] = []
 
     const fileSet = new Set(files)
@@ -1770,6 +1773,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (p.type === 'section' && !p.filePath.endsWith(`${sep}index.md`)) {
         throw new Error(`[nimpress] type section belongs on a folder index.md: ${p.filePath}`)
+      }
+      if (p.type === 'tags') {
+        if (tagsPage && tagsPage !== p.filePath) {
+          throw new Error(`[nimpress] one type tags page per site: ${tagsPage} and ${p.filePath}`)
+        }
+        tagsPage = p.filePath
       }
       if (p.type === '404') {
         if (notFoundPage && notFoundPage !== p.filePath) {
@@ -2092,7 +2101,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (type === 'changelog' || type === 'roadmap') return 'CollectionPage'
     if (type === 'openapi') return 'APIReference'
     if (type === 'hero' || type === 'fullpage' || type === '404') return 'WebPage'
-    if (type === 'section') return 'CollectionPage'
+    if (type === 'section' || type === 'tags') return 'CollectionPage'
     return 'TechArticle'
   }
 
@@ -2814,6 +2823,33 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return roots
   }
 
+  function tagSlug(name: string): string {
+    return `tag-${slugify(name)}`
+  }
+
+  function tagIcon(name: string): string | undefined {
+    const icons = resolved.tags?.icons
+    if (!icons) return undefined
+    const icon = icons[resolved.tags?.map?.[name] ?? name] ?? icons.default
+    return icon ? resolveIconRef(icon, resolve(process.cwd(), 'nimpress.config.json')) : undefined
+  }
+
+  function buildTagIndex(): ManifestTag[] {
+    const index = new Map<string, ManifestTag>()
+    for (const p of pages.values()) {
+      if (p.sidebarOnly || p.type === '404' || p.type === 'tags') continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
+      for (const name of normalizeTags(p.frontmatter.tags)) {
+        const entry = index.get(name) ?? { name, slug: tagSlug(name), icon: tagIcon(name), pages: [] }
+        entry.pages.push({ slug: p.slug, title: p.frontmatter.title, path: p.effectivePath, description: p.frontmatter.description })
+        index.set(name, entry)
+      }
+    }
+    return Array.from(index.values())
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((tag) => ({ ...tag, pages: tag.pages.sort((a, b) => a.title.localeCompare(b.title)) }))
+  }
+
   function buildManifest() {
     const pageMap: Record<string, PageMeta> = {}
     const byPath: Record<string, string> = {}
@@ -2833,6 +2869,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         hidden: pageDevOnly(p.frontmatter),
         hide: p.type === 'fullpage' ? Array.from(new Set<PageElement>(['navigation', 'path', 'toc', 'footer', ...(p.frontmatter.hide ?? [])])) : p.frontmatter.hide,
         source: relative(contentRoot, p.filePath).split(sep).join('/'),
+        tags: normalizeTags(p.frontmatter.tags),
         redirect: p.frontmatter.redirect,
         meta: p.frontmatter.meta
       }
@@ -2852,7 +2889,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (p.pageCss) styles[p.effectivePath] = p.pageCss
     }
 
-    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles }
+    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles, tags: buildTagIndex() }
   }
 
   function buildSearch(gatedOnly = false, only?: ProcessedPage[]): SearchEntry[] {
@@ -3052,7 +3089,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (!p) return null
     const payload = {
       html: p.html,
-      headings: p.headings,
+      headings: p.type === 'tags' ? [...p.headings, ...buildTagIndex().map((tag) => ({ level: 2, text: tag.name, slug: tag.slug }))] : p.headings,
       openApiSpec: p.openApiSpec,
       openApiFile: p.openApiFile,
       openApiUrl: p.openApiUrl,
@@ -3079,7 +3116,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -3112,6 +3149,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+    {:else if shell.type === 'tags'}
+      <TagsPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'section'}
       <SectionPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === '404'}

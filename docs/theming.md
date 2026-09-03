@@ -1,5 +1,6 @@
 ---
 title: Theming
+tags: Setup, Styling
 order: 6
 ---
 

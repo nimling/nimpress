@@ -1,5 +1,6 @@
 ---
 title: Changelog renderer
+tags: Page types
 description: Many release files collapsing into one page, newest first, each entry a version pill with its body.
 order: 13
 ---

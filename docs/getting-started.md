@@ -1,5 +1,6 @@
 ---
 title: Getting started
+tags: Setup, Install
 description: Install nimpress, write a config, run the CLI, and deploy the built site.
 order: 2
 ---
@@ -216,6 +217,21 @@ document.addEventListener('nimpress:feedback', (event) => {
 })
 ```
 
+
+## Tags
+
+nimpress adds first-class support for categorizing pages with tags, which allows users to discover related pages via search. Each tag can be associated with an icon, which is rendered inside the tag. Before assigning icons to tags, associate each tag with a unique identifier in `map`, then map each identifier to an icon in `icons`; `default` covers every tag without one. Add the following lines to your configuration:
+
+```json
+{
+  "tags": {
+    "icons": { "default": ":lucide-tag:", "setup": ":lucide-settings:" },
+    "map": { "Setup": "setup", "Install": "setup" }
+  }
+}
+```
+
+A `type: tags` page lists every tag with its pages; see [Tags page](/page-types/tags).
 
 ## Run
 

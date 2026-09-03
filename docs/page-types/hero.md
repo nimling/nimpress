@@ -1,5 +1,6 @@
 ---
 title: Hero pages
+tags: Page types
 order: 12
 ---
 

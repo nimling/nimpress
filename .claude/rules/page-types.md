@@ -60,6 +60,10 @@ Use for exactly one page per site: the not found page the build serves for every
 
 Use for a folder `index.md` that opens a section: the prose renders first and every child page follows as a card in sidebar order, so the overview needs no authored list. `data.columns` pins the column count and `data.depth: 2` lists grandchildren under a heading per child folder. The type belongs on a folder index only. See [Section pages](https://nimling.github.io/nimpress/page-types/section).
 
+## `tags`
+
+Use for exactly one page per site: the listing of every tag with its pages. Tags themselves go on the pages through the `tags` frontmatter field, and the `tags` config block gives them icons. See [Tags page](https://nimling.github.io/nimpress/page-types/tags).
+
 ## `roadmap`
 
 Use when:
@@ -120,6 +124,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it the listing of every tag with its pages?
+   │  └─ Yes  → type: tags
    ├─ Is it a folder index that lists its children as cards?
    │  └─ Yes  → type: section
    ├─ Is it the not found page of the site?

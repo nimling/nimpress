@@ -1,5 +1,6 @@
 ---
 title: Markdown
+tags: Authoring, Markdown
 description: The markdown pipeline with headings, callouts, tabs, code blocks, grids, formatting, images, icons, math, and the directives.
 order: 21
 ---

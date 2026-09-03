@@ -230,7 +230,7 @@
             {#if Array.isArray(r.tags) && r.tags.length}
               <div class="np-result-tags">
                 {#each r.tags as t (t)}
-                  <span class="np-result-tag">{t}</span>
+                  <span class="np-result-tag np-tag">{t}</span>
                 {/each}
               </div>
             {/if}

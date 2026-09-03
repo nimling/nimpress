@@ -1,5 +1,6 @@
 ---
 title: Section pages
+tags: Page types
 order: 12.7
 description: A folder index that lists its children as a card grid, so a section overview needs no authored list.
 ---

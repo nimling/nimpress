@@ -4,7 +4,7 @@ type: section
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Fourteen types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Fifteen types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -113,6 +113,19 @@ type: section
 ```
 
 See [Section pages](/page-types/section) for what is listed.
+
+## `tags`
+
+The page that lists every tag with its pages. Every tagged page shows its tags at the bottom, each one leading to its section here, and the `tags` config block gives tags their icons. One per site.
+
+```yaml
+---
+title: Tags
+type: tags
+---
+```
+
+See [Tags page](/page-types/tags) for the configuration.
 
 ## `roadmap`
 

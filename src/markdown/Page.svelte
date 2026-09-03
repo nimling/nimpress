@@ -62,6 +62,13 @@
     }))
   })
   const showFeedback = $derived(!hidden.has('feedback') && !!config.feedback && !issueKind)
+  const tagIndex = $derived(config.manifest?.tags ?? [])
+  const tagsPage = $derived(Object.values(config.manifest?.pages ?? {}).find((meta) => meta.type === 'tags'))
+  const pageTags = $derived.by(() => {
+    if (hidden.has('tags') || issueKind) return []
+    const names = config.manifest?.pages[page.slug]?.tags ?? []
+    return names.map((name) => tagIndex.find((tag) => tag.name === name) ?? { name, slug: '', icon: undefined, pages: [] })
+  })
   let lightbox: { destroy: () => void } | null = null
   function closeLightbox() {
     lightbox?.destroy()
@@ -343,6 +350,23 @@
     <article class="np-prose" class:np-prose-lightbox={!!config.images?.lightbox} bind:this={container}>
       {@html page.html}
     </article>
+    {#if pageTags.length}
+      <div class="np-tags">
+        {#each pageTags as tag (tag.name)}
+          {#if tagsPage && tag.slug}
+            <a class="np-tag" href={withBase(`${tagsPage.path}#${tag.slug}`)}>
+              {#if tag.icon}<span class="np-tag-icon">{#if tag.icon.trim().startsWith('<svg')}{@html tag.icon}{:else}{tag.icon}{/if}</span>{/if}
+              <span class="np-tag-label">{tag.name}</span>
+            </a>
+          {:else}
+            <span class="np-tag">
+              {#if tag.icon}<span class="np-tag-icon">{#if tag.icon.trim().startsWith('<svg')}{@html tag.icon}{:else}{tag.icon}{/if}</span>{/if}
+              <span class="np-tag-label">{tag.name}</span>
+            </span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
     {#if children}
       {@render children()}
     {/if}

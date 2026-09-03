@@ -1,5 +1,6 @@
 ---
 title: Frontmatter
+tags: Authoring, Frontmatter
 order: 4
 ---
 
@@ -28,7 +29,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
 | `background` | string | Banner image behind the header, used by `hero` and `roadmap` |
-| `tags` | string \| string[] | Comma separated string or YAML array of search keywords |
+| `tags` | string \| string[] | Comma separated string or YAML array of tags, shown at the bottom of the page, boosted in search, and listed on the tags page |
 | `rss` | boolean | Serve a `changelog` collection as an RSS feed |
 | `subscribe` | boolean | Show a subscribe control on a `changelog` collection |
 | `meta` | object | SEO and social card metadata, see [seo.md](/seo) |
@@ -140,6 +141,8 @@ Arbitrary object handed to the renderer the page selected.
 2.2. `type: 404` needs `title` alone. The build writes the page as `404.html` at the output root, the app routes an unknown path to it, and it stays out of the sidebar, search, and the sitemap. One per site. See [Not found page](/page-types/404).
 
 2.3. `type: section` belongs on a folder `index.md` and reads `data.columns` and `data.depth`. The body renders first and every child page follows as a card in sidebar order. See [Section pages](/page-types/section).
+
+2.4. `type: tags` needs `title` alone and lists every tag with its pages under the body. One per site. Every page shows its `tags` at the bottom, hidden with `hide: [tags]`, and the `tags` config block maps tags to identifiers and identifiers to icons. See [Tags page](/page-types/tags).
 
 3. `type: roadmap` reads `data.issues` and `data.changelog` to scope the timeline. The issue kinds read `data.date` and `data.parent`.
 

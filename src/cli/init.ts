@@ -69,6 +69,9 @@ export default defineConfig({
   /** Math syntax in the prose. false turns off $...$ and $$...$$ for sites that write dollar signs. */
   // math: false,
 
+  /** Tag icons by identifier, default for every tag without one, and the tag to identifier map so a group shares an icon. */
+  // tags: { icons: { default: ':lucide-tag:', api: ':lucide-plug:' }, map: { OpenAPI: 'api' } },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 
