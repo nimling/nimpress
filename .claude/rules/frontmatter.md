@@ -42,6 +42,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A reference page rendered from an OpenAPI 3.1 spec | `openapi` |
 | A page combining several release notes into one collapsible list | `changelog` |
 | A landing page with an oversized hero band on top | `hero` |
+| A landing page under the header alone, no sidebar, no rail, full width | `fullpage` |
 | A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
 | An interactive entity relationship diagram of a database | `dbml` |
 | A live workshop page for one component in a library | `component` |
@@ -53,6 +54,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 2. `type: changelog` requires `data.version: '1.2.3'`, `data.release_date` as an RFC 3339 date, `data.title` for the per release headline, and `data.description` for the per release summary. Top level `title` is the shared collection title and the grouping key, every entry file in the same folder uses the exact same string. The route comes from the folder, so entries carry no `path` field. Optional `data.issue: <relative path>` plus `data.status` link the entry to a roadmap issue. See [changelog-entries.md](./changelog-entries.md).
 
 3. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids compose as `:::actions` and `:::features` in the markdown body, `data` carries only the band fields. See [Hero](https://nimling.github.io/nimpress/hero) and [Markdown](https://nimling.github.io/nimpress/markdown).
+
+3.1. `type: fullpage` reads `data.eyebrow`, `data.logo`, `data.background`, `data.tagline`, `data.lead`, `data.align`, and `data.width`. The type hides `navigation`, `path`, `toc`, and `footer` by itself. See [Full pages](https://nimling.github.io/nimpress/page-types/fullpage).
 
 4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
 

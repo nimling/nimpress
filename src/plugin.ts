@@ -148,6 +148,7 @@ const frontmatterSchema = z.object({
     z.literal('openapi'),
     z.literal('changelog'),
     z.literal('hero'),
+    z.literal('fullpage'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -2077,7 +2078,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function jsonLdTypeFor(type: PageType): string {
     if (type === 'changelog' || type === 'roadmap') return 'CollectionPage'
     if (type === 'openapi') return 'APIReference'
-    if (type === 'hero') return 'WebPage'
+    if (type === 'hero' || type === 'fullpage') return 'WebPage'
     return 'TechArticle'
   }
 
@@ -2103,7 +2104,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const ogDescription = og.description ?? description
     const ogImage = og.image ?? site?.ogImage
     const ogImageAbs = ogImage ? (siteAbsolute(ogImage) ?? ogImage) : undefined
-    const ogType = og.type ?? (fm.type === 'hero' || p.effectivePath === '/' ? 'website' : 'article')
+    const ogType = og.type ?? (fm.type === 'hero' || fm.type === 'fullpage' || p.effectivePath === '/' ? 'website' : 'article')
     const ogWidth = metaCfg.og?.width ?? 1200
     const ogHeight = metaCfg.og?.height ?? 600
     const twCard = tw.card ?? (ogImageAbs ? 'summary_large_image' : 'summary')
@@ -2814,7 +2815,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         description: p.frontmatter.description,
         order: p.frontmatter.order,
         hidden: pageDevOnly(p.frontmatter),
-        hide: p.frontmatter.hide,
+        hide: p.type === 'fullpage' ? Array.from(new Set<PageElement>(['navigation', 'path', 'toc', 'footer', ...(p.frontmatter.hide ?? [])])) : p.frontmatter.hide,
         source: relative(contentRoot, p.filePath).split(sep).join('/'),
         redirect: p.frontmatter.redirect,
         meta: p.frontmatter.meta
@@ -3061,7 +3062,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -3071,6 +3072,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
 {#if shell.type === 'hero'}
   <HeroPage page={shell} {bodyPromise} />
+{:else if shell.type === 'fullpage'}
+  <FullPage page={shell} {bodyPromise} />
 {:else}
   {#await bodyPromise}
     <div class="np-page-loading" aria-busy="true"></div>

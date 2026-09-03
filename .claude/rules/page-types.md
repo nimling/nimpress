@@ -42,6 +42,16 @@ Use sparingly for:
 
 Do not use `hero` for ordinary documentation. The oversized typography is a beacon, not a default.
 
+## `fullpage`
+
+Use for:
+
+1. The site home when the sidebar would distract from the pitch.
+
+2. A product landing that opens a section and routes the reader onward.
+
+The type hides the sidebar, the breadcrumbs, the rail, and the previous and next links by itself, and the band plus the body span the viewport. Do not use `fullpage` for a page the reader will read top to bottom; a `hero` keeps the shell for that.
+
 ## `roadmap`
 
 Use when:
@@ -102,6 +112,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it a landing page with none of the shell chrome?
+   │  └─ Yes  → type: fullpage
    ├─ Is it a beacon style landing page?
    │  └─ Yes  → type: hero
    └─ Otherwise → type: doc  (omit the field)

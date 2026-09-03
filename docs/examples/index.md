@@ -20,6 +20,7 @@ Every page under this section is a full flow with the real files rather than a f
 | [Code blocks](/examples/code-blocks) | A titled fence, line numbers from a start, highlighted lines, and annotations that open a tip |
 | [Formatting and images](/examples/formatting) | Highlights, inserts, sub and superscripts, keyboard keys, floated and captioned images, theme variants, and a lightbox |
 | [Icons and math](/examples/icons-math) | Lucide icons and emoji by shortcode, a custom icon, and formulas rendered by katex |
+| [Full page](/examples/fullpage) | A landing page with a band, an action row, and a feature grid, and none of the shell chrome |
 
 ## How to read them
 

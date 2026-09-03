@@ -135,6 +135,8 @@ Arbitrary object handed to the renderer the page selected.
 
 2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [Markdown](/extensions/markdown), not in `data`.
 
+2.1. `type: fullpage` reads `data.eyebrow`, `data.logo`, `data.background`, `data.tagline`, `data.lead`, `data.align`, and `data.width`. The type hides `navigation`, `path`, `toc`, and `footer` by itself. See [Full pages](/page-types/fullpage).
+
 3. `type: roadmap` reads `data.issues` and `data.changelog` to scope the timeline. The issue kinds read `data.date` and `data.parent`.
 
 4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. See [modules.md](/modules).

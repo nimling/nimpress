@@ -3,7 +3,7 @@ title: Page types
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Eleven types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Twelve types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -69,6 +69,23 @@ data:
 ```
 
 See [Hero pages](/page-types/hero) for the band field reference.
+
+## `fullpage`
+
+A landing page under the header alone. The sidebar column, the breadcrumbs, the right rail, and the previous and next links are hidden by the type, and the band plus every section of the markdown body spans the viewport. `data.eyebrow`, `data.logo`, `data.background`, `data.tagline`, `data.lead`, `data.align`, and `data.width` shape it.
+
+```yaml
+---
+title: Adaptive docs for evolving ideas
+type: fullpage
+data:
+  eyebrow: Documentation framework
+  tagline: A Svelte 5 docs framework that supports it all.
+  align: center
+---
+```
+
+See [Full pages](/page-types/fullpage) for the band fields and the body.
 
 ## `roadmap`
 

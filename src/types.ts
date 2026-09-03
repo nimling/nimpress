@@ -3,6 +3,7 @@ export type PageType =
   | 'openapi'
   | 'changelog'
   | 'hero'
+  | 'fullpage'
   | 'roadmap'
   | 'dbml'
   | 'milestone'
