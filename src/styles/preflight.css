@@ -728,3 +728,14 @@ a.np-tag:hover {
   stroke: currentColor;
   fill: none;
 }
+
+.np-abbr {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--np-text-faint);
+  cursor: help;
+}
+
+.np-prose .np-glossary-term {
+  scroll-margin-top: calc(var(--np-header-height) + 16px);
+}

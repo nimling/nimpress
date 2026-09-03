@@ -7,6 +7,7 @@ export type PageType =
   | '404'
   | 'section'
   | 'tags'
+  | 'glossary'
   | 'roadmap'
   | 'dbml'
   | 'milestone'
@@ -260,6 +261,12 @@ export interface SidebarNode {
   items?: SidebarNode[]
 }
 
+export interface GlossaryTerm {
+  term: string
+  slug: string
+  description: string
+}
+
 export interface ManifestTagPage {
   slug: string
   title: string
@@ -286,6 +293,7 @@ export interface Manifest {
   byPath: Record<string, string>
   sidebar: SidebarNode[]
   tags?: ManifestTag[]
+  glossary?: GlossaryTerm[]
   site?: SiteMeta
   styles?: Record<string, string>
 }

@@ -70,3 +70,19 @@ Click the image to open it full size, then press escape or click outside to clos
 ```md
 ![A zoomable diagram](./formatting-diagram.svg){.zoom}
 ```
+
+## Tooltips
+
+A link with a title, [the nimpress repository](https://github.com/nimling/nimpress "Opens the repository on GitHub"), a footnote reference[^1], and a page local abbreviation, the W3C, all show a tooltip on hover.
+
+*[W3C]: World Wide Web Consortium
+
+[^1]: Footnotes render at the bottom of the page and as a tooltip on the reference.
+
+```md
+A link with a title, [the nimpress repository](https://github.com/nimling/nimpress "Opens the repository on GitHub"), a footnote reference[^1], and a page local abbreviation, the W3C.
+
+*[W3C]: World Wide Web Consortium
+
+[^1]: Footnotes render at the bottom of the page and as a tooltip on the reference.
+```

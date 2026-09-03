@@ -18,7 +18,7 @@
   import Feedback from './Feedback.svelte'
   import Lightbox from './Lightbox.svelte'
 
-  let { page, children }: { page: PageModule; children?: Snippet } = $props()
+  let { page, lead, children }: { page: PageModule; lead?: Snippet; children?: Snippet } = $props()
 
   let container: HTMLElement
   let mounted: Array<{ destroy: () => void }> = []
@@ -346,6 +346,9 @@
           </a>
         {/each}
       </div>
+    {/if}
+    {#if lead}
+      {@render lead()}
     {/if}
     <article class="np-prose" class:np-prose-lightbox={!!config.images?.lightbox} bind:this={container}>
       {@html page.html}

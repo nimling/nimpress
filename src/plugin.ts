@@ -32,6 +32,7 @@ import type {
   PageType,
   PageElement,
   ManifestTag,
+  GlossaryTerm,
   ResolvedNimpressConfig,
   RoadmapChangelogRef,
   RoadmapEntry,
@@ -153,6 +154,7 @@ const frontmatterSchema = z.object({
     z.literal('404'),
     z.literal('section'),
     z.literal('tags'),
+    z.literal('glossary'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -509,6 +511,7 @@ const figuresRule: Parameters<MarkdownIt['core']['ruler']['push']>[1] = (state) 
 export interface MarkdownFeatures {
   math?: boolean
   icons?: string
+  glossary?: GlossaryTerm[]
 }
 
 const ICON_SHORTCODE = /^:([a-z0-9]+(?:-[a-z0-9]+)*):/
@@ -668,6 +671,152 @@ const mathInlineRule: Parameters<MarkdownIt['inline']['ruler']['before']>[2] = (
   return true
 }
 
+const ABBR_DEFINITION = /^\*\[([^\]\n]+)\]:[ \t]*(.+?)[ \t]*$/
+
+const abbrDefinitionRule: Parameters<MarkdownIt['block']['ruler']['before']>[2] = (state, startLine, _endLine, silent) => {
+  const start = state.bMarks[startLine] + state.tShift[startLine]
+  const max = state.eMarks[startLine]
+  if (state.src.charCodeAt(start) !== 0x2a || state.src.charCodeAt(start + 1) !== 0x5b) return false
+  const match = ABBR_DEFINITION.exec(state.src.slice(start, max))
+  if (!match) return false
+  if (silent) return true
+  const env = state.env as { abbr?: Record<string, string> }
+  env.abbr = { ...(env.abbr ?? {}), [match[1].trim()]: match[2].trim() }
+  state.line = startLine + 1
+  return true
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function makeAbbrRule(glossary: GlossaryTerm[]): Parameters<MarkdownIt['core']['ruler']['after']>[2] {
+  return (state) => {
+    const env = state.env as { abbr?: Record<string, string>; glossaryPage?: boolean }
+    const terms = new Map<string, string>()
+    if (!env.glossaryPage) for (const entry of glossary) terms.set(entry.term, entry.description)
+    for (const [term, description] of Object.entries(env.abbr ?? {})) terms.set(term, description)
+    if (terms.size === 0) return
+    const ordered = Array.from(terms.entries()).sort((a, b) => b[0].length - a[0].length)
+    const canonical = new Map(ordered.map(([term]) => [term.toLowerCase(), term]))
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}_])(${ordered.map(([term]) => escapeRegExp(term)).join('|')})(?![\\p{L}\\p{N}_])`, 'iu')
+    const tokens = state.tokens
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i]
+      if (token.type !== 'inline' || !token.children) continue
+      if (tokens[i - 1]?.type === 'heading_open') continue
+      const used = new Set<string>()
+      let depth = 0
+      const next: typeof token.children = []
+      for (const child of token.children) {
+        if (child.type === 'link_open') depth += 1
+        if (child.type === 'link_close') depth -= 1
+        if (child.type !== 'text' || depth > 0) {
+          next.push(child)
+          continue
+        }
+        let rest = child.content
+        while (rest.length) {
+          const match = pattern.exec(rest)
+          if (!match) break
+          const written = match[2]
+          const term = canonical.get(written.toLowerCase()) ?? written
+          const exact = term === term.toUpperCase() && term.length > 1
+          if (exact && written !== term) {
+            const keep = new state.Token('text', '', 0)
+            keep.content = rest.slice(0, match.index + match[1].length + written.length)
+            next.push(keep)
+            rest = rest.slice(match.index + match[1].length + written.length)
+            continue
+          }
+          const at = match.index + match[1].length
+          if (used.has(term)) {
+            const keep = new state.Token('text', '', 0)
+            keep.content = rest.slice(0, at + written.length)
+            next.push(keep)
+            rest = rest.slice(at + written.length)
+            continue
+          }
+          used.add(term)
+          if (at > 0) {
+            const before = new state.Token('text', '', 0)
+            before.content = rest.slice(0, at)
+            next.push(before)
+          }
+          const open = new state.Token('abbr_open', 'abbr', 1)
+          open.attrSet('class', 'np-abbr np-tip')
+          open.attrSet('aria-label', terms.get(term) ?? '')
+          next.push(open)
+          const text = new state.Token('text', '', 0)
+          text.content = written
+          next.push(text)
+          next.push(new state.Token('abbr_close', 'abbr', -1))
+          rest = rest.slice(at + written.length)
+        }
+        if (rest.length) {
+          const tail = new state.Token('text', '', 0)
+          tail.content = rest
+          next.push(tail)
+        }
+      }
+      token.children = next
+    }
+  }
+}
+
+const glossaryAnchorRule: Parameters<MarkdownIt['core']['ruler']['push']>[1] = (state) => {
+  const env = state.env as { glossaryPage?: boolean }
+  if (!env.glossaryPage) return
+  const tokens = state.tokens
+  for (let i = 0; i + 1 < tokens.length; i++) {
+    if (tokens[i].type !== 'dt_open' || tokens[i + 1].type !== 'inline') continue
+    tokens[i].attrSet('id', `term-${slugify(tokens[i + 1].content)}`)
+    tokens[i].attrJoin('class', 'np-glossary-term')
+  }
+}
+
+const footnoteTipsRule: Parameters<MarkdownIt['core']['ruler']['after']>[2] = (state) => {
+  const tokens = state.tokens
+  const tips = new Map<number, string>()
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].type !== 'footnote_open') continue
+    const id = Number(tokens[i].meta?.id ?? -1)
+    const parts: string[] = []
+    for (let j = i + 1; j < tokens.length && tokens[j].type !== 'footnote_close'; j++) {
+      if (tokens[j].type === 'inline') parts.push(tokens[j].content)
+    }
+    tips.set(id, parts.join(' ').replace(/[`*_\[\]]/g, '').trim())
+  }
+  if (tips.size === 0) return
+  for (const token of tokens) {
+    for (const child of token.children ?? []) {
+      if (child.type !== 'footnote_ref') continue
+      const tip = tips.get(Number(child.meta?.id ?? -1))
+      if (tip) child.meta = { ...child.meta, tip }
+    }
+  }
+}
+
+function extractGlossary(md: MarkdownIt, body: string): GlossaryTerm[] {
+  const tokens = md.parse(body, {})
+  const out: GlossaryTerm[] = []
+  let term = ''
+  for (let i = 0; i + 1 < tokens.length; i++) {
+    if (tokens[i].type === 'dt_open' && tokens[i + 1].type === 'inline') {
+      term = tokens[i + 1].content.trim()
+      continue
+    }
+    if (tokens[i].type === 'dd_open' && term) {
+      let j = i + 1
+      while (j < tokens.length && tokens[j].type !== 'inline' && tokens[j].type !== 'dd_close') j += 1
+      const description = tokens[j]?.type === 'inline' ? tokens[j].content.trim() : ''
+      if (description) out.push({ term, slug: `term-${slugify(term)}`, description })
+      term = ''
+    }
+  }
+  return out
+}
+
 function buildMarkdownIt(
   highlighter: Highlighter,
   embed: { route: string; system?: string } = { route: '/_components' },
@@ -740,6 +889,12 @@ function buildMarkdownIt(
   md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     const href = tokens[idx].attrGet('href')
     if (href) tokens[idx].attrSet('href', joinBase(base, href))
+    const title = tokens[idx].attrGet('title')
+    if (title) {
+      tokens[idx].attrs = (tokens[idx].attrs ?? []).filter(([name]) => name !== 'title')
+      tokens[idx].attrJoin('class', 'np-tip')
+      tokens[idx].attrSet('aria-label', title)
+    }
     return linkRule(tokens, idx, options, env, self)
   }
   const imageRule = md.renderer.rules.image ?? renderToken
@@ -784,6 +939,16 @@ function buildMarkdownIt(
   md.use(sup)
   md.inline.ruler.before('emphasis', 'np_keys', keysRule)
   md.core.ruler.push('np_figures', figuresRule)
+  md.block.ruler.before('reference', 'np_abbr_definition', abbrDefinitionRule, { alt: ['paragraph', 'reference', 'blockquote', 'list'] })
+  md.core.ruler.after('inline', 'np_abbr', makeAbbrRule(features.glossary ?? []))
+  md.core.ruler.push('np_glossary_anchors', glossaryAnchorRule)
+  md.core.ruler.after('footnote_tail', 'np_footnote_tips', footnoteTipsRule)
+  const footnoteRefRule = md.renderer.rules.footnote_ref ?? renderToken
+  md.renderer.rules.footnote_ref = (tokens, idx, options, env, self) => {
+    const tip = String(tokens[idx].meta?.tip ?? '')
+    const html = footnoteRefRule(tokens, idx, options, env, self)
+    return tip ? html.replace('<sup class="footnote-ref">', `<sup class="footnote-ref np-tip" aria-label="${md.utils.escapeHtml(tip)}">`) : html
+  }
   md.inline.ruler.before('emphasis', 'np_icon', makeIconRule(features.icons))
   md.use(emoji)
   md.renderer.rules.np_icon = (tokens, idx, _options, _env, self) => `<span${self.renderAttrs(tokens[idx])}>${tokens[idx].content}</span>`
@@ -1260,6 +1425,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   let isBuildCommand = false
   let server: ViteDevServer | null = null
   const fileCache = new Map<string, { hash: string; processed: ProcessedPage }>()
+  let glossaryTerms: GlossaryTerm[] = []
+  let glossaryStamp = ''
   const specToMd = new Map<string, string>()
   const trackedSpecs = new Set<string>()
   const componentToMd = new Map<string, string>()
@@ -1577,10 +1744,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const hl = await ensureHighlighter()
-    const md = buildMarkdownIt(hl, embedContext(), resolved.base, { math: resolved.math, icons: resolved.icons })
+    const md = buildMarkdownIt(hl, embedContext(), resolved.base, { math: resolved.math, icons: resolved.icons, glossary: glossaryTerms })
     const prepared = rewriteDiagramFences(content, file)
     const headings = collectHeadings(md, prepared)
-    const html = md.render(prepared)
+    const html = md.render(prepared, { glossaryPage: type === 'glossary' })
 
     let openApiSpec: unknown | undefined
     let openApiFile: string | undefined
@@ -1699,7 +1866,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     } catch {
       return null
     }
-    const hash = hashContent(raw)
+    const hash = hashContent(raw + glossaryStamp)
     const hit = fileCache.get(file)
     if (hit && hit.hash === hash) return hit.processed
     const processed = await processFile(file)
@@ -1744,6 +1911,24 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     let tagsPage: string | undefined
     const allProcessed: ProcessedPage[] = []
 
+    const glossaryFiles: string[] = []
+    let terms: GlossaryTerm[] = []
+    for (const file of files) {
+      if (!file.endsWith('.md')) continue
+      let raw = ''
+      try {
+        raw = await readFile(file, 'utf-8')
+      } catch {
+        continue
+      }
+      const { data, content } = matter(raw)
+      if (String(data.type) !== 'glossary') continue
+      glossaryFiles.push(file)
+      terms = extractGlossary(new MarkdownIt().use(deflist), content)
+    }
+    if (glossaryFiles.length > 1) throw new Error(`[nimpress] one type glossary page per site: ${glossaryFiles.join(' and ')}`)
+    glossaryTerms = terms
+    glossaryStamp = JSON.stringify(terms)
     const fileSet = new Set(files)
     for (const cached of [...fileCache.keys()]) {
       if (!fileSet.has(cached)) fileCache.delete(cached)
@@ -1773,6 +1958,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (p.type === 'section' && !p.filePath.endsWith(`${sep}index.md`)) {
         throw new Error(`[nimpress] type section belongs on a folder index.md: ${p.filePath}`)
+      }
+      if (p.type === 'glossary' && !p.html.includes('<dl')) {
+        throw new Error(`[nimpress] type glossary needs a definition list body: ${p.filePath}`)
       }
       if (p.type === 'tags') {
         if (tagsPage && tagsPage !== p.filePath) {
@@ -2102,6 +2290,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (type === 'openapi') return 'APIReference'
     if (type === 'hero' || type === 'fullpage' || type === '404') return 'WebPage'
     if (type === 'section' || type === 'tags') return 'CollectionPage'
+    if (type === 'glossary') return 'DefinedTermSet'
     return 'TechArticle'
   }
 
@@ -2889,7 +3078,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (p.pageCss) styles[p.effectivePath] = p.pageCss
     }
 
-    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles, tags: buildTagIndex() }
+    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles, tags: buildTagIndex(), glossary: glossaryTerms }
   }
 
   function buildSearch(gatedOnly = false, only?: ProcessedPage[]): SearchEntry[] {
@@ -3089,7 +3278,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (!p) return null
     const payload = {
       html: p.html,
-      headings: p.type === 'tags' ? [...p.headings, ...buildTagIndex().map((tag) => ({ level: 2, text: tag.name, slug: tag.slug }))] : p.headings,
+      headings: p.type === 'tags' ? [...p.headings, ...buildTagIndex().map((tag) => ({ level: 2, text: tag.name, slug: tag.slug }))] : p.type === 'glossary' ? [...p.headings, ...glossaryTerms.map((entry) => ({ level: 2, text: entry.term, slug: entry.slug }))] : p.headings,
       openApiSpec: p.openApiSpec,
       openApiFile: p.openApiFile,
       openApiUrl: p.openApiUrl,
@@ -3116,7 +3305,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, GlossaryPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -3149,6 +3338,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+    {:else if shell.type === 'glossary'}
+      <GlossaryPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'tags'}
       <TagsPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'section'}

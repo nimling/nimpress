@@ -106,6 +106,7 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
 
   const componentDirs = new Map<string, string>()
   let notFoundFile: string | undefined
+  let glossaryFile: string | undefined
   const mdByDir = new Map<string, string[]>()
 
   for (const file of walkFiles(root)) {
@@ -127,6 +128,11 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
         if (typeof data.type === 'number') data.type = String(data.type)
       } catch {
         continue
+      }
+      if (data?.type === 'glossary') {
+        if (glossaryFile) problems.push(`${rel}: second type glossary page in the site, ${relative(root, glossaryFile).split(sep).join('/')} already owns it, one glossary per site`)
+        else glossaryFile = file
+        if (!/^: /m.test(matter(readFileSync(file, 'utf-8')).content)) problems.push(`${rel}: type glossary needs a definition list body, term lines followed by lines starting with a colon`)
       }
       if (data?.type === 'section' && !file.endsWith(`${sep}index.md`)) {
         problems.push(`${rel}: type section belongs on a folder index.md, move the page or drop the type`)

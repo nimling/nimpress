@@ -64,6 +64,10 @@ Use for a folder `index.md` that opens a section: the prose renders first and ev
 
 Use for exactly one page per site: the listing of every tag with its pages. Tags themselves go on the pages through the `tags` frontmatter field, and the `tags` config block gives them icons. See [Tags page](https://nimling.github.io/nimpress/page-types/tags).
 
+## `glossary`
+
+Use for exactly one page per site: the definition list of the terms every page should explain. Each term becomes an abbreviation with a tooltip wherever it occurs in the prose of other pages. Page local abbreviations use `*[TERM]: description` lines instead. See [Glossary page](https://nimling.github.io/nimpress/page-types/glossary).
+
 ## `roadmap`
 
 Use when:
@@ -124,6 +128,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it the definition list of the site's terms?
+   │  └─ Yes  → type: glossary
    ├─ Is it the listing of every tag with its pages?
    │  └─ Yes  → type: tags
    ├─ Is it a folder index that lists its children as cards?

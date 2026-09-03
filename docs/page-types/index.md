@@ -4,7 +4,7 @@ type: section
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Fifteen types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Sixteen types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -126,6 +126,19 @@ type: tags
 ```
 
 See [Tags page](/page-types/tags) for the configuration.
+
+## `glossary`
+
+One definition list that defines the terms of the site. Every term gets an anchor and the right rail lists them, and the first occurrence of a term in each paragraph of every other page renders as an abbreviation with the definition as its tooltip. One per site.
+
+```yaml
+---
+title: Glossary
+type: glossary
+---
+```
+
+See [Glossary page](/page-types/glossary) for the tooltip forms.
 
 ## `roadmap`
 
