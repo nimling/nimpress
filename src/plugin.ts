@@ -15,7 +15,7 @@ import footnote from 'markdown-it-footnote'
 import taskLists from 'markdown-it-task-lists'
 import { z } from 'zod'
 import { parse as parseYamlText } from 'yaml'
-import { createHighlighter, type Highlighter } from 'shiki'
+import { createHighlighter, type Highlighter, type ShikiTransformer, type ThemedToken } from 'shiki'
 import { buildBanner, readConsumerPackage } from './banner'
 import type {
   ChangelogEntry,
@@ -425,11 +425,21 @@ function buildMarkdownIt(
       const display = (labelMatch?.[1].trim() || lang || 'text').trim()
       const resolvedLang = aliases[lang] ?? lang
       const safeLang = resolvedLang && highlighter.getLoadedLanguages().includes(resolvedLang as never) ? resolvedLang : 'text'
+      const fence = parseCodeFenceOptions(attrs ?? '')
+      const preAttrs = codeFenceAttrs(display, fence)
+      const explain: Record<string, unknown> = ANNOTATION_MARKER.test(code) ? { includeExplanation: 'scopeName' } : {}
       try {
-        const html = highlighter.codeToHtml(code, { lang: safeLang, theme: 'github-dark' })
-        return html.replace('<pre ', `<pre data-lang="${md.utils.escapeHtml(display)}" `)
+        return highlighter.codeToHtml(code, {
+          ...explain,
+          lang: safeLang,
+          theme: 'github-dark',
+          transformers: [codeFenceTransformer(preAttrs, fence)]
+        })
       } catch {
-        return `<pre data-lang="${md.utils.escapeHtml(display)}"><code>${md.utils.escapeHtml(code)}</code></pre>`
+        const attrList = Object.entries(preAttrs)
+          .map(([key, value]) => `${key}="${md.utils.escapeHtml(value)}"`)
+          .join(' ')
+        return `<pre ${attrList}><code>${md.utils.escapeHtml(code)}</code></pre>`
       }
     }
   })
@@ -437,6 +447,30 @@ function buildMarkdownIt(
   type RenderRule = NonNullable<MarkdownIt['renderer']['rules'][string]>
   const renderToken: RenderRule = (tokens, idx, options, _env, self) =>
     self.renderToken(tokens, idx, options)
+  const fenceRule = md.renderer.rules.fence ?? renderToken
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const html = fenceRule(tokens, idx, options, env, self)
+    if (!html.includes('np-code-annotation')) return html
+    const list = tokens[idx + 1]
+    if (!list || list.type !== 'ordered_list_open') return html
+    let close = idx + 2
+    while (close < tokens.length && !(tokens[close].type === 'ordered_list_close' && tokens[close].level === list.level)) close += 1
+    if (close >= tokens.length) return html
+    const tips: Record<string, string> = {}
+    let number = Number(list.attrGet('start') ?? 1)
+    for (let i = idx + 2; i < close; i++) {
+      if (tokens[i].type !== 'list_item_open' || tokens[i].level !== list.level + 1) continue
+      let itemClose = i + 1
+      while (itemClose < close && !(tokens[itemClose].type === 'list_item_close' && tokens[itemClose].level === tokens[i].level)) itemClose += 1
+      tips[String(number)] = self.render(tokens.slice(i + 1, itemClose), options, env).trim()
+      number += 1
+      i = itemClose
+    }
+    for (let i = idx + 1; i <= close; i++) tokens[i].type = 'np_annotation_list'
+    const encoded = Buffer.from(JSON.stringify(tips), 'utf-8').toString('base64')
+    return html.replace('<pre ', `<pre data-annotations="${encoded}" `)
+  }
+  md.renderer.rules.np_annotation_list = () => ''
   const linkRule = md.renderer.rules.link_open ?? renderToken
   md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     const href = tokens[idx].attrGet('href')
@@ -642,6 +676,114 @@ function buildMarkdownIt(
   })
 
   return md
+}
+
+const ANNOTATION_MARKER = /\((\d+)\)(!?)[ \t]*$/m
+
+type CodeFenceOptions = { title: string; lines: boolean; start: number; highlight: Set<number> }
+
+function parseLineRanges(value: unknown): Set<number> {
+  const lines = new Set<number>()
+  const parts = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : typeof value === 'number' ? [value] : []
+  for (const part of parts) {
+    const text = String(part).trim()
+    const range = /^(\d+)(?:-(\d+))?$/.exec(text)
+    if (!range) continue
+    const from = Number(range[1])
+    const to = range[2] ? Number(range[2]) : from
+    for (let line = from; line <= to; line++) lines.add(line)
+  }
+  return lines
+}
+
+function parseCodeFenceOptions(attrs: string): CodeFenceOptions {
+  const payloadAt = attrs.indexOf('{')
+  const raw = payloadAt >= 0 ? safeParseJson(attrs.slice(payloadAt), attrs) : {}
+  const start = typeof raw.start === 'number' && Number.isInteger(raw.start) ? raw.start : 1
+  return {
+    title: typeof raw.title === 'string' ? raw.title.trim() : '',
+    lines: raw.lines === true || typeof raw.start === 'number',
+    start,
+    highlight: parseLineRanges(raw.highlight)
+  }
+}
+
+function codeFenceAttrs(display: string, fence: CodeFenceOptions): Record<string, string> {
+  const attrs: Record<string, string> = { 'data-lang': display }
+  if (fence.title) attrs['data-title'] = fence.title
+  if (fence.lines) {
+    attrs['data-lines'] = 'true'
+    attrs['data-start'] = String(fence.start)
+  }
+  return attrs
+}
+
+function isCommentToken(token: ThemedToken): boolean {
+  const explanation = token.explanation ?? []
+  return (
+    explanation.length > 0 &&
+    explanation.every(
+      (entry) =>
+        entry.scopes.some((scope) => /(^|\.)comment(\.|$)/.test(scope.scopeName)) &&
+        !entry.scopes.some((scope) => scope.scopeName.startsWith('markup.fenced_code') || scope.scopeName.startsWith('markup.raw'))
+    )
+  )
+}
+
+function annotateLine(line: ThemedToken[]): ThemedToken[] {
+  let first = line.length
+  while (first > 0 && isCommentToken(line[first - 1])) first -= 1
+  if (first === line.length) return line
+  const pieces = line.slice(first).flatMap((token) =>
+    (token.explanation ?? []).map((entry) => ({
+      text: entry.content,
+      punctuation: entry.scopes.some((scope) => scope.scopeName.startsWith('punctuation.definition.comment')),
+      color: token.color,
+      fontStyle: token.fontStyle
+    }))
+  )
+  let markerAt = pieces.length - 1
+  while (markerAt >= 0 && (pieces[markerAt].punctuation || !pieces[markerAt].text.trim())) markerAt -= 1
+  if (markerAt < 0) return line
+  const match = ANNOTATION_MARKER.exec(pieces[markerAt].text)
+  if (!match) return line
+  const strip = match[2] === '!'
+  pieces[markerAt].text = pieces[markerAt].text.slice(0, match.index)
+  const marker: ThemedToken = {
+    content: '',
+    offset: line[first].offset,
+    htmlAttrs: { class: 'np-code-annotation', 'data-annotation': match[1], role: 'button', tabindex: '0' }
+  }
+  const kept = strip
+    ? pieces.map((piece) => (piece.punctuation ? { ...piece, text: /^\s*/.exec(piece.text)?.[0] ?? '' } : piece))
+    : pieces
+  const before = kept.slice(0, markerAt + 1).filter((piece) => piece.text)
+  const after = kept.slice(markerAt + 1).filter((piece) => piece.text.trim())
+  const toToken = (piece: { text: string; color?: string; fontStyle?: number }): ThemedToken => ({
+    content: piece.text,
+    offset: line[first].offset,
+    color: piece.color,
+    fontStyle: piece.fontStyle
+  })
+  return [...line.slice(0, first), ...before.map(toToken), marker, ...after.map(toToken)]
+}
+
+function codeFenceTransformer(preAttrs: Record<string, string>, fence: CodeFenceOptions): ShikiTransformer {
+  return {
+    name: 'nimpress:code-fence',
+    tokens(tokens) {
+      return tokens.map(annotateLine)
+    },
+    pre(node) {
+      for (const [key, value] of Object.entries(preAttrs)) node.properties[key] = value
+    },
+    code(node) {
+      if (fence.lines) node.properties.style = `counter-reset:np-line ${fence.start - 1}`
+    },
+    line(node, lineNumber) {
+      if (fence.highlight.has(lineNumber)) this.addClassToHast(node, 'np-code-line-highlight')
+    }
+  }
 }
 
 function safeParseJson(raw: string, full: string): Record<string, unknown> {

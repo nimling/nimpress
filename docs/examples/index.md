@@ -17,6 +17,7 @@ Every page under this section is a full flow with the real files rather than a f
 | [Gated pages](/examples/gating) | A page behind a session, the guarded bundle, and the upload flow |
 | [Callouts](/examples/callouts) | Every callout type, a custom and a removed title, a nested, a collapsible, and an inline callout |
 | [Content tabs](/examples/tabs) | A code group, a tab group of any content, a callout inside a tab, nested groups, linked groups, and an anchor link |
+| [Code blocks](/examples/code-blocks) | A titled fence, line numbers from a start, highlighted lines, and annotations that open a tip |
 
 ## How to read them
 

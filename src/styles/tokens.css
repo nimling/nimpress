@@ -10,6 +10,9 @@
   --np-bg-card: #FFFFFF;
   --np-bg-code-inline: #ECECEE;
   --np-bg-code-block: #0B1020;
+  --np-code-line-highlight: rgba(204, 120, 92, 0.18);
+  --np-code-annotation: #CC785C;
+  --np-code-annotation-text: #FFFFFF;
 
   --np-text-primary: #09090B;
   --np-text-secondary: #3F3F46;
@@ -75,6 +78,9 @@ html.dark {
   --np-bg-card: #1C1C1F;
   --np-bg-code-inline: #1F1F22;
   --np-bg-code-block: #0B0B0D;
+  --np-code-line-highlight: rgba(204, 120, 92, 0.22);
+  --np-code-annotation: #E8A48E;
+  --np-code-annotation-text: #0F0F10;
 
   --np-text-primary: #FAFAFA;
   --np-text-secondary: #A1A1AA;
