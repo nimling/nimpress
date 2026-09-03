@@ -1609,7 +1609,7 @@
     for (const group of Array.from(tabGroups)) {
       if (group.parentElement?.classList.contains('np-tabs-mount')) continue
       const panels = Array.from(group.children).filter((el) => el.classList.contains('np-tabs-panel'))
-      if (panels.length === 0) continue
+      if (!panels.some((panel) => panel.hasAttribute('data-label'))) continue
       const tabs = panels.map((panel) => ({
         label: panel.getAttribute('data-label') ?? '',
         id: panel.getAttribute('data-id') ?? ''

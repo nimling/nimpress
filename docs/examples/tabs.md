@@ -1,5 +1,6 @@
 ---
 title: Content tabs
+status: new
 order: 39
 description: A code group, a tab group of any content, a callout inside a tab, nested groups, two linked groups, and an anchor link that opens a tab.
 ---

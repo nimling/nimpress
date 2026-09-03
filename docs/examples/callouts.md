@@ -1,5 +1,6 @@
 ---
 title: Callouts
+status: new
 order: 38
 description: Every callout type rendered, with a custom title, a removed title, a nested callout, a collapsible callout, and an inline callout.
 ---

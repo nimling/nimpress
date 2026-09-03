@@ -22,6 +22,8 @@ check:
     pnpm run type-check
 
 test:
+    node bin/nimpress.mjs build
+    pnpm exec playwright test
     cd actions && go test ./...
     pnpm run test
     pnpm run type-check

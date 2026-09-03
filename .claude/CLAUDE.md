@@ -46,6 +46,8 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed through the 
 
 4. `just bump` — patch bump via sbump and push tag.
 
+5. `just test` — builds this repo's `docs/` into `dist/site`, runs the Playwright browser tests under `e2e/` against it through `scripts/serve-site.mjs`, then the Go tests, vitest, and the type check. `pnpm exec playwright test` runs the browser tests alone against the last site build.
+
 ## Rules
 
 1. Svelte 5 with runes only. No legacy `$:` reactivity, no Svelte 4 stores syntax inside components.

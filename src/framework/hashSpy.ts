@@ -10,10 +10,15 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
   const topOffset = opts.topOffset ?? 96
   let raf = 0
   let lastHash = window.location.hash
+  let foreign = lastHash !== ''
 
   const update = () => {
     const targets = Array.from(root.querySelectorAll<HTMLElement>(opts.selector)).filter((el) => el.id)
     if (!targets.length) return
+    if (foreign) {
+      if (!targets.some((el) => '#' + el.id === lastHash)) return
+      foreign = false
+    }
     let best: HTMLElement | null = null
     let bestTop = -Infinity
     for (const el of targets) {
@@ -40,6 +45,7 @@ export function setupHashSpy(opts: HashSpyOptions): () => void {
   }
 
   const onScroll = () => {
+    foreign = false
     if (raf) return
     raf = requestAnimationFrame(() => {
       raf = 0
