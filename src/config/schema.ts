@@ -46,7 +46,18 @@ export const userConfigSchema = z.object({
   logo: z.string().optional(),
   github: z.string().optional(),
   brand: brandSchema.optional(),
-  footer: z.string().optional(),
+  footer: z.object({
+    text: z.string().optional(),
+    copyright: z.string().optional(),
+    social: z.array(z.object({ icon: z.string(), link: z.string(), name: z.string().optional() })).optional(),
+    navigation: z.boolean().optional(),
+    generator: z.boolean().optional()
+  }, { invalid_type_error: 'footer is an object; put the line under footer.text' }).optional(),
+  announce: z.object({
+    text: z.string(),
+    link: z.string().optional(),
+    dismiss: z.boolean().optional()
+  }).optional(),
   status: z.record(z.string()).optional(),
   tabs: z.object({ linked: z.boolean().optional() }).optional(),
   navRoutes: z.array(navRouteSchema).optional(),

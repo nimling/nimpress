@@ -42,8 +42,11 @@ export default defineConfig({
   /** Brand colors written onto the theme tokens --np-brand and --np-brand-hover. */
   // brand: { primary: '#CC785C', primaryHover: '#B86A52' },
 
-  /** Site wide footer line, overridable per page with the footer frontmatter field. */
-  // footer: 'Made with nimpress',
+  /** Footer: text is the site wide line, overridable per page with the footer frontmatter field, beside a copyright, social links, previous and next links, and the generator notice. */
+  // footer: { text: 'Made with nimpress', copyright: '© 2026 Nimling', social: [{ icon: '/assets/github.svg', link: 'https://github.com/nimling', name: 'Nimling on GitHub' }], navigation: true },
+
+  /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button remembered per text. */
+  // announce: { text: 'v2.4 is out', link: '/changelog', dismiss: true },
 
   /** Page status identifiers mapped to the label the sidebar mark carries. new and deprecated are present without configuration. */
   // status: { beta: 'Beta' },

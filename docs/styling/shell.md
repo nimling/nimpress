@@ -6,13 +6,24 @@ description: The header, the sidebar, the breadcrumbs, the right rail, and the f
 
 The header, the sidebar, the breadcrumbs, the right rail, and the frame everything else renders inside.
 
-68 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+84 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-header {
   border-bottom: 2px solid var(--np-brand);
 }
 ```
+
+## Announce
+
+`src/layout/Announce.svelte`
+
+| Class |
+|---|
+| `np-announce` |
+| `np-announce-away` |
+| `np-announce-dismiss` |
+| `np-announce-text` |
 
 ## App
 
@@ -62,6 +73,25 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-crumbs-current` |
 | `np-crumbs-item` |
 | `np-crumbs-sep` |
+
+## Footer
+
+`src/layout/Footer.svelte`
+
+| Class |
+|---|
+| `np-footer` |
+| `np-footer-copyright` |
+| `np-footer-generator` |
+| `np-footer-meta` |
+| `np-footer-nav` |
+| `np-footer-nav-label` |
+| `np-footer-nav-title` |
+| `np-footer-next` |
+| `np-footer-prev` |
+| `np-footer-social` |
+| `np-footer-social-glyph` |
+| `np-footer-social-link` |
 
 ## GatedPage
 

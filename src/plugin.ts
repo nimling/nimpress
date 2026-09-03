@@ -3132,7 +3132,19 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         return `export default ${JSON.stringify(buildManifest())}`
       }
       if (id === '\0' + VIRTUAL_CONFIG) {
-        return `export default ${JSON.stringify(runtimeConfig(resolved))}`
+        const runtime = runtimeConfig(resolved)
+        if (runtime.announce) {
+          const md = buildMarkdownIt(await ensureHighlighter(), embedContext(), resolved.base)
+          runtime.announce = { ...runtime.announce, html: md.renderInline(runtime.announce.text) }
+        }
+        if (runtime.footer?.social) {
+          const fromFile = resolve(process.cwd(), 'nimpress.config.json')
+          runtime.footer = {
+            ...runtime.footer,
+            social: runtime.footer.social.map((entry) => ({ ...entry, icon: resolveIconRef(entry.icon, fromFile) ?? entry.icon }))
+          }
+        }
+        return `export default ${JSON.stringify(runtime)}`
       }
       if (id === '\0' + VIRTUAL_MAIN) {
         const cssImports = resolved.css

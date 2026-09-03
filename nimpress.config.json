@@ -15,5 +15,18 @@
   "brand": {
     "primary": "#CC785C",
     "primaryHover": "#B86A52"
+  },
+  "announce": {
+    "text": "Version 2.4 brings seven new page types and the zensical authoring surface.",
+    "link": "/changelog",
+    "dismiss": true
+  },
+  "footer": {
+    "text": "Built from the docs folder of the nimpress repository on every release.",
+    "copyright": "© 2026 Nimling",
+    "social": [
+      { "icon": "./assets/github.svg", "link": "https://github.com/nimling/nimpress", "name": "nimpress on GitHub" }
+    ],
+    "navigation": true
   }
 }

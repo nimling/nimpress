@@ -450,6 +450,27 @@ export interface AuthConfig {
   guard?: GuardFunction
 }
 
+export interface NimpressAnnounceConfig {
+  text: string
+  link?: string
+  dismiss?: boolean
+  html?: string
+}
+
+export interface NimpressSocialLink {
+  icon: string
+  link: string
+  name?: string
+}
+
+export interface NimpressFooterConfig {
+  text?: string
+  copyright?: string
+  social?: NimpressSocialLink[]
+  navigation?: boolean
+  generator?: boolean
+}
+
 export interface NimpressConfig {
   title: string
   logo?: string
@@ -461,7 +482,8 @@ export interface NimpressConfig {
   auth?: AuthConfig
   subscribe?: SubscribeConfig
   site?: SiteMeta
-  footer?: string
+  footer?: NimpressFooterConfig
+  announce?: NimpressAnnounceConfig
   status?: Record<string, string>
   tabs?: NimpressTabsConfig
   guardedBase?: string
@@ -518,8 +540,10 @@ export interface NimpressUserConfig {
   github?: string
   /** Brand colors written onto the theme tokens. @example { "primary": "#CC785C" } */
   brand?: NimpressBrandConfig
-  /** Site wide footer line, overridable per page with the footer frontmatter field. */
-  footer?: string
+  /** Footer: the site wide line, a copyright, social links, previous and next links, and the generator notice. @example { "text": "Made with nimpress", "navigation": true } */
+  footer?: NimpressFooterConfig
+  /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button. @example { "text": "v2.4 is out", "dismiss": true } */
+  announce?: NimpressAnnounceConfig
   /** Page status identifiers mapped to the label the sidebar mark carries, new and deprecated are present without configuration. @example { "beta": "Beta" } */
   status?: Record<string, string>
   /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. @example { "linked": true } */
@@ -567,7 +591,8 @@ export interface ResolvedNimpressConfig {
   logo?: string
   github?: string
   brand?: NimpressBrandConfig
-  footer?: string
+  footer?: NimpressFooterConfig
+  announce?: NimpressAnnounceConfig
   status: Record<string, string>
   tabs: NimpressTabsConfig
   navRoutes?: NavRoute[]

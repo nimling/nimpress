@@ -19,7 +19,7 @@
   const entries = $derived<ChangelogEntry[]>(page.changelogEntries ?? [])
   const config = $derived($configStore)
   const hidden = $derived(new Set(page.frontmatter.hide ?? []))
-  const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer)
+  const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer?.text)
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
   const tocHeadings = $derived(page.headings ?? [])

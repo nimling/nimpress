@@ -1,5 +1,7 @@
 <script lang="ts">
   import Header from './Header.svelte'
+  import Announce from './Announce.svelte'
+  import Footer from './Footer.svelte'
   import Sidebar from './Sidebar.svelte'
   import SearchModal from '../search/SearchModal.svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
@@ -118,6 +120,7 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed || !navigation} class:np-navigation-hidden={!navigation}>
+  <Announce />
   <Header
     onOpenSearch={() => (searchOpen = true)}
     onToggleDrawer={toggleSidebar}
@@ -139,6 +142,7 @@
     {/if}
     <main class="np-main">
       {@render children()}
+      <Footer />
     </main>
   </div>
   {#if searchOpen}
@@ -157,7 +161,7 @@
     padding: 0;
     overflow: hidden;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     --np-sidebar-current: var(--np-sidebar-width);

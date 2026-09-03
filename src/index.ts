@@ -9,6 +9,8 @@ export { applyPageStyles } from './framework/pageStyles'
 
 export { default as App } from './layout/App.svelte'
 export { default as Header } from './layout/Header.svelte'
+export { default as Announce } from './layout/Announce.svelte'
+export { default as Footer } from './layout/Footer.svelte'
 export { default as Sidebar } from './layout/Sidebar.svelte'
 export { default as RightToc } from './layout/RightToc.svelte'
 export { default as Breadcrumbs } from './layout/Breadcrumbs.svelte'
