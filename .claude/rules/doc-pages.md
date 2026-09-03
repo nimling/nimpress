@@ -32,7 +32,7 @@ title: How sessions work
 
 5. `slug` shortens the sidebar label without renaming the file.
 
-6. `hide: [toc]` hides the right rail. Use only on short pages where the TOC would feel empty. The same list takes `navigation`, `path`, `footer`, and `tags`.
+6. `hide: [toc]` hides the right rail. Use only on short pages where the TOC would feel empty. The same list takes `navigation`, `path`, `footer`, `tags`, and `feedback`.
 
 7. `footer` renders a centered, muted line at the bottom of the page.
 

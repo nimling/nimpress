@@ -24,7 +24,7 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
 | `redirect` | string | Send the visitor to another path on load |
-| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, see below |
+| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, `feedback`, see below |
 | `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
 | `background` | string | Banner image behind the header, used by `hero` and `roadmap` |

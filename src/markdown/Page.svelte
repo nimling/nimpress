@@ -13,6 +13,7 @@
   import Actions from './Actions.svelte'
   import Feature from './Feature.svelte'
   import ComponentEmbed from './ComponentEmbed.svelte'
+  import Feedback from './Feedback.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -43,6 +44,21 @@
   })
   const tocHeadings = $derived((page.headings ?? []).filter((h) => h.level <= 3))
   const showRail = $derived(!hidden.has('toc') && tocHeadings.length > 0)
+  const pageMeta = $derived(config.manifest?.pages[page.slug])
+  const repoActions = $derived.by(() => {
+    const repo = config.repo
+    const source = pageMeta?.source
+    const url = (repo?.url ?? config.github ?? '').replace(/\/$/, '')
+    if (!repo?.actions?.length || !source || !url || issueKind) return []
+    const editUri = (repo.editUri ?? `edit/main/${config.contentRoot}/`).replace(/^\//, '').replace(/\/?$/, '/')
+    const viewUri = editUri.replace(/^edit\//, 'blob/')
+    return repo.actions.map((action) => ({
+      action,
+      href: `${url}/${action === 'edit' ? editUri : viewUri}${source}`,
+      label: action === 'edit' ? 'Edit this page' : 'View source of this page'
+    }))
+  })
+  const showFeedback = $derived(!hidden.has('feedback') && !!config.feedback && !issueKind)
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -275,9 +291,25 @@
         {/if}
       </header>
     {/if}
+    {#if repoActions.length}
+      <div class="np-page-actions">
+        {#each repoActions as entry (entry.action)}
+          <a class="np-page-action np-page-action-{entry.action}" href={entry.href} target="_blank" rel="noopener" aria-label={entry.label} title={entry.label}>
+            {#if entry.action === 'edit'}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+            {:else}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+            {/if}
+          </a>
+        {/each}
+      </div>
+    {/if}
     <article class="np-prose" bind:this={container}>
       {@html page.html}
     </article>
+    {#if showFeedback}
+      <Feedback path={page.path} />
+    {/if}
     {#if effectiveFooter}
       <footer class="np-page-footer">{effectiveFooter}</footer>
     {/if}
@@ -413,6 +445,26 @@
     pointer-events: auto;
   }
 
+  .np-page-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-bottom: -8px;
+  }
+  .np-page-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--np-radius-sm);
+    color: var(--np-text-faint);
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+  .np-page-action:hover {
+    color: var(--np-brand);
+    background-color: var(--np-bg-surface);
+  }
   .np-page-footer {
     margin-top: 96px;
     padding: 32px 0 0;

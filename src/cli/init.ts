@@ -48,6 +48,12 @@ export default defineConfig({
   /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button remembered per text. */
   // announce: { text: 'v2.4 is out', link: '/changelog', dismiss: true },
 
+  /** Repository actions on every doc page. url defaults to github, editUri to edit/main/<contentDir>/, actions lists edit and view. */
+  // repo: { actions: ['edit', 'view'] },
+
+  /** The was this page helpful widget. Each rating carries an icon, a name, the data the nimpress:feedback event reports, and a markdown note shown after the click. */
+  // feedback: { title: 'Was this page helpful?', ratings: [{ icon: '👍', name: 'This page was helpful', data: '1', note: 'Thanks for your feedback!' }] },
+
   /** Page status identifiers mapped to the label the sidebar mark carries. new and deprecated are present without configuration. */
   // status: { beta: 'Beta' },
 

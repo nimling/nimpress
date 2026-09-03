@@ -168,7 +168,7 @@ const frontmatterSchema = z.object({
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
-  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags'])).optional(),
+  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags', 'feedback'])).optional(),
   status: z.string().optional(),
   footer: z.string().optional(),
   background: z.string().optional(),
@@ -2513,6 +2513,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         order: p.frontmatter.order,
         hidden: pageDevOnly(p.frontmatter),
         hide: p.frontmatter.hide,
+        source: relative(contentRoot, p.filePath).split(sep).join('/'),
         redirect: p.frontmatter.redirect,
         meta: p.frontmatter.meta
       }
@@ -3133,9 +3134,15 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (id === '\0' + VIRTUAL_CONFIG) {
         const runtime = runtimeConfig(resolved)
-        if (runtime.announce) {
-          const md = buildMarkdownIt(await ensureHighlighter(), embedContext(), resolved.base)
-          runtime.announce = { ...runtime.announce, html: md.renderInline(runtime.announce.text) }
+        const inline = runtime.announce || runtime.feedback ? buildMarkdownIt(await ensureHighlighter(), embedContext(), resolved.base) : null
+        if (runtime.feedback && inline) {
+          runtime.feedback = {
+            ...runtime.feedback,
+            ratings: runtime.feedback.ratings.map((rating) => ({ ...rating, html: inline.renderInline(rating.note) }))
+          }
+        }
+        if (runtime.announce && inline) {
+          runtime.announce = { ...runtime.announce, html: inline.renderInline(runtime.announce.text) }
         }
         if (runtime.footer?.social) {
           const fromFile = resolve(process.cwd(), 'nimpress.config.json')

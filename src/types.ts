@@ -169,7 +169,7 @@ export interface PageMetaTags {
   jsonLd?: unknown
 }
 
-export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags'
+export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags' | 'feedback'
 
 export interface Frontmatter {
   title: string
@@ -284,6 +284,7 @@ export interface PageMeta {
   order?: number
   hidden?: boolean
   hide?: PageElement[]
+  source?: string
   redirect?: string
   meta?: PageMetaTags
 }
@@ -450,6 +451,25 @@ export interface AuthConfig {
   guard?: GuardFunction
 }
 
+export interface NimpressRepoConfig {
+  url?: string
+  editUri?: string
+  actions?: Array<'edit' | 'view'>
+}
+
+export interface NimpressFeedbackRating {
+  icon: string
+  name: string
+  data: string
+  note: string
+  html?: string
+}
+
+export interface NimpressFeedbackConfig {
+  title: string
+  ratings: NimpressFeedbackRating[]
+}
+
 export interface NimpressAnnounceConfig {
   text: string
   link?: string
@@ -484,6 +504,8 @@ export interface NimpressConfig {
   site?: SiteMeta
   footer?: NimpressFooterConfig
   announce?: NimpressAnnounceConfig
+  repo?: NimpressRepoConfig
+  feedback?: NimpressFeedbackConfig
   status?: Record<string, string>
   tabs?: NimpressTabsConfig
   guardedBase?: string
@@ -544,6 +566,10 @@ export interface NimpressUserConfig {
   footer?: NimpressFooterConfig
   /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button. @example { "text": "v2.4 is out", "dismiss": true } */
   announce?: NimpressAnnounceConfig
+  /** Repository actions on every doc page. url defaults to github, editUri to edit/main/<contentDir>/, actions lists edit and view. @example { "actions": ["edit", "view"] } */
+  repo?: NimpressRepoConfig
+  /** The was this page helpful widget under every doc page. Each rating carries an icon, a name, the data the nimpress:feedback event reports, and a markdown note shown after the click. */
+  feedback?: NimpressFeedbackConfig
   /** Page status identifiers mapped to the label the sidebar mark carries, new and deprecated are present without configuration. @example { "beta": "Beta" } */
   status?: Record<string, string>
   /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. @example { "linked": true } */
@@ -593,6 +619,8 @@ export interface ResolvedNimpressConfig {
   brand?: NimpressBrandConfig
   footer?: NimpressFooterConfig
   announce?: NimpressAnnounceConfig
+  repo?: NimpressRepoConfig
+  feedback?: NimpressFeedbackConfig
   status: Record<string, string>
   tabs: NimpressTabsConfig
   navRoutes?: NavRoute[]
