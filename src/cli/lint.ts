@@ -128,6 +128,9 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
       } catch {
         continue
       }
+      if (data?.type === 'section' && !file.endsWith(`${sep}index.md`)) {
+        problems.push(`${rel}: type section belongs on a folder index.md, move the page or drop the type`)
+      }
       if (data?.type === '404') {
         if (notFoundFile) {
           problems.push(`${rel}: second type 404 page in the site, ${relative(root, notFoundFile).split(sep).join('/')} already owns it, one not found page per site`)

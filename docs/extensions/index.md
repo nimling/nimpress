@@ -1,5 +1,6 @@
 ---
 title: Extensions
+type: section
 order: 20
 description: The renderers nimpress layers on top of markdown, each driven by a fenced block or a frontmatter field.
 ---

@@ -1,9 +1,10 @@
 ---
 title: Page types
+type: section
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Thirteen types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Fourteen types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -99,6 +100,19 @@ type: 404
 ```
 
 See [Not found page](/page-types/404) for where it is served.
+
+## `section`
+
+A folder `index.md` that lists its children as a card grid under its prose, from the sidebar order, with each child's title, description, and icon. `data.columns` pins the column count and `data.depth: 2` lists grandchildren under a heading per child folder. This page is one.
+
+```yaml
+---
+title: Page types
+type: section
+---
+```
+
+See [Section pages](/page-types/section) for what is listed.
 
 ## `roadmap`
 

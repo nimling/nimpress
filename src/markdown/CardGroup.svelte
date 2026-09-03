@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  let { children }: { children: Snippet } = $props()
+  let { children, columns }: { children: Snippet; columns?: number } = $props()
 </script>
 
-<div class="np-cards-grid">
+<div class="np-cards-grid" style:grid-template-columns={columns ? `repeat(${columns}, minmax(0, 1fr))` : undefined}>
   {@render children()}
 </div>
 

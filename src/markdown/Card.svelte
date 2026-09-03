@@ -15,7 +15,11 @@
   href={href ? withBase(href) : undefined}
   class="np-card"
 >
-  {#if icon}<div class="np-card-icon">{icon}</div>{/if}
+  {#if icon}
+    <div class="np-card-icon">
+      {#if icon.trim().startsWith('<svg')}{@html icon}{:else}{icon}{/if}
+    </div>
+  {/if}
   <h3>{title}</h3>
   {#if children}<div class="np-card-body">{@render children()}</div>{/if}
 </svelte:element>
@@ -47,5 +51,11 @@
   .np-card-body {
     color: var(--np-text-secondary);
     font-size: 14px;
+  }
+  .np-card-icon :global(svg) {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    fill: none;
   }
 </style>

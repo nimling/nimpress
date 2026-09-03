@@ -139,6 +139,8 @@ Arbitrary object handed to the renderer the page selected.
 
 2.2. `type: 404` needs `title` alone. The build writes the page as `404.html` at the output root, the app routes an unknown path to it, and it stays out of the sidebar, search, and the sitemap. One per site. See [Not found page](/page-types/404).
 
+2.3. `type: section` belongs on a folder `index.md` and reads `data.columns` and `data.depth`. The body renders first and every child page follows as a card in sidebar order. See [Section pages](/page-types/section).
+
 3. `type: roadmap` reads `data.issues` and `data.changelog` to scope the timeline. The issue kinds read `data.date` and `data.parent`.
 
 4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. See [modules.md](/modules).

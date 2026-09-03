@@ -56,6 +56,10 @@ The type hides the sidebar, the breadcrumbs, the rail, and the previous and next
 
 Use for exactly one page per site: the not found page the build serves for every address with no page behind it. The body carries the prose and an action row back into the site. Never place it in the sidebar unless the site wants a visible link to it.
 
+## `section`
+
+Use for a folder `index.md` that opens a section: the prose renders first and every child page follows as a card in sidebar order, so the overview needs no authored list. `data.columns` pins the column count and `data.depth: 2` lists grandchildren under a heading per child folder. The type belongs on a folder index only. See [Section pages](https://nimling.github.io/nimpress/page-types/section).
+
 ## `roadmap`
 
 Use when:
@@ -116,6 +120,8 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it a folder index that lists its children as cards?
+   │  └─ Yes  → type: section
    ├─ Is it the not found page of the site?
    │  └─ Yes  → type: 404
    ├─ Is it a landing page with none of the shell chrome?

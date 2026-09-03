@@ -1,5 +1,6 @@
 ---
 title: OpenAPI renderer
+description: An OpenAPI 3.1 specification rendered as a reference page with per operation deep links and a try panel.
 order: 15
 ---
 

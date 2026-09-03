@@ -1,5 +1,6 @@
 ---
 title: Relative links
+description: How links between pages resolve, relative inside a section and absolute across sections.
 order: 23
 ---
 

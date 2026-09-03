@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick, mount, unmount, createRawSnippet } from 'svelte'
+  import type { Snippet } from 'svelte'
   import type { PageModule } from '../types'
   import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
@@ -17,7 +18,7 @@
   import Feedback from './Feedback.svelte'
   import Lightbox from './Lightbox.svelte'
 
-  let { page }: { page: PageModule } = $props()
+  let { page, children }: { page: PageModule; children?: Snippet } = $props()
 
   let container: HTMLElement
   let mounted: Array<{ destroy: () => void }> = []
@@ -342,6 +343,9 @@
     <article class="np-prose" class:np-prose-lightbox={!!config.images?.lightbox} bind:this={container}>
       {@html page.html}
     </article>
+    {#if children}
+      {@render children()}
+    {/if}
     {#if showFeedback}
       <Feedback path={page.path} />
     {/if}

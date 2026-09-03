@@ -5,6 +5,7 @@ export type PageType =
   | 'hero'
   | 'fullpage'
   | '404'
+  | 'section'
   | 'roadmap'
   | 'dbml'
   | 'milestone'

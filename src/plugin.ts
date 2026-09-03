@@ -150,6 +150,7 @@ const frontmatterSchema = z.object({
     z.literal('hero'),
     z.literal('fullpage'),
     z.literal('404'),
+    z.literal('section'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -1767,6 +1768,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         const groupKey = String(p.filePath)
         roadmapGroups.set(groupKey, [p])
       }
+      if (p.type === 'section' && !p.filePath.endsWith(`${sep}index.md`)) {
+        throw new Error(`[nimpress] type section belongs on a folder index.md: ${p.filePath}`)
+      }
       if (p.type === '404') {
         if (notFoundPage && notFoundPage !== p.filePath) {
           throw new Error(`[nimpress] one type 404 page per site: ${notFoundPage} and ${p.filePath}`)
@@ -2088,6 +2092,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (type === 'changelog' || type === 'roadmap') return 'CollectionPage'
     if (type === 'openapi') return 'APIReference'
     if (type === 'hero' || type === 'fullpage' || type === '404') return 'WebPage'
+    if (type === 'section') return 'CollectionPage'
     return 'TechArticle'
   }
 
@@ -3074,7 +3079,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -3107,6 +3112,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+    {:else if shell.type === 'section'}
+      <SectionPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === '404'}
       <NotFoundPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'changelog'}
