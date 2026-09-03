@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { configStore, withBase, withoutBase } from '../framework/configStore'
+  import { configStore, hiddenElements, withBase, withoutBase } from '../framework/configStore'
   import { theme, toggleTheme } from '../framework/stores/theme'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import AccountMenu from '../auth/AccountMenu.svelte'
@@ -8,17 +8,21 @@
   let {
     onOpenSearch,
     onToggleDrawer,
-    drawerOpen = false
+    drawerOpen = false,
+    navigation = true
   }: {
     onOpenSearch: () => void
     onToggleDrawer?: () => void
     drawerOpen?: boolean
+    navigation?: boolean
   } = $props()
 
   const config = $derived($configStore)
   const isDark = $derived($theme === 'dark')
   const route = $derived($resolvedRoute)
+  const hidden = $derived(hiddenElements(config, route?.path ?? '/'))
   const crumbPath = $derived.by(() => {
+    if (hidden.has('path')) return ''
     const path = withoutBase(route?.path ?? '/')
     if (path === '/' || path === '') return ''
     return path.replace(/\/$/, '')
@@ -26,19 +30,21 @@
 </script>
 
 <header class="np-header">
-  <button
-    class="np-menu-btn"
-    class:is-open={drawerOpen}
-    aria-label="Toggle menu"
-    aria-expanded={drawerOpen}
-    onclick={() => onToggleDrawer?.()}
-  >
-    <span class="np-menu-icon" aria-hidden="true">
-      <span class="np-menu-line np-menu-line-top"></span>
-      <span class="np-menu-line np-menu-line-mid"></span>
-      <span class="np-menu-line np-menu-line-bot"></span>
-    </span>
-  </button>
+  {#if navigation}
+    <button
+      class="np-menu-btn"
+      class:is-open={drawerOpen}
+      aria-label="Toggle menu"
+      aria-expanded={drawerOpen}
+      onclick={() => onToggleDrawer?.()}
+    >
+      <span class="np-menu-icon" aria-hidden="true">
+        <span class="np-menu-line np-menu-line-top"></span>
+        <span class="np-menu-line np-menu-line-mid"></span>
+        <span class="np-menu-line np-menu-line-bot"></span>
+      </span>
+    </button>
+  {/if}
   <a class="np-brand" href={withBase('/')}>
     {#if config.logo}
       <img src={withBase(config.logo)} alt={config.title} />

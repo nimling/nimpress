@@ -6,7 +6,7 @@ description: The header, the sidebar, the breadcrumbs, the right rail, and the f
 
 The header, the sidebar, the breadcrumbs, the right rail, and the frame everything else renders inside.
 
-64 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+68 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-header {
@@ -27,6 +27,7 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-drawer-backdrop` |
 | `np-drawer-open` |
 | `np-main` |
+| `np-navigation-hidden` |
 | `np-sidebar` |
 | `np-sidebar-collapsed` |
 | `np-tip` |
@@ -141,6 +142,9 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-hidden-dot` |
 | `np-items` |
 | `np-node-icon` |
+| `np-sidebar-status` |
+| `np-sidebar-status-deprecated` |
+| `np-sidebar-status-new` |
 | `np-subgroup-button` |
 | `np-subgroup-link` |
 | `np-subgroup-row` |

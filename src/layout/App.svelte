@@ -4,8 +4,12 @@
   import SearchModal from '../search/SearchModal.svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import { onMount, type Snippet } from 'svelte'
+  import { configStore, hiddenElements } from '../framework/configStore'
 
   let { children }: { children: Snippet } = $props()
+
+  const hidden = $derived(hiddenElements($configStore, $resolvedRoute?.path ?? '/'))
+  const navigation = $derived(!hidden.has('navigation'))
 
   onMount(() => {
     const tip = document.createElement('div')
@@ -113,17 +117,20 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed}>
+<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed || !navigation} class:np-navigation-hidden={!navigation}>
   <Header
     onOpenSearch={() => (searchOpen = true)}
     onToggleDrawer={toggleSidebar}
     drawerOpen={drawerOpen || !collapsed}
+    {navigation}
   />
   <div class="np-body">
-    <aside class="np-aside" class:open={drawerOpen}>
-      <Sidebar {collapsed} />
+    <aside class="np-aside" class:open={drawerOpen && navigation}>
+      {#if navigation}
+        <Sidebar {collapsed} />
+      {/if}
     </aside>
-    {#if drawerOpen}
+    {#if drawerOpen && navigation}
       <button
         class="np-drawer-backdrop"
         aria-label="Close menu"
@@ -157,6 +164,9 @@
   }
   .np-app.np-collapsed {
     --np-sidebar-current: 0px;
+  }
+  .np-app.np-navigation-hidden .np-aside {
+    display: none;
   }
   .np-body {
     position: relative;

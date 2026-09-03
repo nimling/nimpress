@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sidebarState, toggleGroup } from '../framework/stores/sidebar'
-  import { withBase, withoutBase } from '../framework/configStore'
+  import { configStore, withBase, withoutBase } from '../framework/configStore'
   import { viewer } from '../framework/stores/viewer'
   import { viewerCanAccess } from '../auth/guard'
   import { resolvedRoute } from 'sly-svelte-location-router'
@@ -34,7 +34,12 @@
     !external && !!route && !!node.link && withoutBase(route.path).replace(/\/$/, '') === node.link.replace(/\/$/, '')
   )
   const svgIcon = $derived(!!node.icon && node.icon.trimStart().startsWith('<svg'))
+  const statusLabel = $derived(node.status ? $configStore.status?.[node.status] ?? node.status : '')
 </script>
+
+{#snippet statusMark()}
+  {#if node.status}<span class="np-sidebar-status np-sidebar-status-{node.status}" title={statusLabel} aria-label={statusLabel} role="img"></span>{/if}
+{/snippet}
 
 {#snippet nodeIcon()}
   {#if node.icon}<span class="np-node-icon">{#if svgIcon}{@html node.icon}{:else}{node.icon}{/if}</span>{/if}
@@ -50,7 +55,7 @@
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}
-            <a class="np-group-label-link" {href} class:active target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} data-no-routing={external ? '' : undefined}>{@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+            <a class="np-group-label-link" {href} class:active target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} data-no-routing={external ? '' : undefined}>{@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
             <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
           {/if}
@@ -85,7 +90,7 @@
             onclick={() => {
               if (!open) toggleGroup(groupKey, open)
             }}
-          >{@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+          >{@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
           <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
         {/if}
@@ -117,7 +122,7 @@
       rel={external ? 'noreferrer' : undefined}
       data-no-routing={external || node.link?.includes('#') ? '' : undefined}
     >
-      {@render nodeIcon()}{node.text}{@render outbound()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
+      {@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
     </a>
   {/if}
 {/if}
@@ -153,6 +158,26 @@
     border-radius: 50%;
     background-color: var(--np-danger, #e5484d);
     vertical-align: middle;
+  }
+
+  .np-sidebar-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 6px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--np-text-muted) 60%, transparent);
+    background-color: color-mix(in srgb, var(--np-text-muted) 20%, transparent);
+    vertical-align: middle;
+    flex: none;
+  }
+  .np-sidebar-status-new {
+    border-color: color-mix(in srgb, var(--np-check) 60%, transparent);
+    background-color: color-mix(in srgb, var(--np-check) 24%, transparent);
+  }
+  .np-sidebar-status-deprecated {
+    border-color: color-mix(in srgb, var(--np-warning) 60%, transparent);
+    background-color: color-mix(in srgb, var(--np-warning) 24%, transparent);
   }
 
   .np-group-header,

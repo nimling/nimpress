@@ -45,6 +45,9 @@ export default defineConfig({
   /** Site wide footer line, overridable per page with the footer frontmatter field. */
   // footer: 'Made with nimpress',
 
+  /** Page status identifiers mapped to the label the sidebar mark carries. new and deprecated are present without configuration. */
+  // status: { beta: 'Beta' },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 

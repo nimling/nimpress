@@ -2,7 +2,7 @@
 title: Hero page
 type: hero
 order: 31
-noToc: true
+hide: [toc]
 data:
   eyebrow: Example
   tagline: This page is the example.
@@ -38,7 +38,7 @@ The band, the buttons, and the grid above come from this frontmatter and these t
 ---
 title: Hero page
 type: hero
-noToc: true
+hide: [toc]
 data:
   eyebrow: Example
   tagline: This page is the example.
@@ -71,7 +71,7 @@ Prose after the grid renders as a normal page body.
 
 4. `data.align` is `start`, `center`, or `end`.
 
-5. `noToc: true` removes the right rail, which a hero page has no use for.
+5. `hide: [toc]` removes the right rail, which a hero page has no use for.
 
 ## The directives
 

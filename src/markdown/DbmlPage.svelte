@@ -18,7 +18,7 @@
   let block: DBMLBlock | undefined = $state()
 
   const config = $derived($configStore)
-  const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
+  const effectiveFooter = $derived(page.frontmatter.hide?.includes('footer') ? undefined : page.frontmatter.footer ?? config.footer)
   const data = $derived((page.frontmatter.data ?? {}) as Record<string, unknown>)
   const hasBody = $derived((page.html ?? '').trim().length > 0)
   const eyebrow = $derived(typeof data.eyebrow === 'string' ? data.eyebrow : '')

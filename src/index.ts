@@ -48,6 +48,7 @@ export { pageGuard, viewerCanAccess, setAccessChecker } from './auth/guard'
 
 export type {
   PageType,
+  PageElement,
   Frontmatter,
   PageModule,
   PageShell,

@@ -24,7 +24,8 @@ YAML at the top of every markdown file, parsed with `gray-matter` and validated 
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
 | `redirect` | string | Send the visitor to another path on load |
-| `noToc` | boolean | Hide the right rail table of contents |
+| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, see below |
+| `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
 | `background` | string | Banner image behind the header, used by `hero` and `roadmap` |
 | `tags` | string \| string[] | Comma separated string or YAML array of search keywords |
@@ -42,6 +43,42 @@ Three states, enforced in `src/plugin.ts`:
 2. `hidden` removes the page from the sidebar, from search, and from the build output. Use it for drafts.
 
 3. `dev-only` keeps the page in `nimpress dev` so you can work on it locally, but excludes it from the built bundle. Its sidebar row carries a red dot marking it as local. Use it for pages that should never ship, like internal scratch pages.
+
+## `hide`
+
+Use the hide front matter property to hide one or more elements of a page. The value is a list of element names.
+
+```yaml
+hide:
+  - navigation
+  - toc
+```
+
+| Value | Hides |
+|-------|-------|
+| `navigation` | The sidebar column and the menu button |
+| `toc` | The right rail table of contents |
+| `path` | The breadcrumbs in the header |
+| `footer` | The page footer line, from the page or from the site config |
+| `tags` | The tag row under the title |
+
+A `hide` list in `defaultFrontmatter` merges with the page's own list, so a site wide `hide: [footer]` and a page level `hide: [toc]` hide both.
+
+## `status`
+
+A status can be assigned to each page and displayed in the navigation sidebar. The value is an identifier; the sidebar row renders a `np-sidebar-status` mark carrying the identifier's label as its title.
+
+```yaml
+status: new
+```
+
+`new` labels as `Recently added` and `deprecated` as `Deprecated` without configuration. The `status` field in `nimpress.config` maps further identifiers to labels, and an identifier without a label shows as itself.
+
+```ts
+status: { beta: 'Beta' }
+```
+
+Every mark carries `np-sidebar-status-<identifier>` beside `np-sidebar-status`, so a site colors `np-sidebar-status-new`, `np-sidebar-status-deprecated`, or its own identifiers from its stylesheet. See [Shell](/styling/shell).
 
 ## `sidebar`
 

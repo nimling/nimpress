@@ -75,6 +75,7 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     subscribe: resolved.subscribe,
     site: resolved.site,
     footer: resolved.footer,
+    status: resolved.status,
     guardedBase: `/${resolved.paths.guarded}`
   }
 }

@@ -111,6 +111,7 @@ export async function loadGatedContent(): Promise<void> {
         description: shell.frontmatter.description,
         order: shell.frontmatter.order,
         hidden: shell.frontmatter.visibility === 'dev-only',
+        hide: shell.frontmatter.hide,
         redirect: shell.frontmatter.redirect,
         meta: shell.frontmatter.meta
       }

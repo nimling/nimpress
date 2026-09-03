@@ -17,7 +17,8 @@
 
   const entries = $derived<ChangelogEntry[]>(page.changelogEntries ?? [])
   const config = $derived($configStore)
-  const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
+  const hidden = $derived(new Set(page.frontmatter.hide ?? []))
+  const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer)
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
   const tocHeadings = $derived(page.headings ?? [])
@@ -252,7 +253,7 @@
     {/if}
   </div>
 </div>
-<div class="np-page-shell" class:has-rail={!page.frontmatter.noToc && tocHeadings.length > 0}>
+<div class="np-page-shell" class:has-rail={!hidden.has('toc') && tocHeadings.length > 0}>
   <div class="np-page">
     <article class="np-prose np-changelog" bind:this={container}>
       {#each entries as e, i (keyOf(e, i))}
@@ -299,7 +300,7 @@
     {/if}
     <div class="np-page-tail"></div>
   </div>
-  {#if !page.frontmatter.noToc && tocHeadings.length > 0}
+  {#if !hidden.has('toc') && tocHeadings.length > 0}
     <div class="np-toc-rail">
       <RightToc headings={tocHeadings} />
     </div>

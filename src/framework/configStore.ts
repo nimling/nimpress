@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import type { NimpressConfig } from '../types'
+import type { NimpressConfig, PageElement, PageMeta } from '../types'
 import { joinBase, normalizeBase, stripBase } from '../config/base'
 
 const empty: NimpressConfig = {
@@ -26,4 +26,14 @@ export function withBase(path: string): string {
 
 export function withoutBase(path: string): string {
   return stripBase(base, path)
+}
+
+export function pageAt(config: NimpressConfig, routePath: string): PageMeta | undefined {
+  const path = withoutBase(routePath).replace(/\/$/, '') || '/'
+  const slug = config.manifest?.byPath?.[path]
+  return slug === undefined ? undefined : config.manifest?.pages[slug]
+}
+
+export function hiddenElements(config: NimpressConfig, routePath: string): Set<PageElement> {
+  return new Set(pageAt(config, routePath)?.hide ?? [])
 }

@@ -10,6 +10,7 @@ export const defaultPaths: ResolvedPaths = {
 
 export const defaultConfig: ResolvedNimpressConfig = {
   title: 'Nimpress',
+  status: { new: 'Recently added', deprecated: 'Deprecated' },
   base: '/',
   contentDir: 'docs',
   assetsDir: 'assets',

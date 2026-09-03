@@ -26,7 +26,7 @@
   } = $props()
 
   const config = $derived($configStore)
-  const effectiveFooter = $derived(frontmatter?.footer ?? config.footer)
+  const effectiveFooter = $derived(frontmatter?.hide?.includes('footer') ? undefined : frontmatter?.footer ?? config.footer)
 
   const flat = $derived<FlattenedSpec | null>(isFlattenedSpec(spec) ? spec : null)
   const serverUrl = $derived(flat?.servers?.[0]?.url ?? '')

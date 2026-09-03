@@ -17,7 +17,7 @@
 
   const entries = $derived<RoadmapEntry[]>(page.roadmapEntries ?? [])
   const config = $derived($configStore)
-  const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
+  const effectiveFooter = $derived(page.frontmatter.hide?.includes('footer') ? undefined : page.frontmatter.footer ?? config.footer)
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
 

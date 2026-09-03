@@ -47,6 +47,7 @@ export const userConfigSchema = z.object({
   github: z.string().optional(),
   brand: brandSchema.optional(),
   footer: z.string().optional(),
+  status: z.record(z.string()).optional(),
   navRoutes: z.array(navRouteSchema).optional(),
   auth: z.object({
     issuer: z.string(),

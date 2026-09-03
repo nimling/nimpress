@@ -25,6 +25,7 @@ import type {
   NimpressUserConfig,
   PageMeta,
   PageType,
+  PageElement,
   ResolvedNimpressConfig,
   RoadmapChangelogRef,
   RoadmapEntry,
@@ -167,7 +168,8 @@ const frontmatterSchema = z.object({
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
-  noToc: z.boolean().optional(),
+  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags'])).optional(),
+  status: z.string().optional(),
   footer: z.string().optional(),
   background: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
@@ -179,6 +181,11 @@ const frontmatterSchema = z.object({
 
 function frontmatterIssues(data: unknown, body = 'x'): string[] {
   const issues: string[] = []
+  const keys = typeof data === 'object' && data !== null ? Object.keys(data) : []
+  const railBoolean = keys.find((key) => key.toLowerCase() === 'notoc')
+  if (railBoolean) {
+    issues.push(`${railBoolean}: write hide: [toc], the hide list carries every element a page drops`)
+  }
   const parsed = frontmatterSchema.safeParse(data)
   if (!parsed.success) {
     for (const e of parsed.error.errors) {
@@ -1033,7 +1040,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (!isExcludedFromDefaults) {
       for (const [key, value] of Object.entries(defaults)) {
         const k = key as keyof Frontmatter
-        if (fm[k] === undefined || fm[k] === null || fm[k] === '') {
+        if (k === 'hide') {
+          fm.hide = Array.from(new Set([...((value as PageElement[] | undefined) ?? []), ...(fm.hide ?? [])]))
+        } else if (fm[k] === undefined || fm[k] === null || fm[k] === '') {
           ;(fm as unknown as Record<string, unknown>)[k] = value
         }
       }
@@ -2150,7 +2159,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           gate: t.page.frontmatter.gate,
           order: t.page.frontmatter.order,
           collapsed: t.page.frontmatter.collapsed,
-          hidden: pageDevOnly(t.page.frontmatter)
+          hidden: pageDevOnly(t.page.frontmatter),
+          status: t.page.frontmatter.status
         }
         const ownMeta = dirMeta.get(t.fullPath)
         if (ownMeta?.label) node.text = ownMeta.label
@@ -2276,6 +2286,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         description: p.frontmatter.description,
         order: p.frontmatter.order,
         hidden: pageDevOnly(p.frontmatter),
+        hide: p.frontmatter.hide,
         redirect: p.frontmatter.redirect,
         meta: p.frontmatter.meta
       }

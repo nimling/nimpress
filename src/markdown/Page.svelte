@@ -20,7 +20,8 @@
   let mounted: Array<{ destroy: () => void }> = []
 
   const config = $derived($configStore)
-  const effectiveFooter = $derived(page.frontmatter.footer ?? config.footer)
+  const hidden = $derived(new Set(page.frontmatter.hide ?? []))
+  const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer)
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background && page.type !== 'hero')
   const issueKind = $derived(
@@ -41,7 +42,7 @@
     return typeof b === 'string' ? b : null
   })
   const tocHeadings = $derived((page.headings ?? []).filter((h) => h.level <= 3))
-  const showRail = $derived(!page.frontmatter.noToc && tocHeadings.length > 0)
+  const showRail = $derived(!hidden.has('toc') && tocHeadings.length > 0)
 
   function langOf(pre: HTMLElement): string {
     const dataLang = pre.getAttribute('data-lang')
@@ -254,7 +255,7 @@
     {/if}
     <div class="np-page-tail"></div>
   </div>
-  {#if !page.frontmatter.noToc && tocHeadings.length > 0}
+  {#if showRail}
     <div class="np-toc-rail">
       <RightToc headings={tocHeadings} />
     </div>

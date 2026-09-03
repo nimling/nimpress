@@ -169,6 +169,8 @@ export interface PageMetaTags {
   jsonLd?: unknown
 }
 
+export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags'
+
 export interface Frontmatter {
   title: string
   slug?: string
@@ -184,7 +186,8 @@ export interface Frontmatter {
   visibility?: 'visible' | 'hidden' | 'dev-only'
   lastUpdated?: boolean
   redirect?: string
-  noToc?: boolean
+  hide?: PageElement[]
+  status?: string
   collapsed?: boolean
   footer?: string
   background?: string
@@ -249,6 +252,7 @@ export interface SidebarNode {
   order?: number
   collapsed?: boolean
   hidden?: boolean
+  status?: string
   items?: SidebarNode[]
 }
 
@@ -279,6 +283,7 @@ export interface PageMeta {
   description?: string
   order?: number
   hidden?: boolean
+  hide?: PageElement[]
   redirect?: string
   meta?: PageMetaTags
 }
@@ -457,6 +462,7 @@ export interface NimpressConfig {
   subscribe?: SubscribeConfig
   site?: SiteMeta
   footer?: string
+  status?: Record<string, string>
   guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
@@ -508,6 +514,8 @@ export interface NimpressUserConfig {
   brand?: NimpressBrandConfig
   /** Site wide footer line, overridable per page with the footer frontmatter field. */
   footer?: string
+  /** Page status identifiers mapped to the label the sidebar mark carries, new and deprecated are present without configuration. @example { "beta": "Beta" } */
+  status?: Record<string, string>
   /** Extra header navigation routes. @example [{ "text": "API", "link": "/api" }] */
   navRoutes?: NavRoute[]
   /** OAuth 2.0 session login and the build time guard function for gated pages. */
@@ -552,6 +560,7 @@ export interface ResolvedNimpressConfig {
   github?: string
   brand?: NimpressBrandConfig
   footer?: string
+  status: Record<string, string>
   navRoutes?: NavRoute[]
   auth?: AuthConfig
   client?: string
