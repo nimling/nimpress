@@ -7,7 +7,7 @@ sidebar:
   path: setup
 ---
 
-Page level gating against any OIDC provider. Sessions arrive via cookies. There is no client secret in the browser.
+Gate any page with one frontmatter field. Gated pages leave the public bundle, build into guarded bundles, and upload behind the auth provider, with sessions arriving as cookies from any OIDC provider and no client secret in the browser.
 
 ## How it works
 

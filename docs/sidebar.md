@@ -7,7 +7,7 @@ tags: Setup, Navigation
 order: 5
 ---
 
-The sidebar is derived from the content tree. There is no separate config to maintain.
+A clear and concise navigation structure is an important aspect of good project documentation. The sidebar is derived from the content tree, so there is no separate config to maintain; a folder is a group, a page is a row, and a `sidebar` block moves a page into a group without moving the file. The switches around it are in [Navigation](/setup/navigation).
 
 ## Construction
 

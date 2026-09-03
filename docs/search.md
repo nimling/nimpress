@@ -7,7 +7,7 @@ tags: Setup, Search
 order: 9
 ---
 
-Local, client side, no external service. Powered by MiniSearch.
+nimpress offers seamless client-side search functionality, eliminating the need to integrate third-party services that may not comply with privacy regulations. The index is built at build time with MiniSearch, boosts tag matches, and opens from anywhere with one keystroke.
 
 ## Trigger
 
