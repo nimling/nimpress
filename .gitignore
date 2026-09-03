@@ -10,3 +10,4 @@ dist
 github.pem
 *.pem
 pnpm-workspace.yaml
+.claude/memory/
