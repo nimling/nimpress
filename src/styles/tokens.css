@@ -32,6 +32,13 @@
   --np-info: #6366F1;
   --np-check: #10B981;
   --np-danger: #EF4444;
+  --np-abstract: #0EA5E9;
+  --np-success: #22C55E;
+  --np-question: #84CC16;
+  --np-failure: #F43F5E;
+  --np-bug: #EC4899;
+  --np-example: #8B5CF6;
+  --np-quote: #6B7280;
 
   --np-method-get: #10B981;
   --np-method-post: #3B82F6;
@@ -83,6 +90,14 @@ html.dark {
   --np-table-row-alt: #16161A;
   --np-table-row-hover: #1F1F22;
   --np-table-header-bg: #1A1A1E;
+
+  --np-abstract: #38BDF8;
+  --np-success: #4ADE80;
+  --np-question: #A3E635;
+  --np-failure: #FB7185;
+  --np-bug: #F472B6;
+  --np-example: #A78BFA;
+  --np-quote: #9CA3AF;
 }
 
 html, body {

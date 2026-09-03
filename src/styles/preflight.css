@@ -274,7 +274,8 @@
 .np-callout {
   border-radius: var(--np-radius-md);
   padding: 12px 16px;
-  border-left: 4px solid;
+  border-left: 4px solid var(--np-callout-color);
+  background-color: color-mix(in srgb, var(--np-callout-color) 10%, transparent);
   margin: 16px 0;
   display: flex;
   gap: 12px;
@@ -295,7 +296,9 @@
   margin: 0 0 8px;
   padding: 3px 10px;
   border-radius: var(--np-radius-pill);
-  border: 1px solid;
+  border: 1px solid color-mix(in srgb, var(--np-callout-color) 40%, transparent);
+  color: var(--np-callout-color);
+  background-color: color-mix(in srgb, var(--np-callout-color) 14%, transparent);
   line-height: 1.2;
 }
 
@@ -304,60 +307,104 @@
   line-height: 1;
 }
 
-.np-callout-tip {
-  border-color: var(--np-tip);
-  background-color: color-mix(in srgb, var(--np-tip) 10%, transparent);
-}
-.np-callout-tip .np-callout-title {
-  color: var(--np-tip);
-  background-color: color-mix(in srgb, var(--np-tip) 14%, transparent);
-  border-color: color-mix(in srgb, var(--np-tip) 40%, transparent);
-}
-.np-callout-tip .np-callout-title::before { content: '✦'; }
+.np-callout-tip { --np-callout-color: var(--np-tip); }
+.np-callout-tip > .np-callout-body > .np-callout-title::before,
+.np-callout-tip > .np-callout-title::before { content: '✦'; }
 
-.np-callout-note {
-  border-color: var(--np-note);
-  background-color: color-mix(in srgb, var(--np-note) 10%, transparent);
-}
-.np-callout-note .np-callout-title {
-  color: var(--np-note);
-  background-color: color-mix(in srgb, var(--np-note) 14%, transparent);
-  border-color: color-mix(in srgb, var(--np-note) 40%, transparent);
-}
-.np-callout-note .np-callout-title::before { content: 'ℹ'; }
+.np-callout-note { --np-callout-color: var(--np-note); }
+.np-callout-note > .np-callout-body > .np-callout-title::before,
+.np-callout-note > .np-callout-title::before { content: 'ℹ'; }
 
-.np-callout-warning {
-  border-color: var(--np-warning);
-  background-color: color-mix(in srgb, var(--np-warning) 10%, transparent);
-}
-.np-callout-warning .np-callout-title {
-  color: var(--np-warning);
-  background-color: color-mix(in srgb, var(--np-warning) 14%, transparent);
-  border-color: color-mix(in srgb, var(--np-warning) 40%, transparent);
-}
-.np-callout-warning .np-callout-title::before { content: '⚠'; }
+.np-callout-warning { --np-callout-color: var(--np-warning); }
+.np-callout-warning > .np-callout-body > .np-callout-title::before,
+.np-callout-warning > .np-callout-title::before { content: '⚠'; }
 
-.np-callout-info {
-  border-color: var(--np-info);
-  background-color: color-mix(in srgb, var(--np-info) 10%, transparent);
-}
-.np-callout-info .np-callout-title {
-  color: var(--np-info);
-  background-color: color-mix(in srgb, var(--np-info) 14%, transparent);
-  border-color: color-mix(in srgb, var(--np-info) 40%, transparent);
-}
-.np-callout-info .np-callout-title::before { content: 'ℹ'; }
+.np-callout-info { --np-callout-color: var(--np-info); }
+.np-callout-info > .np-callout-body > .np-callout-title::before,
+.np-callout-info > .np-callout-title::before { content: 'ℹ'; }
 
-.np-callout-check {
-  border-color: var(--np-check);
-  background-color: color-mix(in srgb, var(--np-check) 10%, transparent);
+.np-callout-check { --np-callout-color: var(--np-check); }
+.np-callout-check > .np-callout-body > .np-callout-title::before,
+.np-callout-check > .np-callout-title::before { content: '✓'; }
+
+.np-callout-abstract { --np-callout-color: var(--np-abstract); }
+.np-callout-abstract > .np-callout-body > .np-callout-title::before,
+.np-callout-abstract > .np-callout-title::before { content: '≡'; }
+
+.np-callout-success { --np-callout-color: var(--np-success); }
+.np-callout-success > .np-callout-body > .np-callout-title::before,
+.np-callout-success > .np-callout-title::before { content: '✔'; }
+
+.np-callout-question { --np-callout-color: var(--np-question); }
+.np-callout-question > .np-callout-body > .np-callout-title::before,
+.np-callout-question > .np-callout-title::before { content: '?'; }
+
+.np-callout-failure { --np-callout-color: var(--np-failure); }
+.np-callout-failure > .np-callout-body > .np-callout-title::before,
+.np-callout-failure > .np-callout-title::before { content: '✕'; }
+
+.np-callout-danger { --np-callout-color: var(--np-danger); }
+.np-callout-danger > .np-callout-body > .np-callout-title::before,
+.np-callout-danger > .np-callout-title::before { content: '⚡'; }
+
+.np-callout-bug { --np-callout-color: var(--np-bug); }
+.np-callout-bug > .np-callout-body > .np-callout-title::before,
+.np-callout-bug > .np-callout-title::before { content: '✱'; }
+
+.np-callout-example { --np-callout-color: var(--np-example); }
+.np-callout-example > .np-callout-body > .np-callout-title::before,
+.np-callout-example > .np-callout-title::before { content: '❯'; }
+
+.np-callout-quote { --np-callout-color: var(--np-quote); }
+.np-callout-quote > .np-callout-body > .np-callout-title::before,
+.np-callout-quote > .np-callout-title::before { content: '❝'; }
+
+.np-callout-collapsible {
+  display: block;
+  padding: 0;
 }
-.np-callout-check .np-callout-title {
-  color: var(--np-check);
-  background-color: color-mix(in srgb, var(--np-check) 14%, transparent);
-  border-color: color-mix(in srgb, var(--np-check) 40%, transparent);
+.np-callout-collapsible > .np-callout-title {
+  display: flex;
+  width: auto;
+  margin: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
-.np-callout-check .np-callout-title::before { content: '✓'; }
+.np-callout-collapsible > .np-callout-title::-webkit-details-marker { display: none; }
+.np-callout-collapsible > .np-callout-title::after {
+  content: '›';
+  margin-left: auto;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+.np-callout-collapsible[open] > .np-callout-title::after { transform: rotate(90deg); }
+.np-callout-collapsible > .np-callout-body {
+  padding: 0 16px 12px;
+}
+
+.np-callout-inline {
+  width: 40%;
+  margin-top: 0;
+}
+.np-callout-inline-start {
+  float: left;
+  margin-right: 16px;
+}
+.np-callout-inline-end {
+  float: right;
+  margin-left: 16px;
+}
+.np-prose h2, .np-prose h3 { clear: both; }
+
+@media (max-width: 800px) {
+  .np-callout-inline {
+    float: none;
+    width: auto;
+    margin: 16px 0;
+  }
+}
 
 .np-details {
   padding: 0;

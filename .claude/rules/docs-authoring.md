@@ -64,6 +64,24 @@ Rules for writing markdown pages, both inside this repo's `docs/` and inside con
 
 5. `:::check` for verification steps.
 
+6. `:::abstract` for a summary of the section that follows.
+
+7. `:::success` for the outcome the reader sees when a step worked.
+
+8. `:::question` for a question the reader is likely to ask, answered in the body.
+
+9. `:::failure` for the outcome the reader sees when a step did not work.
+
+10. `:::danger` for actions that lose data or cannot be undone.
+
+11. `:::bug` for a known defect and its workaround.
+
+12. `:::example` for a worked example set apart from the prose.
+
+13. `:::quote` for a quotation with its source.
+
+Text after the type name is the title, `""` removes the title row, and a JSON payload on the opening line takes `collapsible`, `open`, and `inline`. See [Markdown](https://nimling.github.io/nimpress/extensions/markdown).
+
 Use sparingly. Three callouts on a page is already a lot.
 
 ## Definition lists

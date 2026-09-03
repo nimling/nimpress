@@ -397,8 +397,10 @@ function storyAnchor(name: string): string {
     .replace(/^-|-$/g, '')
 }
 
+type ContainerToken = { type: string; nesting: number; info: string }
+
 type ContainerOpts = {
-  render: (tokens: { nesting: number; info: string }[], idx: number) => string
+  render: (tokens: ContainerToken[], idx: number) => string
   validate?: (params: string) => boolean
 }
 
@@ -461,15 +463,47 @@ function buildMarkdownIt(
     ;(md.use as (...args: unknown[]) => MarkdownIt)(container, name, opts)
   }
 
-  const calloutTypes = ['tip', 'note', 'warning', 'info', 'check']
+  const calloutTypes = [
+    'tip', 'note', 'warning', 'info', 'check',
+    'abstract', 'success', 'question', 'failure', 'danger', 'bug', 'example', 'quote'
+  ]
+  const sentenceCase = (word: string) => word[0].toUpperCase() + word.slice(1)
+  const calloutOptions = (info: string, type: string) => {
+    const rest = info.trim().slice(type.length).trim()
+    const payloadAt = rest.indexOf('{')
+    const options = payloadAt >= 0 ? safeParseJson(rest.slice(payloadAt), info) : {}
+    const rawTitle = (payloadAt >= 0 ? rest.slice(0, payloadAt) : rest).trim()
+    return {
+      title: rawTitle === '""' ? '' : rawTitle || sentenceCase(type),
+      collapsible: options.collapsible === true,
+      open: options.open === true,
+      inline: options.inline === 'start' || options.inline === 'end' ? options.inline : ''
+    }
+  }
+  const openingToken = (tokens: ContainerToken[], idx: number, type: string) => {
+    let depth = 0
+    for (let i = idx - 1; i >= 0; i--) {
+      if (tokens[i].type === `container_${type}_close`) depth++
+      else if (tokens[i].type === `container_${type}_open`) {
+        if (depth === 0) return tokens[i]
+        depth--
+      }
+    }
+    return tokens[idx]
+  }
   for (const type of calloutTypes) {
     useContainer(type, {
       render(tokens, idx) {
-        if (tokens[idx].nesting === 1) {
-          const title = tokens[idx].info.trim().slice(type.length).trim() || type
-          return `<div class="np-callout np-callout-${type}"><div class="np-callout-body"><div class="np-callout-title">${md.utils.escapeHtml(title)}</div>`
+        if (tokens[idx].nesting !== 1) {
+          return calloutOptions(openingToken(tokens, idx, type).info, type).collapsible ? '</div></details>' : '</div></div>'
         }
-        return '</div></div>'
+        const { title, collapsible, open, inline } = calloutOptions(tokens[idx].info, type)
+        const classes = `np-callout np-callout-${type}${collapsible ? ' np-callout-collapsible' : ''}${inline ? ` np-callout-inline np-callout-inline-${inline}` : ''}`
+        if (collapsible) {
+          return `<details class="${classes}"${open ? ' open' : ''}><summary class="np-callout-title">${md.utils.escapeHtml(title || sentenceCase(type))}</summary><div class="np-callout-body">`
+        }
+        const titleRow = title ? `<div class="np-callout-title">${md.utils.escapeHtml(title)}</div>` : ''
+        return `<div class="${classes}"><div class="np-callout-body">${titleRow}`
       }
     })
   }

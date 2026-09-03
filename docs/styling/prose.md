@@ -6,7 +6,7 @@ description: The content column and every element the markdown pipeline produces
 
 The content column and every element the markdown pipeline produces, including code blocks, callouts, cards, action rows, and feature grids.
 
-53 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+73 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -108,3 +108,30 @@ The content column and every element the markdown pipeline produces, including c
 | `np-code-group-body` |
 | `np-code-group-copy` |
 | `np-code-group-tabs` |
+
+## Callout
+
+`src/markdown/Callout.svelte`
+
+| Class |
+|---|
+| `np-callout` |
+| `np-callout-body` |
+| `np-callout-title` |
+| `np-callout-tip` |
+| `np-callout-note` |
+| `np-callout-warning` |
+| `np-callout-info` |
+| `np-callout-check` |
+| `np-callout-abstract` |
+| `np-callout-success` |
+| `np-callout-question` |
+| `np-callout-failure` |
+| `np-callout-danger` |
+| `np-callout-bug` |
+| `np-callout-example` |
+| `np-callout-quote` |
+| `np-callout-collapsible` |
+| `np-callout-inline` |
+| `np-callout-inline-start` |
+| `np-callout-inline-end` |

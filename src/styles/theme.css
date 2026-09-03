@@ -38,15 +38,16 @@
  *     .np-prose details / summary
  *     .header-anchor   The anchor link wrapping each heading text
  *
- *   Callouts (from :::tip / :::note / :::warning / :::info / :::check)
+ *   Callouts (from :::tip through :::quote, thirteen types)
  *     .np-callout
  *     .np-callout-body
  *     .np-callout-title
- *     .np-callout-tip
- *     .np-callout-note
- *     .np-callout-warning
- *     .np-callout-info
- *     .np-callout-check
+ *     .np-callout-<type>      tip, note, warning, info, check, abstract, success,
+ *                             question, failure, danger, bug, example, quote
+ *     .np-callout-collapsible
+ *     .np-callout-inline
+ *     .np-callout-inline-start
+ *     .np-callout-inline-end
  *
  *   Cards directive (from :::cards / :::card)
  *     .np-cards-grid
