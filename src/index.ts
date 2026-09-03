@@ -3,6 +3,7 @@ export { configStore } from './framework/configStore'
 export { viewer, refreshViewer } from './framework/stores/viewer'
 export { theme, toggleTheme, applyInitialTheme } from './framework/stores/theme'
 export { sidebarState, toggleGroup } from './framework/stores/sidebar'
+export { linkedTab, selectLinkedTab } from './framework/stores/tabs'
 export { setPageMeta, applyPageMeta } from './framework/pageMeta'
 export { applyPageStyles } from './framework/pageStyles'
 
@@ -25,6 +26,7 @@ export { default as CodeBlock } from './markdown/CodeBlock.svelte'
 export { default as MermaidBlock } from './markdown/MermaidBlock.svelte'
 export { default as DBMLBlock } from './markdown/DBMLBlock.svelte'
 export { default as Callout } from './markdown/Callout.svelte'
+export { default as Tabs } from './markdown/Tabs.svelte'
 export { default as Card } from './markdown/Card.svelte'
 export { default as CardGroup } from './markdown/CardGroup.svelte'
 export { default as SubscribeDialog } from './markdown/SubscribeDialog.svelte'
@@ -73,6 +75,7 @@ export type {
   NavRoute,
   NimpressConfig,
   NimpressBrandConfig,
+  NimpressTabsConfig,
   AuthConfig,
   AuthFunctions,
   RelyingParty,

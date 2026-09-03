@@ -1,12 +1,12 @@
 ---
 title: Prose and markdown
 order: 63
-description: The content column and every element the markdown pipeline produces, including code blocks, callouts, cards, action rows, and feature grids.
+description: The content column and every element the markdown pipeline produces, including code blocks, tabs, callouts, cards, action rows, and feature grids.
 ---
 
-The content column and every element the markdown pipeline produces, including code blocks, callouts, cards, action rows, and feature grids.
+The content column and every element the markdown pipeline produces, including code blocks, tabs, callouts, cards, action rows, and feature grids.
 
-73 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+81 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -51,6 +51,10 @@ The content column and every element the markdown pipeline produces, including c
 | `np-page-shell` |
 | `np-page-tail` |
 | `np-prose` |
+| `np-tabs` |
+| `np-tabs-body` |
+| `np-tabs-mount` |
+| `np-tabs-panel` |
 | `np-toc-rail` |
 
 ## CodeBlock
@@ -104,9 +108,20 @@ The content column and every element the markdown pipeline produces, including c
 
 | Class |
 |---|
+| `np-code-group-copy` |
+
+## Tabs
+
+`src/markdown/Tabs.svelte`
+
+| Class |
+|---|
+| `np-tabs-bar` |
+| `np-tabs-code` |
+| `np-tabs-list` |
+| `np-tabs-tab` |
 | `np-code-group-bar` |
 | `np-code-group-body` |
-| `np-code-group-copy` |
 | `np-code-group-tabs` |
 
 ## Callout

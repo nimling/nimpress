@@ -16,6 +16,7 @@ Every page under this section is a full flow with the real files rather than a f
 | [Publishing to a central site](/examples/publishing) | Two repos, two workflows, one GitHub App, docs flowing on a version tag |
 | [Gated pages](/examples/gating) | A page behind a session, the guarded bundle, and the upload flow |
 | [Callouts](/examples/callouts) | Every callout type, a custom and a removed title, a nested, a collapsible, and an inline callout |
+| [Content tabs](/examples/tabs) | A code group, a tab group of any content, a callout inside a tab, nested groups, linked groups, and an anchor link |
 
 ## How to read them
 

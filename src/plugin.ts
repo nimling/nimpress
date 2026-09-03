@@ -538,6 +538,56 @@ function buildMarkdownIt(
     }
   })
 
+  useContainer('tabs', {
+    render(tokens, idx) {
+      if (tokens[idx].nesting === 1) {
+        const json = tokens[idx].info.trim().slice('tabs'.length).trim()
+        const data = json ? safeParseJson(json, tokens[idx].info) : {}
+        return `<div class="np-tabs"${data.linked === true ? ' data-linked="true"' : ''}>`
+      }
+      return '</div>'
+    }
+  })
+
+  md.core.ruler.before('inline', 'nimpress_tabs', (state) => {
+    const tokens = state.tokens
+    const panelOpen: boolean[] = []
+    const htmlToken = (html: string) => {
+      const token = new state.Token('html_block', '', 0)
+      token.content = html
+      token.block = true
+      return token
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i]
+      if (token.type === 'container_tabs_open') {
+        panelOpen.push(false)
+        continue
+      }
+      if (token.type === 'container_tabs_close') {
+        if (panelOpen.pop()) tokens.splice(i++, 0, htmlToken('</div>'))
+        continue
+      }
+      if (panelOpen.length === 0 || token.type !== 'paragraph_open') continue
+      const inline = tokens[i + 1]
+      const marker = inline?.type === 'inline' ? inline.content.match(/^::tab[ \t]+(.+?)[ \t]*(?:\n([\s\S]*))?$/) : null
+      if (!marker) continue
+      const label = marker[1]
+      const closer = panelOpen[panelOpen.length - 1] ? '</div>' : ''
+      const opener = htmlToken(
+        `${closer}<div class="np-tabs-panel" data-label="${md.utils.escapeHtml(label)}" data-id="tab-${slugify(label)}">`
+      )
+      panelOpen[panelOpen.length - 1] = true
+      if (marker[2] === undefined) {
+        tokens.splice(i, 3, opener)
+      } else {
+        inline.content = marker[2]
+        tokens.splice(i, 0, opener)
+        i++
+      }
+    }
+  })
+
   useContainer('actions', {
     render(tokens, idx) {
       if (tokens[idx].nesting === 1) {

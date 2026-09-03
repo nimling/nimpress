@@ -463,6 +463,7 @@ export interface NimpressConfig {
   site?: SiteMeta
   footer?: string
   status?: Record<string, string>
+  tabs?: NimpressTabsConfig
   guardedBase?: string
   manifest?: Manifest
   searchIndex?: SearchEntry[]
@@ -503,6 +504,11 @@ export interface NimpressBannerConfig {
   version?: string
 }
 
+export interface NimpressTabsConfig {
+  /** Selects the same label in every tab group on the site when one is clicked, remembered across pages. */
+  linked?: boolean
+}
+
 export interface NimpressUserConfig {
   /** Site title shown in the header and the tab. @example "Nimtech Components" */
   title?: string
@@ -516,6 +522,8 @@ export interface NimpressUserConfig {
   footer?: string
   /** Page status identifiers mapped to the label the sidebar mark carries, new and deprecated are present without configuration. @example { "beta": "Beta" } */
   status?: Record<string, string>
+  /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. @example { "linked": true } */
+  tabs?: NimpressTabsConfig
   /** Extra header navigation routes. @example [{ "text": "API", "link": "/api" }] */
   navRoutes?: NavRoute[]
   /** OAuth 2.0 session login and the build time guard function for gated pages. */
@@ -561,6 +569,7 @@ export interface ResolvedNimpressConfig {
   brand?: NimpressBrandConfig
   footer?: string
   status: Record<string, string>
+  tabs: NimpressTabsConfig
   navRoutes?: NavRoute[]
   auth?: AuthConfig
   client?: string

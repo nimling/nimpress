@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, mount, unmount } from 'svelte'
+  import { onMount, tick, mount, unmount, createRawSnippet } from 'svelte'
   import type { PageModule, RoadmapEntry, RoadmapKind, RoadmapChangelogRef } from '../types'
   import { configStore } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
@@ -12,6 +12,7 @@
   import DBMLBlock from './DBMLBlock.svelte'
   import CodeBlock from './CodeBlock.svelte'
   import CodeGroup from './CodeGroup.svelte'
+  import Tabs from './Tabs.svelte'
 
   let { page }: { page: PageModule } = $props()
 
@@ -1604,6 +1605,34 @@
       })
       mounts.push({ destroy: () => unmount(instance) })
     }
+    const tabGroups = container.querySelectorAll<HTMLElement>('.np-tabs')
+    for (const group of Array.from(tabGroups)) {
+      if (group.parentElement?.classList.contains('np-tabs-mount')) continue
+      const panels = Array.from(group.children).filter((el) => el.classList.contains('np-tabs-panel'))
+      if (panels.length === 0) continue
+      const tabs = panels.map((panel) => ({
+        label: panel.getAttribute('data-label') ?? '',
+        id: panel.getAttribute('data-id') ?? ''
+      }))
+      const host = document.createElement('div')
+      host.className = 'np-tabs-mount'
+      group.replaceWith(host)
+      const instance = mount(Tabs, {
+        target: host,
+        props: {
+          tabs,
+          linked: group.getAttribute('data-linked') === 'true',
+          panel: createRawSnippet((_tab: () => unknown, index: () => number) => ({
+            render: () => '<div class="np-tabs-body"></div>',
+            setup: (body) => {
+              body.replaceChildren(...Array.from(panels[index()].childNodes))
+            }
+          }))
+        }
+      })
+      mounts.push({ destroy: () => unmount(instance) })
+    }
+
     const groups = container.querySelectorAll<HTMLElement>('.np-code-group')
     for (const group of Array.from(groups)) {
       if (group.parentElement?.classList.contains('np-code-mount')) continue

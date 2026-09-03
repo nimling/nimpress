@@ -48,6 +48,9 @@ export default defineConfig({
   /** Page status identifiers mapped to the label the sidebar mark carries. new and deprecated are present without configuration. */
   // status: { beta: 'Beta' },
 
+  /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. */
+  // tabs: { linked: true },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 
