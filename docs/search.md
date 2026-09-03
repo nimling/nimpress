@@ -1,5 +1,8 @@
 ---
 title: Search
+sidebar:
+  name: Setup
+  path: setup
 tags: Setup, Search
 order: 9
 ---

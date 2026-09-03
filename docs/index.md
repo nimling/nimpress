@@ -32,35 +32,35 @@ Every route, sidebar entry, and page shell comes from a markdown file and its ty
 Doc, hero, changelog, roadmap, the four roadmap issue kinds, database diagrams, an OpenAPI reference, and a live component workshop, each selected by one frontmatter field.
 :::
 
-:::feature {"title":"Markdown pipeline","link":"/markdown"}
+:::feature {"title":"Markdown pipeline","link":"/authoring/markdown"}
 Callouts, code groups, action rows, feature grids, footnotes, task lists, attributes, and anchors, with shiki highlighting and copy buttons on every fence.
 :::
 
-:::feature {"title":"Definition lists","link":"/definition-lists"}
+:::feature {"title":"Definition lists","link":"/authoring/definition-lists"}
 A compact reference grid of terms and one line descriptions, written as plain markdown rather than a table.
 :::
 
-:::feature {"title":"Mermaid diagrams","link":"/mermaid"}
+:::feature {"title":"Mermaid diagrams","link":"/authoring/mermaid"}
 Flowcharts, state diagrams, sequence diagrams, and entity relationships render from a fenced block, loaded only on the pages that use one.
 :::
 
-:::feature {"title":"Database diagrams","link":"/dbml"}
+:::feature {"title":"Database diagrams","link":"/authoring/dbml"}
 A schema written in DBML renders as an interactive canvas of table cards and relationship lines, inline in a page or as a page of its own, with every column clickable.
 :::
 
-:::feature {"title":"OpenAPI reference","link":"/openapi"}
+:::feature {"title":"OpenAPI reference","link":"/authoring/openapi"}
 A JSON or YAML specification becomes a reference page with per operation deep links, a try panel, code examples, and a header control handing the reader the specification in either format.
 :::
 
-:::feature {"title":"Changelog collections","link":"/changelog-renderer"}
+:::feature {"title":"Changelog collections","link":"/page-types/changelog"}
 One markdown file per release collapses into a single page, newest first, so reviewing a release is a single file change.
 :::
 
-:::feature {"title":"Roadmaps","link":"/page-types"}
+:::feature {"title":"Roadmaps","link":"/page-types/roadmap"}
 A timeline of milestones, epics, features, and bugs, each its own page, with shipped releases plotting markers on the spine and driving the progress.
 :::
 
-:::feature {"title":"Hero pages","link":"/hero"}
+:::feature {"title":"Hero pages","link":"/page-types/hero"}
 An oversized landing band with an eyebrow, a logo, a banner, action buttons, and a feature grid. This page is one.
 :::
 

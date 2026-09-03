@@ -5,7 +5,7 @@ order: 16
 description: One DBML file rendered as a full page database diagram with a hero band above it.
 ---
 
-`type: dbml` turns one `.dbml` file into a page whose whole purpose is the schema. For a diagram inside a page that is mostly prose, use the inline fence in [DBML](/extensions/dbml) instead.
+`type: dbml` turns one `.dbml` file into a page whose whole purpose is the schema. For a diagram inside a page that is mostly prose, use the inline fence in [DBML](/authoring/dbml) instead.
 
 ## Frontmatter
 
@@ -60,7 +60,7 @@ The fullscreen button opens the diagram fullscreen, the same as the control insi
 
 ## The diagram
 
-The diagram itself, what the converter maps from DBML, how the tables are laid out, how a column click navigates, and how to author the source are all in [DBML](/extensions/dbml). A `type: dbml` page and a ` ```dbml ` fence render through the same component and behave identically, except that the page arms the frame on mount because there the diagram is the page.
+The diagram itself, what the converter maps from DBML, how the tables are laid out, how a column click navigates, and how to author the source are all in [DBML](/authoring/dbml). A `type: dbml` page and a ` ```dbml ` fence render through the same component and behave identically, except that the page arms the frame on mount because there the diagram is the page.
 
 ## See it
 

@@ -1,5 +1,8 @@
 ---
 title: Frontmatter
+sidebar:
+  name: Authoring
+  path: authoring
 tags: Authoring, Frontmatter
 order: 4
 ---
@@ -134,7 +137,7 @@ Arbitrary object handed to the renderer the page selected.
 
 1. `type: changelog` reads `data.version` for sort order, `data.release_date` for the date, `data.title` for the per release headline, and `data.description` for the per release summary. The top level `title` is the shared collection title and the grouping key.
 
-2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [Markdown](/extensions/markdown), not in `data`.
+2. `type: hero` reads `data.eyebrow`, `data.logo`, `data.banner`, `data.tagline`, `data.lead`, `data.image`, `data.align`. Action buttons and feature grids live in the markdown body via the directives in [Markdown](/authoring/markdown), not in `data`.
 
 2.1. `type: fullpage` reads `data.eyebrow`, `data.logo`, `data.background`, `data.tagline`, `data.lead`, `data.align`, and `data.width`. The type hides `navigation`, `path`, `toc`, and `footer` by itself. See [Full pages](/page-types/fullpage).
 

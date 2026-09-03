@@ -1,5 +1,8 @@
 ---
 title: Theming
+sidebar:
+  name: Setup
+  path: setup
 tags: Setup, Styling
 order: 6
 ---

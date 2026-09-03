@@ -72,10 +72,10 @@ erDiagram
   }
 ```
 
-For a real database rather than a sketch, reach for [DBML](/extensions/dbml) instead. It reads the schema you already maintain and renders columns, keys, and relationships you can click through. The [schema viewer example](/examples/schema-viewer) shows the difference.
+For a real database rather than a sketch, reach for [DBML](/authoring/dbml) instead. It reads the schema you already maintain and renders columns, keys, and relationships you can click through. The [schema viewer example](/examples/schema-viewer) shows the difference.
 
 ## Theming
 
 Diagrams inherit the site theme from `tokens.css` and repaint when the reader switches between light and dark. There is no per diagram color to set.
 
-The supported diagram list and the loading behavior are in [Mermaid](/extensions/mermaid).
+The supported diagram list and the loading behavior are in [Mermaid](/authoring/mermaid).

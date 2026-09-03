@@ -1,5 +1,8 @@
 ---
 title: CLI reference
+sidebar:
+  name: Usage
+  path: usage
 description: Every nimpress command, its arguments, flags, and exit behavior.
 tags: cli, lint, modules, build, guard, export
 order: 8

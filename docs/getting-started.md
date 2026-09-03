@@ -1,5 +1,8 @@
 ---
 title: Getting started
+sidebar:
+  name: Get started
+  path: get-started
 tags: Setup, Install
 description: Install nimpress, write a config, run the CLI, and deploy the built site.
 order: 2

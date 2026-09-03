@@ -25,7 +25,7 @@ The body spans the viewport, and `data.width` set to `content` narrows it back t
 The type hides the sidebar, the breadcrumbs, the rail, and the previous and next links by itself.
 :::
 
-:::feature {"icon":"🎯","title":"Same blocks","link":"/extensions/markdown"}
+:::feature {"icon":"🎯","title":"Same blocks","link":"/authoring/markdown"}
 Action rows, feature grids, and cards are the section blocks, the same directives every page uses.
 :::
 ::::

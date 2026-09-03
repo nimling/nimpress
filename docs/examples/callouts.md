@@ -5,7 +5,7 @@ order: 38
 description: Every callout type rendered, with a custom title, a removed title, a nested callout, a collapsible callout, and an inline callout.
 ---
 
-Every callout type on one page, followed by each form a callout takes. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/extensions/markdown).
+Every callout type on one page, followed by each form a callout takes. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/authoring/markdown).
 
 ## Every type
 

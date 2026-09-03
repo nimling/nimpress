@@ -5,7 +5,7 @@ order: 39
 description: A code group, a tab group of any content, a callout inside a tab, nested groups, two linked groups, and an anchor link that opens a tab.
 ---
 
-Every form a tab group takes on one page. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/extensions/markdown).
+Every form a tab group takes on one page. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/authoring/markdown).
 
 ## Code blocks
 

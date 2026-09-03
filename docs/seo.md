@@ -1,5 +1,8 @@
 ---
 title: SEO and social cards
+sidebar:
+  name: Setup
+  path: setup
 tags: Setup, SEO
 order: 10
 ---

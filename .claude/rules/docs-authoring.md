@@ -80,7 +80,7 @@ Rules for writing markdown pages, both inside this repo's `docs/` and inside con
 
 13. `:::quote` for a quotation with its source.
 
-Text after the type name is the title, `""` removes the title row, and a JSON payload on the opening line takes `collapsible`, `open`, and `inline`. See [Markdown](https://nimling.github.io/nimpress/extensions/markdown).
+Text after the type name is the title, `""` removes the title row, and a JSON payload on the opening line takes `collapsible`, `open`, and `inline`. See [Markdown](https://nimling.github.io/nimpress/authoring/markdown).
 
 Use sparingly. Three callouts on a page is already a lot.
 
@@ -106,3 +106,21 @@ See [Definition lists](https://nimling.github.io/nimpress/definition-lists).
 4. Changelog entry: one markdown file per release, `type: changelog`, `data.version` set. See [Changelog renderer](https://nimling.github.io/nimpress/changelog-renderer).
 
 5. Landing page: `type: hero` with a tagline and feature grid. See [Hero](https://nimling.github.io/nimpress/hero).
+
+## Page skeleton
+
+Every feature page in `docs/` follows one shape, the shape the setup and authoring pages of zensical.org use.
+
+1. A definition paragraph opens the page: what the thing is, why it matters in documentation, and what nimpress provides. A definition sentence quoted from a reference keeps its adjectives and dashes; the voice rules above do not rewrite a quotation.
+
+2. `## Configuration` follows when a switch exists, with one H3 per option. A configuration paragraph ends with "Add the following lines to your configuration:" and a fenced json block of the config field.
+
+3. `## Usage` follows with one H3 per verb, `### Add a button`, `### Hide the sidebars`, `### Use card grids`. A usage paragraph that depends on a switch opens with "When X is enabled".
+
+4. `## Customization` follows when an override exists, with one H3 per override. Pages that render chrome end with `## Restyling` pointing at the styling reference.
+
+5. Names stay nimpress names when the sentences are borrowed: callouts, actions, cards, features, frontmatter. Nothing is called an admonition.
+
+## The tree
+
+`docs/` has one folder per top level section: `get-started`, `usage`, `setup`, `authoring`, `page-types`, `examples`, `styling`, `community`, plus `changelog`, `tags`, `glossary`, and `404` at the root. A page that lives at the root keeps its url and joins its section with a `sidebar` block whose `path` names the section folder.

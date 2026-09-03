@@ -2,7 +2,8 @@
 title: Component modules
 order: 40
 sidebar:
-  name: Components
+  name: Setup
+  path: setup
 ---
 
 The component workshop: present a component library inside a nimpress site with live rendering, controls, stories, and docs per component. One system per library, vue and svelte both first class, each system rendered through an isolated iframe harness so the docs app and the components never share a runtime.

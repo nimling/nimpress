@@ -1,5 +1,8 @@
 ---
 title: Sidebar
+sidebar:
+  name: Setup
+  path: setup
 tags: Setup, Navigation
 order: 5
 ---

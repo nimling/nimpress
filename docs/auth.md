@@ -3,7 +3,8 @@ title: Auth
 tags: Setup, Access
 order: 51
 sidebar:
-  name: Pipeline
+  name: Setup
+  path: setup
 ---
 
 Page level gating against any OIDC provider. Sessions arrive via cookies. There is no client secret in the browser.

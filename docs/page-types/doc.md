@@ -31,7 +31,7 @@ order: 3
 
 ## Body conventions
 
-Start the body at H2. The H1 is already rendered from `title`. Fence every code block with its language, and reach for [callouts](/extensions/markdown), [definition lists](/extensions/definition-lists), and [diagrams](/extensions/mermaid) rather than long prose when the shape fits.
+Start the body at H2. The H1 is already rendered from `title`. Fence every code block with its language, and reach for [callouts](/authoring/markdown), [definition lists](/authoring/definition-lists), and [diagrams](/authoring/mermaid) rather than long prose when the shape fits.
 
 ## Hiding a page
 

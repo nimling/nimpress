@@ -5,7 +5,7 @@ order: 40
 description: A titled fence, line numbers from a start, highlighted lines, annotations that open a tip, and a stripped comment, each rendered with its source under it.
 ---
 
-Every code block option on one page. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/extensions/markdown).
+Every code block option on one page. The source of each block sits under it, so copy the fence that matches what you see. The reference is [Markdown](/authoring/markdown).
 
 ## A title
 

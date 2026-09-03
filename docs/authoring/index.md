@@ -1,19 +1,19 @@
 ---
-title: Extensions
+title: Authoring
 type: section
-order: 20
-description: The renderers nimpress layers on top of markdown, each driven by a fenced block or a frontmatter field.
+order: 5
+description: Everything you write inside a markdown page, from the frontmatter to the renderers a fenced block or a directive drives.
 ---
 
 Markdown carries the prose. These renderers carry everything that reads better as a picture, a table, or a live surface. Each one is opt in, each one loads only on the pages that use it, and each one has a worked example.
 
 | Extension | Written as | Example |
 |---|---|---|
-| [Markdown and code](/extensions/markdown) | Fenced blocks, callouts, code groups | [Hero page](/examples/hero) |
-| [Definition lists](/extensions/definition-lists) | `term` then `: description` | [Markdown](/extensions/markdown) |
-| [Mermaid](/extensions/mermaid) | A ` ```mermaid ` fence | [Mermaid diagrams](/examples/mermaid) |
-| [DBML](/extensions/dbml) | A ` ```dbml ` fence or `type: dbml` | [Schema viewer](/examples/schema-viewer) |
-| [OpenAPI](/extensions/openapi) | `type: openapi` and a `spec` field | [OpenAPI reference](/examples/openapi) |
+| [Markdown and code](/authoring/markdown) | Fenced blocks, callouts, code groups | [Hero page](/examples/hero) |
+| [Definition lists](/authoring/definition-lists) | `term` then `: description` | [Markdown](/authoring/markdown) |
+| [Mermaid](/authoring/mermaid) | A ` ```mermaid ` fence | [Mermaid diagrams](/examples/mermaid) |
+| [DBML](/authoring/dbml) | A ` ```dbml ` fence or `type: dbml` | [Schema viewer](/examples/schema-viewer) |
+| [OpenAPI](/authoring/openapi) | `type: openapi` and a `spec` field | [OpenAPI reference](/examples/openapi) |
 
 ## Loading
 

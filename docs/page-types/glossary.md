@@ -26,7 +26,7 @@ Token
 ---
 ```
 
-1. The body is one definition list, `term` then `: description`, the shape [Definition lists](/extensions/definition-lists) documents. Lint refuses a body without one and refuses a second glossary page in a site.
+1. The body is one definition list, `term` then `: description`, the shape [Definition lists](/authoring/definition-lists) documents. Lint refuses a body without one and refuses a second glossary page in a site.
 
 2. Every term gets an anchor, `/glossary#term-frontmatter`, and the right rail lists the terms. With more than twenty terms a letter index renders above the list.
 

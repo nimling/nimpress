@@ -45,7 +45,7 @@ data:
 
 ## Body
 
-The markdown body renders below the band, edge to edge. `:::actions`, `::::features`, and `:::cards` from [Markdown](/extensions/markdown) are the section blocks, and headings with prose read as sections between them.
+The markdown body renders below the band, edge to edge. `:::actions`, `::::features`, and `:::cards` from [Markdown](/authoring/markdown) are the section blocks, and headings with prose read as sections between them.
 
 ````md
 :::actions {"align":"center"}

@@ -1,5 +1,8 @@
 ---
 title: Build pipeline
+sidebar:
+  name: Setup
+  path: setup
 order: 7
 ---
 

@@ -21,7 +21,7 @@ data:
 Each card is one `:::feature` block. The title and the link come from the JSON on the fence, the body is markdown.
 :::
 
-:::feature {"title":"Cards wrap","link":"/extensions/markdown"}
+:::feature {"title":"Cards wrap","link":"/authoring/markdown"}
 The grid is responsive. Add as many cards as the page needs and they reflow.
 :::
 
