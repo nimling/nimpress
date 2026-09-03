@@ -21,6 +21,8 @@ Every page under this section is a full flow with the real files rather than a f
 | [Formatting and images](/examples/formatting) | Highlights, inserts, sub and superscripts, keyboard keys, floated and captioned images, theme variants, and a lightbox |
 | [Icons and math](/examples/icons-math) | Lucide icons and emoji by shortcode, a custom icon, and formulas rendered by katex |
 | [Full page](/examples/fullpage) | A landing page with a band, an action row, and a feature grid, and none of the shell chrome |
+| [Team](/examples/team) | A person grid with a photo or a monogram, a name, a role, a bio, and links |
+| [Pricing](/examples/pricing) | Three tiers with a price, a benefit list, and one action each, one highlighted |
 
 ## How to read them
 

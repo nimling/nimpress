@@ -6,7 +6,7 @@ description: Hero bands, changelog entries, roadmap timelines, database pages, a
 
 Hero bands, changelog entries, roadmap timelines, database pages, and the component workshop, all the chrome a page type adds around the prose.
 
-229 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+255 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -105,6 +105,46 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-glossary-letter` |
 | `np-glossary-letter-empty` |
 | `np-glossary-term` |
+
+## TeamPage
+
+`src/markdown/TeamPage.svelte`
+
+| Class |
+|---|
+| `np-team-align-center` |
+| `np-team-align-start` |
+| `np-team-bio` |
+| `np-team-grid` |
+| `np-team-image` |
+| `np-team-link` |
+| `np-team-links` |
+| `np-team-member` |
+| `np-team-monogram` |
+| `np-team-name` |
+| `np-team-role` |
+
+## PricingPage
+
+`src/markdown/PricingPage.svelte`
+
+| Class |
+|---|
+| `np-pricing-action` |
+| `np-pricing-action-ghost` |
+| `np-pricing-action-primary` |
+| `np-pricing-action-secondary` |
+| `np-pricing-benefit` |
+| `np-pricing-benefits` |
+| `np-pricing-check` |
+| `np-pricing-description` |
+| `np-pricing-footnote` |
+| `np-pricing-grid` |
+| `np-pricing-name` |
+| `np-pricing-period` |
+| `np-pricing-price` |
+| `np-pricing-tier` |
+| `np-pricing-tier-highlight` |
 
 ## ChangelogPage
 

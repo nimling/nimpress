@@ -8,6 +8,8 @@ export type PageType =
   | 'section'
   | 'tags'
   | 'glossary'
+  | 'team'
+  | 'pricing'
   | 'roadmap'
   | 'dbml'
   | 'milestone'

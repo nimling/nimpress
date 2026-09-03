@@ -47,6 +47,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | A folder index that lists its children as a card grid | `section` |
 | The listing of every tag with its pages | `tags` |
 | The definition list of the site terms that feeds tooltips everywhere | `glossary` |
+| A grid of people from frontmatter data | `team` |
+| A row of plans with prices from frontmatter data | `pricing` |
 | A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
 | An interactive entity relationship diagram of a database | `dbml` |
 | A live workshop page for one component in a library | `component` |
@@ -68,6 +70,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 3.4. `type: tags` needs `title` alone and lists every tag with its pages under the body. One per site. Every page shows its `tags` at the bottom, hidden with `hide: [tags]`, and the `tags` config block maps tags to identifiers and identifiers to icons. See [Tags page](https://nimling.github.io/nimpress/page-types/tags).
 
 3.5. `type: glossary` needs `title` and a definition list body. Every term gets an anchor, the rail lists the terms, and the first occurrence of a term in each paragraph of every other page renders as an abbreviation with a tooltip. One per site. See [Glossary page](https://nimling.github.io/nimpress/page-types/glossary).
+
+3.6. `type: team` requires `data.members`, each with `name` and optional `role`, `image`, `bio`, and `links`; `data.columns` and `data.align` shape the grid. `type: pricing` requires `data.tiers`, each with `name` and optional `price`, `period`, `description`, `benefits`, `action`, and `highlight`; `data.columns` and `data.footnote` shape the row. See [Team pages](https://nimling.github.io/nimpress/page-types/team) and [Pricing pages](https://nimling.github.io/nimpress/page-types/pricing).
 
 4. `type: roadmap` reads `title`, optional `description`, optional `background`, and optional `data.changelog`, `data.issues` to scope which sibling folders feed the timeline. The markdown body renders as the page header above the timeline. Sibling files of `type: milestone | epic | feature | bug` become the timeline items.
 

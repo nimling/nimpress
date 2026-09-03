@@ -68,6 +68,14 @@ Use for exactly one page per site: the listing of every tag with its pages. Tags
 
 Use for exactly one page per site: the definition list of the terms every page should explain. Each term becomes an abbreviation with a tooltip wherever it occurs in the prose of other pages. Page local abbreviations use `*[TERM]: description` lines instead. See [Glossary page](https://nimling.github.io/nimpress/page-types/glossary).
 
+## `team`
+
+Use for a page whose content is people: a grid of members from `data.members` with a name, a role, a bio, and links. Prose stays in the body above the grid. See [Team pages](https://nimling.github.io/nimpress/page-types/team).
+
+## `pricing`
+
+Use for a page whose content is plans: a row of tiers from `data.tiers` with a price, a benefit list, and one action, `highlight` on the recommended one. Prose stays in the body and the small print in `data.footnote`. See [Pricing pages](https://nimling.github.io/nimpress/page-types/pricing).
+
 ## `roadmap`
 
 Use when:
@@ -128,6 +136,10 @@ Is the page rendered from an OpenAPI spec?
    │  └─ Yes  → type: dbml
    ├─ Is it a live component workshop page?
    │  └─ Yes  → type: component
+   ├─ Is it a grid of people?
+   │  └─ Yes  → type: team
+   ├─ Is it a row of plans with prices?
+   │  └─ Yes  → type: pricing
    ├─ Is it the definition list of the site's terms?
    │  └─ Yes  → type: glossary
    ├─ Is it the listing of every tag with its pages?

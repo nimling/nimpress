@@ -155,6 +155,8 @@ const frontmatterSchema = z.object({
     z.literal('section'),
     z.literal('tags'),
     z.literal('glossary'),
+    z.literal('team'),
+    z.literal('pricing'),
     z.literal('roadmap'),
     z.literal('dbml'),
     z.literal('milestone'),
@@ -243,6 +245,20 @@ function frontmatterIssues(data: unknown, body = 'x'): string[] {
     if (d.date === undefined || Number.isNaN(new Date(String(d.date)).getTime())) {
       issues.push(`type ${fm.type} requires a valid data.date`)
     }
+  }
+  if (fm.type === 'team') {
+    const members = Array.isArray(d.members) ? (d.members as Array<Record<string, unknown>>) : []
+    if (members.length === 0) issues.push('type team requires data.members with at least one member')
+    members.forEach((member, index) => {
+      if (typeof member?.name !== 'string' || !member.name.trim()) issues.push(`type team member ${index + 1} needs a name`)
+    })
+  }
+  if (fm.type === 'pricing') {
+    const tiers = Array.isArray(d.tiers) ? (d.tiers as Array<Record<string, unknown>>) : []
+    if (tiers.length === 0) issues.push('type pricing requires data.tiers with at least one tier')
+    tiers.forEach((tier, index) => {
+      if (typeof tier?.name !== 'string' || !tier.name.trim()) issues.push(`type pricing tier ${index + 1} needs a name`)
+    })
   }
   if (fm.type === 'component') {
     if (d.system === undefined || String(d.system).trim() === '') issues.push('type component requires data.system')
@@ -1748,6 +1764,17 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const prepared = rewriteDiagramFences(content, file)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared, { glossaryPage: type === 'glossary' })
+    if (type === 'team' || type === 'pricing') {
+      const data = { ...((fm.data ?? {}) as Record<string, unknown>) }
+      if (Array.isArray(data.members)) {
+        data.members = (data.members as Array<Record<string, unknown>>).map((member) => ({ ...member, bioHtml: typeof member.bio === 'string' ? md.renderInline(member.bio) : '' }))
+      }
+      if (Array.isArray(data.tiers)) {
+        data.tiers = (data.tiers as Array<Record<string, unknown>>).map((tier) => ({ ...tier, benefitsHtml: Array.isArray(tier.benefits) ? (tier.benefits as unknown[]).map((benefit) => md.renderInline(String(benefit))) : [] }))
+      }
+      if (typeof data.footnote === 'string') data.footnoteHtml = md.renderInline(data.footnote)
+      fm.data = data
+    }
 
     let openApiSpec: unknown | undefined
     let openApiFile: string | undefined
@@ -2291,6 +2318,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     if (type === 'hero' || type === 'fullpage' || type === '404') return 'WebPage'
     if (type === 'section' || type === 'tags') return 'CollectionPage'
     if (type === 'glossary') return 'DefinedTermSet'
+    if (type === 'team') return 'AboutPage'
     return 'TechArticle'
   }
 
@@ -3273,12 +3301,22 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return `export const bodies = {\n${entries.join(',\n')}\n}\nexport default bodies\n`
   }
 
+  function bodyHeadings(p: ProcessedPage): Heading[] {
+    if (p.type === 'tags') return [...p.headings, ...buildTagIndex().map((tag) => ({ level: 2, text: tag.name, slug: tag.slug }))]
+    if (p.type === 'glossary') return [...p.headings, ...glossaryTerms.map((entry) => ({ level: 2, text: entry.term, slug: entry.slug }))]
+    if (p.type === 'team') {
+      const members = ((p.frontmatter.data as Record<string, unknown> | undefined)?.members ?? []) as Array<{ name?: string }>
+      return [...p.headings, ...members.filter((member) => member.name).map((member) => ({ level: 2, text: String(member.name), slug: `member-${slugify(String(member.name))}` }))]
+    }
+    return p.headings
+  }
+
   function buildPageBody(slug: string): string | null {
     const p = pages.get(slug)
     if (!p) return null
     const payload = {
       html: p.html,
-      headings: p.type === 'tags' ? [...p.headings, ...buildTagIndex().map((tag) => ({ level: 2, text: tag.name, slug: tag.slug }))] : p.type === 'glossary' ? [...p.headings, ...glossaryTerms.map((entry) => ({ level: 2, text: entry.term, slug: entry.slug }))] : p.headings,
+      headings: bodyHeadings(p),
       openApiSpec: p.openApiSpec,
       openApiFile: p.openApiFile,
       openApiUrl: p.openApiUrl,
@@ -3305,7 +3343,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
     return `<script lang="ts">
-  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, GlossaryPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
+  import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, GlossaryPage, TeamPage, PricingPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
   const shell = ${json}
   setPageMeta(shell)
@@ -3338,6 +3376,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
+    {:else if shell.type === 'team'}
+      <TeamPage page={{ ...shell, ...mod.default }} />
+    {:else if shell.type === 'pricing'}
+      <PricingPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'glossary'}
       <GlossaryPage page={{ ...shell, ...mod.default }} />
     {:else if shell.type === 'tags'}

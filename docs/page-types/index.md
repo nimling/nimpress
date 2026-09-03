@@ -4,7 +4,7 @@ type: section
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Sixteen types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Eighteen types exist. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -139,6 +139,41 @@ type: glossary
 ```
 
 See [Glossary page](/page-types/glossary) for the tooltip forms.
+
+## `team`
+
+A person grid from `data.members`: a photo or a monogram, the name as a heading, a role, a bio, and links. `data.columns` and `data.align` shape the grid.
+
+```yaml
+---
+title: Team
+type: team
+data:
+  members:
+    - name: Ada Lovelace
+      role: Founder
+---
+```
+
+See [Team pages](/page-types/team) for the member fields.
+
+## `pricing`
+
+A row of tiers from `data.tiers`: a name, a price line, a benefit list, and one action, with `highlight` marking the recommended tier and `data.footnote` as the small print.
+
+```yaml
+---
+title: Pricing
+type: pricing
+data:
+  tiers:
+    - name: Spark
+      price: "€49"
+      period: per month
+---
+```
+
+See [Pricing pages](/page-types/pricing) for the tier fields.
 
 ## `roadmap`
 

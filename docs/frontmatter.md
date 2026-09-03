@@ -146,6 +146,8 @@ Arbitrary object handed to the renderer the page selected.
 
 2.5. `type: glossary` needs `title` and a definition list body. Every term gets an anchor, the rail lists the terms, and the first occurrence of a term in each paragraph of every other page renders as an abbreviation with a tooltip. One per site. See [Glossary page](/page-types/glossary).
 
+2.6. `type: team` requires `data.members`, each with `name` and optional `role`, `image`, `bio`, and `links`; `data.columns` and `data.align` shape the grid. `type: pricing` requires `data.tiers`, each with `name` and optional `price`, `period`, `description`, `benefits`, `action`, and `highlight`; `data.columns` and `data.footnote` shape the row. See [Team pages](/page-types/team) and [Pricing pages](/page-types/pricing).
+
 3. `type: roadmap` reads `data.issues` and `data.changelog` to scope the timeline. The issue kinds read `data.date` and `data.parent`.
 
 4. `type: component` reads `data.system` and `data.component`, with optional `data.package`, `data.file`, `data.version`, and `data.schema` as an inline schema layer merged over the schema file. See [modules.md](/modules).
