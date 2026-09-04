@@ -171,6 +171,7 @@ const frontmatterSchema = z.object({
   rss: z.boolean().optional(),
   subscribe: z.boolean().optional(),
   feedback: z.boolean().optional(),
+  styles: z.array(z.string()).optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -867,6 +868,17 @@ function extractGlossary(md: MarkdownIt, body: string): GlossaryTerm[] {
     }
   }
   return out
+}
+
+export const CLASS_ROOTS = ['prose', 'page', 'callout', 'code', 'code-group', 'tabs', 'cards', 'card', 'features', 'feature', 'actions', 'action', 'hero', 'fullpage', 'section', 'tags', 'tag', 'footer', 'announce', 'feedback', 'header', 'sidebar', 'toc', 'crumbs', 'search', 'mermaid', 'dbml', 'op', 'changelog', 'roadmap', 'team', 'pricing', 'glossary', 'notfound', 'math', 'icon', 'figure', 'keys', 'lightbox', 'abbr', 'img', 'page-actions']
+
+export function scopeCss(root: string, css: string): string {
+  return `@scope (.np-${root}) {\n${css}\n}`
+}
+
+export function componentCssRoot(name: string, stem: string): string | null {
+  const match = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.([a-z0-9-]+)\\.css$`).exec(name)
+  return match ? match[1] : null
 }
 
 function buildMarkdownIt(
@@ -1869,9 +1881,21 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const cssFile = file.replace(/\.md$/, '.css')
     let pageCss: string | undefined
+    const cssParts: string[] = []
     if (cssFile !== file && existsSync(cssFile)) {
-      pageCss = await readFile(cssFile, 'utf-8')
+      cssParts.push(await readFile(cssFile, 'utf-8'))
     }
+    const stem = basename(file, '.md')
+    for (const sibling of readdirSync(dirname(file)).sort()) {
+      const root = componentCssRoot(sibling, stem)
+      if (root) cssParts.push(scopeCss(root, await readFile(join(dirname(file), sibling), 'utf-8')))
+    }
+    for (const extra of fm.styles ?? []) {
+      const target = resolve(dirname(file), extra)
+      if (existsSync(target)) cssParts.push(await readFile(target, 'utf-8'))
+      else console.warn(`[nimpress] ${file}: styles entry ${extra} does not resolve`)
+    }
+    if (cssParts.length) pageCss = cssParts.join('\n')
 
     return {
       slug,
@@ -2670,7 +2694,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }))
       const files: string[] = [`${bundle}/manifest.json`, `${bundle}/search.json`]
       for (const p of list) {
-        if (p.pageCss) styles[p.effectivePath] = p.pageCss
+        if (p.pageCss) styles[p.effectivePath] = [styles[p.effectivePath], p.pageCss].filter(Boolean).join('\n')
         const body = {
           html: p.html,
           headings: p.headings,
@@ -3103,6 +3127,16 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       .map((tag) => ({ ...tag, pages: tag.pages.sort((a, b) => a.title.localeCompare(b.title)) }))
   }
 
+  function siteComponentStyles(): string {
+    const dir = join(contentRoot, 'styles')
+    if (!existsSync(dir)) return ''
+    return readdirSync(dir)
+      .filter((name) => name.endsWith('.css'))
+      .sort()
+      .map((name) => scopeCss(name.replace(/\.css$/, ''), readFileSync(join(dir, name), 'utf-8')))
+      .join('\n')
+  }
+
   function buildManifest() {
     const pageMap: Record<string, PageMeta> = {}
     const byPath: Record<string, string> = {}
@@ -3136,10 +3170,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const styles: Record<string, string> = {}
+    const siteStyles = siteComponentStyles()
+    if (siteStyles) styles['/'] = siteStyles
     for (const p of pages.values()) {
       if (p.sidebarOnly) continue
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
-      if (p.pageCss) styles[p.effectivePath] = p.pageCss
+      if (p.pageCss) styles[p.effectivePath] = [styles[p.effectivePath], p.pageCss].filter(Boolean).join('\n')
     }
 
     return { pages: pageMap, byPath, sidebar: buildSidebar(), styles, tags: buildTagIndex(), glossary: glossaryTerms }
@@ -3522,7 +3558,7 @@ ${bodyBranches}
       const onAdd = async (file: string) => {
         const underContent = file.startsWith(contentRoot)
         if (!underContent || !(file.endsWith('.md') || file.endsWith('.css') || file.match(/\.story\.tsx?$/))) return
-        if (file.endsWith('.css')) dropFileCache(file.replace(/\.css$/, '.md'))
+        if (file.endsWith('.css')) dropFileCache(file.replace(/(\.[a-z0-9-]+)?\.css$/, '.md'))
         if (file.match(/\.story\.tsx?$/)) dropFileCache(join(dirname(file), 'index.md'))
         try {
           await processAll()
@@ -3539,7 +3575,7 @@ ${bodyBranches}
         const underContent = file.startsWith(contentRoot)
         if (underContent && (file.endsWith('.md') || file.endsWith('.css') || file.match(/\.story\.tsx?$/))) {
           if (file.match(/\.story\.tsx?$/)) dropFileCache(join(dirname(file), 'index.md'))
-          else dropFileCache(file.endsWith('.css') ? file.replace(/\.css$/, '.md') : file)
+          else dropFileCache(file.endsWith('.css') ? file.replace(/(\.[a-z0-9-]+)?\.css$/, '.md') : file)
           try {
             await processAll()
           } catch (err) {
@@ -3751,7 +3787,7 @@ ${bodyBranches}
       const ownsSpec = specToMd.get(file)
       const ownsComponent = componentToMd.get(file)
       if (isPageCss) {
-        dropFileCache(file.replace(/\.css$/, '.md'))
+        dropFileCache(file.replace(/(\.[a-z0-9-]+)?\.css$/, '.md'))
         try {
           await processAll()
         } catch (err) {

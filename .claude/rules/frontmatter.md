@@ -30,6 +30,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 6.2. `feedback: true` shows the was this page helpful widget under the page when the `feedback` config block exists, the way `subscribe: true` shows the subscribe control on a changelog. Sites that want it everywhere set it in `defaultFrontmatter`, and a page turns it off again with `feedback: false`.
 
+6.3. `styles` lists extra stylesheets for the page, relative to the markdown file. `<page>.css` and `<page>.<component>.css` beside the page load by name without it. See the styling rule.
+
 7. `footer: string` renders a centered, muted line at the bottom. Use for "Last reviewed", attribution, or a contact pointer.
 
 8. `tags` is a comma separated string or a YAML array of short keywords. The search index boosts tag matches and shows matched tags as pills under each result. Query syntax: a token ending in `/` like `api/` scopes the result set to pages whose sidebar path starts with that segment, case insensitive. Combine: `api/ device` returns device results inside the api folder.

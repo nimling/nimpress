@@ -13,9 +13,9 @@ The following table lists all browsers for which nimpress offers full support, s
 
 | Browser | Version | Notes |
 |---|---|---|
-| Chrome | 111 and later | Cascade layers, container queries, and MathML for the math renderer. |
-| Edge | 111 and later | Same engine as Chrome. |
-| Firefox | 115 and later | Container queries arrive in 110, MathML has always been there. |
-| Safari | 16.4 and later | Container queries and cascade layers. |
+| Chrome | 118 and later | Cascade layers, container queries, MathML for the math renderer, and `@scope` for the component scoped styles. |
+| Edge | 118 and later | Same engine as Chrome. |
+| Firefox | 128 and later | Container queries arrive in 110, MathML has always been there, and `@scope` for the component scoped styles in 128. |
+| Safari | 17.4 and later | Container queries, cascade layers, and `@scope`. |
 
 Every stylesheet nimpress ships sits in the `nimpress` cascade layer, so a site rule wins without `!important`; a browser without cascade layers loses that guarantee. Formulas render as MathML, so a browser without MathML shows the source instead. The component workshop, the schema viewer, and the diagrams need a browser with ES modules and dynamic imports, which every browser in the table has.

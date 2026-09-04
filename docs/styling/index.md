@@ -35,6 +35,8 @@ No `!important`, no repeating the internal class, no matching a build hash. Prop
 
 3. **Page styles.** A stylesheet named after a markdown file loads only while that page and its subpages are open. `guide/index.css` beside `guide/index.md` applies across `/guide`, a leaf page's stylesheet applies to itself alone.
 
+4. **Component styles.** `styles/<component>.css` in the content folder reaches one component on every page, and `<page>.<component>.css` beside a page reaches one component on that page, each wrapped in `@scope`. See [Scoping](/styling/scoping).
+
 ```ts
 export default defineConfig({
   css: 'app.css'

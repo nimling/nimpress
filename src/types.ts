@@ -204,6 +204,7 @@ export interface Frontmatter {
   rss?: boolean
   subscribe?: boolean
   feedback?: boolean
+  styles?: string[]
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }

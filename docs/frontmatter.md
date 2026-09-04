@@ -31,6 +31,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, see below |
 | `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
+| `styles` | string[] | Extra stylesheets for the page, relative to the markdown file, beside the `<page>.css` and `<page>.<component>.css` files it picks up by name |
 | `background` | string | Banner image behind the header, used by `hero` and `roadmap` |
 | `tags` | string \| string[] | Comma separated string or YAML array of tags, shown at the bottom of the page, boosted in search, and listed on the tags page |
 | `rss` | boolean | Serve a `changelog` collection as an RSS feed |

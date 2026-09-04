@@ -2,7 +2,7 @@ import { resolve, relative, dirname, basename, sep, join } from 'node:path'
 import { existsSync, readFileSync, statSync, readdirSync, rmSync } from 'node:fs'
 import matter from 'gray-matter'
 import type { ResolvedNimpressConfig } from '../types'
-import { lintContent, setCustomPageTypes } from '../plugin'
+import { lintContent, setCustomPageTypes, CLASS_ROOTS, componentCssRoot } from '../plugin'
 import { lintModules } from '../modules/lint'
 import { cacheDir } from '../config/paths'
 import { walkFiles, hasFlag, finishLint } from './shared'
@@ -165,6 +165,19 @@ export function lintStructure(cwd: string, resolved: ResolvedNimpressConfig): st
       }
     }
 
+    if (name.endsWith('.css') && !name.startsWith('_') && basename(dirname(file)) === 'styles' && dirname(dirname(file)) === root) {
+      const rootName = name.replace(/\.css$/, '')
+      if (!CLASS_ROOTS.includes(rootName)) problems.push(`${rel}: ${rootName} is not a component class root, name the file after one of ${CLASS_ROOTS.join(', ')}`)
+      continue
+    }
+    if (name.endsWith('.css') && !name.startsWith('_') && name.split('.').length > 2) {
+      const stem = name.split('.')[0]
+      const rootName = componentCssRoot(name, stem)
+      if (rootName && existsSync(join(dirname(file), `${stem}.md`))) {
+        if (!CLASS_ROOTS.includes(rootName)) problems.push(`${rel}: ${rootName} is not a component class root, name the file after one of ${CLASS_ROOTS.join(', ')}`)
+        continue
+      }
+    }
     if (name.endsWith('.css') && !name.startsWith('_')) {
       const md = file.replace(/\.css$/, '.md')
       if (!existsSync(md)) {
