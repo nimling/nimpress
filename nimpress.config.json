@@ -36,7 +36,7 @@
   },
   "defaultFrontmatter": { "feedback": true },
   "announce": {
-    "text": "Version 2.4 brings seven new page types and the zensical authoring surface.",
+    "text": "Version 2.4 brings seven new page types and a richer authoring surface.",
     "link": "/changelog",
     "dismiss": true
   },
