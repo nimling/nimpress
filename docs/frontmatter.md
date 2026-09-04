@@ -28,13 +28,14 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
 | `redirect` | string | Send the visitor to another path on load |
-| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, `feedback`, see below |
+| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, see below |
 | `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
 | `background` | string | Banner image behind the header, used by `hero` and `roadmap` |
 | `tags` | string \| string[] | Comma separated string or YAML array of tags, shown at the bottom of the page, boosted in search, and listed on the tags page |
 | `rss` | boolean | Serve a `changelog` collection as an RSS feed |
 | `subscribe` | boolean | Show a subscribe control on a `changelog` collection |
+| `feedback` | boolean | Show the was this page helpful widget under the page, when the `feedback` config block exists |
 | `meta` | object | SEO and social card metadata, see [seo.md](/seo) |
 | `data` | object | Renderer specific payload, see below |
 

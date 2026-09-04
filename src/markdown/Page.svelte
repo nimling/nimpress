@@ -61,7 +61,7 @@
       label: action === 'edit' ? 'Edit this page' : 'View source of this page'
     }))
   })
-  const showFeedback = $derived(!hidden.has('feedback') && !!config.feedback && !issueKind)
+  const showFeedback = $derived(page.frontmatter.feedback === true && !!config.feedback && !issueKind)
   const tagIndex = $derived(config.manifest?.tags ?? [])
   const tagsPage = $derived(Object.values(config.manifest?.pages ?? {}).find((meta) => meta.type === 'tags'))
   const pageTags = $derived.by(() => {

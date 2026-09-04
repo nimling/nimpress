@@ -20,6 +20,7 @@
     "actions": ["edit", "view"]
   },
   "feedback": {
+    "endpoint": "https://feedback.example.test/api/feedback",
     "title": "Was this page helpful?",
     "ratings": [
       { "icon": "👍", "name": "This page was helpful", "data": "1", "note": "Thanks for your feedback!" },
@@ -31,6 +32,7 @@
     "icons": { "default": ":lucide-tag:", "setup": ":lucide-settings:", "authoring": ":lucide-pen-line:", "types": ":lucide-layout-template:" },
     "map": { "Setup": "setup", "Authoring": "authoring", "Page types": "types" }
   },
+  "defaultFrontmatter": { "feedback": true },
   "announce": {
     "text": "Version 2.4 brings seven new page types and the zensical authoring surface.",
     "link": "/changelog",

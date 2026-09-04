@@ -176,7 +176,7 @@ export interface PageMetaTags {
   jsonLd?: unknown
 }
 
-export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags' | 'feedback'
+export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags'
 
 export interface Frontmatter {
   title: string
@@ -201,6 +201,7 @@ export interface Frontmatter {
   tags?: string | string[]
   rss?: boolean
   subscribe?: boolean
+  feedback?: boolean
   meta?: PageMetaTags
   data?: Record<string, unknown>
 }
@@ -382,6 +383,17 @@ export interface SubscribeFunctions {
   subscribe?: (ctx: SubscribeContext, email: string, feed: string, name: string) => Promise<void>
 }
 
+export interface FeedbackContext {
+  endpoint: string
+  appSlug: string
+  headers: Record<string, string>
+  viewer: Viewer
+}
+
+export interface FeedbackFunctions {
+  feedback?: (ctx: FeedbackContext, path: string, data: string, name: string) => Promise<void>
+}
+
 export interface SubscribeConfig {
   /** Subscription endpoint receiving feed subscriptions. @example "https://auth.example.io/api/subscribe" */
   endpoint?: string
@@ -503,6 +515,11 @@ export interface NimpressFeedbackRating {
 }
 
 export interface NimpressFeedbackConfig {
+  /** Endpoint receiving every click as a json post with path, data, and name. @example "https://auth.example.io/api/feedback" */
+  endpoint?: string
+  /** App slug sent as the SAuth-App-Slug header with every post. @example "samna-developer" */
+  appSlug?: string
+  functions?: FeedbackFunctions
   title: string
   ratings: NimpressFeedbackRating[]
 }
@@ -629,7 +646,7 @@ export interface NimpressUserConfig {
   navRoutes?: NavRoute[]
   /** OAuth 2.0 session login and the build time guard function for gated pages. */
   auth?: AuthConfig
-  /** Path to a client module exporting authFunctions and subscribeFunctions. @example "./docs/client.ts" */
+  /** Path to a client module exporting authFunctions, subscribeFunctions, and feedbackFunctions. @example "./docs/client.ts" */
   client?: string
   /** Changelog subscription wiring. */
   subscribe?: SubscribeConfig

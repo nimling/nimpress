@@ -1,5 +1,7 @@
 <script lang="ts">
   import { configStore } from '../framework/configStore'
+  import { viewer } from '../framework/stores/viewer'
+  import { sendFeedback } from '../feedback/feedback'
   import type { NimpressFeedbackRating } from '../types'
 
   let { path }: { path: string } = $props()
@@ -7,9 +9,14 @@
   const feedback = $derived($configStore.feedback)
   let chosen = $state<NimpressFeedbackRating | null>(null)
 
-  function rate(rating: NimpressFeedbackRating) {
+  async function rate(rating: NimpressFeedbackRating) {
     chosen = rating
-    document.dispatchEvent(new CustomEvent('nimpress:feedback', { detail: { path, data: rating.data } }))
+    document.dispatchEvent(new CustomEvent('nimpress:feedback', { detail: { path, data: rating.data, name: rating.name } }))
+    try {
+      await sendFeedback($viewer, path, rating.data, rating.name)
+    } catch (error) {
+      console.warn('[nimpress] feedback was not delivered', error)
+    }
   }
 
   $effect(() => {

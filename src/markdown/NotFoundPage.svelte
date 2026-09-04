@@ -4,7 +4,7 @@
 
   let { page }: { page: PageModule } = $props()
 
-  const hide = $derived<PageElement[]>(Array.from(new Set<PageElement>(['toc', 'footer', 'feedback', ...(page.frontmatter.hide ?? [])])))
+  const hide = $derived<PageElement[]>(Array.from(new Set<PageElement>(['toc', 'footer', ...(page.frontmatter.hide ?? [])])))
 </script>
 
 <div class="np-notfound">

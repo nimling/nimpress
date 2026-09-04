@@ -51,8 +51,8 @@ export default defineConfig({
   /** Repository actions on every doc page. url defaults to github, editUri to edit/main/<contentDir>/, actions lists edit and view. */
   // repo: { actions: ['edit', 'view'] },
 
-  /** The was this page helpful widget. Each rating carries an icon, a name, the data the nimpress:feedback event reports, and a markdown note shown after the click. */
-  // feedback: { title: 'Was this page helpful?', ratings: [{ icon: '👍', name: 'This page was helpful', data: '1', note: 'Thanks for your feedback!' }] },
+  /** The was this page helpful widget, shown on pages with feedback: true. Each rating carries an icon, a name, the data, and a markdown note shown after the click; endpoint receives every click as a json post. */
+  // feedback: { title: 'Was this page helpful?', endpoint: 'https://auth.example.io/api/feedback', ratings: [{ icon: '👍', name: 'This page was helpful', data: '1', note: 'Thanks for your feedback!' }] },
 
   /** Page status identifiers mapped to the label the sidebar mark carries. new and deprecated are present without configuration. */
   // status: { beta: 'Beta' },
@@ -93,7 +93,7 @@ export default defineConfig({
   //   guard: (frontmatter, filePath, relatedFiles) => frontmatter.gate ?? 'default'
   // },
 
-  /** Path to a client module exporting authFunctions and subscribeFunctions. */
+  /** Path to a client module exporting authFunctions, subscribeFunctions, and feedbackFunctions. */
   // client: './docs/client.ts',
 
   /** Changelog subscription wiring. */

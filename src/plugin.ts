@@ -182,13 +182,14 @@ const frontmatterSchema = z.object({
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
-  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags', 'feedback'])).optional(),
+  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags'])).optional(),
   status: z.string().optional(),
   footer: z.string().optional(),
   background: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
   rss: z.boolean().optional(),
   subscribe: z.boolean().optional(),
+  feedback: z.boolean().optional(),
   meta: metaTagsSchema.optional(),
   data: z.record(z.unknown()).optional()
 }).passthrough()
@@ -3778,9 +3779,9 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           ? (resolved.client.startsWith('/') ? resolved.client : '/' + resolved.client.replace(/^\.\//, ''))
           : null
         const clientImport = clientPath
-          ? `import { authFunctions, subscribeFunctions } from ${JSON.stringify(clientPath)}`
+          ? `import { authFunctions, subscribeFunctions, feedbackFunctions } from ${JSON.stringify(clientPath)}`
           : ''
-        const clientArgs = clientPath ? ', authFunctions, subscribeFunctions' : ''
+        const clientArgs = clientPath ? ', authFunctions, subscribeFunctions, feedbackFunctions' : ''
         return `import '@nimtech/nimpress/app.css'
 ${cssImports}
 import { createNimpressApp } from '@nimtech/nimpress'

@@ -26,10 +26,22 @@ test('the feedback widget shows its ratings, reports the click, and shows the no
   await expect(widget.locator('.np-feedback-note')).toContainText('opening an issue')
   await expect(widget.locator('.np-feedback-rating')).toHaveCount(0)
   const detail = await page.evaluate(() => (window as unknown as { feedback: unknown }).feedback)
-  expect(detail).toEqual({ path: '/getting-started', data: '0' })
+  expect(detail).toEqual({ path: '/getting-started', data: '0', name: 'This page could be improved' })
 })
 
-test('hide feedback drops the widget on a page', async ({ page }) => {
-  await open(page, '')
+test('a page with feedback false shows no widget', async ({ page }) => {
+  await open(page, 'examples/team')
   await expect(page.locator('.np-feedback')).toHaveCount(0)
+})
+
+test('a click posts the path, the data, and the name to the feedback endpoint', async ({ page }) => {
+  let body: unknown = null
+  await page.route('https://feedback.example.test/api/feedback', async (route) => {
+    body = route.request().postDataJSON()
+    await route.fulfill({ status: 204 })
+  })
+  await open(page, 'getting-started')
+  await page.locator('.np-feedback-rating[data-value="1"]').click()
+  await expect(page.locator('.np-feedback-note')).toContainText('Thanks for your feedback!')
+  await expect.poll(() => body).toEqual({ path: '/getting-started', data: '1', name: 'This page was helpful' })
 })

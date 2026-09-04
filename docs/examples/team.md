@@ -2,6 +2,7 @@
 title: Team
 type: team
 status: new
+feedback: false
 order: 44
 description: A person grid with a photo or a monogram, a name, a role, a bio, and links, rendered from frontmatter data.
 data:

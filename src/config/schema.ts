@@ -60,6 +60,8 @@ export const userConfigSchema = z.object({
   }).optional(),
   feedback: z.object({
     title: z.string(),
+    endpoint: z.string().optional(),
+    appSlug: z.string().optional(),
     ratings: z.array(z.object({ icon: z.string(), name: z.string(), data: z.string(), note: z.string() }))
   }).optional(),
   announce: z.object({

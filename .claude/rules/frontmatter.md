@@ -24,9 +24,11 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 5. `visibility` controls where the page appears, one of `visible`, `hidden`, `dev-only`. `visible` is the default. `hidden` removes the page from sidebar, search, and the build, use it for drafts. `dev-only` keeps the page in `nimpress dev` but excludes it from the built bundle, use it for pages that must never ship.
 
-6. `hide` is a list of page elements to drop. Use the hide front matter property to hide one or more elements of a page: `navigation` drops the sidebar column, `toc` the right rail, `path` the breadcrumbs, `footer` the page footer line, `tags` the tag row, `feedback` the was this page helpful widget. `hide: [toc]` on hero pages and short pages where the TOC would feel empty. A `hide` list in `defaultFrontmatter` merges with the page's own list.
+6. `hide` is a list of page elements to drop. Use the hide front matter property to hide one or more elements of a page: `navigation` drops the sidebar column, `toc` the right rail, `path` the breadcrumbs, `footer` the page footer line, `tags` the tag row. `hide: [toc]` on hero pages and short pages where the TOC would feel empty. A `hide` list in `defaultFrontmatter` merges with the page's own list.
 
 6.1. `status: <identifier>` marks the page in the sidebar. A status can be assigned to each page and displayed in the navigation sidebar. `new` and `deprecated` carry labels without configuration; the `status` config field maps further identifiers to labels. The row renders a `np-sidebar-status` mark with the label as its title plus `np-sidebar-status-<identifier>` for coloring.
+
+6.2. `feedback: true` shows the was this page helpful widget under the page when the `feedback` config block exists, the way `subscribe: true` shows the subscribe control on a changelog. Sites that want it everywhere set it in `defaultFrontmatter`, and a page turns it off again with `feedback: false`.
 
 7. `footer: string` renders a centered, muted line at the bottom. Use for "Last reviewed", attribution, or a contact pointer.
 

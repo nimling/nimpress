@@ -92,6 +92,8 @@ export type {
   OidcEndpoints,
   SubscribeConfig,
   SubscribeFunctions,
+  FeedbackFunctions,
+  FeedbackContext,
   SubscribeContext,
   Viewer,
   AccessRequirement,
