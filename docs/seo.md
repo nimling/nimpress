@@ -81,6 +81,60 @@ createNimpressApp({
 
 Site values are used for every page unless the page overrides them.
 
+## Configuration
+
+### Automatic metadata
+
+nimpress generates the keywords and the description of every page that has none authored, on every build, from the title, the headings, the tags, and the body by term frequency against the whole site. Add the following lines to your configuration:
+
+```json
+{
+  "seo": { "auto": true }
+}
+```
+
+The config sets the initial value per page and the frontmatter decides who wins: without `meta.override` the generated keywords and description replace authored ones, with `meta.override: true` the authored fields stay and generation only fills what is empty.
+
+```yaml
+---
+meta:
+  override: true
+  keywords: [booking, api]
+---
+```
+
+### AI crawlers
+
+`seo.ai.index` set to `false` disallows every known ai crawler in `robots.txt`, `GPTBot`, `ClaudeBot`, `Google-Extended`, `PerplexityBot`, and the rest, and adds `noai, noimageai` to the robots meta of every page. Add the following lines to your configuration:
+
+```json
+{
+  "seo": { "ai": { "index": false } }
+}
+```
+
+A page flips its own robots meta with `meta.ai`: `false` adds `noai, noimageai` on a site that allows crawling, `true` lifts the block for one page on a site that forbids it. `llms.txt` and `llms-full.txt` keep their own switch under `meta.llms`.
+
+## Usage
+
+### Generate a report
+
+`nimpress seo` walks every page and prints what the build emits for it, the keywords, the description length, the robots directive, and whether the values are authored or generated, and writes the full set to `seo.map.json`:
+
+```bash
+nimpress seo
+nimpress seo --out=reports/seo.json
+```
+
+### Write the generated fields
+
+`--write` puts the generated keywords and description into each page's frontmatter under `meta`, only where the page has none, so they become authored values you edit from there:
+
+```bash
+nimpress seo --write
+```
+
+
 ## JSON-LD
 
 `meta.jsonLd` accepts either a string or an object. Objects are serialized to JSON and emitted as `<script type="application/ld+json">`.

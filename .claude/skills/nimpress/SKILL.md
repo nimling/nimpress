@@ -113,6 +113,16 @@ Both read `access.json` from the build folder and fail with `[nimpress] guard: <
 
 2. `apply` reads the mapping the asset host returned, requires `--map=`, writes the base url and the published asset list back into `access.json`, and removes both the guarded folder and `guard.map.json` from the build.
 
+### seo
+
+```sh
+nimpress seo
+nimpress seo --write
+nimpress seo --out=reports/seo.json
+```
+
+Prints one line per page with the route, the keyword count, the description length, whether the robots directive carries `noai`, and whether the values are authored or generated, and writes the full set to `seo.map.json`. `--write` puts the generated keywords and description into each page's frontmatter under `meta`, only where the page has none. `--out=` names the map file.
+
 ### skill
 
 ```sh
@@ -207,7 +217,7 @@ nimpress completion --auto --skill
 
 ## Failure reading
 
-1. `[nimpress] unknown command: <name>` means the first word is not one of `init`, `lint`, `dev`, `build`, `guard`, `modules`, `export`, `skill`, `completion`.
+1. `[nimpress] unknown command: <name>` means the first word is not one of `init`, `lint`, `dev`, `build`, `guard`, `modules`, `export`, `skill`, `completion`, `seo`.
 
 2. `[nimpress] modules <sub>: several systems configured` means the config declares more than one system and the command needs `--system=<name>`.
 

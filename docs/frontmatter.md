@@ -37,7 +37,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `rss` | boolean | Serve a `changelog` collection as an RSS feed |
 | `subscribe` | boolean | Show a subscribe control on a `changelog` collection |
 | `feedback` | boolean | Show the was this page helpful widget under the page, when the `feedback` config block exists |
-| `meta` | object | SEO and social card metadata, see [seo.md](/seo) |
+| `meta` | object | SEO and social card metadata, with `override` to keep authored fields over generated ones and `ai` to block or allow ai crawlers on the page, see [seo.md](/seo) |
 | `data` | object | Renderer specific payload, see below |
 
 ## `visibility`

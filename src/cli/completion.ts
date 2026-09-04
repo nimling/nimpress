@@ -55,6 +55,12 @@ const tree: CompletionCommand[] = [
     subs: []
   },
   {
+    name: 'seo',
+    describe: 'Report the search and robot metadata of every page, and write the generated fields',
+    flags: [{ name: '--write', value: false, describe: 'put the generated keywords and description into the frontmatter where the page has none' }, { name: '--out', value: true, describe: 'where the map is written instead of seo.map.json' }],
+    subs: []
+  },
+  {
     name: 'modules',
     describe: 'Drive the component workshop',
     flags: [],

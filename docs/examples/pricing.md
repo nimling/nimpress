@@ -4,6 +4,8 @@ type: pricing
 status: new
 order: 45
 description: Three tiers with a price, a benefit list, and one action each, the middle one highlighted, rendered from frontmatter data.
+meta:
+  ai: false
 hide:
   - toc
 data:

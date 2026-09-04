@@ -26,6 +26,7 @@ One page per command sits under [Usage](/usage). Run `nimpress --help` for the s
 | [`nimpress modules <sub>`](/usage/modules) | The component workshop surface |
 | [`nimpress skill`](/usage/skill) | Hand out and install the agent skill |
 | [`nimpress completion`](/usage/completion) | Print or install the shell completion |
+| [`nimpress seo`](/usage/seo) | Report the search and robot metadata of every page, and write the generated fields |
 
 ## paths
 

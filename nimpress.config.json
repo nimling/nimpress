@@ -28,6 +28,7 @@
     ]
   },
   "pageTypes": { "spotlight": "./docs/types/Spotlight.svelte" },
+  "seo": { "auto": true, "ai": { "index": true } },
   "icons": "./assets/icons",
   "tags": {
     "icons": { "default": ":lucide-tag:", "setup": ":lucide-settings:", "authoring": ":lucide-pen-line:", "types": ":lucide-layout-template:" },

@@ -7,6 +7,7 @@ import { runModules } from './cli/modules'
 import { runExport } from './cli/export'
 import { runSkill } from './cli/skill'
 import { runCompletion } from './cli/completion'
+import { runSeo } from './cli/seo'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -29,6 +30,10 @@ export async function run(argv: string[]): Promise<void> {
     return
   }
   const { resolved } = await loadNimpressConfig(cwd)
+  if (cmd === 'seo') {
+    runSeo(cwd, resolved, args)
+    return
+  }
   if (cmd === 'lint') {
     await runLint(cwd, resolved)
     return

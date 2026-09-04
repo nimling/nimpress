@@ -75,6 +75,9 @@ export default defineConfig({
   /** Custom page types: a type name to a Svelte component file. A new name registers a type, a built in name such as hero replaces its renderer. */
   // pageTypes: { spotlight: './docs/types/Spotlight.svelte' },
 
+  /** Generated metadata: auto fills keywords and a description on every page without authored ones, ai.index false blocks every known ai crawler. */
+  // seo: { auto: true, ai: { index: false } },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 

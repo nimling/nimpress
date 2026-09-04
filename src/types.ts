@@ -167,6 +167,10 @@ export interface TwitterMeta {
 }
 
 export interface PageMetaTags {
+  /** Authored fields beat the generated ones when true; without it the generated keywords and description win. */
+  override?: boolean
+  /** false adds noai and noimageai to the robots meta of this page, true lifts a site wide block for it. */
+  ai?: boolean
   description?: string
   canonical?: string
   robots?: string
@@ -405,6 +409,15 @@ export interface SubscribeConfig {
   functions?: SubscribeFunctions
 }
 
+export interface NimpressSeoConfig {
+  /** Generate keywords and a description for every page that has none authored, on every build. @example true */
+  auto?: boolean
+  ai?: {
+    /** false disallows every known ai crawler in robots.txt and adds noai and noimageai to every page. @example false */
+    index?: boolean
+  }
+}
+
 export interface NimpressMetaConfig {
   /** Site wide keywords merged into every page head. @example ["booking", "api"] */
   keywords?: string[]
@@ -559,6 +572,7 @@ export interface NimpressConfig {
   auth?: AuthConfig
   subscribe?: SubscribeConfig
   site?: SiteMeta
+  seo?: NimpressSeoConfig
   footer?: NimpressFooterConfig
   announce?: NimpressAnnounceConfig
   repo?: NimpressRepoConfig
@@ -653,6 +667,8 @@ export interface NimpressUserConfig {
   client?: string
   /** Changelog subscription wiring. */
   subscribe?: SubscribeConfig
+  /** Generated metadata and ai crawler rules. @example { "auto": true, "ai": { "index": false } } */
+  seo?: NimpressSeoConfig
   /** SEO, robots, llms.txt, webmanifest, and security.txt emission. */
   meta?: NimpressMetaConfig
   /** Canonical site identity used for absolute urls, sitemap, and social cards. @example { "title": "Docs", "url": "https://developer.example.io" } */
@@ -705,6 +721,7 @@ export interface ResolvedNimpressConfig {
   client?: string
   subscribe?: SubscribeConfig
   meta?: NimpressMetaConfig
+  seo?: NimpressSeoConfig
   site?: SiteMeta
   base: string
   contentDir: string

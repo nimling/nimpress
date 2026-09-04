@@ -12,8 +12,8 @@ const MANAGED = 'data-np-meta'
 
 function upsert(selector: string, build: () => HTMLElement | null) {
   const head = document.head
-  const existing = head.querySelector(`${selector}[${MANAGED}]`)
-  if (existing) existing.remove()
+  const existing = Array.from(head.querySelectorAll(selector))
+  for (const el of existing) el.remove()
   const el = build()
   if (!el) return
   el.setAttribute(MANAGED, 'page')
@@ -37,6 +37,19 @@ function tag(
 function clearManaged() {
   const all = document.head.querySelectorAll(`[${MANAGED}]`)
   for (const el of Array.from(all)) el.remove()
+}
+
+function readAiIndex(): boolean | undefined {
+  let index: boolean | undefined
+  configStore.subscribe((c) => {
+    index = c.seo?.ai?.index
+  })()
+  return index
+}
+
+function robotsValue(base: string, siteAiIndex: boolean | undefined, pageAi: boolean | undefined): string {
+  const blocked = pageAi === false || (siteAiIndex === false && pageAi !== true)
+  return blocked ? `${base}, noai, noimageai` : base
 }
 
 function readSite(): SiteMeta | undefined {
@@ -109,7 +122,8 @@ export function applyPageMeta(
     upsert('meta[name="keywords"]', () => tag('meta', { name: 'keywords', content: v }))
   }
   if (meta.author) upsert('meta[name="author"]', () => tag('meta', { name: 'author', content: meta.author }))
-  if (meta.robots) upsert('meta[name="robots"]', () => tag('meta', { name: 'robots', content: meta.robots }))
+  const robots = robotsValue(meta.robots ?? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1', readAiIndex(), meta.ai)
+  upsert('meta[name="robots"]', () => tag('meta', { name: 'robots', content: robots }))
   if (meta.themeColor) upsert('meta[name="theme-color"]', () => tag('meta', { name: 'theme-color', content: meta.themeColor }))
   if (canonical) upsert('link[rel="canonical"]', () => tag('link', { rel: 'canonical', href: canonical }))
 

@@ -108,6 +108,8 @@ meta:
     headline: My page
 ```
 
+`meta.override: true` keeps the authored keywords and description when `seo.auto` generates them; without it the generated values win. `meta.ai: false` adds `noai, noimageai` to the page's robots meta, and `true` lifts a site wide `seo.ai.index: false` for the page.
+
 Structured payloads beyond `meta` live inside `data` as structured objects, never as loose top level fields. Defaults flow from `frontmatter.description` and the site level `site` config in `createNimpressApp`. Full reference in [SEO](https://nimling.github.io/nimpress/seo).
 
 ## Gating

@@ -131,6 +131,8 @@ const twitterSchema = z.object({
 }).passthrough()
 
 const metaTagsSchema = z.object({
+  override: z.boolean().optional(),
+  ai: z.boolean().optional(),
   description: z.string().optional(),
   canonical: z.string().optional(),
   robots: z.string().optional(),
@@ -879,6 +881,83 @@ export function scopeCss(root: string, css: string): string {
 export function componentCssRoot(name: string, stem: string): string | null {
   const match = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.([a-z0-9-]+)\\.css$`).exec(name)
   return match ? match[1] : null
+}
+
+const SEO_STOPWORDS = new Set('a an the and or but if then else of to in on at by for with from as is are was were be been being it its this that these those there here which who whom what when where why how not no yes you your we our they their he she his her them us me my i so do does did done can could should would will shall may might must into over under again more most some any each every all both few own same than too very just also only such other another one two three first last new use used using page pages file files field fields set sets value values see'.split(' '))
+
+function seoTokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+    .split(/\s+/)
+    .map((word) => word.replace(/^-+|-+$/g, ''))
+    .filter((word) => word.length > 2 && !SEO_STOPWORDS.has(word) && !/^\d+$/.test(word))
+}
+
+export interface SeoSource {
+  slug: string
+  title: string
+  headings: string[]
+  tags: string[]
+  body: string
+}
+
+export interface SeoGenerated {
+  keywords: string[]
+  description: string
+}
+
+export function seoDescription(body: string): string {
+  const paragraph = body
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/^:{3,}.*$/gm, '')
+    .replace(/^\s*[#>|-].*$/gm, '')
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/\s+/g, ' ').trim())
+    .find((block) => block.length > 40 && !block.startsWith('!') && !block.startsWith('<'))
+  if (!paragraph) return ''
+  const plain = paragraph.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`~^=]+/g, '')
+  if (plain.length <= 160) return plain
+  const cut = plain.slice(0, 157)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 100))}…`
+}
+
+export function seoGenerate(sources: SeoSource[]): Map<string, SeoGenerated> {
+  const documentFrequency = new Map<string, number>()
+  const perPage = sources.map((source) => {
+    const counts = new Map<string, number>()
+    const weigh = (words: string[], weight: number) => {
+      for (const word of words) counts.set(word, (counts.get(word) ?? 0) + weight)
+    }
+    weigh(seoTokens(source.title), 6)
+    weigh(seoTokens(source.headings.join(' ')), 3)
+    weigh(source.tags.map((tag) => tag.toLowerCase()), 8)
+    weigh(seoTokens(source.body), 1)
+    for (const word of counts.keys()) documentFrequency.set(word, (documentFrequency.get(word) ?? 0) + 1)
+    return { source, counts }
+  })
+  const total = Math.max(sources.length, 1)
+  const out = new Map<string, SeoGenerated>()
+  for (const { source, counts } of perPage) {
+    const scored = Array.from(counts.entries())
+      .map(([word, count]) => ({ word, score: count * Math.log(1 + total / (documentFrequency.get(word) ?? 1)) }))
+      .sort((a, b) => b.score - a.score)
+    const keywords: string[] = []
+    for (const tag of source.tags) if (!keywords.includes(tag)) keywords.push(tag)
+    for (const entry of scored) {
+      if (keywords.length >= 8) break
+      if (!keywords.some((keyword) => keyword.toLowerCase() === entry.word)) keywords.push(entry.word)
+    }
+    out.set(source.slug, { keywords, description: seoDescription(source.body) })
+  }
+  return out
+}
+
+export function seoRobotsValue(base: string, siteAiIndex: boolean | undefined, pageAi: boolean | undefined): string {
+  const blocked = pageAi === false || (siteAiIndex === false && pageAi !== true)
+  return blocked ? `${base}, noai, noimageai` : base
 }
 
 function buildMarkdownIt(
@@ -2162,6 +2241,24 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     buildSubscribeMap(result)
 
+    if (resolved.seo?.auto) {
+      const generated = seoGenerate(allProcessed.map((page) => ({
+        slug: page.slug,
+        title: page.frontmatter.title,
+        headings: page.headings.map((heading) => heading.text),
+        tags: normalizeTags(page.frontmatter.tags),
+        body: page.rawText
+      })))
+      for (const page of allProcessed) {
+        const auto = generated.get(page.slug)
+        if (!auto) continue
+        const authored = page.frontmatter.meta ?? {}
+        const override = authored.override === true
+        const keywords = override && authored.keywords ? authored.keywords : auto.keywords.length ? auto.keywords : authored.keywords
+        const description = override && authored.description ? authored.description : auto.description || authored.description
+        page.frontmatter.meta = { ...authored, ...(keywords ? { keywords } : {}), ...(description ? { description } : {}) }
+      }
+    }
     pages = result
   }
 
@@ -2399,7 +2496,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (tags.length) return tags
       return metaCfg.keywords ?? []
     })()
-    const robots = fmMeta.robots ?? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+    const robots = seoRobotsValue(fmMeta.robots ?? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1', resolved.seo?.ai?.index, fmMeta.ai)
     const ogTitle = og.title ?? title
     const ogDescription = og.description ?? description
     const ogImage = og.image ?? site?.ogImage
@@ -2509,7 +2606,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildRobots(): string {
     const metaCfg = resolved.meta ?? {}
     if (metaCfg.robots?.custom) return metaCfg.robots.custom
-    const blocked = new Set(metaCfg.robots?.block ?? [])
+    const blocked = new Set([...(metaCfg.robots?.block ?? []), ...(resolved.seo?.ai?.index === false ? CRAWL_AGENTS : [])])
     const lines: string[] = ['User-agent: *', 'Allow: /', '']
     for (const agent of CRAWL_AGENTS) {
       lines.push(`User-agent: ${agent}`)

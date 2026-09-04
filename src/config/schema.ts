@@ -97,6 +97,10 @@ export const userConfigSchema = z.object({
     endpoint: z.string().optional(),
     appSlug: z.string().optional()
   }).passthrough().optional(),
+  seo: z.object({
+    auto: z.boolean().optional(),
+    ai: z.object({ index: z.boolean().optional() }).passthrough().optional()
+  }).passthrough().optional(),
   meta: z.object({
     keywords: z.array(z.string()).optional(),
     localeAlternates: z.array(z.string()).optional(),

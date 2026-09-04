@@ -75,6 +75,7 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     subscribe: resolved.subscribe,
     site: resolved.site,
     footer: resolved.footer,
+    seo: resolved.seo,
     announce: resolved.announce,
     repo: resolved.repo,
     feedback: resolved.feedback,
