@@ -145,26 +145,7 @@ const metaTagsSchema = z.object({
 const frontmatterSchema = z.object({
   title: z.string().optional(),
   slug: z.string().optional(),
-  type: z.union([
-    z.literal('doc'),
-    z.literal('openapi'),
-    z.literal('changelog'),
-    z.literal('hero'),
-    z.literal('fullpage'),
-    z.literal('404'),
-    z.literal('section'),
-    z.literal('tags'),
-    z.literal('glossary'),
-    z.literal('team'),
-    z.literal('pricing'),
-    z.literal('roadmap'),
-    z.literal('dbml'),
-    z.literal('milestone'),
-    z.literal('epic'),
-    z.literal('feature'),
-    z.literal('bug'),
-    z.literal('component')
-  ]).optional(),
+  type: z.string().optional(),
   path: z.string().optional(),
   spec: z.string().optional(),
   gate: z.string().optional(),
@@ -194,6 +175,56 @@ const frontmatterSchema = z.object({
   data: z.record(z.unknown()).optional()
 }).passthrough()
 
+const BUILT_IN_PAGE_TYPES = new Set(['doc', 'openapi', 'changelog', 'hero', 'fullpage', '404', 'section', 'tags', 'glossary', 'team', 'pricing', 'roadmap', 'dbml', 'milestone', 'epic', 'feature', 'bug', 'component'])
+
+interface CustomDataSchema {
+  required?: string[]
+  properties?: Record<string, { type?: string }>
+}
+
+interface CustomPageType {
+  file: string
+  schema?: CustomDataSchema
+}
+
+const customPageTypes = new Map<string, CustomPageType>()
+
+export function setCustomPageTypes(cwd: string, pageTypes: Record<string, string>): void {
+  customPageTypes.clear()
+  for (const [name, file] of Object.entries(pageTypes)) {
+    const abs = resolve(cwd, file)
+    const schemaFile = abs.replace(/\.svelte$/, '.schema.json')
+    let schema: CustomDataSchema | undefined
+    if (schemaFile !== abs && existsSync(schemaFile)) {
+      try {
+        schema = JSON.parse(readFileSync(schemaFile, 'utf-8')) as CustomDataSchema
+      } catch {
+        console.warn(`[nimpress] page type ${name}: ${schemaFile} is not valid json`)
+      }
+    }
+    customPageTypes.set(name, { file, schema })
+  }
+}
+
+function jsonType(value: unknown): string {
+  if (Array.isArray(value)) return 'array'
+  if (value === null) return 'null'
+  return typeof value
+}
+
+function customDataIssues(type: string, data: Record<string, unknown>): string[] {
+  const schema = customPageTypes.get(type)?.schema
+  if (!schema) return []
+  const issues: string[] = []
+  for (const key of schema.required ?? []) {
+    if (data[key] === undefined) issues.push(`type ${type} requires data.${key}`)
+  }
+  for (const [key, spec] of Object.entries(schema.properties ?? {})) {
+    if (data[key] !== undefined && spec.type && jsonType(data[key]) !== spec.type) issues.push(`type ${type} expects data.${key} to be ${spec.type}`)
+  }
+  return issues
+}
+
 function frontmatterIssues(data: unknown, body = 'x'): string[] {
   const issues: string[] = []
   const keys = typeof data === 'object' && data !== null ? Object.keys(data) : []
@@ -209,6 +240,9 @@ function frontmatterIssues(data: unknown, body = 'x'): string[] {
     return issues
   }
   const fm = parsed.data
+  if (fm.type && !BUILT_IN_PAGE_TYPES.has(fm.type) && !customPageTypes.has(fm.type)) {
+    issues.push(`type: ${fm.type} is not a page type; add it under pageTypes in the config`)
+  }
   const d = (fm.data ?? {}) as Record<string, unknown>
   if (fm.link) {
     if (!fm.title && !fm.sidebar?.name) issues.push('a link page needs a title or a sidebar.name for its label')
@@ -247,6 +281,7 @@ function frontmatterIssues(data: unknown, body = 'x'): string[] {
       issues.push(`type ${fm.type} requires a valid data.date`)
     }
   }
+  if (fm.type && customPageTypes.has(fm.type)) issues.push(...customDataIssues(fm.type, d))
   if (fm.type === 'team') {
     const members = Array.isArray(d.members) ? (d.members as Array<Record<string, unknown>>) : []
     if (members.length === 0) issues.push('type team requires data.members with at least one member')
@@ -3332,6 +3367,14 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return `export default ${JSON.stringify(payload)}\n`
   }
 
+  function customIdent(name: string): string {
+    return `Custom_${name.replace(/[^a-zA-Z0-9]/g, '_')}`
+  }
+
+  function customWebPath(file: string): string {
+    return file.startsWith('/') ? file : '/' + file.replace(/^\.\//, '')
+  }
+
   function buildPageComponent(slug: string): string | null {
     const p = pages.get(slug)
     if (!p) return null
@@ -3343,9 +3386,32 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
     const bodyId = `${PAGE_BODY_PREFIX}${urlSlug(slug)}.js`
     const json = JSON.stringify(shell).replace(/<\/script>/g, '<\\/script>')
+    const custom = Array.from(customPageTypes.entries())
+    const imports = custom.map(([name, entry]) => `  import ${customIdent(name)} from ${JSON.stringify(customWebPath(entry.file))}`).join('\n')
+    const renderer = (type: string, builtIn: string) => (customPageTypes.has(type) ? customIdent(type) : builtIn)
+    const bodyBranches = [
+      ['team', 'TeamPage'],
+      ['pricing', 'PricingPage'],
+      ['glossary', 'GlossaryPage'],
+      ['tags', 'TagsPage'],
+      ['section', 'SectionPage'],
+      ['404', 'NotFoundPage'],
+      ['changelog', 'ChangelogPage'],
+      ['roadmap', 'RoadmapPage'],
+      ['component', 'ComponentPage'],
+      ['dbml', 'DbmlPage']
+    ]
+      .map(([type, builtIn]) => `    {:else if shell.type === ${JSON.stringify(type)}}\n      <${renderer(type, builtIn)} page={{ ...shell, ...mod.default }} />`)
+      .concat(
+        custom
+          .filter(([name]) => !BUILT_IN_PAGE_TYPES.has(name))
+          .map(([name]) => `    {:else if shell.type === ${JSON.stringify(name)}}\n      <${customIdent(name)} page={{ ...shell, ...mod.default }} />`)
+      )
+      .join('\n')
     return `<script lang="ts">
   import { Page, OpenApiRoot, ChangelogPage, HeroPage, FullPage, NotFoundPage, RoadmapPage, ComponentPage, DbmlPage, setPageMeta, applyPageStyles, SectionPage, TagsPage, GlossaryPage, TeamPage, PricingPage, configStore, withoutBase, resolvedRoute } from '@nimtech/nimpress'
   import type { PageBody } from '@nimtech/nimpress'
+${imports}
   const shell = ${json}
   setPageMeta(shell)
   applyPageStyles(shell.path)
@@ -3368,37 +3434,18 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     <found.default />
   {/await}
 {:else if shell.type === 'hero'}
-  <HeroPage page={shell} {bodyPromise} />
+  <${renderer('hero', 'HeroPage')} page={shell} {bodyPromise} />
 {:else if shell.type === 'fullpage'}
-  <FullPage page={shell} {bodyPromise} />
+  <${renderer('fullpage', 'FullPage')} page={shell} {bodyPromise} />
 {:else}
   {#await bodyPromise}
     <div class="np-page-loading" aria-busy="true"></div>
   {:then mod}
     {#if shell.type === 'openapi' && mod.default.openApiSpec}
       <OpenApiRoot spec={mod.default.openApiSpec} specFile={mod.default.openApiFile} specUrl={mod.default.openApiUrl} title={shell.frontmatter.title} frontmatter={shell.frontmatter} />
-    {:else if shell.type === 'team'}
-      <TeamPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'pricing'}
-      <PricingPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'glossary'}
-      <GlossaryPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'tags'}
-      <TagsPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'section'}
-      <SectionPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === '404'}
-      <NotFoundPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'changelog'}
-      <ChangelogPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'roadmap'}
-      <RoadmapPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'component'}
-      <ComponentPage page={{ ...shell, ...mod.default }} />
-    {:else if shell.type === 'dbml'}
-      <DbmlPage page={{ ...shell, ...mod.default }} />
+${bodyBranches}
     {:else}
-      <Page page={{ ...shell, ...mod.default }} />
+      <${renderer('doc', 'Page')} page={{ ...shell, ...mod.default }} />
     {/if}
   {:catch err}
     <div class="np-page-error">Failed to load page body: {String(err)}</div>
@@ -3414,6 +3461,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       const loaded = await loadNimpressConfig(process.cwd(), inline)
       resolved = loaded.resolved
       contentRoot = resolve(process.cwd(), resolved.contentDir)
+      setCustomPageTypes(process.cwd(), resolved.pageTypes ?? {})
       assetsRoot = resolve(process.cwd(), resolved.assetsDir)
       return {}
     },

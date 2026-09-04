@@ -1,0 +1,7 @@
+{
+  "required": ["kicker"],
+  "properties": {
+    "kicker": { "type": "string" },
+    "accent": { "type": "string" }
+  }
+}

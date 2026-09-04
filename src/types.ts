@@ -1,4 +1,4 @@
-export type PageType =
+export type BuiltInPageType =
   | 'doc'
   | 'openapi'
   | 'changelog'
@@ -17,6 +17,8 @@ export type PageType =
   | 'feature'
   | 'bug'
   | 'component'
+
+export type PageType = BuiltInPageType | (string & {})
 
 export type ModuleFramework = 'vue' | 'svelte'
 
@@ -677,6 +679,8 @@ export interface NimpressUserConfig {
   /** Vite overrides merged into the site and harness configs. @example { "resolve": { "alias": { "@": "./src" } } } */
   vite?: Record<string, unknown>
   /** Component workshop systems, one entry per component library. */
+  /** Custom page types: a type name to a Svelte component file, a new name registers a type and a built in name replaces its renderer. @example { "spotlight": "./docs/types/Spotlight.svelte" } */
+  pageTypes?: Record<string, string>
   modules?: ModuleSystemConfig[]
 }
 
@@ -712,6 +716,7 @@ export interface ResolvedNimpressConfig {
   banner: NimpressBannerConfig | false
   css: string[]
   vite: Record<string, unknown>
+  pageTypes: Record<string, string>
   modules: ModulesConfig
 }
 

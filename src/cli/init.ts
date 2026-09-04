@@ -72,6 +72,9 @@ export default defineConfig({
   /** Tag icons by identifier, default for every tag without one, and the tag to identifier map so a group shares an icon. */
   // tags: { icons: { default: ':lucide-tag:', api: ':lucide-plug:' }, map: { OpenAPI: 'api' } },
 
+  /** Custom page types: a type name to a Svelte component file. A new name registers a type, a built in name such as hero replaces its renderer. */
+  // pageTypes: { spotlight: './docs/types/Spotlight.svelte' },
+
   /** Extra header navigation routes. gate hides an entry from viewers that fail the check. */
   // navRoutes: [{ text: 'API', link: '/api' }],
 

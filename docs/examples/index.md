@@ -23,6 +23,7 @@ Every page under this section is a full flow with the real files rather than a f
 | [Full page](/examples/fullpage) | A landing page with a band, an action row, and a feature grid, and none of the shell chrome |
 | [Team](/examples/team) | A person grid with a photo or a monogram, a name, a role, a bio, and links |
 | [Pricing](/examples/pricing) | Three tiers with a price, a benefit list, and one action each, one highlighted |
+| [Spotlight](/examples/spotlight) | A page rendered by a custom Svelte page type declared in the config |
 
 ## How to read them
 

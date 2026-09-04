@@ -25,6 +25,7 @@ export const defaultConfig: ResolvedNimpressConfig = {
   banner: {},
   css: [],
   vite: {},
+  pageTypes: {},
   modules: {
     dir: 'modules',
     route: `/${defaultPaths.modules}`,

@@ -120,6 +120,10 @@ A live component workshop page. Use when:
 
 Frontmatter needs `data.system` and `data.component`. One `type: component` page per folder; the sibling `.story.ts` files become the stories. See [component-modules.md](./component-modules.md).
 
+## Custom types
+
+A type the site registers under `pageTypes` in the config, a Svelte component that receives the page. Use it when a shape recurs on a site and none of the built in types fits, and put a `<Component>.schema.json` beside it so lint validates the `data` fields. A built in name under `pageTypes` replaces that renderer for the whole site. See [Custom page types](https://nimling.github.io/nimpress/page-types/custom).
+
 ## Decision tree
 
 ```

@@ -51,6 +51,7 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 | The definition list of the site terms that feeds tooltips everywhere | `glossary` |
 | A grid of people from frontmatter data | `team` |
 | A row of plans with prices from frontmatter data | `pricing` |
+| A shape of your own, or a built in renderer replaced | a name from `pageTypes` in the config |
 | A vertical roadmap timeline of milestones, epics, features, and bugs | `roadmap` |
 | An interactive entity relationship diagram of a database | `dbml` |
 | A live workshop page for one component in a library | `component` |

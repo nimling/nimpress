@@ -2,7 +2,7 @@ import { resolve, relative, dirname, basename, sep, join } from 'node:path'
 import { existsSync, readFileSync, statSync, readdirSync, rmSync } from 'node:fs'
 import matter from 'gray-matter'
 import type { ResolvedNimpressConfig } from '../types'
-import { lintContent } from '../plugin'
+import { lintContent, setCustomPageTypes } from '../plugin'
 import { lintModules } from '../modules/lint'
 import { cacheDir } from '../config/paths'
 import { walkFiles, hasFlag, finishLint } from './shared'
@@ -248,7 +248,7 @@ export async function runLint(cwd: string, resolved: ResolvedNimpressConfig): Pr
   const args = process.argv.slice(2)
   const problems = [
     ...lintStructure(cwd, resolved),
-    ...(await lintContent(cwd, resolved.contentDir)),
+    ...(setCustomPageTypes(cwd, resolved.pageTypes ?? {}), await lintContent(cwd, resolved.contentDir)),
     ...lintImports(cwd, resolved),
     ...(await lintModules(cwd, resolved))
   ]

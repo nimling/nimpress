@@ -4,7 +4,7 @@ type: section
 order: 19
 ---
 
-Every markdown file selects a renderer through the `type` frontmatter field. Eighteen types exist. Omit the field and the page is a `doc`.
+Every markdown file selects a renderer through the `type` frontmatter field. Eighteen types exist, and the config registers more. Omit the field and the page is a `doc`.
 
 ## `doc`
 
@@ -242,6 +242,18 @@ data:
 ```
 
 See [modules.md](/modules) for systems, stories, controls, the harness, and the modules CLI.
+
+## Custom types
+
+The `pageTypes` config block maps a type name to a Svelte component file. A new name registers a type and a built in name replaces its renderer; a `<Component>.schema.json` beside the component declares the `data` fields lint validates.
+
+```json
+{
+  "pageTypes": { "spotlight": "./docs/types/Spotlight.svelte" }
+}
+```
+
+See [Custom page types](/page-types/custom) for the component contract.
 
 ## Grouping and duplicate routes
 

@@ -143,6 +143,7 @@ export const userConfigSchema = z.object({
   banner: z.union([bannerSchema, z.literal(false)]).optional(),
   css: z.union([z.string(), z.array(z.string())]).optional(),
   vite: z.record(z.unknown()).optional(),
+  pageTypes: z.record(z.string()).optional(),
   modules: z.array(moduleSystemSchema).optional()
 }).passthrough()
 
