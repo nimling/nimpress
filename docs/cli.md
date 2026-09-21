@@ -8,7 +8,7 @@ tags: cli, lint, modules, build, guard, export
 order: 8
 ---
 
-The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, linting, building, exporting, guarding, and the component workshop. Every command runs from the consumer repo root and reads `nimpress.config.ts`, `nimpress.config.js`, `nimpress.config.mjs`, or `nimpress.config.json`. Long value flags take their value with an equals sign, `--target=central`.
+The `nimpress` binary owns the whole site lifecycle: scaffolding, dev servers, linting, building, exporting, guarding, previewing inside the central docs site, and the component workshop. Every command runs from the consumer repo root and reads `nimpress.config.ts`, `nimpress.config.js`, `nimpress.config.mjs`, or `nimpress.config.json`. `view` and `cache clear` are the exceptions: they run from any repo the docs sync pipeline publishes, config or not. Long value flags take their value with an equals sign, `--target=central`.
 
 ## Commands
 
@@ -27,6 +27,8 @@ One page per command sits under [Usage](/usage). Run `nimpress --help` for the s
 | [`nimpress skill`](/usage/skill) | Hand out and install the agent skill |
 | [`nimpress completion`](/usage/completion) | Print or install the shell completion |
 | [`nimpress seo`](/usage/seo) | Report the search and robot metadata of every page, and write the generated fields |
+| [`nimpress view`](/usage/view) | Preview the export folder inside the central docs site it publishes to |
+| [`nimpress cache clear`](/usage/cache) | Clear the links and clones view keeps, and the local cache root |
 
 ## paths
 
@@ -41,6 +43,10 @@ Every folder nimpress writes is set under one optional `paths` block in the conf
 4. `paths.modules` is both the folder under `out` and the url route segment for the harness bundles, default `_components`, served at `/<modules>/<system>/`.
 
 5. `paths.guarded` is both the folder under `out` and the url route prefix for guarded bundles, default `_guarded`, served at `/<guarded>/<bundle>/`. The prefix is written into `access.json` so the runtime and the guard provider agree.
+
+## The global config
+
+`view` is the one command that keeps state outside the repo. The links it resolves, which docs site a repo publishes into and how to log in to it, live in `~/.nimpress/config.json`, created on first use. The docs site clones it serves from live under `~/.tide/nimpress/sites/<owner>__<repo>/`, one per site and shared by every repo publishing into it. `nimpress cache clear` empties both. See [view](/usage/view) and [cache](/usage/cache).
 
 ## Exit behavior
 

@@ -39,7 +39,7 @@ const tree: CompletionCommand[] = [
   {
     name: 'dev',
     describe: 'Serve the site and every component harness',
-    flags: [],
+    flags: [{ name: '--view', value: false, describe: 'serve the central docs site with this repo\'s exported pages in place' }],
     subs: []
   },
   {
@@ -111,6 +111,35 @@ const tree: CompletionCommand[] = [
       { name: '--out', value: true, describe: 'the folder the pages are collected into' }
     ],
     subs: []
+  },
+  {
+    name: 'view',
+    describe: 'Preview the export folder inside the central docs site it publishes to',
+    flags: [
+      { name: '--no-browser', value: false, describe: 'print the url instead of opening a browser' },
+      { name: '--docs-repo', value: true, describe: 'the docs site as owner/repo or a url when the workflows do not name it' },
+      { name: '--export-dir', value: true, describe: 'the export folder when no workflow names it' },
+      { name: '--target', value: true, describe: 'the export target name when the repo has a nimpress config' },
+      { name: '--offline', value: false, describe: 'serve from the cached clone without fetching' }
+    ],
+    subs: []
+  },
+  {
+    name: 'cache',
+    describe: 'Clear the links and clones view keeps, and the local cache root',
+    flags: [],
+    subs: [
+      {
+        name: 'clear',
+        describe: 'Clear the links, the docs site clones, or the local cache root',
+        flags: [
+          { name: '--links', value: false, describe: 'clear only the links and login methods' },
+          { name: '--sites', value: false, describe: 'clear only the docs site clones' },
+          { name: '--local', value: false, describe: 'clear only the cache root of the current repo' }
+        ],
+        subs: []
+      }
+    ]
   },
   {
     name: 'guard',

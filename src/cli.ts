@@ -8,6 +8,9 @@ import { runExport } from './cli/export'
 import { runSkill } from './cli/skill'
 import { runCompletion } from './cli/completion'
 import { runSeo } from './cli/seo'
+import { runView } from './cli/view'
+import { runCache } from './cli/cache'
+import { hasFlag } from './cli/shared'
 
 export { loadNimpressConfig } from './config/load'
 export { buildViteConfig } from './config/viteConfig'
@@ -27,6 +30,14 @@ export async function run(argv: string[]): Promise<void> {
   }
   if (cmd === 'completion') {
     runCompletion(cwd, args)
+    return
+  }
+  if (cmd === 'view' || (cmd === 'dev' && hasFlag(args, 'view'))) {
+    await runView(cwd, args)
+    return
+  }
+  if (cmd === 'cache') {
+    await runCache(cwd, args)
     return
   }
   const { resolved } = await loadNimpressConfig(cwd)

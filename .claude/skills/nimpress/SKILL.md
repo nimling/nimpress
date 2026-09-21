@@ -1,19 +1,19 @@
 ---
 name: nimpress
-description: Drive the nimpress documentation site cli from the terminal. Use when scaffolding a docs site, running or building it, linting content and frontmatter, managing the component workshop with schemas stories and harnesses, exporting pages for the docs sync pipeline, wiring gated pages to the auth provider, or installing this skill and shell completion.
+description: Drive the nimpress documentation site cli from the terminal. Use when scaffolding a docs site, running or building it, linting content and frontmatter, managing the component workshop with schemas stories and harnesses, exporting pages for the docs sync pipeline, previewing a repo's export folder inside the central docs site, wiring gated pages to the auth provider, or installing this skill and shell completion.
 ---
 
 # nimpress
 
-`nimpress` is the cli of `@nimtech/nimpress`, a Svelte 5 documentation site framework. It scaffolds a site, serves it, builds it, lints the content, drives the component workshop, collects pages for the central docs site, and wires gated pages to the auth provider. Every command runs from the repo root of the site it acts on.
+`nimpress` is the cli of `@nimtech/nimpress`, a Svelte 5 documentation site framework. It scaffolds a site, serves it, builds it, lints the content, drives the component workshop, collects pages for the central docs site, previews them inside that site, and wires gated pages to the auth provider. Every command runs from the repo root of the site it acts on.
 
 ## Boundaries
 
-1. The cli acts on the current working directory. There is no target flag and no remote mode. Change directory into the site before running anything.
+1. The cli acts on the current working directory. There is no target flag and no remote mode. Change directory into the site before running anything. `view` is the one command that reaches another repo, the central docs site, and it does so through a cache clone it owns.
 
-2. Every command except `init`, `skill`, and `completion` loads the site config first. A missing or broken `nimpress.config.ts` or `nimpress.config.json` fails the command before it starts, so `nimpress init` is what a bare folder runs first.
+2. Every command except `init`, `skill`, `completion`, `view`, and `cache clear` loads the site config first. A missing or broken `nimpress.config.ts` or `nimpress.config.json` fails the command before it starts, so `nimpress init` is what a bare folder runs first. `view` and `cache clear` run from any repo the docs sync pipeline publishes, config or not.
 
-3. `nimpress` writes only into the folders the `paths` config block declares. It never writes into the repo root beyond the config, the content folder, `CLAUDE.md`, `AGENTS.md`, and a temporary `index.html` that the build removes.
+3. `nimpress` writes only into the folders the `paths` config block declares. It never writes into the repo root beyond the config, the content folder, `CLAUDE.md`, `AGENTS.md`, and a temporary `index.html` that the build removes. Outside the repo it writes `~/.nimpress` for the links `view` resolves and `~/.tide/nimpress/sites/` for the docs site clones, and nothing else.
 
 4. The authoritative authoring rules ship inside the package at `node_modules/@nimtech/nimpress/.claude/rules/`. Read the rule before writing content, never guess the frontmatter contract from a rendered page.
 
@@ -40,9 +40,10 @@ Writes `nimpress.config.ts` with every field documented and commented out, or `n
 
 ```sh
 nimpress dev
+nimpress dev --view
 ```
 
-Serves the site and starts one harness server for every configured component system. It stays running and binds the vite cli shortcuts.
+Serves the site and starts one harness server for every configured component system. It stays running and binds the vite cli shortcuts. `--view` serves the central docs site this repo publishes into instead, with the exported pages in place, the same run as `view` below.
 
 ### build
 
@@ -99,6 +100,30 @@ nimpress export --target=<name> --out=.nimpress
 ```
 
 Copies every page carrying `export: <name>` in its frontmatter, together with the whole folder that page sits in, into `paths.export`. A page with `export: true` is taken by every target. The `export:` and `file:` frontmatter lines are stripped and a `version:` line is written from the `version` field of `package.json` when the page carries a `package:` field. `--out=` overrides the destination.
+
+### view
+
+```sh
+nimpress view
+nimpress view --no-browser
+nimpress view --docs-repo=<owner/repo>
+nimpress view --export-dir=<folder> --target=<name>
+nimpress view --offline
+nimpress dev --view
+```
+
+Serves the central docs site this repo publishes into with the repo's export folder overlaid at its mapped path, and opens the browser on those pages. It needs no config in the repo. The docs site is read from the `docs-notify` step of the workflows under `.github/workflows/`, `docs-repo` and `export-dir`, one link per site when several name one; where none does, the command asks for the repo url, http or ssh, and `--docs-repo=` answers it up front. A connection that is refused leads to a login through `gh` when installed, else by naming the ssh key. Links and the login method persist in `~/.nimpress`, so the question is asked once per repo. The site is cloned under `~/.tide/nimpress/sites/<owner>__<repo>/`, fetched on every run unless `--offline`, and `pnpm install` runs there on first use and on a lockfile change. The mapped path is `nimpress.sources.json` merged with the receiver's `defaults`, the source winning per field. A repo with its own config runs `export` in watch mode underneath; `nimpress dev --view` is the same run from there. `--no-browser` prints the url instead of opening it, `--export-dir=` names the export folder when no workflow does, and `--target=` limits the export to one target name.
+
+### cache
+
+```sh
+nimpress cache clear
+nimpress cache clear --links
+nimpress cache clear --sites
+nimpress cache clear --local
+```
+
+`clear` with no flag removes the links in `~/.nimpress` and the docs site clones under `~/.tide/nimpress/sites/`, so the next `view` resolves and clones afresh. `--links` and `--sites` take one of the two. `--local` removes `paths.cache` of the current repo and needs a config there.
 
 ### guard
 
@@ -199,6 +224,12 @@ Publish a repo's pages into the central docs site:
 
 ```sh
 nimpress export --target=nimployer
+```
+
+See those pages inside the central docs site before the tag:
+
+```sh
+nimpress view
 ```
 
 Ship a gated build:

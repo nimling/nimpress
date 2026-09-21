@@ -145,6 +145,12 @@ The version tag that `docs-sync` pushes into the docs repo triggers that repo's 
 
 4. In the docs repo, add a source to `nimpress.sources.json`, or configure it through the receiver's `defaults` input.
 
+5. Run `nimpress view` in the app repo and read the pages in place before the first tag.
+
+## Previewing before the tag
+
+The pipeline runs on a version tag, so the first look at a page inside the central site would otherwise be after a release. `nimpress view` gives that look locally: run from the app repo, it reads the consumer workflow for the docs site and the export folder, clones the docs site into a cache, resolves the mapped path from `nimpress.sources.json` and the receiver's `defaults` the way `docs-sync` does, and serves the site with the export folder overlaid there. The browser opens on the app's pages and every save reloads them. Where the workflow does not name the docs site, view asks for its url once and remembers it. See [view](/usage/view).
+
 ## What not to do
 
 1. Do not commit a synced subtree by hand. The action owns `tools/<repo>` and similar targets.
