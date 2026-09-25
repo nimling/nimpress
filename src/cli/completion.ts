@@ -4,13 +4,13 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { hasFlag, positional } from './shared'
 import { installSkill } from './skill'
 
-interface CompletionFlag {
+export interface CompletionFlag {
   name: string
   value: boolean
   describe: string
 }
 
-interface CompletionCommand {
+export interface CompletionCommand {
   name: string
   describe: string
   flags: CompletionFlag[]
@@ -29,7 +29,7 @@ const frameworkFlag: CompletionFlag = {
   describe: 'vue or svelte, overriding the framework of the system'
 }
 
-const tree: CompletionCommand[] = [
+export const commands: CompletionCommand[] = [
   {
     name: 'init',
     describe: 'Write the config, the content folder, and the agent guide',
@@ -181,6 +181,25 @@ const tree: CompletionCommand[] = [
     ]
   },
   {
+    name: 'plugin',
+    describe: 'The claude plugin that carries the skill and the nimpress mcp server',
+    flags: [],
+    subs: [
+      {
+        name: 'put',
+        describe: 'Add the nimpress marketplace and install the plugin for the user, or for the current project with --project',
+        flags: [{ name: '--project', value: false, describe: 'install into the project settings of the current directory instead of the user settings' }],
+        subs: []
+      }
+    ]
+  },
+  {
+    name: 'mcp',
+    describe: 'Serve every command as a tool over the model context protocol on stdio',
+    flags: [],
+    subs: []
+  },
+  {
     name: 'completion',
     describe: 'Print the shell completion script, or wire it up with --auto',
     flags: [
@@ -212,10 +231,10 @@ function token(entry: CompletionFlag, withValue: boolean): string {
 
 function bashScript(): string {
   const lines = ['_nimpress() {', '  local cur="${COMP_WORDS[COMP_CWORD]}"']
-  lines.push(`  local words="${tree.map((command) => command.name).join(' ')}"`)
+  lines.push(`  local words="${commands.map((command) => command.name).join(' ')}"`)
   lines.push('  if [ "$COMP_CWORD" -gt 1 ]; then')
   lines.push('    case "${COMP_WORDS[1]}" in')
-  for (const command of tree) {
+  for (const command of commands) {
     const words = [...command.subs.map((sub) => sub.name), ...groupFlags(command).map((entry) => token(entry, false))]
     lines.push(`      ${command.name}) words="${words.join(' ')}" ;;`)
   }
@@ -243,12 +262,12 @@ function zshScript(): string {
     ...zshEntries(
       '    ',
       'nimpress command',
-      tree.map((command) => `'${command.name}:${command.describe}'`)
+      commands.map((command) => `'${command.name}:${command.describe}'`)
     )
   )
   lines.push('  fi')
   lines.push('  case "$words[2]" in')
-  for (const command of tree) {
+  for (const command of commands) {
     lines.push(`    ${command.name})`)
     if (command.subs.length) {
       lines.push('      if (( CURRENT == 3 )); then')
@@ -288,12 +307,12 @@ function zshScript(): string {
 
 function fishScript(): string {
   const lines = ['complete -c nimpress -f']
-  for (const command of tree) {
+  for (const command of commands) {
     lines.push(
       `complete -c nimpress -n '__fish_use_subcommand' -a '${command.name}' -d '${command.describe}'`
     )
   }
-  for (const command of tree) {
+  for (const command of commands) {
     const condition = `__fish_seen_subcommand_from ${command.name}`
     for (const sub of command.subs) {
       lines.push(`complete -c nimpress -n '${condition}' -a '${sub.name}' -d '${sub.describe}'`)
@@ -314,11 +333,11 @@ function powershellScript(): string {
     '    $words = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })',
     '    $candidates = @()',
     '    if ($words.Count -le 2) {',
-    `        $candidates = @(${tree.map((command) => `'${command.name}'`).join(', ')})`,
+    `        $candidates = @(${commands.map((command) => `'${command.name}'`).join(', ')})`,
     '    } else {',
     '        switch ($words[1]) {'
   ]
-  for (const command of tree) {
+  for (const command of commands) {
     const words = [...command.subs.map((sub) => sub.name), ...groupFlags(command).map((entry) => token(entry, true))]
     lines.push(`            '${command.name}' { $candidates = @(${words.map((word) => `'${word}'`).join(', ')}) }`)
   }

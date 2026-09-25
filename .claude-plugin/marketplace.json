@@ -1,0 +1,12 @@
+{
+  "name": "nimpress",
+  "owner": { "name": "nimling" },
+  "description": "The nimpress plugin for Claude Code.",
+  "plugins": [
+    {
+      "name": "nimpress",
+      "source": ".",
+      "description": "The nimpress skill and the nimpress mcp server."
+    }
+  ]
+}

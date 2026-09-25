@@ -29,6 +29,8 @@ One page per command sits under [Usage](/usage). Run `nimpress --help` for the s
 | [`nimpress seo`](/usage/seo) | Report the search and robot metadata of every page, and write the generated fields |
 | [`nimpress view`](/usage/view) | Preview the export folder inside the central docs site it publishes to |
 | [`nimpress cache clear`](/usage/cache) | Clear the links and clones view keeps, and the local cache root |
+| [`nimpress plugin`](/usage/plugin) | Install the Claude Code plugin with the skill and the mcp server |
+| [`nimpress mcp`](/usage/plugin#the-mcp-server) | Serve every command as a tool over the model context protocol on stdio |
 
 ## paths
 

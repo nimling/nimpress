@@ -6,6 +6,8 @@ import { runGuard } from './cli/guard'
 import { runModules } from './cli/modules'
 import { runExport } from './cli/export'
 import { runSkill } from './cli/skill'
+import { runPlugin } from './cli/plugin'
+import { runMcp } from './cli/mcp'
 import { runCompletion } from './cli/completion'
 import { runSeo } from './cli/seo'
 import { runView } from './cli/view'
@@ -26,6 +28,14 @@ export async function run(argv: string[]): Promise<void> {
   }
   if (cmd === 'skill') {
     runSkill(cwd, args)
+    return
+  }
+  if (cmd === 'plugin') {
+    runPlugin(cwd, args)
+    return
+  }
+  if (cmd === 'mcp') {
+    runMcp(cwd)
     return
   }
   if (cmd === 'completion') {
