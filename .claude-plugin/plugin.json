@@ -1,0 +1,14 @@
+{
+  "name": "nimpress",
+  "description": "Drive the nimpress documentation site cli from any repo: the nimpress skill and an mcp server exposing every command as a tool.",
+  "author": { "name": "nimling" },
+  "homepage": "https://nimling.github.io/nimpress",
+  "repository": "https://github.com/nimling/nimpress",
+  "license": "Apache-2.0",
+  "skills": "./.claude/skills/",
+  "mcpServers": {
+    "nimpress": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp.sh"
+    }
+  }
+}

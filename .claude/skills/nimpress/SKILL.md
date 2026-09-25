@@ -1,6 +1,6 @@
 ---
 name: nimpress
-description: Drive the nimpress documentation site cli from the terminal. Use when scaffolding a docs site, running or building it, linting content and frontmatter, managing the component workshop with schemas stories and harnesses, exporting pages for the docs sync pipeline, previewing a repo's export folder inside the central docs site, wiring gated pages to the auth provider, or installing this skill and shell completion.
+description: Drive the nimpress documentation site cli from the terminal. Use when scaffolding a docs site, running or building it, linting content and frontmatter, managing the component workshop with schemas stories and harnesses, exporting pages for the docs sync pipeline, previewing a repo's export folder inside the central docs site, wiring gated pages to the auth provider, or installing this skill, the Claude Code plugin with its mcp server, and shell completion.
 ---
 
 # nimpress
@@ -11,7 +11,7 @@ description: Drive the nimpress documentation site cli from the terminal. Use wh
 
 1. The cli acts on the current working directory. There is no target flag and no remote mode. Change directory into the site before running anything. `view` is the one command that reaches another repo, the central docs site, and it does so through a cache clone it owns.
 
-2. Every command except `init`, `skill`, `completion`, `view`, and `cache clear` loads the site config first. A missing or broken `nimpress.config.ts` or `nimpress.config.json` fails the command before it starts, so `nimpress init` is what a bare folder runs first. `view` and `cache clear` run from any repo the docs sync pipeline publishes, config or not.
+2. Every command except `init`, `skill`, `plugin`, `mcp`, `completion`, `view`, and `cache clear` loads the site config first. A missing or broken `nimpress.config.ts` or `nimpress.config.json` fails the command before it starts, so `nimpress init` is what a bare folder runs first. `view` and `cache clear` run from any repo the docs sync pipeline publishes, config or not.
 
 3. `nimpress` writes only into the folders the `paths` config block declares. It never writes into the repo root beyond the config, the content folder, `CLAUDE.md`, `AGENTS.md`, and a temporary `index.html` that the build removes. Outside the repo it writes `~/.nimpress` for the links `view` resolves and `~/.tide/nimpress/sites/` for the docs site clones, and nothing else.
 
@@ -158,6 +158,23 @@ nimpress skill put --project
 
 `get` prints this document. `put` writes it to `~/.claude/skills/nimpress/SKILL.md`, or to `.claude/skills/nimpress/SKILL.md` under the current directory with `--project`, and prints the path it wrote.
 
+### plugin
+
+```sh
+nimpress plugin put
+nimpress plugin put --project
+```
+
+`put` runs `claude plugin marketplace add nimling/nimpress` and `claude plugin install nimpress@nimpress`, at user scope, or at project scope with `--project`. The plugin carries this skill and the nimpress mcp server. It fails when the `claude` cli is missing or either step exits non zero.
+
+### mcp
+
+```sh
+nimpress mcp
+```
+
+Serves every command as a tool over the model context protocol on stdio. The plugin starts it; nothing else does. Tools are named after the command path with underscores, `lint`, `modules_update`, `guard_map`, and take `args` for positionals, `flags` by flag name without the dashes, and `cwd` relative to the project root. `dev`, `view`, and `modules_dev` keep running and return their pid with the first output; `stop` ends one by pid. `skill`, `plugin`, `mcp`, and `completion` are not tools.
+
 ### completion
 
 ```sh
@@ -248,7 +265,7 @@ nimpress completion --auto --skill
 
 ## Failure reading
 
-1. `[nimpress] unknown command: <name>` means the first word is not one of `init`, `lint`, `dev`, `build`, `guard`, `modules`, `export`, `skill`, `completion`, `seo`.
+1. `[nimpress] unknown command: <name>` means the first word is not one of `init`, `lint`, `dev`, `build`, `guard`, `modules`, `export`, `skill`, `plugin`, `mcp`, `completion`, `seo`, `view`, `cache`.
 
 2. `[nimpress] modules <sub>: several systems configured` means the config declares more than one system and the command needs `--system=<name>`.
 
