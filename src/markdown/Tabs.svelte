@@ -170,19 +170,19 @@
   }
   .np-tabs-code .np-tabs-bar {
     padding: 0 8px;
-    background-color: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background-color: var(--np-code-bar-bg);
+    border-bottom: 1px solid var(--np-code-bar-border);
     height: 38px;
   }
   .np-tabs-code .np-tabs-tab {
-    color: rgba(229, 231, 235, 0.5);
+    color: var(--np-code-bar-text);
     font-size: 12px;
     font-weight: 400;
     font-family: var(--np-font-mono);
     text-transform: lowercase;
   }
   .np-tabs-code .np-tabs-tab:hover {
-    color: rgba(229, 231, 235, 0.9);
+    color: var(--np-code-bar-text-active);
   }
   .np-tabs-code .np-tabs-tab.active {
     color: var(--np-brand);

@@ -1,12 +1,19 @@
 <script lang="ts">
-  import Header from './Header.svelte'
-  import Announce from './Announce.svelte'
-  import Footer from './Footer.svelte'
-  import Sidebar from './Sidebar.svelte'
-  import SearchModal from '../search/SearchModal.svelte'
+  import StockHeader from './Header.svelte'
+  import StockAnnounce from './Announce.svelte'
+  import StockFooter from './Footer.svelte'
+  import StockSidebar from './Sidebar.svelte'
+  import StockSearchModal from '../search/SearchModal.svelte'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import { onMount, type Snippet } from 'svelte'
   import { configStore, hiddenElements } from '../framework/configStore'
+  import { themed } from '../framework/components'
+
+  const Header = themed('Header', StockHeader)
+  const Announce = themed('Announce', StockAnnounce)
+  const Footer = themed('Footer', StockFooter)
+  const Sidebar = themed('Sidebar', StockSidebar)
+  const SearchModal = themed('SearchModal', StockSearchModal)
 
   let { children }: { children: Snippet } = $props()
 
@@ -74,6 +81,16 @@
   let searchOpen = $state(false)
   let drawerOpen = $state(false)
   let collapsed = $state(loadCollapsed())
+  let mobile = $state(false)
+  const sidebarOpen = $derived(mobile ? drawerOpen : !collapsed)
+
+  onMount(() => {
+    const query = window.matchMedia('(max-width: 1024px)')
+    const sync = () => (mobile = query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  })
 
   function loadCollapsed(): boolean {
     if (typeof localStorage === 'undefined') return false
@@ -87,8 +104,7 @@
   }
 
   function toggleSidebar() {
-    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
-    if (isMobile) {
+    if (mobile) {
       drawerOpen = !drawerOpen
       return
     }
@@ -124,7 +140,7 @@
   <Header
     onOpenSearch={() => (searchOpen = true)}
     onToggleDrawer={toggleSidebar}
-    drawerOpen={drawerOpen || !collapsed}
+    {sidebarOpen}
     {navigation}
   />
   <div class="np-body">
@@ -161,10 +177,13 @@
     padding: 0;
     overflow: hidden;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     --np-sidebar-current: var(--np-sidebar-width);
+  }
+  .np-app.np-drawer-open :global(.np-announce) {
+    display: none;
   }
   .np-app.np-collapsed {
     --np-sidebar-current: 0px;
@@ -238,7 +257,7 @@
       z-index: 40;
       transform: translateX(-100%);
       transition: transform 0.22s ease;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+      box-shadow: var(--np-shadow-popover);
       background-color: var(--np-bg);
     }
     .np-aside :global(.np-sidebar) {
@@ -255,7 +274,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(0, 0, 0, 0.35);
+      background-color: var(--np-overlay-soft);
       z-index: 35;
       border: 0;
       padding: 0;

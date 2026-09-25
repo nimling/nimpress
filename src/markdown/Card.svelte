@@ -20,7 +20,7 @@
       {#if icon.trim().startsWith('<svg')}{@html icon}{:else}{icon}{/if}
     </div>
   {/if}
-  <h3>{title}</h3>
+  <h3 class="np-card-title">{title}</h3>
   {#if children}<div class="np-card-body">{@render children()}</div>{/if}
 </svelte:element>
 
@@ -43,7 +43,7 @@
     font-size: 24px;
     margin-bottom: 8px;
   }
-  h3 {
+  .np-card-title {
     margin: 0 0 4px;
     font-size: 16px;
     font-weight: 600;

@@ -2,10 +2,10 @@
 title: Header
 order: 6
 tags: Setup
-description: The announcement bar above the header, and the title, the logo, the repository link, and the routes the header carries.
+description: The announcement notification, and the title, the logo, the repository link, and the routes the header carries.
 ---
 
-The header can be customized to show an announcement bar that disappears upon scrolling, and provides some options for further configuration. It also includes the search bar and a place to display your project's git repository, as explained in [Search](/search) and [Repository](/setup/repository).
+The header carries the title, the sidebar toggle, the search bar, and the repository link. An announcement shows as a notification in the bottom right corner and never takes space in the header. It also includes the search bar and a place to display your project's git repository, as explained in [Search](/search) and [Repository](/setup/repository).
 
 ## Configuration
 
@@ -22,9 +22,9 @@ The header can be customized to show an announcement bar that disappears upon sc
 }
 ```
 
-### Announcement bar
+### Announcement
 
-nimpress includes an announcement bar, which is the perfect place to display project news or other important information to the user. When the user scrolls past the header, the bar will automatically disappear. `text` is one markdown line, and `link` wraps the whole bar in a link. Add the following lines to your configuration:
+nimpress includes an announcement, which is the perfect place to display project news or other important information to the user. It slides in as a notification in the bottom right corner and stays out of the page layout. `text` is one markdown line, and `link` wraps the whole notification text in a link. Add the following lines to your configuration:
 
 ```json
 {

@@ -1,7 +1,11 @@
 import type { ResolvedNimpressConfig } from '../types'
+import { themeName } from './defaults'
+import { siteThemes } from './load'
 
 export function indexHtml(resolved: ResolvedNimpressConfig, entrySrc = 'virtual:nimpress/main'): string {
   const favicon = resolved.logo ? `\n    <link rel="icon" href="${resolved.logo}" />` : ''
+  const themes = JSON.stringify(siteThemes(resolved).map(themeName))
+  const fallback = JSON.stringify(themeName(resolved.theme))
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -16,6 +20,9 @@ export function indexHtml(resolved: ResolvedNimpressConfig, entrySrc = 'virtual:
           ? v
           : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         if (mode === 'dark') document.documentElement.classList.add('dark')
+        const names = ${themes}
+        const chosen = localStorage.getItem('nimpress-site-theme')
+        document.documentElement.dataset.npTheme = names.includes(chosen) ? chosen : ${fallback}
       } catch {}
     </script>
   </head>

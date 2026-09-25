@@ -462,6 +462,76 @@
         "docs/overrides.css"
       ]
     },
+    "theme": {
+      "description": "Theme the site renders in: stock, glass, or a path to a stylesheet building on stock.",
+      "type": "string",
+      "default": "stock",
+      "examples": [
+        "glass",
+        "docs/theme.css"
+      ]
+    },
+    "themes": {
+      "description": "Themes the reader can switch between from the header, stock, glass, or stylesheet paths. The theme field names the default.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "stock",
+          "glass"
+        ]
+      ]
+    },
+    "components": {
+      "description": "Components replacing the stock ones: a component name to a Svelte component file.",
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "Header",
+          "Announce",
+          "Footer",
+          "Sidebar",
+          "SidebarNode",
+          "Breadcrumbs",
+          "RightToc",
+          "BackToTop",
+          "SearchModal",
+          "AccountMenu",
+          "ThemeMenu",
+          "Feedback",
+          "SubscribeDialog",
+          "CodeBlock",
+          "CodeGroup",
+          "Tabs",
+          "Actions",
+          "Feature",
+          "Lightbox",
+          "MermaidBlock",
+          "MathBlock",
+          "DBMLBlock",
+          "ComponentEmbed",
+          "Card",
+          "CardGroup",
+          "Operation",
+          "Schema",
+          "ParamRow",
+          "MethodBadge",
+          "CodeExamples",
+          "TryPanel",
+          "TryDialog"
+        ]
+      },
+      "additionalProperties": {
+        "type": "string"
+      },
+      "examples": [
+        {
+          "Header": "./docs/theme/Header.svelte"
+        }
+      ]
+    },
     "vite": {
       "type": "object",
       "description": "Vite overrides merged into the site and harness configs.",

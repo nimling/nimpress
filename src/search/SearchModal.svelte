@@ -268,7 +268,7 @@
   .np-search-backdrop {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: var(--np-overlay);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-start;

@@ -195,7 +195,7 @@
       background-color: var(--np-bg-card);
       border: 1px solid var(--np-border);
       border-radius: var(--np-radius-md);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--np-shadow-popover);
       opacity: 0;
       transform: translateX(8px);
       pointer-events: none;

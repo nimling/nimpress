@@ -50,7 +50,7 @@
   }
   .np-action-primary {
     background-color: var(--np-brand);
-    color: #fff;
+    color: var(--np-text-on-brand);
   }
   .np-action-primary:hover { filter: brightness(1.05); }
   .np-action-secondary {

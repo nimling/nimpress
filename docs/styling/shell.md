@@ -21,8 +21,8 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | Class |
 |---|
 | `np-announce` |
-| `np-announce-away` |
 | `np-announce-dismiss` |
+| `np-announce-mark` |
 | `np-announce-text` |
 
 ## App
@@ -114,11 +114,11 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-header` |
 | `np-icon-btn` |
 | `np-menu-btn` |
+| `np-menu-chevron` |
+| `np-menu-fill` |
 | `np-menu-icon` |
-| `np-menu-line` |
-| `np-menu-line-bot` |
-| `np-menu-line-mid` |
-| `np-menu-line-top` |
+| `np-menu-pane` |
+| `np-mode-toggle` |
 | `np-search-icon` |
 | `np-search-label` |
 | `np-search-trigger` |
@@ -132,6 +132,9 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-card` |
 | `np-cards` |
 | `np-hero` |
+| `np-home-card-title` |
+| `np-home-lead` |
+| `np-home-title` |
 
 ## RightToc
 
@@ -181,3 +184,15 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-subgroup-static` |
 | `np-subgroup-toggle` |
 | `np-subitems` |
+
+## ThemeMenu
+
+`src/layout/ThemeMenu.svelte`
+
+| Class |
+|---|
+| `np-theme-menu` |
+| `np-theme-menu-item` |
+| `np-theme-menu-list` |
+| `np-theme-menu-swatch` |
+| `np-theme-menu-trigger` |

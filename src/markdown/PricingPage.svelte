@@ -133,7 +133,7 @@
   }
   .np-pricing-action-primary {
     background-color: var(--np-brand);
-    color: #ffffff;
+    color: var(--np-text-on-brand);
   }
   .np-pricing-action-primary:hover {
     background-color: var(--np-brand-hover, var(--np-brand));

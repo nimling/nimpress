@@ -37,7 +37,7 @@
     max-height: 100%;
     object-fit: contain;
     border-radius: var(--np-radius-md);
-    box-shadow: 0 24px 64px rgb(0 0 0 / 0.4);
+    box-shadow: var(--np-shadow-dialog);
   }
   .np-lightbox-close {
     position: absolute;
@@ -47,13 +47,13 @@
     height: 40px;
     border: 0;
     border-radius: var(--np-radius-pill);
-    background-color: rgb(255 255 255 / 0.12);
-    color: #ffffff;
+    background-color: var(--np-lightbox-control);
+    color: var(--np-lightbox-control-text);
     font-size: 24px;
     line-height: 1;
     cursor: pointer;
   }
   .np-lightbox-close:hover {
-    background-color: rgb(255 255 255 / 0.24);
+    background-color: var(--np-lightbox-control-hover);
   }
 </style>

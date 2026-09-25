@@ -59,7 +59,7 @@ Extra stylesheets loaded after the framework styles, one path or a list. See [Th
 
 ### announce, footer, repo, feedback, tags, status
 
-The header and footer surfaces: the [announcement bar](/setup/header), the [footer](/setup/footer), the [repository actions](/setup/repository), the [feedback widget](/setup/analytics), the [tag icons](/setup/tags), and the page `status` labels the sidebar shows.
+The header and footer surfaces: the [announcement](/setup/header), the [footer](/setup/footer), the [repository actions](/setup/repository), the [feedback widget](/setup/analytics), the [tag icons](/setup/tags), and the page `status` labels the sidebar shows.
 
 ### tabs, images, icons, math
 

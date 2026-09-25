@@ -51,7 +51,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--np-shadow-popover);
     transform: translate(-140px, 140px);
     opacity: 0;
     pointer-events: none;

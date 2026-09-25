@@ -5,15 +5,24 @@
   import { setupHashSpy } from '../framework/hashSpy'
   import { navigate } from 'sly-svelte-location-router'
   import { withBase } from '../framework/configStore'
-  import BackToTop from '../layout/BackToTop.svelte'
+  import StockBackToTop from '../layout/BackToTop.svelte'
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
-  import MermaidBlock from './MermaidBlock.svelte'
-  import MathBlock from './MathBlock.svelte'
-  import DBMLBlock from './DBMLBlock.svelte'
-  import CodeBlock from './CodeBlock.svelte'
-  import CodeGroup from './CodeGroup.svelte'
-  import Tabs from './Tabs.svelte'
+  import StockMermaidBlock from './MermaidBlock.svelte'
+  import StockMathBlock from './MathBlock.svelte'
+  import StockDBMLBlock from './DBMLBlock.svelte'
+  import StockCodeBlock from './CodeBlock.svelte'
+  import StockCodeGroup from './CodeGroup.svelte'
+  import StockTabs from './Tabs.svelte'
+  import { themed } from '../framework/components'
+
+  const MermaidBlock = themed('MermaidBlock', StockMermaidBlock)
+  const MathBlock = themed('MathBlock', StockMathBlock)
+  const DBMLBlock = themed('DBMLBlock', StockDBMLBlock)
+  const BackToTop = themed('BackToTop', StockBackToTop)
+  const CodeBlock = themed('CodeBlock', StockCodeBlock)
+  const CodeGroup = themed('CodeGroup', StockCodeGroup)
+  const Tabs = themed('Tabs', StockTabs)
 
   let { page }: { page: PageModule } = $props()
 
@@ -2212,7 +2221,7 @@
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-lg);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--np-shadow-dialog);
     padding: 20px 22px;
     pointer-events: auto;
   }

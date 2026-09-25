@@ -2,18 +2,24 @@
   import { configStore, hiddenElements, withBase, withoutBase } from '../framework/configStore'
   import { theme, toggleTheme } from '../framework/stores/theme'
   import { resolvedRoute } from 'sly-svelte-location-router'
-  import AccountMenu from '../auth/AccountMenu.svelte'
-  import Breadcrumbs from './Breadcrumbs.svelte'
+  import StockAccountMenu from '../auth/AccountMenu.svelte'
+  import StockBreadcrumbs from './Breadcrumbs.svelte'
+  import StockThemeMenu from './ThemeMenu.svelte'
+  import { themed } from '../framework/components'
+
+  const AccountMenu = themed('AccountMenu', StockAccountMenu)
+  const Breadcrumbs = themed('Breadcrumbs', StockBreadcrumbs)
+  const ThemeMenu = themed('ThemeMenu', StockThemeMenu)
 
   let {
     onOpenSearch,
     onToggleDrawer,
-    drawerOpen = false,
+    sidebarOpen = false,
     navigation = true
   }: {
     onOpenSearch: () => void
     onToggleDrawer?: () => void
-    drawerOpen?: boolean
+    sidebarOpen?: boolean
     navigation?: boolean
   } = $props()
 
@@ -30,27 +36,28 @@
 </script>
 
 <header class="np-header">
-  {#if navigation}
-    <button
-      class="np-menu-btn"
-      class:is-open={drawerOpen}
-      aria-label="Toggle menu"
-      aria-expanded={drawerOpen}
-      onclick={() => onToggleDrawer?.()}
-    >
-      <span class="np-menu-icon" aria-hidden="true">
-        <span class="np-menu-line np-menu-line-top"></span>
-        <span class="np-menu-line np-menu-line-mid"></span>
-        <span class="np-menu-line np-menu-line-bot"></span>
-      </span>
-    </button>
-  {/if}
   <a class="np-brand" href={withBase('/')}>
     {#if config.logo}
       <img src={withBase(config.logo)} alt={config.title} />
     {/if}
     <span>{config.title}</span>
   </a>
+  {#if navigation}
+    <button
+      class="np-menu-btn np-tip"
+      class:is-open={sidebarOpen}
+      aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+      aria-expanded={sidebarOpen}
+      onclick={() => onToggleDrawer?.()}
+    >
+      <svg class="np-menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path class="np-menu-fill" d="M9 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h3z" fill="currentColor" stroke="none" />
+        <path class="np-menu-pane" d="M9 3v18" />
+        <path class="np-menu-chevron" d="M16.5 9 13.5 12l3 3" />
+      </svg>
+    </button>
+  {/if}
 
   <div class="np-crumbs-slot">
     {#if crumbPath}
@@ -68,8 +75,19 @@
       <kbd>⌘K</kbd>
     </button>
 
-    <button class="np-icon-btn" aria-label="Toggle theme" onclick={toggleTheme}>
-      {isDark ? '☀' : '☾'}
+    <ThemeMenu />
+
+    <button class="np-icon-btn np-mode-toggle np-tip" aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} onclick={toggleTheme}>
+      {#if isDark}
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        </svg>
+      {:else}
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+        </svg>
+      {/if}
     </button>
 
     {#if config.github}
@@ -187,47 +205,44 @@
     align-items: center;
     justify-content: center;
     border: 0;
+    border-radius: var(--np-radius-md);
     background: transparent;
     color: var(--np-text-secondary);
     cursor: pointer;
     padding: 0;
   }
-  .np-menu-btn:hover { color: var(--np-text-primary); }
-  .np-menu-icon {
-    position: relative;
-    display: inline-block;
-    width: 20px;
-    height: 16px;
+  .np-menu-btn:hover {
+    color: var(--np-text-primary);
+    background-color: var(--np-bg-surface);
   }
-  .np-menu-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: currentColor;
-    border-radius: 2px;
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease, top 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-origin: 50% 50%;
-  }
-  .np-menu-line-top { top: 0; }
-  .np-menu-line-mid { top: 7px; }
-  .np-menu-line-bot { top: 14px; }
-  .np-menu-btn.is-open .np-menu-line-top {
-    top: 7px;
-    transform: rotate(45deg);
-  }
-  .np-menu-btn.is-open .np-menu-line-mid {
+  .np-menu-fill {
     opacity: 0;
-    transform: scaleX(0);
+    transition: opacity 0.24s ease;
   }
-  .np-menu-btn.is-open .np-menu-line-bot {
-    top: 7px;
-    transform: rotate(-45deg);
+  .np-menu-btn.is-open .np-menu-fill {
+    opacity: 0.18;
+  }
+  .np-menu-chevron {
+    transform-origin: 15px 12px;
+    transform: rotate(180deg);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .np-menu-btn.is-open .np-menu-chevron {
+    transform: rotate(0deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .np-menu-fill,
+    .np-menu-chevron {
+      transition: none;
+    }
   }
   @media (max-width: 1024px) {
     .np-header {
       gap: 12px;
       padding: 0 12px;
+    }
+    .np-menu-btn {
+      order: -1;
     }
     .np-search-trigger {
       min-width: 0;

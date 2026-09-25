@@ -1,11 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import TryPanel from './TryPanel.svelte'
-  import CodeExamples from './CodeExamples.svelte'
-  import MethodBadge from './MethodBadge.svelte'
+  import StockTryPanel from './TryPanel.svelte'
+  import StockCodeExamples from './CodeExamples.svelte'
+  import StockMethodBadge from './MethodBadge.svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
   import { createTryState, type TryState } from './tryState'
   import type { FlatOperation, FlatServer, SecurityScheme } from './types'
+  import { themed } from '../framework/components'
+
+  const TryPanel = themed('TryPanel', StockTryPanel)
+  const CodeExamples = themed('CodeExamples', StockCodeExamples)
+  const MethodBadge = themed('MethodBadge', StockMethodBadge)
 
   let {
     operations,
@@ -420,7 +425,7 @@
   .np-try-backdrop {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.55);
+    background-color: var(--np-overlay);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
@@ -437,7 +442,7 @@
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-lg);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--np-shadow-dialog);
     width: min(1280px, 100%);
     max-height: calc(100vh - 48px);
     display: flex;
@@ -525,8 +530,8 @@
     letter-spacing: 0;
     padding: 2px 4px;
     border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.32);
-    color: rgba(255, 255, 255, 0.96);
+    background-color: var(--np-code-inset);
+    color: var(--np-code-bar-text-active);
     line-height: 1;
     display: inline-flex;
     align-items: center;
@@ -621,7 +626,7 @@
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-md);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--np-shadow-dialog);
     list-style: none;
     margin: 0;
     padding: 4px;
@@ -699,7 +704,7 @@
     flex-wrap: nowrap;
     gap: 0;
     padding: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--np-code-bar-border);
     background-color: transparent;
     overflow-x: auto;
     scrollbar-width: none;
@@ -710,7 +715,7 @@
     flex: 0 0 auto;
     background: transparent;
     border: 0;
-    color: rgba(229, 231, 235, 0.55);
+    color: var(--np-code-bar-text);
     font-size: 12.5px;
     padding: 10px 12px;
     border-radius: 0;
@@ -722,7 +727,7 @@
     align-items: center;
     gap: 8px;
   }
-  .np-try-tabs-bar > button:hover { color: rgba(229, 231, 235, 0.95); }
+  .np-try-tabs-bar > button:hover { color: var(--np-code-bar-text-active); }
   .np-try-tabs-bar > button.active {
     color: var(--np-brand);
     border-bottom-color: var(--np-brand);
@@ -733,8 +738,8 @@
     font-size: 11px;
     padding: 1px 6px;
     border-radius: var(--np-radius-sm);
-    background-color: rgba(0, 0, 0, 0.28);
-    color: rgba(229, 231, 235, 0.95);
+    background-color: var(--np-code-inset);
+    color: var(--np-code-bar-text-active);
   }
   .np-try-tab-status[data-ok='true'] { color: var(--np-method-get, #14a44d); }
   .np-try-tab-status[data-ok='false'] { color: var(--np-method-delete, #d44a4a); }

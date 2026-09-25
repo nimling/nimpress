@@ -1,3 +1,6 @@
+import type { Component } from 'svelte'
+import type { themeComponentNames } from './config/defaults'
+
 export type BuiltInPageType =
   | 'doc'
   | 'openapi'
@@ -561,11 +564,16 @@ export interface NimpressFooterConfig {
   generator?: boolean
 }
 
+export type ThemeComponentName = (typeof themeComponentNames)[number]
+
 export interface NimpressConfig {
   title: string
   logo?: string
   github?: string
   brand?: NimpressBrandConfig
+  theme?: string
+  themes?: string[]
+  components?: Partial<Record<ThemeComponentName, Component<any>>>
   base?: string
   contentRoot: string
   navRoutes?: NavRoute[]
@@ -691,6 +699,12 @@ export interface NimpressUserConfig {
   defaultFrontmatterExclude?: string[]
   /** Dev server banner, false disables it. */
   banner?: NimpressBannerConfig | false
+  /** Theme the site renders in: stock, glass, or a path to a stylesheet building on stock. @example "glass" */
+  theme?: string
+  /** Themes the reader can switch between from the header, stock, glass, or stylesheet paths. The theme field names the default. @example ["stock", "glass"] */
+  themes?: string[]
+  /** Components replacing the stock ones: a component name to a Svelte component file. @example { "Header": "./docs/theme/Header.svelte" } */
+  components?: Partial<Record<ThemeComponentName, string>>
   /** Extra stylesheets loaded after the framework styles. @example "docs/overrides.css" */
   css?: string | string[]
   /** Vite overrides merged into the site and harness configs. @example { "resolve": { "alias": { "@": "./src" } } } */
@@ -732,6 +746,9 @@ export interface ResolvedNimpressConfig {
   defaultFrontmatter: Partial<Frontmatter>
   defaultFrontmatterExclude: string[]
   banner: NimpressBannerConfig | false
+  theme: string
+  themes: string[]
+  components: Partial<Record<ThemeComponentName, string>>
   css: string[]
   vite: Record<string, unknown>
   pageTypes: Record<string, string>

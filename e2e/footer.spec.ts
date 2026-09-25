@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { open } from './helpers'
 
-test('the announcement bar renders above the header and its dismiss button hides it', async ({ page }) => {
+test('the announcement renders as a notification and its dismiss button hides it', async ({ page }) => {
   const errors = await open(page, 'getting-started')
   const bar = page.locator('.np-announce')
   await expect(bar).toBeVisible()
@@ -13,13 +13,27 @@ test('the announcement bar renders above the header and its dismiss button hides
   expect(errors).toEqual([])
 })
 
-test('the announcement bar leaves when the reader scrolls past the header', async ({ page }) => {
+test('the announcement sits in the bottom right corner and takes no space above the header', async ({ page }) => {
   await open(page, 'frontmatter')
-  await expect(page.locator('.np-announce')).toBeVisible()
-  await page.locator('.np-main').evaluate((main) => main.scrollTo({ top: 400 }))
-  await expect(page.locator('.np-announce')).toBeHidden()
-  await page.locator('.np-main').evaluate((main) => main.scrollTo({ top: 0 }))
-  await expect(page.locator('.np-announce')).toBeVisible()
+  const note = page.locator('.np-announce')
+  await expect(note).toBeVisible()
+  const box = await note.boundingBox()
+  const viewport = page.viewportSize()
+  expect(box && viewport && box.x + box.width > viewport.width - 40 && box.y + box.height > viewport.height - 40).toBe(true)
+  const header = await page.locator('.np-header').boundingBox()
+  expect(header?.y).toBe(0)
+})
+
+test('the sidebar toggle names and draws the state it will change', async ({ page }) => {
+  await open(page, 'frontmatter')
+  const toggle = page.locator('.np-menu-btn')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(toggle).toHaveAttribute('aria-label', 'Close sidebar')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(toggle).toHaveAttribute('aria-label', 'Open sidebar')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
 })
 
 test('a doc page carries previous and next links in sidebar order', async ({ page }) => {

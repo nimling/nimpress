@@ -1,0 +1,379 @@
+@layer nimpress-theme {
+  html[data-np-theme="glass"] {
+    --np-bg: color-mix(in oklab, var(--np-brand) 7%, #f7f5f3);
+    --np-bg-surface: color-mix(in oklab, var(--np-brand) 5%, #efebe8);
+    --np-bg-sidebar: transparent;
+    --np-bg-card: color-mix(in oklab, var(--np-brand) 3%, #fdfcfb);
+    --np-bg-code-inline: color-mix(in oklab, var(--np-brand) 9%, rgb(255 255 255 / 0.7));
+    --np-bg-code-block: color-mix(in oklab, var(--np-brand) 7%, #15110f);
+
+    --np-text-primary: #1a1614;
+    --np-text-secondary: #3d3531;
+    --np-text-muted: #5a504b;
+    --np-text-faint: #6f6560;
+
+    --np-border: rgb(60 40 30 / 0.14);
+    --np-border-strong: rgb(60 40 30 / 0.26);
+    --np-divider: rgb(60 40 30 / 0.1);
+
+    --np-table-header-bg: rgb(60 40 30 / 0.05);
+    --np-table-row-alt: rgb(60 40 30 / 0.025);
+    --np-table-row-hover: color-mix(in oklab, var(--np-brand) 8%, transparent);
+
+    --np-radius-sm: 8px;
+    --np-radius-md: 12px;
+    --np-radius-lg: 18px;
+
+    --np-shadow-card: 0 1px 1px rgb(60 30 15 / 0.04), 0 8px 24px -10px rgb(60 30 15 / 0.18);
+    --np-shadow-popover: 0 2px 4px rgb(60 30 15 / 0.05), 0 18px 40px -12px rgb(60 30 15 / 0.28);
+    --np-shadow-modal: 0 2px 6px rgb(60 30 15 / 0.06), 0 30px 70px -20px rgb(60 30 15 / 0.35);
+    --np-shadow-dialog: 0 2px 6px rgb(60 30 15 / 0.08), 0 40px 90px -24px rgb(60 30 15 / 0.45);
+
+    --np-overlay: color-mix(in oklab, var(--np-brand) 12%, rgb(20 12 8 / 0.42));
+    --np-overlay-soft: rgb(20 12 8 / 0.22);
+
+    --np-glass-ink-brand: color-mix(in oklab, var(--np-brand) 70%, #000);
+    --np-link: var(--np-glass-ink-brand);
+    --np-glass-lamp: color-mix(in oklab, var(--np-brand) 62%, transparent);
+    --np-glass-ground: rgb(255 253 251 / 0.66);
+    --np-glass-cover: rgb(255 255 255 / 0.8);
+    --np-glass-slip: rgb(255 255 255 / 0.62);
+    --np-glass-edge: rgb(255 255 255 / 0.85);
+    --np-glass-rim: rgb(60 40 30 / 0.1);
+    --np-glass-frost: blur(22px) saturate(170%);
+    --np-glass-frost-light: blur(12px) saturate(150%);
+    --np-glass-frost-overlay: blur(6px);
+    --np-glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .12 0 0 0 0 .08 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  html.dark[data-np-theme="glass"] {
+    --np-bg: color-mix(in oklab, var(--np-brand) 6%, #0d0b0a);
+    --np-bg-surface: color-mix(in oklab, var(--np-brand) 6%, #1a1715);
+    --np-bg-card: color-mix(in oklab, var(--np-brand) 4%, #1f1b19);
+    --np-bg-code-inline: color-mix(in oklab, var(--np-brand) 10%, rgb(255 255 255 / 0.07));
+    --np-bg-code-block: color-mix(in oklab, var(--np-brand) 6%, #0f0c0b);
+
+    --np-text-primary: #f6f1ee;
+    --np-text-secondary: #cfc5bf;
+    --np-text-muted: #a89d97;
+    --np-text-faint: #8a807a;
+
+    --np-border: rgb(255 240 230 / 0.1);
+    --np-border-strong: rgb(255 240 230 / 0.2);
+    --np-divider: rgb(255 240 230 / 0.07);
+
+    --np-table-header-bg: rgb(255 255 255 / 0.05);
+    --np-table-row-alt: rgb(255 255 255 / 0.025);
+    --np-table-row-hover: color-mix(in oklab, var(--np-brand) 12%, rgb(255 255 255 / 0.04));
+
+    --np-shadow-card: 0 1px 1px rgb(0 0 0 / 0.3), 0 10px 28px -10px rgb(0 0 0 / 0.6);
+    --np-shadow-popover: 0 2px 4px rgb(0 0 0 / 0.3), 0 20px 44px -12px rgb(0 0 0 / 0.7);
+    --np-shadow-modal: 0 2px 6px rgb(0 0 0 / 0.35), 0 32px 72px -20px rgb(0 0 0 / 0.75);
+    --np-shadow-dialog: 0 2px 6px rgb(0 0 0 / 0.4), 0 40px 90px -24px rgb(0 0 0 / 0.8);
+
+    --np-overlay: color-mix(in oklab, var(--np-brand) 8%, rgb(0 0 0 / 0.6));
+    --np-overlay-soft: rgb(0 0 0 / 0.4);
+
+    --np-glass-ink-brand: color-mix(in oklab, var(--np-brand) 72%, #fff);
+    --np-link: var(--np-glass-ink-brand);
+    --np-glass-lamp: color-mix(in oklab, var(--np-brand) 46%, transparent);
+    --np-glass-ground: rgb(34 29 27 / 0.6);
+    --np-glass-cover: rgb(22 19 18 / 0.84);
+    --np-glass-slip: rgb(40 35 32 / 0.6);
+    --np-glass-edge: rgb(255 245 238 / 0.1);
+    --np-glass-rim: rgb(0 0 0 / 0.5);
+    --np-glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  html[data-np-theme="glass"] ::selection {
+    background-color: color-mix(in oklab, var(--np-brand) 32%, transparent);
+    color: var(--np-text-primary);
+  }
+
+  html[data-np-theme="glass"] :focus-visible {
+    outline: 2px solid var(--np-glass-ink-brand);
+    outline-offset: 2px;
+  }
+
+  html[data-np-theme="glass"] * {
+    scrollbar-color: color-mix(in oklab, var(--np-brand) 30%, var(--np-border-strong)) transparent;
+  }
+
+  html[data-np-theme="glass"] .np-app {
+    background-color: var(--np-bg);
+    background-image:
+      radial-gradient(ellipse 85% 95% at 0% 0%, var(--np-glass-lamp) 0%, transparent 68%);
+    background-attachment: fixed;
+    timeline-scope: --np-glass-scroll;
+  }
+
+  html[data-np-theme="glass"] .np-app > .np-header {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  html[data-np-theme="glass"] .np-app > .np-body {
+    grid-row: 1 / 3;
+    grid-column: 1;
+  }
+
+  html[data-np-theme="glass"] .np-announce {
+    --np-announce-bg: var(--np-glass-cover);
+    border-color: var(--np-glass-rim);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-popover);
+  }
+
+  html[data-np-theme="glass"] .np-header {
+    --np-header-bg: var(--np-glass-ground);
+    background-image: var(--np-glass-grain);
+    --np-header-border: var(--np-glass-rim);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), inset 0 -1px 0 var(--np-glass-edge);
+  }
+
+  html[data-np-theme="glass"] .np-aside {
+    background-color: var(--np-glass-ground);
+    background-image: var(--np-glass-grain);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+  }
+
+  html[data-np-theme="glass"] .np-aside .np-sidebar {
+    top: var(--np-header-height);
+    border-right-color: var(--np-glass-rim);
+    box-shadow: inset -1px 0 0 var(--np-glass-edge);
+  }
+
+  html[data-np-theme="glass"] .np-link.active,
+  html[data-np-theme="glass"] .np-group-header.active,
+  html[data-np-theme="glass"] .np-subgroup-row.active {
+    color: var(--np-glass-ink-brand);
+    background-color: var(--np-glass-cover);
+    box-shadow:
+      inset 0 0 0 1px var(--np-glass-edge),
+      0 0 0 1px color-mix(in oklab, var(--np-brand) 36%, transparent),
+      0 4px 12px -6px color-mix(in oklab, var(--np-brand) 50%, transparent);
+  }
+
+  html[data-np-theme="glass"] .np-subgroup-row.active .np-link.active {
+    box-shadow: none;
+  }
+
+  html[data-np-theme="glass"] .np-group-header.active .np-group-label-link,
+  html[data-np-theme="glass"] .np-subgroup-row.active .np-subgroup-link,
+  html[data-np-theme="glass"] .np-group-label-link.active,
+  html[data-np-theme="glass"] .np-group-header.active .np-group-toggle,
+  html[data-np-theme="glass"] .np-subgroup-row.active .np-subgroup-toggle {
+    color: var(--np-glass-ink-brand);
+  }
+
+  html[data-np-theme="glass"] .np-page-backdrop {
+    display: none;
+  }
+
+  html[data-np-theme="glass"] .np-main {
+    padding-top: var(--np-header-height);
+    scroll-padding-top: var(--np-header-height);
+    scroll-timeline: --np-glass-scroll block;
+  }
+
+  html[data-np-theme="glass"] .np-prose a:not([class*="np-"]) {
+    text-decoration-color: color-mix(in oklab, var(--np-brand) 45%, transparent);
+    text-underline-offset: 0.2em;
+  }
+
+  html[data-np-theme="glass"] .np-prose a:not([class*="np-"]):hover {
+    text-decoration-color: currentColor;
+  }
+
+  html[data-np-theme="glass"] .np-hero-title {
+    color: var(--np-glass-ink-brand);
+  }
+
+  html[data-np-theme="glass"] .np-prose table {
+    border-radius: var(--np-radius-md);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--np-glass-rim);
+  }
+
+  html[data-np-theme="glass"] .np-toc-strip,
+  html[data-np-theme="glass"] .np-toc-overlay,
+  html[data-np-theme="glass"] .np-toc {
+    padding: 14px 16px;
+    border-radius: var(--np-radius-md);
+    background-color: var(--np-glass-ground);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), 0 0 0 1px var(--np-glass-rim);
+  }
+
+  html[data-np-theme="glass"] .np-card,
+  html[data-np-theme="glass"] .np-feature-card,
+  html[data-np-theme="glass"] .np-callout {
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-card);
+  }
+
+  html[data-np-theme="glass"] .np-toc-strip {
+    padding: 10px 0;
+    border-radius: var(--np-radius-pill);
+  }
+
+  html[data-np-theme="glass"] .np-code {
+    border-color: var(--np-glass-rim);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--np-shadow-card);
+  }
+
+  html[data-np-theme="glass"] .np-code-bar {
+    background-color: rgb(255 255 255 / 0.07);
+  }
+
+  html[data-np-theme="glass"] .np-card,
+  html[data-np-theme="glass"] .np-feature-card {
+    background-color: var(--np-glass-slip);
+    backdrop-filter: var(--np-glass-frost-light);
+    -webkit-backdrop-filter: var(--np-glass-frost-light);
+    border-color: var(--np-glass-rim);
+    transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1), border-color 240ms ease;
+  }
+
+  html[data-np-theme="glass"] .np-card:hover,
+  html[data-np-theme="glass"] .np-feature-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--np-brand) 45%, transparent);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-popover);
+  }
+
+  html[data-np-theme="glass"] .np-callout {
+    border: 1px solid color-mix(in oklab, var(--np-callout-color) 32%, var(--np-glass-rim));
+    background-color: color-mix(in oklab, var(--np-callout-color) 9%, var(--np-glass-slip));
+    backdrop-filter: var(--np-glass-frost-light);
+    -webkit-backdrop-filter: var(--np-glass-frost-light);
+  }
+
+  html[data-np-theme="glass"] .np-callout-title {
+    color: color-mix(in oklab, var(--np-callout-color) 72%, var(--np-text-primary));
+  }
+
+  html[data-np-theme="glass"] .np-search-backdrop {
+    backdrop-filter: var(--np-glass-frost-overlay);
+    -webkit-backdrop-filter: var(--np-glass-frost-overlay);
+  }
+
+  html[data-np-theme="glass"] .np-search-modal {
+    background-color: var(--np-glass-cover);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    border-color: var(--np-glass-rim);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-modal);
+  }
+
+  html[data-np-theme="glass"] .np-back-to-top {
+    background-color: var(--np-glass-ground);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-popover);
+  }
+
+  html[data-np-theme="glass"] .np-tooltip {
+    background-color: var(--np-glass-cover);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    border-color: var(--np-glass-rim);
+    box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-popover);
+  }
+
+  @supports (animation-timeline: scroll()) {
+    html[data-np-theme="glass"] .np-header {
+      animation: np-glass-header-frost linear both;
+      animation-timeline: --np-glass-scroll;
+      animation-range: 0 96px;
+    }
+  }
+
+  @keyframes np-glass-header-frost {
+    from {
+      background-color: transparent;
+      background-image: none;
+      border-bottom-color: transparent;
+      box-shadow: none;
+      backdrop-filter: blur(0) saturate(100%);
+      -webkit-backdrop-filter: blur(0) saturate(100%);
+    }
+  }
+
+  @media (max-width: 1024px) {
+    html[data-np-theme="glass"] .np-main {
+      padding-top: 0;
+      scroll-timeline: none;
+    }
+
+    html[data-np-theme="glass"] .np-body {
+      padding-top: var(--np-header-height);
+      scroll-padding-top: var(--np-header-height);
+      scroll-timeline: --np-glass-scroll block;
+    }
+
+    html[data-np-theme="glass"] .np-aside .np-sidebar {
+      top: 0;
+    }
+
+    html[data-np-theme="glass"] .np-aside,
+    html[data-np-theme="glass"] .np-aside .np-sidebar {
+      background-color: var(--np-glass-cover);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html[data-np-theme="glass"] .np-header {
+      animation: none;
+    }
+
+    html[data-np-theme="glass"] .np-card,
+    html[data-np-theme="glass"] .np-feature-card {
+      transition: none;
+    }
+
+    html[data-np-theme="glass"] .np-card:hover,
+    html[data-np-theme="glass"] .np-feature-card:hover {
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    html[data-np-theme="glass"] .np-header {
+      animation: none;
+    }
+
+    html[data-np-theme="glass"] {
+      --np-glass-ground: color-mix(in oklab, var(--np-brand) 4%, #f4f1ef);
+      --np-glass-cover: #ffffff;
+      --np-glass-slip: #fbf9f8;
+      --np-glass-rim: rgb(60 40 30 / 0.28);
+      --np-glass-frost: none;
+      --np-glass-frost-light: none;
+      --np-glass-frost-overlay: none;
+      --np-glass-grain: none;
+      --np-bg-card: #ffffff;
+      --np-bg-code-inline: color-mix(in oklab, var(--np-brand) 9%, #ffffff);
+      --np-table-header-bg: #f3efec;
+      --np-table-row-alt: #faf8f7;
+      --np-table-row-hover: color-mix(in oklab, var(--np-brand) 8%, #ffffff);
+    }
+
+    html.dark[data-np-theme="glass"] {
+      --np-glass-ground: #1b1816;
+      --np-glass-cover: #141110;
+      --np-glass-slip: #221e1c;
+      --np-glass-rim: rgb(255 240 230 / 0.24);
+      --np-glass-grain: none;
+      --np-bg-card: #221e1c;
+      --np-bg-code-inline: color-mix(in oklab, var(--np-brand) 10%, #221e1c);
+      --np-table-header-bg: #1f1b19;
+      --np-table-row-alt: #181514;
+      --np-table-row-hover: color-mix(in oklab, var(--np-brand) 12%, #1f1b19);
+    }
+  }
+}

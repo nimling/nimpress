@@ -119,7 +119,7 @@
   .np-subscribe-backdrop {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: var(--np-overlay);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-start;
@@ -216,7 +216,7 @@
   .np-subscribe-primary {
     background-color: var(--np-brand);
     border-color: var(--np-brand);
-    color: #fff;
+    color: var(--np-text-on-brand);
   }
   .np-subscribe-primary:disabled {
     opacity: 0.7;

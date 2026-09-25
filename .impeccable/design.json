@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T00:00:00Z",
+  "title": "Design System: nimpress",
+  "extensions": {
+    "themes": [
+      { "name": "stock", "default": true, "source": ["src/styles/tokens.css", "src/styles/preflight.css"], "layer": "nimpress" },
+      { "name": "glass", "default": false, "source": ["src/styles/themes/glass.css"], "layer": "nimpress-theme", "config": "theme: glass" }
+    ],
+    "colorMeta": {
+      "brand": { "role": "primary", "theme": "stock", "displayName": "Terracotta", "canonical": "var(--np-brand)", "dark": "#CC785C", "tonalRamp": ["oklch(22% 0.07 42)", "oklch(32% 0.09 42)", "oklch(42% 0.11 42)", "oklch(52% 0.12 42)", "oklch(63% 0.11 42)", "oklch(74% 0.08 42)", "oklch(85% 0.05 42)", "oklch(95% 0.02 42)"] },
+      "brand-hover": { "role": "primary", "theme": "stock", "displayName": "Burnt Terracotta", "dark": "#E8A48E" },
+      "brand-soft": { "role": "primary", "theme": "stock", "displayName": "Terracotta Wash", "dark": "rgba(204, 120, 92, 0.14)" },
+      "link": { "role": "primary", "theme": "stock", "displayName": "Burnt Terracotta Link", "dark": "#E8A48E" },
+      "paper": { "role": "neutral", "theme": "stock", "displayName": "Paper", "dark": "#0F0F10" },
+      "paper-surface": { "role": "neutral", "theme": "stock", "displayName": "Paper Surface", "dark": "#18181B" },
+      "paper-sidebar": { "role": "neutral", "theme": "stock", "displayName": "Paper Sidebar", "dark": "#0F0F10" },
+      "code-inline": { "role": "neutral", "theme": "stock", "displayName": "Inline Code Ground", "dark": "#1F1F22" },
+      "code-night": { "role": "neutral", "theme": "stock", "displayName": "Night Code", "dark": "#0B0B0D" },
+      "ink": { "role": "neutral", "theme": "stock", "displayName": "Zinc Ink", "dark": "#FAFAFA", "tonalRamp": ["#09090B", "#27272A", "#3F3F46", "#52525B", "#71717A", "#A1A1AA", "#D4D4D8", "#F4F4F5"] },
+      "ink-secondary": { "role": "neutral", "theme": "stock", "displayName": "Zinc Ink Secondary", "dark": "#A1A1AA" },
+      "ink-muted": { "role": "neutral", "theme": "stock", "displayName": "Zinc Ink Muted", "dark": "#71717A" },
+      "ink-faint": { "role": "neutral", "theme": "stock", "displayName": "Zinc Ink Faint", "dark": "#52525B" },
+      "border": { "role": "neutral", "theme": "stock", "displayName": "Hairline", "dark": "#27272A" },
+      "border-strong": { "role": "neutral", "theme": "stock", "displayName": "Hairline Strong", "dark": "#3F3F46" },
+      "divider": { "role": "neutral", "theme": "stock", "displayName": "Divider", "dark": "#1F1F22" },
+      "glass-field": { "role": "neutral", "theme": "glass", "displayName": "Lit Field", "canonical": "color-mix(in oklab, var(--np-brand) 7%, #f7f5f3)", "dark": "color-mix(in oklab, var(--np-brand) 6%, #0d0b0a)", "token": "--np-bg", "tonalRamp": ["oklch(18% 0.01 45)", "oklch(28% 0.012 45)", "oklch(40% 0.014 45)", "oklch(52% 0.015 45)", "oklch(64% 0.016 45)", "oklch(76% 0.016 45)", "oklch(88% 0.015 45)", "oklch(94.5% 0.012 45)"] },
+      "glass-surface": { "role": "neutral", "theme": "glass", "displayName": "Lit Surface", "canonical": "color-mix(in oklab, var(--np-brand) 5%, #efebe8)", "dark": "color-mix(in oklab, var(--np-brand) 6%, #1a1715)", "token": "--np-bg-surface" },
+      "glass-lamp": { "role": "primary", "theme": "glass", "displayName": "The Lamp", "canonical": "color-mix(in oklab, var(--np-brand) 62%, transparent)", "dark": "color-mix(in oklab, var(--np-brand) 46%, transparent)", "token": "--np-glass-lamp" },
+      "glass-ink-brand": { "role": "primary", "theme": "glass", "displayName": "Deep Glass Ink", "canonical": "color-mix(in oklab, var(--np-brand) 70%, #000)", "dark": "color-mix(in oklab, var(--np-brand) 72%, #fff)", "token": "--np-glass-ink-brand" },
+      "glass-ground": { "role": "neutral", "theme": "glass", "displayName": "Ground Glass", "dark": "rgb(34 29 27 / 0.6)", "solid": "color-mix(in oklab, var(--np-brand) 4%, #f4f1ef)", "solidDark": "#1b1816", "token": "--np-glass-ground" },
+      "glass-cover": { "role": "neutral", "theme": "glass", "displayName": "Cover Glass", "dark": "rgb(22 19 18 / 0.84)", "solid": "#ffffff", "solidDark": "#141110", "token": "--np-glass-cover" },
+      "glass-slip": { "role": "neutral", "theme": "glass", "displayName": "Slip Glass", "dark": "rgb(40 35 32 / 0.6)", "solid": "#fbf9f8", "solidDark": "#221e1c", "token": "--np-glass-slip" },
+      "glass-edge": { "role": "neutral", "theme": "glass", "displayName": "Glass Edge", "dark": "rgb(255 245 238 / 0.1)", "token": "--np-glass-edge" },
+      "glass-rim": { "role": "neutral", "theme": "glass", "displayName": "Glass Rim", "dark": "rgb(0 0 0 / 0.5)", "solid": "rgb(60 40 30 / 0.28)", "solidDark": "rgb(255 240 230 / 0.24)", "token": "--np-glass-rim" },
+      "glass-code": { "role": "neutral", "theme": "glass", "displayName": "Tinted Night Code", "canonical": "color-mix(in oklab, var(--np-brand) 7%, #15110f)", "dark": "color-mix(in oklab, var(--np-brand) 6%, #0f0c0b)", "token": "--np-bg-code-block" },
+      "glass-ink": { "role": "neutral", "theme": "glass", "displayName": "Warm Ink", "dark": "#f6f1ee", "token": "--np-text-primary" },
+      "glass-ink-secondary": { "role": "neutral", "theme": "glass", "displayName": "Warm Ink Secondary", "dark": "#cfc5bf", "token": "--np-text-secondary" },
+      "glass-ink-muted": { "role": "neutral", "theme": "glass", "displayName": "Warm Ink Muted", "dark": "#a89d97", "token": "--np-text-muted" },
+      "glass-ink-faint": { "role": "neutral", "theme": "glass", "displayName": "Warm Ink Faint", "dark": "#8a807a", "token": "--np-text-faint" },
+      "glass-border": { "role": "neutral", "theme": "glass", "displayName": "Warm Hairline", "dark": "rgb(255 240 230 / 0.1)", "token": "--np-border" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero title only. 3.5em below 60em width, 4.75em above." },
+      "headline": { "displayName": "Headline", "purpose": "Page H1 in brand." },
+      "title": { "displayName": "Title", "purpose": "H2, opened by a divider with a 48px brand segment." },
+      "subtitle": { "displayName": "Subtitle", "purpose": "H3; H4 is 17px 600." },
+      "body": { "displayName": "Body", "purpose": "Prose, capped at content-max." },
+      "label": { "displayName": "Label", "purpose": "H6 and sidebar group headers, uppercase. H5 is the 14px brand variant." },
+      "code": { "displayName": "Code", "purpose": "Code blocks; inline code at 0.875em." }
+    },
+    "materials": [
+      { "name": "glass-frost", "value": "blur(22px) saturate(170%)", "purpose": "Ground and cover glass: header, sidebar, rail, search modal, tooltip, announcement, back to top." },
+      { "name": "glass-frost-light", "value": "blur(12px) saturate(150%)", "purpose": "Slip glass: cards, feature cards, callouts." },
+      { "name": "glass-frost-overlay", "value": "blur(6px)", "purpose": "Search backdrop." },
+      { "name": "glass-grain", "value": "SVG feTurbulence fractalNoise, baseFrequency .9, 3 octaves, 160px tile, alpha .14 light / .2 dark", "purpose": "Ground glass only: header and sidebar." },
+      { "name": "glass-lamp-gradient", "value": "radial-gradient(ellipse 85% 95% at 0% 0%, var(--np-glass-lamp) 0%, transparent 68%) fixed", "purpose": "The one light source on .np-app." }
+    ],
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgba(0, 0, 0, 0.04)", "theme": "stock", "purpose": "Cards, resting." },
+      { "name": "popover", "value": "0 12px 32px rgb(0 0 0 / 0.18)", "theme": "stock", "purpose": "Popovers, announcement." },
+      { "name": "modal", "value": "0 10px 30px rgba(0, 0, 0, 0.12)", "theme": "stock", "purpose": "Search modal." },
+      { "name": "dialog", "value": "0 24px 60px rgb(0 0 0 / 0.4)", "theme": "stock", "purpose": "Dialogs." },
+      { "name": "card", "value": "0 1px 1px rgb(60 30 15 / 0.04), 0 8px 24px -10px rgb(60 30 15 / 0.18)", "theme": "glass", "purpose": "Slips, tabs, code." },
+      { "name": "popover", "value": "0 2px 4px rgb(60 30 15 / 0.05), 0 18px 40px -12px rgb(60 30 15 / 0.28)", "theme": "glass", "purpose": "Tooltip, announcement, back to top, lifted card." },
+      { "name": "modal", "value": "0 2px 6px rgb(60 30 15 / 0.06), 0 30px 70px -20px rgb(60 30 15 / 0.35)", "theme": "glass", "purpose": "Search modal." },
+      { "name": "dialog", "value": "0 2px 6px rgb(60 30 15 / 0.08), 0 40px 90px -24px rgb(60 30 15 / 0.45)", "theme": "glass", "purpose": "Dialogs." },
+      { "name": "glass-edge", "value": "inset 0 1px 0 var(--np-glass-edge)", "theme": "glass", "purpose": "Top highlight on every glass surface." },
+      { "name": "doubled-edge", "value": "inset 0 0 0 1px var(--np-glass-edge), 0 0 0 1px color-mix(in oklab, var(--np-brand) 36%, transparent), 0 4px 12px -6px color-mix(in oklab, var(--np-brand) 50%, transparent)", "theme": "glass", "purpose": "Active sidebar row, group header, subgroup row." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Glass card lift 240ms, panel toggle chevron 320ms, announcement entry 420ms after 600ms." },
+      { "name": "header-frost", "value": "scroll timeline --np-glass-scroll, range 0 96px, linear", "purpose": "Glass header goes from clear to frosted as content scrolls under it. Off under reduced motion and reduced transparency." },
+      { "name": "stock-state", "value": "150ms ease", "purpose": "Stock card border and shadow." }
+    ],
+    "breakpoints": [
+      { "name": "glass-shell", "value": "1024px", "purpose": "Glass moves the scroll timeline and header offset to .np-body; the drawer turns solid cover." },
+      { "name": "rail", "value": "800px" },
+      { "name": "grid", "value": "720px" },
+      { "name": "hero-display", "value": "60em" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Stock Sidebar Link",
+      "kind": "nav",
+      "refersTo": "sidebar-link-active",
+      "description": "Stock sidebar row; the active row is brand text on a 16% brand fill.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link\" href=\"#\">Overview</a><a class=\"ds-nav-link ds-active\" href=\"#\">Getting started</a><a class=\"ds-nav-link\" href=\"#\">Publish your site</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; width: 240px; padding: 8px; background: var(--np-bg-sidebar, #FAFAFA); font-family: var(--np-font-sans); } .ds-nav-link { padding: 6px 10px; border-radius: 8px; font-size: 14px; color: var(--np-text-secondary, #3F3F46); text-decoration: none; transition: background-color 150ms ease, color 150ms ease; } .ds-nav-link:hover { color: var(--np-text-primary, #09090B); background: var(--np-bg-surface, #F4F4F5); } .ds-nav-link:focus-visible { outline: 2px solid var(--np-brand, #A85A3F); outline-offset: 2px; } .ds-nav-link.ds-active { color: var(--np-brand, #A85A3F); font-weight: 500; background: color-mix(in srgb, var(--np-brand, #A85A3F) 16%, transparent); }"
+    },
+    {
+      "name": "Stock Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat paper card with a hairline; hover turns the border to brand.",
+      "html": "<a class=\"ds-card\" href=\"#\"><strong class=\"ds-card-title\">Page types</strong><span class=\"ds-card-body\">Every renderer a page can choose.</span></a>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 6px; width: 260px; padding: 20px; border: 1px solid var(--np-border, #C8C8CC); border-radius: 12px; background: var(--np-bg-card, #FFFFFF); color: var(--np-text-primary, #09090B); text-decoration: none; font-family: var(--np-font-sans); transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-card:hover { border-color: var(--np-brand, #A85A3F); box-shadow: 0 1px 2px rgba(0,0,0,0.04); } .ds-card:focus-visible { outline: 2px solid var(--np-brand, #A85A3F); outline-offset: 2px; } .ds-card-title { font-size: 16px; font-weight: 600; } .ds-card-body { font-size: 14px; color: var(--np-text-muted, #52525B); }"
+    },
+    {
+      "name": "Glass Chrome",
+      "kind": "nav",
+      "refersTo": "glass-chrome",
+      "description": "Ground glass header over the lit field, with grain, edges, and a slip search trigger.",
+      "html": "<div class=\"ds-field\"><header class=\"ds-chrome\"><strong>Nimpress</strong><button class=\"ds-search\" type=\"button\">Search <kbd>⌘K</kbd></button></header></div>",
+      "css": ".ds-field { width: 560px; height: 140px; padding-top: 0; background-color: #f2eae6; background-image: radial-gradient(ellipse 85% 95% at 0% 0%, rgb(168 90 63 / 0.62) 0%, transparent 68%); font-family: var(--np-font-sans); } .ds-chrome { display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 20px; color: #1a1614; background: rgb(255 253 251 / 0.66); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); border-bottom: 1px solid rgb(60 40 30 / 0.1); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 -1px 0 rgb(255 255 255 / 0.85); } .ds-search { display: inline-flex; align-items: center; gap: 24px; padding: 8px 12px; border: 1px solid rgb(60 40 30 / 0.1); border-radius: 12px; background: rgb(255 255 255 / 0.62); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85); color: #5a504b; font: inherit; font-size: 14px; cursor: pointer; } .ds-search:hover { background: rgb(255 255 255 / 0.8); } .ds-search:focus-visible { outline: 2px solid #6e3a28; outline-offset: 2px; } .ds-search kbd { padding: 1px 6px; border-radius: 8px; background: rgb(255 255 255 / 0.8); font-size: 12px; }"
+    },
+    {
+      "name": "Glass Sidebar Link",
+      "kind": "nav",
+      "refersTo": "glass-sidebar-link-active",
+      "description": "Ground glass sidebar; hover lays a slip, the active row is cover glass with the doubled edge.",
+      "html": "<nav class=\"ds-gnav\"><a class=\"ds-gnav-link\" href=\"#\">Overview</a><a class=\"ds-gnav-link ds-active\" href=\"#\">Getting started</a><a class=\"ds-gnav-link\" href=\"#\">Publish your site</a></nav>",
+      "css": ".ds-gnav { display: flex; flex-direction: column; gap: 2px; width: 260px; padding: 12px; background-color: #f2eae6; background-image: linear-gradient(rgb(255 253 251 / 0.66), rgb(255 253 251 / 0.66)), radial-gradient(ellipse 85% 95% at 0% 0%, rgb(168 90 63 / 0.62) 0%, transparent 68%); font-family: var(--np-font-sans); } .ds-gnav-link { padding: 6px 10px; border-radius: 12px; font-size: 14px; color: #3d3531; text-decoration: none; } .ds-gnav-link:hover { background: rgb(255 255 255 / 0.62); } .ds-gnav-link:focus-visible { outline: 2px solid #6e3a28; outline-offset: 2px; } .ds-gnav-link.ds-active { color: #6e3a28; font-weight: 500; background: rgb(255 255 255 / 0.8); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.85), 0 0 0 1px rgb(168 90 63 / 0.36), 0 4px 12px -6px rgb(168 90 63 / 0.5); }"
+    },
+    {
+      "name": "Glass Slip Card",
+      "kind": "card",
+      "refersTo": "glass-slip",
+      "description": "Slip glass lying on the field; lifts 2px on hover with a brand tinted border.",
+      "html": "<div class=\"ds-slipfield\"><a class=\"ds-slip\" href=\"#\"><strong>Page types</strong><span>Every renderer a page can choose.</span></a></div>",
+      "css": ".ds-slipfield { padding: 24px; background-color: #f2eae6; background-image: radial-gradient(ellipse 85% 95% at 0% 0%, rgb(168 90 63 / 0.62) 0%, transparent 68%); font-family: var(--np-font-sans); } .ds-slip { display: flex; flex-direction: column; gap: 6px; width: 260px; padding: 20px; border: 1px solid rgb(60 40 30 / 0.1); border-radius: 18px; background: rgb(255 255 255 / 0.62); backdrop-filter: blur(12px) saturate(150%); -webkit-backdrop-filter: blur(12px) saturate(150%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 1px rgb(60 30 15 / 0.04), 0 8px 24px -10px rgb(60 30 15 / 0.18); color: #1a1614; text-decoration: none; transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1), border-color 240ms ease; } .ds-slip span { font-size: 14px; color: #5a504b; } .ds-slip:hover { transform: translateY(-2px); border-color: rgb(168 90 63 / 0.45); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85), 0 2px 4px rgb(60 30 15 / 0.05), 0 18px 40px -12px rgb(60 30 15 / 0.28); } .ds-slip:focus-visible { outline: 2px solid #6e3a28; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-slip { transition: none; } .ds-slip:hover { transform: none; } }"
+    },
+    {
+      "name": "Glass Callout",
+      "kind": "card",
+      "refersTo": "callout",
+      "description": "A slip tinted by the callout hue, bordered on all sides, with an uppercase pill title.",
+      "html": "<aside class=\"ds-callout\" style=\"--c: #3B82F6\"><span class=\"ds-callout-title\">Note</span><p>The rail lists H2 and H3 headings from the body.</p></aside>",
+      "css": ".ds-callout { width: 420px; padding: 12px 16px; border: 1px solid color-mix(in oklab, var(--c) 32%, rgb(60 40 30 / 0.1)); border-radius: 12px; background: color-mix(in oklab, var(--c) 9%, rgb(255 255 255 / 0.62)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 1px rgb(60 30 15 / 0.04), 0 8px 24px -10px rgb(60 30 15 / 0.18); color: #1a1614; font-family: var(--np-font-sans); font-size: 15px; line-height: 1.6; } .ds-callout p { margin: 0; } .ds-callout-title { display: inline-block; margin-bottom: 8px; padding: 3px 10px; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); color: color-mix(in oklab, var(--c) 72%, #1a1614); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Announcement",
+      "kind": "custom",
+      "refersTo": "announce",
+      "description": "Bottom right notification card with a brand dot and SVG dismiss; glass renders it as cover glass.",
+      "html": "<div class=\"ds-announce\" role=\"status\"><span class=\"ds-announce-mark\"></span><span>Version 2.4 brings seven new page types.</span><button class=\"ds-announce-dismiss\" type=\"button\" aria-label=\"Dismiss announcement\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg></button></div>",
+      "css": ".ds-announce { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; column-gap: 12px; width: 360px; padding: 14px 12px 14px 16px; border: 1px solid var(--np-border, #C8C8CC); border-radius: 12px; background: var(--np-bg-card, #FFFFFF); color: var(--np-text-primary, #09090B); box-shadow: 0 12px 32px rgb(0 0 0 / 0.18); font-family: var(--np-font-sans); font-size: 14px; line-height: 1.45; } .ds-announce-mark { width: 8px; height: 8px; margin-top: 6px; border-radius: 9999px; background: var(--np-brand, #A85A3F); box-shadow: 0 0 0 4px rgba(168, 90, 63, 0.12); } .ds-announce-dismiss { display: inline-flex; padding: 2px; border: 0; border-radius: 6px; background: transparent; color: var(--np-text-muted, #52525B); cursor: pointer; } .ds-announce-dismiss:hover { color: var(--np-text-primary, #09090B); background: var(--np-bg-surface, #F4F4F5); } .ds-announce-dismiss:focus-visible { outline: 2px solid var(--np-brand, #A85A3F); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Glass Laid on Light",
+    "overview": "nimpress ships two themes over one surface. `stock` is the default: tokens in `src/styles/tokens.css`, the reading styles in `src/styles/preflight.css`, and the component styles, all inside `@layer nimpress`. It is a quiet neutral paper with one warm brand color used as ink for the page title, the active row and links. `glass` is the variant: `src/styles/themes/glass.css`, loaded as `@nimtech/nimpress/themes/glass.css` when the config sets `theme: glass`, wrapped in `@layer nimpress-theme`, and written only against `--np-*` tokens and public `np-` classes. The theme owns no component.\n\nIn glass the brand color becomes a lamp. One radial bloom lights the field from the top left corner behind the sidebar and header. The chrome, header, sidebar and rail, is heavy ground glass with grain. The reading content sits directly on the lit field with no sheet around it and scrolls under the header, which is clear at rest and frosts in as content passes behind it. Cards, callouts, code, tabs and the footer links are slips: lighter glass that lies on the field. State lives in the glass edge.\n\nBoth themes are warm neutrals tinted by the brand, dense enough for long reference sessions, and let the prose win over the chrome.",
+    "keyCharacteristics": [
+      "One brand color, `--np-brand`, drives both themes; glass mixes every surface from it.",
+      "Stock is flat paper with hairline borders and near invisible shadows.",
+      "Glass is three glasses over one lit field: ground, cover, slip.",
+      "Content never sits in a sheet in glass; only the chrome and slips are glass.",
+      "Every glass surface falls back to solid under reduced transparency or more contrast."
+    ],
+    "rules": [
+      { "name": "The One Brand Rule", "body": "Every theme colors itself from `--np-brand`. A theme adds mixes of it, never a second accent.", "section": "colors" },
+      { "name": "The Lamp Rule", "body": "In glass the brand is light before it is ink: one bloom from the top left corner, fixed to the viewport. Never a second bloom, never a blob behind content.", "section": "colors" },
+      { "name": "The Ink Over Glass Rule", "body": "Brand text on any glass surface uses `glass-ink-brand`, never raw `--np-brand`, so it holds AA over whatever the glass shows through.", "section": "colors" },
+      { "name": "The Stock Stack Rule", "body": "A theme never changes `--np-font-sans` or `--np-font-mono` and never loads a font.", "section": "typography" },
+      { "name": "The No Sheet Rule", "body": "In glass, prose sits on the lit field. Never wrap page content in a card, panel or backdrop.", "section": "layout" },
+      { "name": "The Clear At Rest Rule", "body": "The glass header is transparent at scroll zero and frosts across the first 96px of the `--np-glass-scroll` timeline. Where scroll timelines are unsupported it is frosted from the start.", "section": "layout" },
+      { "name": "The Three Glasses Rule", "body": "A glass surface is ground, cover or slip, set from its token. Never invent a fourth opacity or blur.", "section": "elevation" },
+      { "name": "The Doubled Edge Rule", "body": "Glass state lives in the edge. The active row takes an inner 1px `glass-edge` line and an outer 1px ring of the brand at 36%, over a `0 4px 12px -6px` brand shadow at 50%.", "section": "elevation" },
+      { "name": "The Solid Fallback Rule", "body": "Under `prefers-reduced-transparency: reduce` or `prefers-contrast: more`, every glass token turns solid, every frost turns `none`, and the header stops animating.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do color every theme from `--np-brand` and its mixes.",
+      "Do write a theme only against `--np-*` tokens and public `np-` classes inside `@layer nimpress-theme`; a missing hook is added to the library.",
+      "Do give every token a light and a dark value, and every glass token a solid value under reduced transparency and more contrast.",
+      "Do set brand text over glass in `glass-ink-brand`.",
+      "Do mark glass state with the doubled edge, not with a fill alone.",
+      "Do pick ground for chrome, cover for what must read over anything, slip for what lies on the field."
+    ],
+    "donts": [
+      "Don't wrap glass page content in a sheet or card.",
+      "Don't add a second light source, blob or gradient beyond the one lamp.",
+      "Don't frost the reading field itself.",
+      "Don't change or download fonts in a theme.",
+      "Don't write `!important` in a theme or the library."
+    ]
+  }
+}

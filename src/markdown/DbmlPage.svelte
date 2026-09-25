@@ -3,7 +3,10 @@
   import { configStore, withBase } from '../framework/configStore'
   import FullscreenIcon from '../icons/FullscreenIcon.svelte'
   import IconDownload from '../icons/IconDownload.svelte'
-  import DBMLBlock from './DBMLBlock.svelte'
+  import StockDBMLBlock from './DBMLBlock.svelte'
+  import { themed } from '../framework/components'
+
+  const DBMLBlock = themed('DBMLBlock', StockDBMLBlock)
 
   let { page }: { page: PageModule } = $props()
 
@@ -15,7 +18,7 @@
     variant?: 'primary' | 'secondary' | 'ghost'
   }
 
-  let block: DBMLBlock | undefined = $state()
+  let block: StockDBMLBlock | undefined = $state()
 
   const config = $derived($configStore)
   const effectiveFooter = $derived(page.frontmatter.hide?.includes('footer') ? undefined : page.frontmatter.footer ?? config.footer?.text)
@@ -225,7 +228,7 @@
   }
   .np-action-primary {
     background-color: var(--np-brand);
-    color: #fff;
+    color: var(--np-text-on-brand);
   }
   .np-action-primary:hover {
     filter: brightness(1.05);

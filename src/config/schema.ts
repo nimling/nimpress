@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { NimpressUserConfig } from '../types'
+import { themeComponentNames } from './defaults'
 
 const brandSchema = z.object({
   primary: z.string().optional(),
@@ -145,6 +146,9 @@ export const userConfigSchema = z.object({
   defaultFrontmatter: z.record(z.unknown()).optional(),
   defaultFrontmatterExclude: z.array(z.string()).optional(),
   banner: z.union([bannerSchema, z.literal(false)]).optional(),
+  theme: z.string().optional(),
+  themes: z.array(z.string()).optional(),
+  components: z.record(z.enum(themeComponentNames), z.string()).optional(),
   css: z.union([z.string(), z.array(z.string())]).optional(),
   vite: z.record(z.unknown()).optional(),
   pageTypes: z.record(z.string()).optional(),

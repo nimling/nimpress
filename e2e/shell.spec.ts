@@ -17,11 +17,24 @@ test('the search modal opens from the header trigger and lists results', async (
   await expect(page.locator('.np-results button').first()).toBeVisible()
 })
 
-test('the theme toggle switches the dark class', async ({ page }) => {
+test('the mode toggle switches the dark class', async ({ page }) => {
   await open(page, 'getting-started')
   const before = await page.evaluate(() => document.documentElement.classList.contains('dark'))
-  await page.locator('button[aria-label="Toggle theme"]').click()
+  await page.locator('.np-mode-toggle').click()
   const after = await page.evaluate(() => document.documentElement.classList.contains('dark'))
   expect(after).not.toBe(before)
 })
 
+
+test('the theme menu switches the site theme and remembers the choice', async ({ page }) => {
+  await open(page, 'getting-started')
+  const root = page.locator('html')
+  await expect(root).toHaveAttribute('data-np-theme', 'glass')
+  await page.locator('.np-theme-menu-trigger').click()
+  await page.locator('.np-theme-menu-item', { hasText: 'Stock' }).click()
+  await expect(root).toHaveAttribute('data-np-theme', 'stock')
+  await page.reload()
+  await expect(root).toHaveAttribute('data-np-theme', 'stock')
+  await page.locator('.np-theme-menu-trigger').click()
+  await expect(page.locator('.np-theme-menu-item', { hasText: 'Stock' })).toHaveAttribute('aria-checked', 'true')
+})

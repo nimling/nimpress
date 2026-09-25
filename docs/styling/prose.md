@@ -137,6 +137,7 @@ The content column and every element the markdown pipeline produces, including c
 |---|
 | `np-card-body` |
 | `np-card-icon` |
+| `np-card-title` |
 
 ## Actions
 

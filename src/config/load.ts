@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadConfigFromFile } from 'vite'
 import type { NimpressUserConfig, ResolvedNimpressConfig } from '../types'
-import { defaultConfig } from './defaults'
+import { defaultConfig, themeName } from './defaults'
 import { parseUserConfig } from './schema'
 import { normalizeBase } from './base'
 
@@ -68,6 +68,8 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     logo: resolved.logo,
     github: resolved.github,
     brand: resolved.brand,
+    theme: themeName(resolved.theme),
+    themes: siteThemes(resolved).map(themeName),
     base: resolved.base,
     contentRoot: resolved.contentDir,
     navRoutes: resolved.navRoutes,
@@ -84,4 +86,8 @@ export function runtimeConfig(resolved: ResolvedNimpressConfig) {
     images: resolved.images,
     guardedBase: `/${resolved.paths.guarded}`
   }
+}
+
+export function siteThemes(resolved: ResolvedNimpressConfig): string[] {
+  return Array.from(new Set([...resolved.themes, resolved.theme]))
 }

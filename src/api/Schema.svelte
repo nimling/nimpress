@@ -1,7 +1,10 @@
 <script lang="ts">
   import { getContext, untrack } from 'svelte'
-  import Schema from './Schema.svelte'
+  import StockSchema from './Schema.svelte'
   import { SCHEMAS_CONTEXT, resolveRef, leafSchema, describeSchema, type SchemaRegistry } from './refs'
+  import { themed } from '../framework/components'
+
+  const Schema = themed('Schema', StockSchema)
 
   interface Props {
     schema: unknown

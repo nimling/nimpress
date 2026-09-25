@@ -23,6 +23,9 @@ export const defaultConfig: ResolvedNimpressConfig = {
   defaultFrontmatter: {},
   defaultFrontmatterExclude: [],
   banner: {},
+  theme: 'stock',
+  themes: [],
+  components: {},
   css: [],
   vite: {},
   pageTypes: {},
@@ -31,4 +34,45 @@ export const defaultConfig: ResolvedNimpressConfig = {
     route: `/${defaultPaths.modules}`,
     systems: {}
   }
+}
+
+export const builtInThemes = ['stock', 'glass']
+
+export const themeComponentNames = [
+  'Header',
+  'Announce',
+  'Footer',
+  'Sidebar',
+  'SidebarNode',
+  'Breadcrumbs',
+  'RightToc',
+  'BackToTop',
+  'SearchModal',
+  'AccountMenu',
+  'ThemeMenu',
+  'Feedback',
+  'SubscribeDialog',
+  'CodeBlock',
+  'CodeGroup',
+  'Tabs',
+  'Actions',
+  'Feature',
+  'Lightbox',
+  'MermaidBlock',
+  'MathBlock',
+  'DBMLBlock',
+  'ComponentEmbed',
+  'Card',
+  'CardGroup',
+  'Operation',
+  'Schema',
+  'ParamRow',
+  'MethodBadge',
+  'CodeExamples',
+  'TryPanel',
+  'TryDialog'
+] as const
+
+export function themeName(theme: string): string {
+  return builtInThemes.includes(theme) ? theme : theme.replace(/^.*\//, '').replace(/\.css$/, '')
 }

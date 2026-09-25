@@ -209,27 +209,27 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background-color: var(--np-code-bar-bg);
+    border-bottom: 1px solid var(--np-code-bar-border);
   }
   .np-editor-title {
     font-size: 12px;
     text-transform: lowercase;
-    color: rgba(229, 231, 235, 0.6);
+    color: var(--np-code-bar-text);
     font-family: var(--np-font-mono);
   }
   .np-editor-copy {
     background: transparent;
     border: 0;
-    color: rgba(229, 231, 235, 0.7);
+    color: var(--np-code-bar-text);
     font-size: 12px;
     cursor: pointer;
     padding: 2px 8px;
     border-radius: var(--np-radius-sm);
   }
   .np-editor-copy:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background-color: var(--np-code-bar-hover);
+    color: var(--np-code-bar-text-active);
   }
   .np-editor-host {
     background-color: var(--np-bg-code-block);

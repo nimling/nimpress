@@ -135,7 +135,7 @@
   </header>
   <div class="np-examples-bar">
     {#each langs as l (l.key)}
-      <button class:active={active === l.key} onclick={() => (active = l.key)}>{l.label}</button>
+      <button class="np-examples-tab" class:active={active === l.key} onclick={() => (active = l.key)}>{l.label}</button>
     {/each}
   </div>
   <div class="np-examples-body">
@@ -171,17 +171,17 @@
     flex-wrap: nowrap;
     gap: 0;
     padding: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--np-code-bar-border);
     background-color: transparent;
     overflow-x: auto;
     scrollbar-width: none;
   }
   .np-examples-bar::-webkit-scrollbar { display: none; height: 0; }
-  .np-examples-bar > button { flex: 0 0 auto; }
-  button {
+  .np-examples-bar > .np-examples-tab { flex: 0 0 auto; }
+  .np-examples-tab {
     background: transparent;
     border: 0;
-    color: rgba(229, 231, 235, 0.55);
+    color: var(--np-code-bar-text);
     font-size: 12.5px;
     padding: 10px 12px;
     border-radius: 0;
@@ -190,8 +190,8 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
   }
-  button:hover { color: rgba(229, 231, 235, 0.95); }
-  button.active {
+  .np-examples-tab:hover { color: var(--np-code-bar-text-active); }
+  .np-examples-tab.active {
     color: var(--np-brand);
     border-bottom-color: var(--np-brand);
     background-color: transparent;

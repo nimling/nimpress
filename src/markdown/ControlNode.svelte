@@ -563,7 +563,7 @@
     border: 1px solid var(--np-border);
     border-radius: 8px;
     background-color: var(--np-bg);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--np-shadow-popover);
   }
 
   .np-control-options-wrap:hover .np-control-options-pop,

@@ -184,7 +184,7 @@
     line-height: 1;
     padding: 3px 9px;
     border-radius: var(--np-radius-pill);
-    color: #ffffff;
+    color: var(--np-text-on-brand);
     background-color: var(--np-brand);
   }
   .np-rm-node-epic .np-rm-node-kind { background-color: var(--np-info); }

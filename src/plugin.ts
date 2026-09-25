@@ -45,8 +45,8 @@ import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
-import { defaultConfig } from './config/defaults'
-import { loadNimpressConfig, runtimeConfig } from './config/load'
+import { builtInThemes, defaultConfig } from './config/defaults'
+import { loadNimpressConfig, runtimeConfig, siteThemes } from './config/load'
 import { joinBase, stripBase } from './config/base'
 import { indexHtml } from './config/html'
 
@@ -1384,6 +1384,7 @@ function codeFenceTransformer(preAttrs: Record<string, string>, fence: CodeFence
       return tokens.map(annotateLine)
     },
     pre(node) {
+      node.properties.style = String(node.properties.style ?? '').replace(/background-color:[^;]*;?/, '')
       for (const [key, value] of Object.entries(preAttrs)) node.properties[key] = value
     },
     code(node) {
@@ -3595,6 +3596,10 @@ ${bodyBranches}
       resolved = loaded.resolved
       contentRoot = resolve(process.cwd(), resolved.contentDir)
       setCustomPageTypes(process.cwd(), resolved.pageTypes ?? {})
+      for (const theme of siteThemes(resolved)) {
+        if (builtInThemes.includes(theme) || existsSync(resolve(process.cwd(), theme))) continue
+        console.warn(`[nimpress] theme ${theme} is neither a built in theme, ${builtInThemes.join(' or ')}, nor a stylesheet`)
+      }
       assetsRoot = resolve(process.cwd(), resolved.assetsDir)
       return {}
     },
@@ -3953,12 +3958,21 @@ ${bodyBranches}
         return `export default ${JSON.stringify(runtime)}`
       }
       if (id === '\0' + VIRTUAL_MAIN) {
-        const cssImports = resolved.css
-          .map((href) => `import ${JSON.stringify(href.startsWith('/') ? href : '/' + href)}`)
+        const rootPath = (file: string) => file.startsWith('/') ? file : '/' + file.replace(/^\.\//, '')
+        const themeCss = siteThemes(resolved)
+          .filter((theme) => theme !== 'stock')
+          .map((theme) => builtInThemes.includes(theme) ? `@nimtech/nimpress/themes/${theme}.css` : rootPath(theme))
+        const cssImports = [...themeCss, ...resolved.css.map(rootPath)]
+          .map((href) => `import ${JSON.stringify(href)}`)
           .join('\n')
-        const clientPath = resolved.client
-          ? (resolved.client.startsWith('/') ? resolved.client : '/' + resolved.client.replace(/^\.\//, ''))
-          : null
+        const components = Object.entries(resolved.components)
+        const componentImports = components
+          .map(([name, file]) => `import Nimpress${name} from ${JSON.stringify(rootPath(file))}`)
+          .join('\n')
+        const componentArgs = components.length
+          ? `, components: { ${components.map(([name]) => `${name}: Nimpress${name}`).join(', ')} }`
+          : ''
+        const clientPath = resolved.client ? rootPath(resolved.client) : null
         const clientImport = clientPath
           ? `import { authFunctions, subscribeFunctions, feedbackFunctions } from ${JSON.stringify(clientPath)}`
           : ''
@@ -3971,7 +3985,8 @@ import manifest from 'virtual:nimpress/manifest'
 import searchIndex from 'virtual:nimpress/search'
 import pages from 'virtual:nimpress/pages'
 ${clientImport}
-const app = createNimpressApp({ ...config, manifest, searchIndex, pageLoader: pages${clientArgs} })
+${componentImports}
+const app = createNimpressApp({ ...config, manifest, searchIndex, pageLoader: pages${componentArgs}${clientArgs} })
 const target = document.getElementById('app')
 if (!target) throw new Error('Mount target #app missing')
 app.mount(target)

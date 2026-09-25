@@ -1,14 +1,21 @@
 <script lang="ts">
   import { onMount, getContext, untrack } from 'svelte'
-  import MethodBadge from './MethodBadge.svelte'
-  import ParamRow from './ParamRow.svelte'
-  import Schema from './Schema.svelte'
-  import TryPanel from './TryPanel.svelte'
-  import CodeExamples from './CodeExamples.svelte'
+  import StockMethodBadge from './MethodBadge.svelte'
+  import StockParamRow from './ParamRow.svelte'
+  import StockSchema from './Schema.svelte'
+  import StockTryPanel from './TryPanel.svelte'
+  import StockCodeExamples from './CodeExamples.svelte'
   import CodeEditor from '../markdown/CodeEditor.svelte'
   import { createTryState } from './tryState'
   import { SCHEMAS_CONTEXT, resolveRef, type SchemaRegistry } from './refs'
   import type { FlatOperation, SecurityScheme, FlatServer } from './types'
+  import { themed } from '../framework/components'
+
+  const MethodBadge = themed('MethodBadge', StockMethodBadge)
+  const ParamRow = themed('ParamRow', StockParamRow)
+  const Schema = themed('Schema', StockSchema)
+  const TryPanel = themed('TryPanel', StockTryPanel)
+  const CodeExamples = themed('CodeExamples', StockCodeExamples)
 
   let {
     op,
@@ -530,9 +537,9 @@
     background:
       linear-gradient(
         110deg,
-        rgba(255, 255, 255, 0.02) 8%,
-        rgba(255, 255, 255, 0.05) 18%,
-        rgba(255, 255, 255, 0.02) 33%
+        color-mix(in srgb, var(--np-shimmer) 40%, transparent) 8%,
+        var(--np-shimmer) 18%,
+        color-mix(in srgb, var(--np-shimmer) 40%, transparent) 33%
       );
     background-size: 200% 100%;
     animation: np-op-shimmer 1.6s linear infinite;
@@ -830,14 +837,14 @@
     padding: 0;
   }
   .np-resp-view-example :global(.np-editor) {
-    background-color: #0B0B0D;
+    background-color: var(--np-bg-code-block);
     border: 0;
     border-radius: 0;
   }
   .np-resp-view-example :global(.np-editor-host),
   .np-resp-view-example :global(.cm-scroller),
   .np-resp-view-example :global(.cm-content) {
-    background-color: #0B0B0D;
+    background-color: var(--np-bg-code-block);
   }
   .np-resp-view :global(.np-editor) {
     border: 0;

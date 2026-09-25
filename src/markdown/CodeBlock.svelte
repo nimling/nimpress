@@ -98,20 +98,20 @@
     justify-content: space-between;
     gap: 8px;
     padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background-color: var(--np-code-bar-bg);
+    border-bottom: 1px solid var(--np-code-bar-border);
     border-radius: var(--np-radius-md) var(--np-radius-md) 0 0;
     height: 36px;
   }
   .np-code-lang {
     font-size: 12px;
-    color: rgba(229, 231, 235, 0.6);
+    color: var(--np-code-bar-text);
     font-family: var(--np-font-mono);
     text-transform: lowercase;
   }
   .np-code-title {
     font-size: 12px;
-    color: rgba(229, 231, 235, 0.85);
+    color: var(--np-code-bar-text-active);
     font-family: var(--np-font-mono);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -127,20 +127,20 @@
     font-size: 11px;
     padding: 2px 8px;
     border-radius: var(--np-radius-pill);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--np-code-bar-border-strong);
   }
   .np-code-copy {
     background: transparent;
     border: 0;
-    color: rgba(229, 231, 235, 0.7);
+    color: var(--np-code-bar-text);
     font-size: 12px;
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--np-radius-sm);
   }
   .np-code-copy:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background-color: var(--np-code-bar-hover);
+    color: var(--np-code-bar-text-active);
   }
   .np-code-body {
     overflow: hidden;
@@ -177,7 +177,7 @@
     min-width: 3ch;
     margin-right: 16px;
     text-align: right;
-    color: rgba(229, 231, 235, 0.35);
+    color: var(--np-code-gutter);
     user-select: none;
   }
   .np-code-body :global(.np-code-annotation) {

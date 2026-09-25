@@ -20,11 +20,12 @@ The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 
 | Class |
 |---|
-| `np-examples` |
 | `np-examples-bar` |
 | `np-examples-body` |
 | `np-examples-head` |
+| `np-examples-tab` |
 | `np-examples-title` |
+| `np-examples` |
 
 ## MethodBadge
 
@@ -43,29 +44,30 @@ The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 
 | Class |
 |---|
-| `np-api` |
 | `np-api-actions` |
 | `np-api-collapse-all` |
 | `np-api-desc` |
-| `np-api-download` |
 | `np-api-download-error` |
 | `np-api-download-menu` |
+| `np-api-download` |
 | `np-api-header` |
 | `np-api-servers-table` |
 | `np-api-title-row` |
+| `np-api-title` |
 | `np-api-toggle-all` |
 | `np-api-version` |
+| `np-api` |
 | `np-flash` |
-| `np-op-lazy` |
-| `np-op-lazy-method` |
 | `np-op-lazy-method-delete` |
 | `np-op-lazy-method-get` |
 | `np-op-lazy-method-patch` |
 | `np-op-lazy-method-post` |
 | `np-op-lazy-method-put` |
+| `np-op-lazy-method` |
 | `np-op-lazy-path` |
 | `np-op-lazy-row` |
 | `np-op-lazy-summary` |
+| `np-op-lazy` |
 | `np-schema-block` |
 | `np-schemas-card` |
 | `np-schemas-chev` |
@@ -76,6 +78,7 @@ The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 | `np-tag-count` |
 | `np-tag-head` |
 | `np-tag-ops` |
+| `np-tag-title` |
 | `np-tag-toggle` |
 
 ## Operation

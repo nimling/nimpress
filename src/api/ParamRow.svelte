@@ -1,8 +1,11 @@
 <script lang="ts">
   import { getContext } from 'svelte'
-  import Schema from './Schema.svelte'
+  import StockSchema from './Schema.svelte'
   import { SCHEMAS_CONTEXT, describeSchema, type SchemaRegistry } from './refs'
   import type { FlatParameter } from './types'
+  import { themed } from '../framework/components'
+
+  const Schema = themed('Schema', StockSchema)
 
   let { param }: { param: FlatParameter } = $props()
 

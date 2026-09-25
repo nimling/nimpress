@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import { configStore, withBase } from '../framework/configStore'
 
   const announce = $derived($configStore.announce)
   const key = $derived(announce ? `np-announce-${hash(announce.text)}` : '')
-  let dismissed = $state(false)
-  let away = $state(false)
+  let dismissed = $state(true)
 
   function hash(text: string): string {
     let value = 5381
@@ -32,54 +30,56 @@
       dismissed = false
     }
   })
-
-  onMount(() => {
-    const headerHeight = () => {
-      const raw = getComputedStyle(document.documentElement).getPropertyValue('--np-header-height')
-      const parsed = Number.parseFloat(raw)
-      return Number.isFinite(parsed) ? parsed : 64
-    }
-    const onScroll = (event: Event) => {
-      const target = event.target
-      const scroller = target instanceof Document ? document.scrollingElement : (target as Element)
-      if (!scroller?.classList?.contains('np-main') && !(target instanceof Document)) return
-      away = (scroller?.scrollTop ?? 0) > headerHeight()
-    }
-    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
-    return () => document.removeEventListener('scroll', onScroll, { capture: true })
-  })
 </script>
 
 {#if announce && !dismissed}
-  <div class="np-announce" class:np-announce-away={away} role="status">
+  <div class="np-announce" role="status">
+    <span class="np-announce-mark" aria-hidden="true"></span>
     {#if announce.link}
       <a class="np-announce-text" href={href(announce.link)}>{@html announce.html ?? announce.text}</a>
     {:else}
       <span class="np-announce-text">{@html announce.html ?? announce.text}</span>
     {/if}
     {#if announce.dismiss}
-      <button type="button" class="np-announce-dismiss" aria-label="Dismiss announcement" onclick={dismiss}>×</button>
+      <button type="button" class="np-announce-dismiss" aria-label="Dismiss announcement" onclick={dismiss}>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
     {/if}
   </div>
 {/if}
 
 <style>
   .np-announce {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 30;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
     column-gap: 12px;
-    min-height: 36px;
-    padding: 6px 20px;
-    background-color: var(--np-announce-bg, var(--np-brand));
-    color: var(--np-announce-text, #ffffff);
-    font-size: 13px;
-    line-height: 1.4;
-    text-align: center;
-    transition: opacity 0.2s ease;
+    width: calc(100vw - 32px);
+    max-width: 24rem;
+    box-sizing: border-box;
+    padding: 14px 12px 14px 16px;
+    border: 1px solid var(--np-border);
+    border-radius: var(--np-radius-lg);
+    background-color: var(--np-announce-bg, var(--np-bg-card));
+    color: var(--np-announce-text, var(--np-text-primary));
+    box-shadow: var(--np-shadow-popover);
+    font-size: 14px;
+    line-height: 1.45;
+    animation: np-announce-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 600ms both;
   }
-  .np-announce-away {
-    display: none;
+  .np-announce-mark {
+    width: 8px;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: var(--np-radius-pill);
+    background-color: var(--np-brand);
+    box-shadow: 0 0 0 4px var(--np-brand-soft);
   }
   .np-announce-text {
     color: inherit;
@@ -88,6 +88,7 @@
   }
   a.np-announce-text:hover {
     text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
   .np-announce-text :global(a) {
     color: inherit;
@@ -98,19 +99,41 @@
     font-size: 12px;
     padding: 1px 5px;
     border-radius: var(--np-radius-sm);
-    background-color: rgb(255 255 255 / 0.18);
+    background-color: var(--np-bg-code-inline);
   }
   .np-announce-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: -4px 0;
     border: 0;
+    padding: 0;
     background: transparent;
-    color: inherit;
-    font-size: 18px;
-    line-height: 1;
-    padding: 2px 6px;
+    color: var(--np-text-muted);
     cursor: pointer;
     border-radius: var(--np-radius-sm);
   }
   .np-announce-dismiss:hover {
-    background-color: rgb(255 255 255 / 0.18);
+    background-color: var(--np-bg-surface);
+    color: var(--np-text-primary);
+  }
+  @keyframes np-announce-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @media (max-width: 640px) {
+    .np-announce {
+      right: 16px;
+      bottom: 16px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .np-announce {
+      animation: none;
+    }
   }
 </style>

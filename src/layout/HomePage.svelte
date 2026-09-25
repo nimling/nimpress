@@ -4,12 +4,12 @@
 </script>
 
 <section class="np-hero">
-  <h1>{config.title}</h1>
-  <p>Documentation for the ecosystem.</p>
+  <h1 class="np-home-title">{config.title}</h1>
+  <p class="np-home-lead">Documentation for the ecosystem.</p>
   <div class="np-cards">
     {#each (config.navRoutes ?? []) as r (r.link)}
       <a class="np-card" href={withBase(r.link)}>
-        <h3>{r.text}</h3>
+        <h3 class="np-home-card-title">{r.text}</h3>
       </a>
     {/each}
   </div>
@@ -21,7 +21,7 @@
     margin: 0 auto;
     padding: 64px 24px;
   }
-  h1 {
+  .np-home-title {
     font-size: 48px;
     line-height: 56px;
     font-weight: 700;
@@ -29,7 +29,7 @@
     margin: 0 0 16px;
     color: var(--np-text-primary);
   }
-  p {
+  .np-home-lead {
     font-size: 18px;
     color: var(--np-text-secondary);
     margin: 0 0 48px;
@@ -52,7 +52,7 @@
     border-color: var(--np-brand);
     box-shadow: var(--np-shadow-card);
   }
-  .np-card h3 {
+  .np-card .np-home-card-title {
     margin: 0;
     font-size: 16px;
     font-weight: 600;

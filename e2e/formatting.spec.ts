@@ -31,14 +31,14 @@ test('images float, carry captions, and load lazily after the first', async ({ p
   expect(loading.slice(1).every((value) => value === 'lazy')).toBe(true)
 })
 
-test('theme variants swap with the theme toggle', async ({ page }) => {
+test('theme variants swap with the mode toggle', async ({ page }) => {
   await open(page, 'examples/formatting')
   const light = page.locator('img.np-img-light')
   const dark = page.locator('img.np-img-dark')
   const wasDark = await page.evaluate(() => document.documentElement.classList.contains('dark'))
   await expect(wasDark ? dark : light).toBeVisible()
   await expect(wasDark ? light : dark).toBeHidden()
-  await page.locator('button[aria-label="Toggle theme"]').click()
+  await page.locator('.np-mode-toggle').click()
   await expect(wasDark ? light : dark).toBeVisible()
   await expect(wasDark ? dark : light).toBeHidden()
 })

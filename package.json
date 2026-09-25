@@ -46,6 +46,7 @@
     "./harness/svelte": "./src/harness/svelte/index.ts",
     "./mock": "./src/mock/index.ts",
     "./app.css": "./src/styles/app.css",
+    "./themes/*": "./src/styles/themes/*",
     "./style.css": "./dist/style.css"
   },
   "files": [

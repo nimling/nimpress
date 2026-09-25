@@ -1,15 +1,21 @@
 <script lang="ts">
   import { onMount, setContext } from 'svelte'
-  import Operation from './Operation.svelte'
-  import Schema from './Schema.svelte'
-  import TryDialog from './TryDialog.svelte'
-  import BackToTop from '../layout/BackToTop.svelte'
+  import StockOperation from './Operation.svelte'
+  import StockSchema from './Schema.svelte'
+  import StockTryDialog from './TryDialog.svelte'
+  import StockBackToTop from '../layout/BackToTop.svelte'
   import IconDownload from '../icons/IconDownload.svelte'
   import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
   import { isFlattenedSpec, type FlattenedSpec } from './types'
   import { SCHEMAS_CONTEXT, type SchemaRegistry } from './refs'
   import type { Frontmatter } from '../types'
+  import { themed } from '../framework/components'
+
+  const Operation = themed('Operation', StockOperation)
+  const Schema = themed('Schema', StockSchema)
+  const TryDialog = themed('TryDialog', StockTryDialog)
+  const BackToTop = themed('BackToTop', StockBackToTop)
 
   let {
     spec,
@@ -252,7 +258,7 @@
   <div class="np-api">
     <header class="np-api-header np-prose">
       <div class="np-api-title-row">
-        <h1>{title ?? flat.title}</h1>
+        <h1 class="np-api-title">{title ?? flat.title}</h1>
         {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
         <div class="np-api-actions">
           {#if specUrl}
@@ -342,7 +348,7 @@
               <polyline points="9 6 15 12 9 18" />
             </svg>
           </span>
-          <h2>{tag.name}</h2>
+          <h2 class="np-tag-title">{tag.name}</h2>
           <span class="np-tag-count">{tag.operations.length} endpoint{tag.operations.length === 1 ? '' : 's'}</span>
         </button>
         <div class="np-tag-ops">
@@ -376,7 +382,7 @@
               <polyline points="9 6 15 12 9 18" />
             </svg>
           </span>
-          <h2>Schemas</h2>
+          <h2 class="np-tag-title">Schemas</h2>
           <span class="np-tag-count">{Object.keys(flat.schemas).length} model{Object.keys(flat.schemas).length === 1 ? '' : 's'}</span>
         </button>
         {#if schemasOpen}
@@ -469,7 +475,7 @@
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-md);
-    box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
+    box-shadow: var(--np-shadow-popover);
   }
 
   .np-api-download-menu button {
@@ -506,7 +512,7 @@
     outline-offset: 2px;
   }
 
-  h1 {
+  .np-api-title {
     font-size: 34px;
     line-height: 1.2;
     font-weight: 700;
@@ -615,8 +621,8 @@
     outline-offset: 2px;
     border-radius: var(--np-radius-sm);
   }
-  .np-schemas-toggle h2,
-  .np-tag-toggle h2 { flex: 0 0 auto; }
+  .np-schemas-toggle .np-tag-title,
+  .np-tag-toggle .np-tag-title { flex: 0 0 auto; }
   .np-schemas-toggle .np-tag-count,
   .np-tag-toggle .np-tag-count { margin-left: auto; }
   .np-schemas-chev,
@@ -648,7 +654,7 @@
     font-size: 13px;
     white-space: pre-line;
   }
-  h2 {
+  .np-tag-title {
     font-size: 22px;
     font-weight: 600;
     margin: 0;
@@ -717,14 +723,14 @@
     border-radius: var(--np-radius-sm);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #fff;
+    color: var(--np-bg);
     background-color: var(--np-text-muted);
   }
-  .np-op-lazy-method-get { background-color: #2f6f3e; }
-  .np-op-lazy-method-post { background-color: #14587a; }
-  .np-op-lazy-method-put { background-color: #856120; }
-  .np-op-lazy-method-patch { background-color: #6d4393; }
-  .np-op-lazy-method-delete { background-color: #8a2c2c; }
+  .np-op-lazy-method-get { background-color: color-mix(in oklab, var(--np-method-get) 60%, #000); }
+  .np-op-lazy-method-post { background-color: color-mix(in oklab, var(--np-method-post) 60%, #000); }
+  .np-op-lazy-method-put { background-color: color-mix(in oklab, var(--np-method-put) 60%, #000); }
+  .np-op-lazy-method-patch { background-color: color-mix(in oklab, var(--np-method-patch) 60%, #000); }
+  .np-op-lazy-method-delete { background-color: color-mix(in oklab, var(--np-method-delete) 60%, #000); }
   .np-op-lazy-path {
     font-family: var(--np-font-mono);
     font-size: 14px;

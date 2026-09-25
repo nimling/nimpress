@@ -4,19 +4,34 @@
   import type { PageModule } from '../types'
   import { configStore, withBase } from '../framework/configStore'
   import { setupHashSpy } from '../framework/hashSpy'
-  import RightToc from '../layout/RightToc.svelte'
-  import BackToTop from '../layout/BackToTop.svelte'
-  import MermaidBlock from './MermaidBlock.svelte'
-  import MathBlock from './MathBlock.svelte'
-  import DBMLBlock from './DBMLBlock.svelte'
-  import CodeBlock from './CodeBlock.svelte'
-  import CodeGroup from './CodeGroup.svelte'
-  import Tabs from './Tabs.svelte'
-  import Actions from './Actions.svelte'
-  import Feature from './Feature.svelte'
-  import ComponentEmbed from './ComponentEmbed.svelte'
-  import Feedback from './Feedback.svelte'
-  import Lightbox from './Lightbox.svelte'
+  import StockRightToc from '../layout/RightToc.svelte'
+  import StockBackToTop from '../layout/BackToTop.svelte'
+  import StockMermaidBlock from './MermaidBlock.svelte'
+  import StockMathBlock from './MathBlock.svelte'
+  import StockDBMLBlock from './DBMLBlock.svelte'
+  import StockCodeBlock from './CodeBlock.svelte'
+  import StockCodeGroup from './CodeGroup.svelte'
+  import StockTabs from './Tabs.svelte'
+  import StockActions from './Actions.svelte'
+  import StockFeature from './Feature.svelte'
+  import StockComponentEmbed from './ComponentEmbed.svelte'
+  import StockFeedback from './Feedback.svelte'
+  import StockLightbox from './Lightbox.svelte'
+  import { themed } from '../framework/components'
+
+  const MermaidBlock = themed('MermaidBlock', StockMermaidBlock)
+  const MathBlock = themed('MathBlock', StockMathBlock)
+  const DBMLBlock = themed('DBMLBlock', StockDBMLBlock)
+  const ComponentEmbed = themed('ComponentEmbed', StockComponentEmbed)
+  const RightToc = themed('RightToc', StockRightToc)
+  const BackToTop = themed('BackToTop', StockBackToTop)
+  const CodeBlock = themed('CodeBlock', StockCodeBlock)
+  const CodeGroup = themed('CodeGroup', StockCodeGroup)
+  const Tabs = themed('Tabs', StockTabs)
+  const Actions = themed('Actions', StockActions)
+  const Feature = themed('Feature', StockFeature)
+  const Feedback = themed('Feedback', StockFeedback)
+  const Lightbox = themed('Lightbox', StockLightbox)
 
   let { page, lead, children }: { page: PageModule; lead?: Snippet; children?: Snippet } = $props()
 

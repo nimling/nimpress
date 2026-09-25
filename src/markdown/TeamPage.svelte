@@ -88,7 +88,7 @@
     display: grid;
     place-items: center;
     background-color: var(--np-brand);
-    color: #ffffff;
+    color: var(--np-text-on-brand);
     font-weight: 700;
     font-size: 24px;
   }

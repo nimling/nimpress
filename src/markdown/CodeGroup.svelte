@@ -1,5 +1,8 @@
 <script lang="ts">
-  import Tabs from './Tabs.svelte'
+  import StockTabs from './Tabs.svelte'
+  import { themed } from '../framework/components'
+
+  const Tabs = themed('Tabs', StockTabs)
 
   export interface CodeTab {
     lang: string
@@ -38,7 +41,7 @@
   .np-code-group-copy {
     background: transparent;
     border: 0;
-    color: rgba(229, 231, 235, 0.7);
+    color: var(--np-code-bar-text);
     font-size: 12px;
     cursor: pointer;
     padding: 4px 8px;
@@ -46,7 +49,7 @@
     margin-left: 8px;
   }
   .np-code-group-copy:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background-color: var(--np-code-bar-hover);
+    color: var(--np-code-bar-text-active);
   }
 </style>

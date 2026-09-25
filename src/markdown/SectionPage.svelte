@@ -2,8 +2,12 @@
   import type { PageModule, SidebarNode } from '../types'
   import { configStore } from '../framework/configStore'
   import Page from './Page.svelte'
-  import Card from './Card.svelte'
-  import CardGroup from './CardGroup.svelte'
+  import StockCard from './Card.svelte'
+  import StockCardGroup from './CardGroup.svelte'
+  import { themed } from '../framework/components'
+
+  const Card = themed('Card', StockCard)
+  const CardGroup = themed('CardGroup', StockCardGroup)
 
   let { page }: { page: PageModule } = $props()
 

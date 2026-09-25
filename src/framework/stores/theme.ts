@@ -30,3 +30,34 @@ export function applyInitialTheme() {
   const mode = initial()
   document.documentElement.classList.toggle('dark', mode === 'dark')
 }
+
+const SITE_KEY = 'nimpress-site-theme'
+
+let siteThemeNames: string[] = ['stock']
+
+export const siteTheme = writable<string>('stock')
+
+export const siteThemes = writable<string[]>(siteThemeNames)
+
+siteTheme.subscribe((name) => {
+  if (typeof document === 'undefined') return
+  document.documentElement.dataset.npTheme = name
+})
+
+export function applyInitialSiteTheme(fallback: string, names: string[]) {
+  siteThemeNames = names
+  siteThemes.set(names)
+  let stored: string | null = null
+  try {
+    stored = window.localStorage.getItem(SITE_KEY)
+  } catch {}
+  siteTheme.set(stored && names.includes(stored) ? stored : fallback)
+}
+
+export function selectSiteTheme(name: string) {
+  if (!siteThemeNames.includes(name)) return
+  siteTheme.set(name)
+  try {
+    window.localStorage.setItem(SITE_KEY, name)
+  } catch {}
+}

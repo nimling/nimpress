@@ -17,24 +17,55 @@
     "primaryHover": "#B86A52"
   },
   "repo": {
-    "actions": ["edit", "view"]
+    "actions": [
+      "edit",
+      "view"
+    ]
   },
   "feedback": {
     "endpoint": "https://feedback.example.test/api/feedback",
     "title": "Was this page helpful?",
     "ratings": [
-      { "icon": "👍", "name": "This page was helpful", "data": "1", "note": "Thanks for your feedback!" },
-      { "icon": "👎", "name": "This page could be improved", "data": "0", "note": "Thanks for your feedback! Help us improve this page by [opening an issue](https://github.com/nimling/nimpress)." }
+      {
+        "icon": "👍",
+        "name": "This page was helpful",
+        "data": "1",
+        "note": "Thanks for your feedback!"
+      },
+      {
+        "icon": "👎",
+        "name": "This page could be improved",
+        "data": "0",
+        "note": "Thanks for your feedback! Help us improve this page by [opening an issue](https://github.com/nimling/nimpress)."
+      }
     ]
   },
-  "pageTypes": { "spotlight": "./docs/types/Spotlight.svelte" },
-  "seo": { "auto": true, "ai": { "index": true } },
+  "pageTypes": {
+    "spotlight": "./docs/types/Spotlight.svelte"
+  },
+  "seo": {
+    "auto": true,
+    "ai": {
+      "index": true
+    }
+  },
   "icons": "./assets/icons",
   "tags": {
-    "icons": { "default": ":lucide-tag:", "setup": ":lucide-settings:", "authoring": ":lucide-pen-line:", "types": ":lucide-layout-template:" },
-    "map": { "Setup": "setup", "Authoring": "authoring", "Page types": "types" }
+    "icons": {
+      "default": ":lucide-tag:",
+      "setup": ":lucide-settings:",
+      "authoring": ":lucide-pen-line:",
+      "types": ":lucide-layout-template:"
+    },
+    "map": {
+      "Setup": "setup",
+      "Authoring": "authoring",
+      "Page types": "types"
+    }
   },
-  "defaultFrontmatter": { "feedback": true },
+  "defaultFrontmatter": {
+    "feedback": true
+  },
   "announce": {
     "text": "Version 2.4 brings seven new page types and a richer authoring surface.",
     "link": "/changelog",
@@ -44,8 +75,17 @@
     "text": "Built from the docs folder of the nimpress repository on every release.",
     "copyright": "© 2026 Nimling",
     "social": [
-      { "icon": "./assets/github.svg", "link": "https://github.com/nimling/nimpress", "name": "nimpress on GitHub" }
+      {
+        "icon": "./assets/github.svg",
+        "link": "https://github.com/nimling/nimpress",
+        "name": "nimpress on GitHub"
+      }
     ],
     "navigation": true
-  }
+  },
+  "theme": "glass",
+  "themes": [
+    "stock",
+    "glass"
+  ]
 }

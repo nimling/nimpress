@@ -7,7 +7,6 @@ order: 1
 sidebar:
   name: Overview
 data:
-  eyebrow: Documentation framework
   logo: /assets/logo.svg
   tagline: Svelte 5 docs framework that supports it all.
   align: start

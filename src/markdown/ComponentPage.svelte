@@ -1563,12 +1563,12 @@
   }
 
   .np-console-info .np-ws-console-level {
-    color: #3e63dd;
+    color: var(--np-note);
   }
 
   .np-console-warn .np-ws-console-level,
   .np-console-warn .np-ws-console-args {
-    color: #e5a50a;
+    color: var(--np-warning);
   }
 
   .np-console-error .np-ws-console-level,
@@ -1740,7 +1740,7 @@
     border-radius: 8px;
     border: 1px solid var(--np-border);
     background-color: var(--np-bg-surface);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--np-shadow-popover);
   }
 
   .np-ws-tool-group {
@@ -1811,7 +1811,7 @@
     border-radius: 8px;
     border: 1px solid var(--np-border);
     background-color: var(--np-bg-surface);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--np-shadow-popover);
   }
 
   .np-ws-vision-item {
@@ -1859,7 +1859,7 @@
     position: fixed;
     inset: 0;
     z-index: 60;
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--np-overlay-soft);
     border: 0;
     cursor: default;
   }
@@ -1879,7 +1879,7 @@
     border-radius: 10px;
     border: 1px solid var(--np-border);
     background-color: var(--np-bg);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--np-shadow-popover);
   }
 
   .np-ws-dialog-head {
@@ -1936,13 +1936,7 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    box-shadow: inset 0 4px 14px rgba(0, 0, 0, 0.25);
-  }
-
-  :global(html.dark) .np-ws-frame-inset::after {
-    box-shadow:
-      inset 0 6px 18px rgba(0, 0, 0, 0.7),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+    box-shadow: var(--np-shadow-inset);
   }
 
   .np-ws-frame {

@@ -4,8 +4,11 @@
   import { viewer } from '../framework/stores/viewer'
   import { viewerCanAccess } from '../auth/guard'
   import { resolvedRoute } from 'sly-svelte-location-router'
-  import SidebarNode from './SidebarNode.svelte'
+  import StockSidebarNode from './SidebarNode.svelte'
   import type { SidebarNode as SidebarNodeType } from '../types'
+  import { themed } from '../framework/components'
+
+  const SidebarNode = themed('SidebarNode', StockSidebarNode)
 
   let {
     node,
