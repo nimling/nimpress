@@ -40,7 +40,7 @@ export async function buildHarnesses(
 }
 
 export async function runDev(cwd: string, resolved: ResolvedNimpressConfig): Promise<void> {
-  const server = await createServer(buildViteConfig({ cwd, command: 'serve', resolved }))
+  const server = await createServer(await buildViteConfig({ cwd, command: 'serve', resolved }))
   await server.listen()
   await startHarnessServers(cwd, resolved, Object.keys(resolved.modules.systems))
   server.printUrls()
@@ -61,7 +61,7 @@ export async function runBuild(cwd: string, resolved: ResolvedNimpressConfig): P
   process.once('SIGINT', onSignal)
   process.once('SIGTERM', onSignal)
   try {
-    await build(buildViteConfig({ cwd, command: 'build', resolved, htmlInput: htmlPath }))
+    await build(await buildViteConfig({ cwd, command: 'build', resolved, htmlInput: htmlPath }))
   } finally {
     process.off('SIGINT', onSignal)
     process.off('SIGTERM', onSignal)

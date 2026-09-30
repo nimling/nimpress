@@ -1,6 +1,4 @@
 import type { InlineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import tailwindcss from '@tailwindcss/vite'
 import type { ResolvedNimpressConfig } from '../types'
 import { cacheDir, outDir } from './paths'
 import { chunkCycleGuard } from './chunkCycles'
@@ -27,8 +25,10 @@ export interface BuildViteOptions {
   htmlInput?: string
 }
 
-export function buildViteConfig(opts: BuildViteOptions): InlineConfig {
+export async function buildViteConfig(opts: BuildViteOptions): Promise<InlineConfig> {
   const { cwd, command, resolved, htmlInput } = opts
+  const { svelte } = await import('@sveltejs/vite-plugin-svelte')
+  const { default: tailwindcss } = await import('@tailwindcss/vite')
   const base: InlineConfig = {
     root: cwd,
     base: resolved.base,

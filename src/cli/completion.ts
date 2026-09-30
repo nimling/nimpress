@@ -203,7 +203,7 @@ export const commands: CompletionCommand[] = [
     name: 'completion',
     describe: 'Print the shell completion script, or wire it up with --auto',
     flags: [
-      { name: '--auto', value: false, describe: 'detect the shell and install completion into the rc file' },
+      { name: '--auto', value: false, describe: 'detect the shell and install the nimpress command and completion into the rc file' },
       { name: '--skill', value: false, describe: 'install the claude skill globally in the same step' }
     ],
     subs: [
@@ -358,6 +358,29 @@ export function completionScript(shell: string): string {
   throw new Error(`[nimpress] completion: unsupported shell ${shell}, use ${shells.join(', ')}`)
 }
 
+export function launcherScript(shell: string): string {
+  if (shell === 'fish') {
+    return [
+      'function nimpress',
+      '  if test -x node_modules/.bin/nimpress',
+      '    node_modules/.bin/nimpress $argv',
+      '  else',
+      '    pnpm --silent --package=@nimtech/nimpress dlx nimpress $argv',
+      '  end',
+      'end'
+    ].join('\n') + '\n'
+  }
+  return [
+    'nimpress() {',
+    '  if [ -x node_modules/.bin/nimpress ]; then',
+    '    node_modules/.bin/nimpress "$@"',
+    '  else',
+    '    pnpm --silent --package=@nimtech/nimpress dlx nimpress "$@"',
+    '  fi',
+    '}'
+  ].join('\n')
+}
+
 export function detectShell(): string {
   const name = basename(process.env.SHELL ?? '')
   for (const shell of ['zsh', 'bash', 'fish']) {
@@ -406,7 +429,12 @@ function installCompletion(shell: string): void {
     const path = join(dir, 'nimpress.fish')
     writeFileSync(path, script)
     console.log(`wrote ${path}`)
-    console.log('fish loads it on the next shell')
+    const functions = join(home, '.config', 'fish', 'functions')
+    mkdirSync(functions, { recursive: true })
+    const launcher = join(functions, 'nimpress.fish')
+    writeFileSync(launcher, launcherScript(target))
+    console.log(`wrote ${launcher}`)
+    console.log('fish loads them on the next shell')
     return
   }
 
@@ -421,10 +449,11 @@ function installCompletion(shell: string): void {
   console.log(`wrote ${scriptPath}`)
 
   const rc = join(home, target === 'zsh' ? '.zshrc' : '.bashrc')
-  const body =
+  const wiring =
     target === 'zsh'
       ? `fpath=("${dir}" $fpath)\nautoload -Uz compinit && compinit -u`
       : `[ -f "${scriptPath}" ] && source "${scriptPath}"`
+  const body = `${launcherScript(target)}\n${wiring}`
   writeManagedBlock(rc, body)
   console.log(`wired ${rc}`)
   console.log(`start a new shell or run: source ${rc}`)

@@ -184,7 +184,7 @@ nimpress completion --auto --skill
 nimpress completion bash --auto
 ```
 
-With a shell name and no `--auto` it prints the script for `bash`, `zsh`, `fish`, or `powershell` to stdout. `--auto` detects the shell from `$SHELL` when none is named, writes a nimpress owned file under `~/.config/nimpress/completions`, and points the rc file at it inside a block delimited by `# >>> nimpress completion >>>` and `# <<< nimpress completion <<<`. Rerunning `--auto` rewrites the block in place. fish is written to `~/.config/fish/completions/nimpress.fish` and needs no rc change. `--skill` installs this skill globally in the same step and only works alongside `--auto`.
+With a shell name and no `--auto` it prints the script for `bash`, `zsh`, `fish`, or `powershell` to stdout. `--auto` detects the shell from `$SHELL` when none is named, writes a nimpress owned file under `~/.config/nimpress/completions`, and writes the `nimpress` shell function and the completion wiring inside a block of the rc file delimited by `# >>> nimpress completion >>>` and `# <<< nimpress completion <<<`. Rerunning `--auto` rewrites the block in place. fish is written to `~/.config/fish/completions/nimpress.fish` and `~/.config/fish/functions/nimpress.fish` and needs no rc change. The function runs `node_modules/.bin/nimpress` when the current folder has one and `pnpm dlx` of the latest release otherwise, the same order the mcp server starts in. nimpress is never installed with `pnpm add -g`; the global folder is one shared project and another tool's Vite resolves under it. `--skill` installs this skill globally in the same step and only works alongside `--auto`.
 
 ## Where files land
 
@@ -257,10 +257,10 @@ nimpress guard map
 nimpress guard apply --map=uploaded.json
 ```
 
-Install the skill and completion on a fresh machine:
+Install the command, the skill and completion on a fresh machine:
 
 ```sh
-nimpress completion --auto --skill
+pnpm dlx @nimtech/nimpress completion --auto --skill
 ```
 
 ## Failure reading

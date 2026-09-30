@@ -40,6 +40,12 @@ pnpm add @nimtech/nimpress
 
 `@nimtech/nimpress` is public on npm. No `.npmrc`, no registry line, no token. It just works.
 
+To run `nimpress` from any folder, install the shell command once. It runs the repo's pinned `node_modules/.bin/nimpress` when there is one and the latest release through `pnpm dlx` everywhere else. Never install it with `pnpm add -g`: the global folder is one shared project, and another global tool's Vite ends up under nimpress.
+
+```bash
+pnpm dlx @nimtech/nimpress completion --auto --skill
+```
+
 ## Set up a site
 
 A consumer needs one config file and the `nimpress` CLI. The CLI owns Vite, serves the app shell and entry as virtual modules, and reads `nimpress.config`. There is no Vite config to write and no app to mount by hand.

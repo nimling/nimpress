@@ -36,7 +36,7 @@ if (linked) {
 }
 
 const { resolved } = await loadNimpressConfig(consumer)
-const config = mergeConfig(buildViteConfig({ cwd: consumer, command: 'serve', resolved }), {
+const config = mergeConfig(await buildViteConfig({ cwd: consumer, command: 'serve', resolved }), {
   ...(linked ? { optimizeDeps: { exclude: ['@nimtech/nimpress'] } } : {}),
   server: { fs: { allow: [root, consumer] } }
 })
