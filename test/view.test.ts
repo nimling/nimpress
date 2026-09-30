@@ -8,6 +8,7 @@ import {
   resolvedTargets,
   syncConfigFor,
   mirror,
+  replacedPages,
   repoName,
   repoUrl,
   readGlobalConfig,
@@ -183,5 +184,28 @@ describe('global config', () => {
     const config = { links: { '/src/x': [{ repo: 'nimling/docs-site', url: 'https://github.com/nimling/docs-site.git', exportDir: '.nimpress', login: { method: 'gh' as const } }] } }
     writeGlobalConfig(config, repo.cwd)
     expect(readGlobalConfig(repo.cwd)).toEqual(config)
+  })
+})
+
+describe('replacedPages', () => {
+  it('names the site pages whose url a local page takes, by slug or by declared path', () => {
+    repo = makeRepo()
+    file(repo.cwd, 'docs/libraries/lib.md', '---\ntitle: Old\n---\n')
+    file(repo.cwd, 'docs/libraries/lib/index.md', '---\ntitle: New\n---\n')
+    file(repo.cwd, 'docs/libraries/lib/guide.md', '---\ntitle: Guide\n---\n')
+    file(repo.cwd, 'docs/old-guide.md', '---\ntitle: Old guide\npath: /libraries/lib/guide\n---\n')
+    file(repo.cwd, 'docs/other.md', '---\ntitle: Other\n---\n')
+    const local = new Set([join(repo.cwd, 'docs/libraries/lib/index.md'), join(repo.cwd, 'docs/libraries/lib/guide.md')])
+    expect(replacedPages(join(repo.cwd, 'docs'), local)).toEqual([
+      join(repo.cwd, 'docs/libraries/lib.md'),
+      join(repo.cwd, 'docs/old-guide.md')
+    ])
+  })
+
+  it('leaves a site without collisions alone', () => {
+    repo = makeRepo()
+    file(repo.cwd, 'docs/a.md', '---\ntitle: A\n---\n')
+    file(repo.cwd, 'docs/b/index.md', '---\ntitle: B\n---\n')
+    expect(replacedPages(join(repo.cwd, 'docs'), new Set([join(repo.cwd, 'docs/b/index.md')]))).toEqual([])
   })
 })

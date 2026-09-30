@@ -30,6 +30,8 @@ View finds the docs site, fetches it into the cache, installs what it needs, res
 
 5. The mapped path comes from the docs site itself: `nimpress.sources.json` at its root merged with the `defaults` input of its receiver workflow, the source winning per field, the same rule the `docs-sync` action applies. See [Publishing a repo's docs to the central site](/actions).
 
+6. Your pages win. A site page whose url one of your pages takes, by its file slug or its `path` frontmatter, is taken out of the clone for the preview and named in the output, such as `the local pages replace docs/libraries/auth-middleware.md`. It comes back from git on the next sync and on the next run, and the site repo is never written. The published site still refuses two pages on one url, so a replaced page is one the site repo has to retire before the real sync.
+
 ## Options
 
 | Option | Description |

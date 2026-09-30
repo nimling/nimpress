@@ -5,6 +5,8 @@ import { join, resolve, relative, dirname, sep } from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
 import { parse as parseYamlText } from 'yaml'
+import matter from 'gray-matter'
+import { pagePath } from '../plugin'
 import { loadNimpressConfig } from '../config/load'
 import { defaultConfig } from '../config/defaults'
 import { runExport } from './export'
@@ -243,6 +245,21 @@ export function mirror(src: string, dest: string, mode: string): { added: string
   return result
 }
 
+export function replacedPages(contentDir: string, local: Set<string>): string[] {
+  const owners = new Map<string, string[]>()
+  for (const file of walkFiles(contentDir)) {
+    if (!file.endsWith('.md')) continue
+    const declared = matter(readFileSync(file, 'utf-8')).data.path
+    const path = pagePath(contentDir, file, typeof declared === 'string' ? declared : undefined)
+    owners.set(path, [...(owners.get(path) ?? []), file])
+  }
+  const out: string[] = []
+  for (const files of owners.values()) {
+    if (files.some((file) => local.has(file))) out.push(...files.filter((file) => !local.has(file)))
+  }
+  return out.sort()
+}
+
 function git(args: string[], cwd?: string, env?: NodeJS.ProcessEnv): { ok: boolean; out: string } {
   const run = spawnSync('git', args, { cwd, encoding: 'utf-8', env: { ...process.env, ...env } })
   return { ok: run.status === 0, out: `${run.stdout ?? ''}${run.stderr ?? ''}`.trim() }
@@ -446,9 +463,21 @@ export async function runView(cwd: string, args: string[]): Promise<void> {
       )
     }
     const contentRoot = resolve(siteDir, receiver.contentRoot)
+    const siteContent = resolve(siteDir, site.resolved.contentDir)
+    let replaced: string[] = []
     const sync = () => {
+      if (replaced.length) git(['checkout', '--', ...replaced], siteDir)
+      const local = new Set<string>()
       for (const target of targets) {
-        report(target.to, mirror(join(exportDir, ...target.from.split('/').filter(Boolean)), join(contentRoot, ...target.to.split('/')), target.mode))
+        const from = join(exportDir, ...target.from.split('/').filter(Boolean))
+        const to = join(contentRoot, ...target.to.split('/'))
+        report(target.to, mirror(from, to, target.mode))
+        for (const file of walkFiles(from)) local.add(join(to, relative(from, file)))
+      }
+      replaced = replacedPages(siteContent, local)
+      for (const file of replaced) rmSync(file)
+      if (replaced.length) {
+        console.log(`nimpress view: the local pages replace ${replaced.map((file) => relative(siteDir, file)).join(', ')}`)
       }
     }
     sync()

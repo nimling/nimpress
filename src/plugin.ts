@@ -429,6 +429,10 @@ function normalizePath(p: string): string {
   return out
 }
 
+export function pagePath(contentRoot: string, file: string, declared: string | undefined): string {
+  return normalizePath(declared ?? defaultPathFromSlug(slugFromPath(contentRoot, file)))
+}
+
 async function walk(dir: string, out: string[] = []): Promise<string[]> {
   let entries
   try {
@@ -1866,7 +1870,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const slug = slugFromPath(contentRoot, file)
     const type: PageType = fm.type ?? 'doc'
-    const effectivePath = normalizePath(fm.path ?? defaultPathFromSlug(slug))
+    const effectivePath = pagePath(contentRoot, file, fm.path)
     const linkTo = typeof fm.link === 'string' && fm.link.trim() !== '' ? fm.link.trim() : undefined
     const sidebarOnly = !!linkTo || ((data as Record<string, unknown>).type === undefined && content.trim() === '')
 
