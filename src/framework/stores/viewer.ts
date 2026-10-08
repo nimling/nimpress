@@ -14,8 +14,8 @@ export async function refreshViewer(): Promise<Viewer> {
   try {
     const v = await resolveViewer()
     viewer.set(v)
+    if (v.authenticated) await loadGatedContent().catch(() => {})
     viewerReady.set(true)
-    if (v.authenticated) void loadGatedContent()
     return v
   } catch {
     viewer.set(empty)

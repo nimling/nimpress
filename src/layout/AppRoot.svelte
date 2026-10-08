@@ -6,6 +6,7 @@
   import HomePage from './HomePage.svelte'
   import { configStore, withBase } from '../framework/configStore'
   import { pageGuard } from '../auth/guard'
+  import { viewerReady } from '../framework/stores/viewer'
 
   function buildRoutes(): Routes {
     const config = get(configStore)
@@ -58,18 +59,28 @@
     return routes
   }
 
-  const routes = buildRoutes()
-  const notFound = Object.entries(get(configStore).manifest?.pages ?? {}).find(([, meta]) => meta.type === '404')
-  const notFoundLoader = notFound ? get(configStore).pageLoader?.[notFound[0]] : undefined
-  const fallback = (notFoundLoader ?? withBase('/')) as Routes[string]
+  function buildFallback(): Routes[string] {
+    const config = get(configStore)
+    const notFound = Object.entries(config.manifest?.pages ?? {}).find(([, meta]) => meta.type === '404')
+    const notFoundLoader = notFound ? config.pageLoader?.[notFound[0]] : undefined
+    return (notFoundLoader ?? withBase('/')) as Routes[string]
+  }
 </script>
 
 <App>
-  <Router {routes} {fallback}>
+  {#if $viewerReady}
+    {@const routes = buildRoutes()}
+    {@const fallback = buildFallback()}
+    <Router {routes} {fallback}>
+      <div class="np-loading">
+        <span class="np-spinner"></span>
+      </div>
+    </Router>
+  {:else}
     <div class="np-loading">
       <span class="np-spinner"></span>
     </div>
-  </Router>
+  {/if}
 </App>
 
 <style>
