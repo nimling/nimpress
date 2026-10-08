@@ -7,6 +7,7 @@
   import { configStore, withBase } from '../framework/configStore'
   import { pageGuard } from '../auth/guard'
   import { viewerReady } from '../framework/stores/viewer'
+  import { gatedShell } from '../framework/gated'
 
   function buildRoutes(): Routes {
     const config = get(configStore)
@@ -31,7 +32,8 @@
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
           ? pageGuard({ gate: meta.gate })
-          : undefined
+          : undefined,
+        props: gatedShell(slug) ? { shell: gatedShell(slug) } : undefined
       })
     }
 
@@ -45,7 +47,8 @@
         component: loader as () => Promise<{ default: unknown }>,
         guard: meta.gate
           ? pageGuard({ gate: meta.gate })
-          : undefined
+          : undefined,
+        props: gatedShell(slug) ? { shell: gatedShell(slug) } : undefined
       })
     }
 

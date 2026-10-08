@@ -53,6 +53,10 @@ describe('refreshViewer', () => {
     const config = get(configStore)
     expect(config.manifest?.pages['internal/roadmap']?.gate).toBe('staff')
     expect(config.pageLoader?.['internal/roadmap']).toBeTypeOf('function')
+    const { gatedShell } = await import('../src/framework/gated')
+    const GatedPage = (await import('../src/layout/GatedPage.svelte')).default
+    expect(gatedShell('internal/roadmap')).toEqual(shell)
+    expect(await config.pageLoader?.['internal/roadmap']?.()).toEqual({ default: GatedPage })
   })
 
   it('becomes ready without a resolver when no auth is configured', async () => {

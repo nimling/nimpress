@@ -25,6 +25,7 @@ interface PublishedAsset {
 let loaded = false
 let gatedBase = '/_guarded'
 let published: PublishedAsset[] = []
+const gatedShells = new Map<string, PageShell>()
 
 // gatedFileUrl resolves a guarded file to the artifact it was published as. The
 // publish step pairs the two, so a build with a pairing fetches by asset and one
@@ -33,6 +34,10 @@ export function gatedFileUrl(bundle: string, file: string): string {
   const hit = published.find((a) => a.bundle === bundle && a.file.endsWith(file))
   if (hit) return hit.url || withBase(`${gatedBase}/${hit.asset_id}/data`)
   return withBase(`${gatedBase}/${bundle}/${file}`)
+}
+
+export function gatedShell(slug: string): PageShell | undefined {
+  return gatedShells.get(slug)
 }
 
 export function gatedContentBase(): string {
@@ -116,7 +121,8 @@ export async function loadGatedContent(): Promise<void> {
         meta: shell.frontmatter.meta
       }
       byPath[shell.path] = shell.slug
-      pageLoader[shell.slug] = () => Promise.resolve({ default: GatedPage, props: { shell } })
+      gatedShells.set(shell.slug, shell)
+      pageLoader[shell.slug] = () => Promise.resolve({ default: GatedPage })
     }
     return {
       ...config,
