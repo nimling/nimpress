@@ -82,7 +82,7 @@ export const userConfigSchema = z.object({
     clientId: z.string(),
     scopes: z.string().optional(),
     redirectPath: z.string().optional(),
-    gateRedirect: z.string().optional(),
+    gateDenied: z.union([z.literal(404), z.string().regex(/^(404|\/.*)$/)]).optional(),
     headers: z.record(z.string()).optional(),
     endpoints: z.object({
       discovery: z.string().optional(),

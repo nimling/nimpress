@@ -113,10 +113,11 @@
             "/auth/callback"
           ]
         },
-        "gateRedirect": {
-          "type": "string",
-          "description": "Path on this origin a viewer is sent to when a gated page denies them, unless the page names its own gateRedirect.",
+        "gateDenied": {
+          "type": ["string", "integer"],
+          "description": "What a gated page does for a viewer it denies, unless the page sets its own gateDenied: a path on this origin to redirect to, or 404 to show the not found page. Defaults to \"/\".",
           "examples": [
+            "404",
             "/"
           ]
         },

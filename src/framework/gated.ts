@@ -1,4 +1,4 @@
-import { getGateRedirect, handleUnauthenticated } from '../auth/session'
+import { getGateDenied, handleUnauthenticated } from '../auth/session'
 import { configStore, withBase } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
 import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
@@ -12,7 +12,7 @@ interface GatedManifest {
 interface GuardedRoute {
   gate?: string
   bundle: string
-  redirect?: string
+  denied?: string
 }
 
 interface PublishedAsset {
@@ -127,7 +127,9 @@ export async function loadGatedContent(): Promise<void> {
       pageLoader[shell.slug] = () => Promise.resolve({ default: GatedPage })
     }
     for (const [path, route] of denied) {
-      pages[path] = { slug: path, path, type: 'doc', title: '', redirect: route.redirect ?? getGateRedirect() }
+      const target = route.denied ?? getGateDenied()
+      if (target === '404') continue
+      pages[path] = { slug: path, path, type: 'doc', title: '', redirect: target }
       byPath[path] = path
     }
     return {

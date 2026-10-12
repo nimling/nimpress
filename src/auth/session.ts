@@ -8,8 +8,8 @@ export function configureAuth(next: AuthConfig | undefined): void {
   discovered = null
 }
 
-export function getGateRedirect(): string {
-  return config?.gateRedirect ?? '/'
+export function getGateDenied(): string {
+  return String(config?.gateDenied ?? '/')
 }
 
 export function authConfigured(): boolean {

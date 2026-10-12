@@ -19,7 +19,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `path` | string | Route override, default derived from the file location |
 | `spec` | string | Required when `type: openapi` or `type: dbml`, path to the spec JSON or the `.dbml` file, relative to the markdown file |
 | `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
-| `gateRedirect` | string | Path a viewer the gate denies is sent to instead of the page |
+| `gateDenied` | path or 404 | What a viewer the gate denies gets: a redirect to the path, or the not found page |
 | `link` | string | Absolute url. The file becomes a sidebar entry that opens that url in a new tab and routes to no page of its own |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
@@ -120,10 +120,10 @@ One field guards a page. The value is an arbitrary string; the build's guard fun
 
 ```yaml
 gate: internal
-gateRedirect: /pricing
+gateDenied: /pricing
 ```
 
-A viewer the gate denies never loads the page: the route redirects to `gateRedirect`, else to `auth.gateRedirect` in the config, else to `/`.
+A viewer the gate denies never loads the page. `gateDenied` on the page decides what happens instead, else `auth.gateDenied` in the config, else a redirect to `/`. A path redirects there, the same way `redirect` does. `404` shows the not found page and keeps the address.
 
 ## `meta`
 
