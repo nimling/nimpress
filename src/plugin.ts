@@ -165,6 +165,7 @@ const frontmatterSchema = z.object({
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
+  gateRedirect: z.string().optional(),
   hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags'])).optional(),
   status: z.string().optional(),
   footer: z.string().optional(),
@@ -2766,11 +2767,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
   async function writeGuardedArtifacts(): Promise<void> {
     const gated = [...pages.values()].filter((p) => !pageHiddenEverywhere(p.frontmatter) && isGated(p))
-    const accessRoutes: Record<string, { gate?: string; bundle: string }> = {}
+    const accessRoutes: Record<string, { gate?: string; bundle: string; redirect?: string }> = {}
     const byBundle = new Map<string, ProcessedPage[]>()
     for (const p of gated) {
       const bundle = bundleFor(p)
-      accessRoutes[p.effectivePath] = { gate: p.frontmatter.gate, bundle }
+      accessRoutes[p.effectivePath] = { gate: p.frontmatter.gate, bundle, redirect: p.frontmatter.gateRedirect }
       const list = byBundle.get(bundle) ?? []
       list.push(p)
       byBundle.set(bundle, list)

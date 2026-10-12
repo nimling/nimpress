@@ -194,6 +194,7 @@ export interface Frontmatter {
   path?: string
   spec?: string
   gate?: string
+  gateRedirect?: string
   link?: string
   description?: string
   order?: number
@@ -504,6 +505,8 @@ export interface AuthConfig {
   scopes?: string
   /** Redirect path on this origin. @example "/auth/callback" */
   redirectPath?: string
+  /** Path on this origin a viewer is sent to when a gated page denies them, unless the page names its own gateRedirect. @example "/" */
+  gateRedirect?: string
   /** Extra headers sent to the auth endpoints. */
   headers?: Record<string, string>
   /** Endpoint overrides when discovery is unavailable. */

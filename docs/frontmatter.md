@@ -19,6 +19,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `path` | string | Route override, default derived from the file location |
 | `spec` | string | Required when `type: openapi` or `type: dbml`, path to the spec JSON or the `.dbml` file, relative to the markdown file |
 | `gate` | string | Marks the page guarded; the guard function maps it to a guarded bundle |
+| `gateRedirect` | string | Path a viewer the gate denies is sent to instead of the page |
 | `link` | string | Absolute url. The file becomes a sidebar entry that opens that url in a new tab and routes to no page of its own |
 | `description` | string | Meta description and search excerpt |
 | `order` | number | Sort position inside the parent sidebar group |
@@ -119,7 +120,10 @@ One field guards a page. The value is an arbitrary string; the build's guard fun
 
 ```yaml
 gate: internal
+gateRedirect: /pricing
 ```
+
+A viewer the gate denies never loads the page: the route redirects to `gateRedirect`, else to `auth.gateRedirect` in the config, else to `/`.
 
 ## `meta`
 

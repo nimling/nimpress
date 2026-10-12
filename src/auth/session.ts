@@ -8,6 +8,10 @@ export function configureAuth(next: AuthConfig | undefined): void {
   discovered = null
 }
 
+export function getGateRedirect(): string {
+  return config?.gateRedirect ?? '/'
+}
+
 export function authConfigured(): boolean {
   if (!config) return false
   return Boolean(config.functions?.resolveViewer || config.functions?.startLogin || (config.issuer && config.clientId))

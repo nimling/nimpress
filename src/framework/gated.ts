@@ -1,4 +1,4 @@
-import { handleUnauthenticated } from '../auth/session'
+import { getGateRedirect, handleUnauthenticated } from '../auth/session'
 import { configStore, withBase } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
 import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
@@ -12,6 +12,7 @@ interface GatedManifest {
 interface GuardedRoute {
   gate?: string
   bundle: string
+  redirect?: string
 }
 
 interface PublishedAsset {
@@ -95,7 +96,8 @@ export async function loadGatedContent(): Promise<void> {
       if (searchRes.ok) search = [...search, ...((await searchRes.json()) as SearchEntry[])]
     } catch {}
   }
-  if (!shells.length) return
+  const denied = Object.entries(routes).filter(([path]) => !shells.some((shell) => shell.path === path))
+  if (!shells.length && !denied.length) return
   loaded = true
 
   configStore.update((config) => {
@@ -123,6 +125,10 @@ export async function loadGatedContent(): Promise<void> {
       byPath[shell.path] = shell.slug
       gatedShells.set(shell.slug, shell)
       pageLoader[shell.slug] = () => Promise.resolve({ default: GatedPage })
+    }
+    for (const [path, route] of denied) {
+      pages[path] = { slug: path, path, type: 'doc', title: '', redirect: route.redirect ?? getGateRedirect() }
+      byPath[path] = path
     }
     return {
       ...config,

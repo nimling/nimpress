@@ -113,6 +113,13 @@
             "/auth/callback"
           ]
         },
+        "gateRedirect": {
+          "type": "string",
+          "description": "Path on this origin a viewer is sent to when a gated page denies them, unless the page names its own gateRedirect.",
+          "examples": [
+            "/"
+          ]
+        },
         "headers": {
           "type": "object",
           "description": "Extra headers sent to the auth endpoints.",
