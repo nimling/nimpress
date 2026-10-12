@@ -55,7 +55,7 @@ export async function gatedFetch(url: string): Promise<Response> {
   return res
 }
 
-export async function loadGatedContent(): Promise<void> {
+export async function loadGatedContent(authenticated: boolean): Promise<void> {
   if (loaded) return
   let routes: Record<string, GuardedRoute> = {}
   try {
@@ -79,7 +79,7 @@ export async function loadGatedContent(): Promise<void> {
   let styles: Record<string, string> = {}
   let sidebar: SidebarNode[] | null = null
   let search: SearchEntry[] = []
-  for (const bundle of bundles) {
+  for (const bundle of authenticated ? bundles : []) {
     let res: Response
     try {
       res = await fetch(gatedFileUrl(bundle, 'manifest.json'), { credentials: 'include' })

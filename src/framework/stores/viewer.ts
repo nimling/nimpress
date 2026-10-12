@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import { resolveViewer, endSession } from '../../auth/session'
+import { authConfigured, resolveViewer, endSession } from '../../auth/session'
 import { loadGatedContent } from '../gated'
 import type { Viewer } from '../../types'
 
@@ -14,11 +14,12 @@ export async function refreshViewer(): Promise<Viewer> {
   try {
     const v = await resolveViewer()
     viewer.set(v)
-    if (v.authenticated) await loadGatedContent().catch(() => {})
+    if (authConfigured()) await loadGatedContent(v.authenticated).catch(() => {})
     viewerReady.set(true)
     return v
   } catch {
     viewer.set(empty)
+    if (authConfigured()) await loadGatedContent(false).catch(() => {})
     viewerReady.set(true)
     return empty
   }

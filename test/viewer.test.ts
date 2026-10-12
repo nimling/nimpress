@@ -11,9 +11,9 @@ const shell = {
   bundle: 'staff'
 }
 
-function respond(url: string): Response {
+function respond(url: string, denied?: string): Response {
   if (url.endsWith('/access.json')) {
-    return new Response(JSON.stringify({ routes: { '/internal/roadmap': { gate: 'staff', bundle: 'staff' } } }))
+    return new Response(JSON.stringify({ routes: { '/internal/roadmap': { gate: 'staff', bundle: 'staff', denied } } }))
   }
   if (url.endsWith('/_guarded/staff/manifest.json')) {
     return new Response(JSON.stringify({ shells: [shell], styles: {}, sidebar: [] }))
@@ -71,5 +71,44 @@ describe('refreshViewer', () => {
     expect(v.authenticated).toBe(false)
     expect(get(viewerReady)).toBe(true)
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('redirects a signed out viewer from a gated route to the configured gateDenied', async () => {
+    const fetch = vi.fn(async (input: string) => respond(String(input)))
+    vi.stubGlobal('fetch', fetch)
+    const { setConfig, configStore } = await import('../src/framework/configStore')
+    const { configureAuth } = await import('../src/auth/session')
+    const { refreshViewer } = await import('../src/framework/stores/viewer')
+    setConfig({ title: 'Docs', contentRoot: 'docs', manifest: { pages: {}, byPath: {} } } as never)
+    configureAuth({
+      issuer: 'https://auth.example.test',
+      clientId: 'docs',
+      gateDenied: '/pricing',
+      functions: { resolveViewer: async () => null }
+    } as never)
+
+    const v = await refreshViewer()
+
+    expect(v.authenticated).toBe(false)
+    expect(get(configStore).manifest?.pages['/internal/roadmap']?.redirect).toBe('/pricing')
+    expect(fetch.mock.calls.map(([url]) => String(url)).some((url) => url.includes('/_guarded/'))).toBe(false)
+  })
+
+  it('lets the page gateDenied of 404 keep the not found page', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => respond(String(input), '404')))
+    const { setConfig, configStore } = await import('../src/framework/configStore')
+    const { configureAuth } = await import('../src/auth/session')
+    const { refreshViewer } = await import('../src/framework/stores/viewer')
+    setConfig({ title: 'Docs', contentRoot: 'docs', manifest: { pages: {}, byPath: {} } } as never)
+    configureAuth({
+      issuer: 'https://auth.example.test',
+      clientId: 'docs',
+      gateDenied: '/pricing',
+      functions: { resolveViewer: async () => null }
+    } as never)
+
+    await refreshViewer()
+
+    expect(get(configStore).manifest?.pages['/internal/roadmap']).toBeUndefined()
   })
 })
