@@ -121,13 +121,15 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    height: 100%;
+    margin-inline-end: 1.5rem;
     color: var(--np-text-primary);
     font-weight: 600;
     text-decoration: none;
   }
   .np-brand img {
-    width: 28px;
-    height: 28px;
+    height: 70%;
+    width: auto;
     object-fit: contain;
   }
   .np-crumbs-slot {
