@@ -1,4 +1,4 @@
-import { getGateDenied, handleUnauthenticated } from '../auth/session'
+import { handleUnauthenticated } from '../auth/session'
 import { configStore, withBase } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
 import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
@@ -9,7 +9,7 @@ interface GatedManifest {
   sidebar: SidebarNode[]
 }
 
-interface GuardedRoute {
+export interface GuardedRoute {
   gate?: string
   bundle: string
   denied?: string
@@ -26,6 +26,7 @@ interface PublishedAsset {
 let loaded = false
 let gatedBase = '/_guarded'
 let published: PublishedAsset[] = []
+let gatedRoutes: Record<string, GuardedRoute> = {}
 const gatedShells = new Map<string, PageShell>()
 
 // gatedFileUrl resolves a guarded file to the artifact it was published as. The
@@ -35,6 +36,10 @@ export function gatedFileUrl(bundle: string, file: string): string {
   const hit = published.find((a) => a.bundle === bundle && a.file.endsWith(file))
   if (hit) return hit.url || withBase(`${gatedBase}/${hit.asset_id}/data`)
   return withBase(`${gatedBase}/${bundle}/${file}`)
+}
+
+export function getGatedRoutes(): Record<string, GuardedRoute> {
+  return gatedRoutes
 }
 
 export function gatedShell(slug: string): PageShell | undefined {
@@ -70,6 +75,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
       if (access.prefix) gatedBase = access.prefix.replace(/\/$/, '')
       if (access.base) gatedBase = access.base.replace(/\/$/, '')
       routes = access.routes ?? {}
+      gatedRoutes = routes
       published = access.files ?? []
     }
   } catch {}
@@ -96,8 +102,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
       if (searchRes.ok) search = [...search, ...((await searchRes.json()) as SearchEntry[])]
     } catch {}
   }
-  const denied = Object.entries(routes).filter(([path]) => !shells.some((shell) => shell.path === path))
-  if (!shells.length && !denied.length) return
+  if (!shells.length) return
   loaded = true
 
   configStore.update((config) => {
@@ -125,12 +130,6 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
       byPath[shell.path] = shell.slug
       gatedShells.set(shell.slug, shell)
       pageLoader[shell.slug] = () => Promise.resolve({ default: GatedPage })
-    }
-    for (const [path, route] of denied) {
-      const target = route.denied ?? getGateDenied()
-      if (target === '404') continue
-      pages[path] = { slug: path, path, type: 'doc', title: '', redirect: target }
-      byPath[path] = path
     }
     return {
       ...config,

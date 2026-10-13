@@ -108,8 +108,8 @@ importers:
         specifier: ^1.24.0
         version: 1.29.2
       sly-svelte-location-router:
-        specifier: ^3.3.5
-        version: 3.3.5(svelte@5.56.3)
+        specifier: ^3.3.6
+        version: 3.3.6(svelte@5.56.3)
       tailwindcss:
         specifier: ^4.1.17
         version: 4.3.0
@@ -1897,8 +1897,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  sly-svelte-location-router@3.3.5:
-    resolution: {integrity: sha512-l+yXuyi7V673YJxeIoaXDBosMqnYKPJTBK31cX61UvCB0GKDzE6yHuzks3hKvx3eDDl5s3a0l9zGhEWH5XMnkw==}
+  sly-svelte-location-router@3.3.6:
+    resolution: {integrity: sha512-g/Om88fPY1htj/uZsovxchP/i4w/cmbgDaKuKlFeAqvjSi43P5ojZGh40PPTZl8hrIiLKI/RvZPP6J/Gipke+w==}
     peerDependencies:
       svelte: ^5.0.0
 
@@ -3889,7 +3889,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  sly-svelte-location-router@3.3.5(svelte@5.56.3):
+  sly-svelte-location-router@3.3.6(svelte@5.56.3):
     dependencies:
       path-to-regexp: 8.4.2
       svelte: 5.56.3

@@ -363,6 +363,7 @@ export interface Viewer {
 
 export interface AccessRequirement {
   gate?: string
+  denied?: string
 }
 
 export type AccessChecker = (

@@ -38,7 +38,7 @@ gate: internal
 
 ## Hidden until allowed
 
-Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot reach are excluded. Direct navigation to a gated page a viewer cannot load follows the page's `gateDenied`, else `auth.gateDenied` in the config, else redirects to `/`: a path redirects there the same way a page `redirect` does, and `404` shows the not found page. The redirect targets are listed per route in the public `access.json`, so they work without the guarded bundle.
+Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot reach are excluded. Every gated route listed in `access.json` is routed for every viewer behind a route guard. The guard asks the access checker, `checkAccess` from the auth functions, whether the viewer may open the page, and a viewer it refuses follows the page's `gateDenied`, else `auth.gateDenied` in the config, else `/`: a path replaces the address with that path, the same way a page `redirect` does, and `404` shows the not found page at the requested address. The redirect targets are listed per route in the public `access.json`, so they work without the guarded bundle.
 
 ## Login flow
 

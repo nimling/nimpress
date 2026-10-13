@@ -106,7 +106,7 @@
     "minisearch": "^7.1.2",
     "path-to-regexp": "^8.0.0",
     "shiki": "^1.24.0",
-    "sly-svelte-location-router": "^3.3.5",
+    "sly-svelte-location-router": "^3.3.6",
     "tailwindcss": "^4.1.17",
     "vite": "^6.3.5",
     "yaml": "^2.9.0",

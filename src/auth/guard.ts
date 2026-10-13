@@ -1,5 +1,6 @@
 import { get } from 'svelte/store'
-import { handleUnauthenticated } from './session'
+import { getGateDenied } from './session'
+import { withBase } from '../framework/configStore'
 import { viewer, viewerReady } from '../framework/stores/viewer'
 import type { AccessChecker, AccessRequirement, Viewer } from '../types'
 
@@ -22,6 +23,10 @@ export function viewerCanAccess(
   return registered(required, v)
 }
 
+export function getDeniedTarget(required: AccessRequirement): string {
+  return required.denied ?? getGateDenied()
+}
+
 export function pageGuard(required: AccessRequirement) {
   return async () => {
     if (!get(viewerReady)) {
@@ -34,9 +39,8 @@ export function pageGuard(required: AccessRequirement) {
         })
       })
     }
-    if (viewerCanAccess(required, get(viewer))) return undefined
-    const returnTo = window.location.pathname + window.location.search
-    handleUnauthenticated(returnTo)
-    return undefined
+    if (viewerCanAccess(required, get(viewer))) return null
+    const target = getDeniedTarget(required)
+    return target === '404' ? null : withBase(target)
   }
 }

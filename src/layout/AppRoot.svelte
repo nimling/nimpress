@@ -5,14 +5,16 @@
   import App from './App.svelte'
   import HomePage from './HomePage.svelte'
   import { configStore, withBase } from '../framework/configStore'
-  import { pageGuard } from '../auth/guard'
+  import { getDeniedTarget, pageGuard } from '../auth/guard'
   import { viewerReady } from '../framework/stores/viewer'
-  import { gatedShell } from '../framework/gated'
+  import { gatedShell, getGatedRoutes } from '../framework/gated'
+  import type { PageMeta } from '../types'
 
   function buildRoutes(): Routes {
     const config = get(configStore)
     const pages = config.manifest?.pages ?? {}
     const loaders = config.pageLoader ?? {}
+    const gated = getGatedRoutes()
     const routes: Routes = {}
 
     function assign(path: string, value: Routes[string]): void {
@@ -20,21 +22,33 @@
       if (path.length > 1 && path.endsWith('/')) routes[path.slice(0, -1)] = value
     }
 
+    function redirectTo(name: string, target: string): Routes[string] {
+      return {
+        name,
+        component: () => Promise.resolve({ default: HomePage }),
+        guard: async () => withBase(target)
+      }
+    }
+
+    function page(slug: string, meta: PageMeta, loader: unknown): Routes[string] {
+      return {
+        name: slug || 'index',
+        component: loader as () => Promise<{ default: unknown }>,
+        guard: meta.gate
+          ? pageGuard({ gate: meta.gate, denied: gated[meta.path]?.denied })
+          : undefined,
+        props: gatedShell(slug) ? { shell: gatedShell(slug) } : undefined
+      }
+    }
+
     for (const [slug, meta] of Object.entries(pages)) {
       if (meta.redirect) {
-        assign(withBase(meta.path), withBase(meta.redirect))
+        assign(withBase(meta.path), redirectTo(slug || 'index', meta.redirect))
         continue
       }
       const loader = loaders[slug]
       if (!loader) continue
-      assign(withBase(meta.path), {
-        name: slug || 'index',
-        component: loader as () => Promise<{ default: unknown }>,
-        guard: meta.gate
-          ? pageGuard({ gate: meta.gate })
-          : undefined,
-        props: gatedShell(slug) ? { shell: gatedShell(slug) } : undefined
-      })
+      assign(withBase(meta.path), page(slug, meta, loader))
     }
 
     for (const [path, slug] of Object.entries(config.manifest?.byPath ?? {})) {
@@ -42,14 +56,14 @@
       const meta = pages[slug]
       const loader = loaders[slug]
       if (!meta || meta.redirect || !loader) continue
-      assign(withBase(path), {
-        name: slug || 'index',
-        component: loader as () => Promise<{ default: unknown }>,
-        guard: meta.gate
-          ? pageGuard({ gate: meta.gate })
-          : undefined,
-        props: gatedShell(slug) ? { shell: gatedShell(slug) } : undefined
-      })
+      assign(withBase(path), page(slug, meta, loader))
+    }
+
+    for (const [path, route] of Object.entries(gated)) {
+      if (routes[withBase(path)]) continue
+      const target = getDeniedTarget({ gate: route.gate, denied: route.denied })
+      if (target === '404') continue
+      assign(withBase(path), redirectTo(path, target))
     }
 
     if (!routes[withBase('/')]) {
