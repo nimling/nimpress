@@ -2,7 +2,7 @@
 title: Footer
 order: 7
 tags: Setup
-description: The copyright notice, the previous and next page links, the social links, and the generator notice at the bottom of every page.
+description: The copyright notice, the previous and next page links, the social links, and the nimpress branding at the bottom of every page.
 ---
 
 
@@ -56,14 +56,14 @@ A custom copyright banner can be rendered as part of the footer, which is displa
 }
 ```
 
-### Generator notice
+### Layout and branding
 
-The footer displays a Built with nimpress notice to denote how the site was generated. The notice can be removed with the following option:
+The footer row is a three column grid: the Built with nimpress notice, muted, in the first cell, the footer line, copyright and social links centered in the middle cell, and whitespace in the last cell. Hide the notice on a page with `hide: [branding]`, or on every page by putting it in `defaultFrontmatter`:
 
 ```json
 {
-  "footer": {
-    "generator": false
+  "defaultFrontmatter": {
+    "hide": ["branding"]
   }
 }
 ```

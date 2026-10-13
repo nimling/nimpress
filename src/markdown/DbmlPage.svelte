@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { pageFooter } from '../framework/stores/pageFooter'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import type { PageModule } from '../types'
   import { configStore, withBase } from '../framework/configStore'
   import FullscreenIcon from '../icons/FullscreenIcon.svelte'
@@ -22,6 +24,9 @@
 
   const config = $derived($configStore)
   const effectiveFooter = $derived(page.frontmatter.hide?.includes('footer') ? undefined : page.frontmatter.footer ?? config.footer?.text)
+  $effect(() => {
+    pageFooter.set({ path: $resolvedRoute?.path ?? '/', text: effectiveFooter })
+  })
   const data = $derived((page.frontmatter.data ?? {}) as Record<string, unknown>)
   const hasBody = $derived((page.html ?? '').trim().length > 0)
   const eyebrow = $derived(typeof data.eyebrow === 'string' ? data.eyebrow : '')
@@ -116,9 +121,6 @@
       flush
     />
   </div>
-  {#if effectiveFooter}
-    <footer class="np-dbml-footer">{effectiveFooter}</footer>
-  {/if}
 </div>
 
 <style>
@@ -259,17 +261,6 @@
   .np-dbml-canvas :global(.np-dbml-wrapper) {
     height: 100%;
   }
-  .np-dbml-footer {
-    width: 100%;
-    max-width: var(--np-content-max, 1024px);
-    margin: 0 auto;
-    padding: 24px 32px;
-    box-sizing: border-box;
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    white-space: pre-line;
-  }
   @media (max-width: 1024px) {
     .np-dbml-head {
       padding-top: 48px;
@@ -277,8 +268,7 @@
     .np-dbml-title {
       font-size: 34px;
     }
-    .np-dbml-head-inner,
-    .np-dbml-footer {
+    .np-dbml-head-inner {
       padding-left: 20px;
       padding-right: 20px;
     }

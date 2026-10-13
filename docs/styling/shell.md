@@ -82,7 +82,10 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 |---|
 | `np-footer` |
 | `np-footer-copyright` |
-| `np-footer-generator` |
+| `np-footer-brand` |
+| `np-footer-content` |
+| `np-footer-end` |
+| `np-footer-line` |
 | `np-footer-meta` |
 | `np-footer-nav` |
 | `np-footer-nav-label` |

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { pageFooter } from '../framework/stores/pageFooter'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import { onMount, setContext } from 'svelte'
   import StockOperation from './Operation.svelte'
   import StockSchema from './Schema.svelte'
@@ -33,6 +35,9 @@
 
   const config = $derived($configStore)
   const effectiveFooter = $derived(frontmatter?.hide?.includes('footer') ? undefined : frontmatter?.footer ?? config.footer?.text)
+  $effect(() => {
+    pageFooter.set({ path: $resolvedRoute?.path ?? '/', text: effectiveFooter })
+  })
 
   const flat = $derived<FlattenedSpec | null>(isFlattenedSpec(spec) ? spec : null)
   const serverUrl = $derived(flat?.servers?.[0]?.url ?? '')
@@ -398,9 +403,6 @@
       </section>
     {/if}
 
-    {#if effectiveFooter}
-      <footer class="np-page-footer">{effectiveFooter}</footer>
-    {/if}
   </div>
 
   <TryDialog
@@ -645,15 +647,6 @@
     color: var(--np-text-primary);
   }
 
-  .np-page-footer {
-    margin-top: 64px;
-    padding: 32px 0 0;
-    border-top: 0;
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    white-space: pre-line;
-  }
   .np-tag-title {
     font-size: 22px;
     font-weight: 600;

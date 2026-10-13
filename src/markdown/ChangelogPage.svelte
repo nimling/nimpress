@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { pageFooter } from '../framework/stores/pageFooter'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import { onMount, tick, mount, unmount, createRawSnippet } from 'svelte'
   import type { PageModule, ChangelogEntry } from '../types'
   import { configStore, withBase } from '../framework/configStore'
@@ -34,6 +36,9 @@
   const config = $derived($configStore)
   const hidden = $derived(new Set(page.frontmatter.hide ?? []))
   const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer?.text)
+  $effect(() => {
+    pageFooter.set({ path: $resolvedRoute?.path ?? '/', text: effectiveFooter })
+  })
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background)
   const tocHeadings = $derived(page.headings ?? [])
@@ -348,9 +353,6 @@
         <p class="np-changelog-empty">No entries.</p>
       {/if}
     </article>
-    {#if effectiveFooter}
-      <footer class="np-page-footer">{effectiveFooter}</footer>
-    {/if}
     <div class="np-page-tail"></div>
   </div>
   {#if !hidden.has('toc') && tocHeadings.length > 0}
@@ -648,15 +650,6 @@
     font-style: italic;
   }
 
-  .np-page-footer {
-    margin-top: 96px;
-    padding: 32px 0 0;
-    border-top: 0;
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    white-space: pre-line;
-  }
   .np-page-tail {
     height: 25vh;
     min-height: 160px;

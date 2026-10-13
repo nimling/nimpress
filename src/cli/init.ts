@@ -42,7 +42,7 @@ export default defineConfig({
   /** Brand colors written onto the theme tokens --np-brand and --np-brand-hover. */
   // brand: { primary: '#CC785C', primaryHover: '#B86A52' },
 
-  /** Footer: text is the site wide line, overridable per page with the footer frontmatter field, beside a copyright, social links, previous and next links, and the generator notice. */
+  /** Footer: text is the site wide line, overridable per page with the footer frontmatter field, beside a copyright, social links, and previous and next links. Hide the nimpress branding with hide: [branding] in a page or in defaultFrontmatter. */
   // footer: { text: 'Made with nimpress', copyright: '© 2026 Nimling', social: [{ icon: '/assets/github.svg', link: 'https://github.com/nimling', name: 'Nimling on GitHub' }], navigation: true },
 
   /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button remembered per text. */

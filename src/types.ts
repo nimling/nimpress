@@ -185,7 +185,7 @@ export interface PageMetaTags {
   jsonLd?: unknown
 }
 
-export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags'
+export type PageElement = 'navigation' | 'toc' | 'path' | 'footer' | 'tags' | 'branding'
 
 export interface Frontmatter {
   title: string
@@ -565,7 +565,6 @@ export interface NimpressFooterConfig {
   copyright?: string
   social?: NimpressSocialLink[]
   navigation?: boolean
-  generator?: boolean
 }
 
 export type ThemeComponentName = (typeof themeComponentNames)[number]
@@ -658,7 +657,7 @@ export interface NimpressUserConfig {
   github?: string
   /** Brand colors written onto the theme tokens. @example { "primary": "#CC785C" } */
   brand?: NimpressBrandConfig
-  /** Footer: the site wide line, a copyright, social links, previous and next links, and the generator notice. @example { "text": "Made with nimpress", "navigation": true } */
+  /** Footer: the site wide line, a copyright, social links, and previous and next links. @example { "text": "Made with nimpress", "navigation": true } */
   footer?: NimpressFooterConfig
   /** Announcement bar above the header. text is one markdown line, link wraps it, dismiss adds a close button. @example { "text": "v2.4 is out", "dismiss": true } */
   announce?: NimpressAnnounceConfig

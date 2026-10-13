@@ -1,12 +1,21 @@
 <script lang="ts">
   import { resolvedRoute } from 'sly-svelte-location-router'
   import { configStore, hiddenElements, withBase, withoutBase } from '../framework/configStore'
+  import { pageFooter } from '../framework/stores/pageFooter'
   import type { SidebarNode } from '../types'
 
   const config = $derived($configStore)
   const footer = $derived(config.footer)
   const route = $derived($resolvedRoute?.path ?? '/')
   const hidden = $derived(hiddenElements(config, route))
+  const line = $derived(
+    hidden.has('footer')
+      ? undefined
+      : $pageFooter && $pageFooter.path === route
+        ? $pageFooter.text
+        : footer?.text
+  )
+  const branding = $derived(!hidden.has('branding'))
 
   function flatten(nodes: SidebarNode[] | undefined, out: SidebarNode[] = []): SidebarNode[] {
     for (const node of nodes ?? []) {
@@ -29,7 +38,7 @@
     return { prev: pages[index - 1], next: pages[index + 1] }
   })
 
-  const showMeta = $derived(Boolean(footer?.copyright || footer?.social?.length || footer?.generator !== false))
+  const showMeta = $derived(Boolean(line || footer?.copyright || footer?.social?.length || branding))
   const isMarkup = (icon: string) => icon.trim().startsWith('<svg')
 </script>
 
@@ -55,25 +64,33 @@
     {/if}
     {#if showMeta}
       <div class="np-footer-meta">
-        {#if footer.copyright}
-          <span class="np-footer-copyright">{footer.copyright}</span>
-        {/if}
-        {#if footer.social?.length}
-          <div class="np-footer-social">
-            {#each footer.social as entry (entry.link)}
-              <a class="np-footer-social-link" href={entry.link} target="_blank" rel="noopener" title={entry.name ?? entry.link} aria-label={entry.name ?? entry.link}>
-                {#if isMarkup(entry.icon)}
-                  {@html entry.icon}
-                {:else}
-                  <span class="np-footer-social-glyph">{entry.icon}</span>
-                {/if}
-              </a>
-            {/each}
-          </div>
-        {/if}
-        {#if footer.generator !== false}
-          <span class="np-footer-generator">Built with <a href="https://nimling.github.io/nimpress" target="_blank" rel="noopener">nimpress</a></span>
-        {/if}
+        <div class="np-footer-brand">
+          {#if branding}
+            Built with <a href="https://nimling.github.io/nimpress" target="_blank" rel="noopener">nimpress</a>
+          {/if}
+        </div>
+        <div class="np-footer-content">
+          {#if line}
+            <span class="np-footer-line">{line}</span>
+          {/if}
+          {#if footer.copyright}
+            <span class="np-footer-copyright">{footer.copyright}</span>
+          {/if}
+          {#if footer.social?.length}
+            <div class="np-footer-social">
+              {#each footer.social as entry (entry.link)}
+                <a class="np-footer-social-link" href={entry.link} target="_blank" rel="noopener" title={entry.name ?? entry.link} aria-label={entry.name ?? entry.link}>
+                  {#if isMarkup(entry.icon)}
+                    {@html entry.icon}
+                  {:else}
+                    <span class="np-footer-social-glyph">{entry.icon}</span>
+                  {/if}
+                </a>
+              {/each}
+            </div>
+          {/if}
+        </div>
+        <div class="np-footer-end"></div>
       </div>
     {/if}
   </footer>
@@ -124,10 +141,9 @@
     color: var(--np-brand);
   }
   .np-footer-meta {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, auto) 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px 24px;
     padding-top: 20px;
     border-top: 1px solid var(--np-divider);
@@ -161,8 +177,23 @@
     font-family: var(--np-font-mono);
     white-space: pre;
   }
-  .np-footer-generator a {
+  .np-footer-brand {
+    justify-self: start;
+    font-size: 12px;
+    opacity: 0.5;
+  }
+  .np-footer-brand a {
     color: inherit;
+  }
+  .np-footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+  .np-footer-line {
+    white-space: pre-line;
   }
   @media (max-width: 720px) {
     .np-footer {
@@ -173,6 +204,16 @@
     }
     .np-footer-next {
       text-align: left;
+    }
+    .np-footer-meta {
+      grid-template-columns: 1fr;
+    }
+    .np-footer-brand {
+      order: 1;
+      justify-self: center;
+    }
+    .np-footer-end {
+      display: none;
     }
   }
 </style>

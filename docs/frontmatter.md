@@ -29,7 +29,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
 | `redirect` | string | Send the visitor to another path on load |
-| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, see below |
+| `hide` | list | Page elements to hide: `navigation`, `toc`, `path`, `footer`, `tags`, `branding`, see below |
 | `status` | string | Status identifier rendered as a mark on the sidebar row, see below |
 | `footer` | string | Centered, muted text rendered at the bottom of the page |
 | `styles` | string[] | Extra stylesheets for the page, relative to the markdown file, beside the `<page>.css` and `<page>.<component>.css` files it picks up by name |
@@ -68,6 +68,7 @@ hide:
 | `path` | The breadcrumbs in the header |
 | `footer` | The page footer line, from the page or from the site config |
 | `tags` | The tag row under the title |
+| `branding` | The Built with nimpress notice in the footer |
 
 A `hide` list in `defaultFrontmatter` merges with the page's own list, so a site wide `hide: [footer]` and a page level `hide: [toc]` hide both.
 

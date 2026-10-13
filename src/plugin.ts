@@ -166,7 +166,7 @@ const frontmatterSchema = z.object({
   lastUpdated: z.boolean().optional(),
   redirect: z.string().optional(),
   gateDenied: z.union([z.literal(404), z.string().regex(/^(404|\/.*)$/)]).optional(),
-  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags'])).optional(),
+  hide: z.array(z.enum(['navigation', 'toc', 'path', 'footer', 'tags', 'branding'])).optional(),
   status: z.string().optional(),
   footer: z.string().optional(),
   background: z.string().optional(),

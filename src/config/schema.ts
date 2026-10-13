@@ -51,8 +51,7 @@ export const userConfigSchema = z.object({
     text: z.string().optional(),
     copyright: z.string().optional(),
     social: z.array(z.object({ icon: z.string(), link: z.string(), name: z.string().optional() })).optional(),
-    navigation: z.boolean().optional(),
-    generator: z.boolean().optional()
+    navigation: z.boolean().optional()
   }, { invalid_type_error: 'footer is an object; put the line under footer.text' }).optional(),
   repo: z.object({
     url: z.string().optional(),

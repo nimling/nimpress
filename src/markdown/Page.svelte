@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { pageFooter } from '../framework/stores/pageFooter'
+  import { resolvedRoute } from 'sly-svelte-location-router'
   import { onMount, tick, mount, unmount, createRawSnippet } from 'svelte'
   import type { Snippet } from 'svelte'
   import type { PageModule } from '../types'
@@ -41,6 +43,9 @@
   const config = $derived($configStore)
   const hidden = $derived(new Set(page.frontmatter.hide ?? []))
   const effectiveFooter = $derived(hidden.has('footer') ? undefined : page.frontmatter.footer ?? config.footer?.text)
+  $effect(() => {
+    pageFooter.set({ path: $resolvedRoute?.path ?? '/', text: effectiveFooter })
+  })
   const background = $derived(page.frontmatter.background ?? '')
   const renderBackground = $derived(!!background && page.type !== 'hero')
   const issueKind = $derived(
@@ -391,9 +396,6 @@
     {#if showFeedback}
       <Feedback path={page.path} />
     {/if}
-    {#if effectiveFooter}
-      <footer class="np-page-footer">{effectiveFooter}</footer>
-    {/if}
     <div class="np-page-tail"></div>
   </div>
   {#if showRail}
@@ -545,15 +547,6 @@
   .np-page-action:hover {
     color: var(--np-brand);
     background-color: var(--np-bg-surface);
-  }
-  .np-page-footer {
-    margin-top: 96px;
-    padding: 32px 0 0;
-    border-top: 1px solid var(--np-divider);
-    text-align: center;
-    color: var(--np-text-faint);
-    font-size: 13px;
-    white-space: pre-line;
   }
   .np-page-tail {
     height: 25vh;
