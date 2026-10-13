@@ -119,4 +119,29 @@ describe('refreshViewer', () => {
     expect(getDeniedTarget({ gate: route?.gate, denied: route?.denied })).toBe('404')
     expect(await pageGuard({ gate: route?.gate, denied: route?.denied })()).toBeNull()
   })
+
+  it('removes every gated page from memory on logout', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => respond(String(input))))
+    const { setConfig, configStore } = await import('../src/framework/configStore')
+    const { configureAuth } = await import('../src/auth/session')
+    const { refreshViewer, clearViewer, viewerReady } = await import('../src/framework/stores/viewer')
+    const { gatedShell } = await import('../src/framework/gated')
+    setConfig({ title: 'Docs', contentRoot: 'docs', manifest: { pages: {}, byPath: {} } } as never)
+    configureAuth({
+      issuer: 'https://auth.example.test',
+      clientId: 'docs',
+      functions: { resolveViewer: async () => ({ id: 'u1' }), endSession: async () => {} }
+    } as never)
+    await refreshViewer()
+    expect(get(configStore).manifest?.pages['internal/roadmap']).toBeDefined()
+
+    await clearViewer()
+
+    const config = get(configStore)
+    expect(config.manifest?.pages['internal/roadmap']).toBeUndefined()
+    expect(config.manifest?.byPath?.['/internal/roadmap']).toBeUndefined()
+    expect(config.pageLoader?.['internal/roadmap']).toBeUndefined()
+    expect(gatedShell('internal/roadmap')).toBeUndefined()
+    expect(get(viewerReady)).toBe(true)
+  })
 })

@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
 import { authConfigured, resolveViewer, endSession } from '../../auth/session'
-import { loadGatedContent } from '../gated'
+import { deleteGatedContent, loadGatedContent } from '../gated'
 import type { Viewer } from '../../types'
 
 const empty: Viewer = {
@@ -29,5 +29,9 @@ export async function clearViewer(): Promise<void> {
   try {
     await endSession()
   } catch {}
+  viewerReady.set(false)
   viewer.set(empty)
+  deleteGatedContent()
+  if (authConfigured()) await loadGatedContent(false).catch(() => {})
+  viewerReady.set(true)
 }

@@ -46,7 +46,7 @@ Sidebar entries the viewer cannot reach disappear. Search hits the viewer cannot
 
 ## Logout
 
-`endSession()` calls `<authEndpoint>/api/auth/logout` with `credentials: 'include'` and clears the viewer store.
+`endSession()` calls `<authEndpoint>/api/auth/logout` with `credentials: 'include'` and clears the viewer store. It then removes every gated page the session loaded from memory, its route, its search entries and the gated sidebar, and rebuilds the routes, so a gated address follows `gateDenied` at once without a reload.
 
 ## Guarded bundles and the guard command
 
@@ -71,3 +71,5 @@ This is the last step before publishing a site that mixes public and gated pages
 2. The viewer surface is read only. Claims cannot be elevated client side.
 
 3. Hidden pages are also unreachable via the page loader. The build emits every page module, but the runtime refuses to render gated pages when the viewer fails the check.
+
+4. Gated content is never written to browser storage: it lives in memory for the session and is removed on logout. The provider serving guarded bundles answers them with `Cache-Control: no-store`, so the HTTP cache holds no copy, and its logout answers with `Clear-Site-Data: "cache"`, so any response it served before is cleared.

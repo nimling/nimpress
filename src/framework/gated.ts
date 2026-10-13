@@ -27,6 +27,8 @@ let loaded = false
 let gatedBase = '/_guarded'
 let published: PublishedAsset[] = []
 let gatedRoutes: Record<string, GuardedRoute> = {}
+let publicSidebar: SidebarNode[] | undefined
+let gatedSearch: SearchEntry[] = []
 const gatedShells = new Map<string, PageShell>()
 
 // gatedFileUrl resolves a guarded file to the artifact it was published as. The
@@ -108,6 +110,8 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
   configStore.update((config) => {
     const manifest = config.manifest
     if (!manifest) return config
+    publicSidebar = manifest.sidebar
+    gatedSearch = search
     const pages: Record<string, PageMeta> = { ...manifest.pages }
     const byPath: Record<string, string> = { ...manifest.byPath }
     const mergedStyles: Record<string, string> = { ...(manifest.styles ?? {}), ...styles }
@@ -138,4 +142,32 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
       searchIndex: [...(config.searchIndex ?? []), ...search]
     }
   })
+}
+
+export function deleteGatedContent(): void {
+  if (!loaded) return
+  const slugs = new Set(gatedShells.keys())
+  configStore.update((config) => {
+    const manifest = config.manifest
+    if (!manifest) return config
+    const pages: Record<string, PageMeta> = { ...manifest.pages }
+    const byPath: Record<string, string> = { ...manifest.byPath }
+    const pageLoader = { ...(config.pageLoader ?? {}) }
+    for (const slug of slugs) {
+      delete pages[slug]
+      delete pageLoader[slug]
+    }
+    for (const [path, slug] of Object.entries(byPath)) {
+      if (slugs.has(slug)) delete byPath[path]
+    }
+    return {
+      ...config,
+      manifest: { ...manifest, pages, byPath, sidebar: publicSidebar ?? manifest.sidebar },
+      pageLoader,
+      searchIndex: (config.searchIndex ?? []).filter((entry) => !gatedSearch.includes(entry))
+    }
+  })
+  gatedShells.clear()
+  gatedSearch = []
+  loaded = false
 }
