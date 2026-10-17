@@ -72,6 +72,7 @@ nimpress modules dev --system=nimtech
 nimpress modules build --system=nimtech
 nimpress modules lint --system=nimtech
 nimpress modules story <Component> --system=nimtech --framework=vue
+nimpress modules stories <Component> --system=nimtech --json
 nimpress modules import <file> --system=nimtech --name=Button --source=./src/components --stories=./stories --match='^Btn' --from-stories --select
 nimpress modules create <Component> --system=nimtech --framework=svelte
 nimpress modules create --component=<ref> --schema
@@ -86,11 +87,13 @@ nimpress modules update <ref> --component=<ref> --system=nimtech
 
 4. `story` with a component name writes one auto story, and with no name writes an auto story for every component of the system. `--framework=vue` or `--framework=svelte` overrides the framework the system declares.
 
-5. `import` with a positional file imports that one component, and `--name=` sets the page name. With no file it walks `--source=` or the system source, picks up `.stories.ts` files there and under `--stories=`, filters names with the `--match=` regular expression, and asks which components to take with `--select`. `--from-stories` takes the component list from the csf files and requires `--stories=`.
+5. `stories <Component>` lists that component's stories in every system that carries it, matched without case, one line per story: system, component, story id, and the harness route `/_components/<system>/<Component>/?story=<id>` that renders that story alone. The story id is the file stem; the harness renders the default export of that file, so one file is one story. With no component it prints every component and its story count per system. `--system=` narrows it, `--json` prints the routes as json. It is the only answer to which stories exist and where each one renders; never read the generated harness entry for it.
 
-6. `create <Component>` creates the component page folder. `create --component=<ref> --schema` upserts a single schema instead, and `--schema` is required in that form.
+6. `import` with a positional file imports that one component, and `--name=` sets the page name. With no file it walks `--source=` or the system source, picks up `.stories.ts` files there and under `--stories=`, filters names with the `--match=` regular expression, and asks which components to take with `--select`. `--from-stories` takes the component list from the csf files and requires `--stories=`.
 
-7. `update` upserts every component schema from the component types, adding new members without touching authored defaults, enums, or descriptions. A positional reference or `--component=<ref>` limits it to one component.
+7. `create <Component>` creates the component page folder. `create --component=<ref> --schema` upserts a single schema instead, and `--schema` is required in that form.
+
+8. `update` upserts every component schema from the component types, adding new members without touching authored defaults, enums, or descriptions. A positional reference or `--component=<ref>` limits it to one component.
 
 ### export
 
@@ -256,6 +259,19 @@ nimpress build
 nimpress guard map
 nimpress guard apply --map=uploaded.json
 ```
+
+Review or test one story in a real browser with nimon. `.nimon/services.json` in the site carries a `workshop` service running `pnpm exec nimpress dev`, and `.nimon/config.env` sets `NIMON_BASE_URL` to its url, so the route `stories` prints opens as it is. With several systems the same component has one route per system; open the one for the system under change:
+
+```sh
+nimon service up workshop
+nimpress modules stories MarButton
+nimon open "/_components/nimtech/MarButton/?story=default"
+nimon look
+nimon click <ref>
+nimon shot
+```
+
+Through the mcp servers of both plugins that is `service_up`, `modules_stories`, `open`, `look`, `click`, `shot`. A new story file is picked up only after the workshop restarts: `nimon service down workshop`, then up.
 
 Install the command, the skill and completion on a fresh machine:
 

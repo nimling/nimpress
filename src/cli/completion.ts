@@ -71,6 +71,12 @@ export const commands: CompletionCommand[] = [
       { name: 'lint', describe: 'Check the systems, the schemas, and the stories', flags: [systemFlag], subs: [] },
       { name: 'story', describe: 'Write auto stories for one component or for every component', flags: [systemFlag, frameworkFlag], subs: [] },
       {
+        name: 'stories',
+        describe: 'List the stories of one component in every system that carries it, with the harness route that renders each story alone, or every component and its story count',
+        flags: [systemFlag, { name: '--json', value: false, describe: 'print the routes as json' }],
+        subs: []
+      },
+      {
         name: 'import',
         describe: 'Import components and storybook stories into component pages',
         flags: [

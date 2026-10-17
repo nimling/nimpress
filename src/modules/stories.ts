@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, basename } from 'node:path'
-import type { ComponentStory } from '../types'
+import type { ComponentStory, ResolvedNimpressConfig } from '../types'
+import { joinBase } from '../config/base'
+import { collectStoryFiles } from './harness'
+import { collectComponentPages } from './pages'
 import { readBalanced } from './parse/typeMembers'
 
 function parseObjectLiteral(source: string, key: string): Record<string, unknown> | undefined {
@@ -63,5 +67,44 @@ export async function readComponentStories(dir: string): Promise<ComponentStory[
     out.push(parseStorySource(raw, e.name))
   }
   out.sort((a, b) => a.name.localeCompare(b.name))
+  return out
+}
+
+export interface StoryRoute {
+  system: string
+  component: string
+  story: string
+  name: string
+  description?: string
+  route: string
+}
+
+export async function collectStoryRoutes(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  filter: { component?: string; system?: string } = {}
+): Promise<StoryRoute[]> {
+  const modulesRoute = resolved.modules.route.replace(/\/$/, '')
+  const wanted = filter.component?.toLowerCase()
+  const pages = (await collectComponentPages(cwd, resolved.contentDir))
+    .filter((page) => page.system in resolved.modules.systems)
+    .filter((page) => !filter.system || page.system === filter.system)
+    .filter((page) => !wanted || page.component.toLowerCase() === wanted)
+  const out: StoryRoute[] = []
+  for (const page of pages) {
+    const harness = joinBase(resolved.base, `${modulesRoute}/${page.system}/${page.component}/`)
+    for (const file of collectStoryFiles(page.pageFile)) {
+      const story = parseStorySource(readFileSync(file.path, 'utf-8'), basename(file.path))
+      out.push({
+        system: page.system,
+        component: page.component,
+        story: file.base,
+        name: story.name,
+        description: story.description,
+        route: `${harness}?story=${encodeURIComponent(file.base)}`
+      })
+    }
+  }
+  out.sort((a, b) => a.system.localeCompare(b.system) || a.component.localeCompare(b.component) || a.story.localeCompare(b.story))
   return out
 }

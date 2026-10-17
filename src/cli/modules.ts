@@ -3,6 +3,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
 import { generateAutoStory, generateAutoStories, createComponentPage } from '../modules/autoStory'
 import { importStorybook } from '../modules/importStorybook'
+import { collectStoryRoutes } from '../modules/stories'
 import { lintModules } from '../modules/lint'
 import { flushDiagnostics, updateComponentSchemas, upgradeComponentSchema } from '../modules/schema'
 import { flag, hasFlag, positional, finishLint } from './shared'
@@ -73,6 +74,32 @@ export async function runModules(
     console.log(`nimpress modules: ${written} auto stories written for ${system}`)
     return
   }
+  if (sub === 'stories') {
+    const component = positional(rest, 0)
+    const system = systemFlag(resolved, rest)
+    const routes = await collectStoryRoutes(cwd, resolved, { component, system })
+    if (component && !routes.length) {
+      const near = (await collectStoryRoutes(cwd, resolved, { system }))
+        .map((r) => `${r.system}/${r.component}`)
+        .filter((ref, i, all) => all.indexOf(ref) === i && ref.toLowerCase().includes(component.toLowerCase()))
+      throw new Error(
+        `[nimpress] modules stories: no stories for ${component}${system ? ` in ${system}` : ''}` +
+          (near.length ? `, did you mean ${near.slice(0, 8).join(', ')}` : '')
+      )
+    }
+    if (hasFlag(rest, 'json')) {
+      console.log(JSON.stringify(routes, null, 2))
+      return
+    }
+    if (!component) {
+      const counts = new Map<string, number>()
+      for (const r of routes) counts.set(`${r.system}\t${r.component}`, (counts.get(`${r.system}\t${r.component}`) ?? 0) + 1)
+      for (const [ref, count] of counts) console.log(`${ref}\t${count}`)
+      return
+    }
+    for (const r of routes) console.log(`${r.system}\t${r.component}\t${r.story}\t${r.route}`)
+    return
+  }
   if (sub === 'import') {
     const system = requireSystem(resolved, rest, 'import')
     const file = positional(rest, 0)
@@ -115,7 +142,7 @@ export async function runModules(
     console.log(`nimpress modules: created ${component} at ${relative(cwd, dir)}`)
     return
   }
-  throw new Error('[nimpress] modules expects init, dev, build, lint, story, import, create or update')
+  throw new Error('[nimpress] modules expects init, dev, build, lint, story, stories, import, create or update')
 }
 
 function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {

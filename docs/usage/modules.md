@@ -49,6 +49,16 @@ nimpress modules story MarButton --framework=vue
 
 Writes `default.story.tsx` named `Default` beside every storyless component page, or for the one named component. `--framework=vue` or `--framework=svelte` overrides the framework the system declares.
 
+## stories
+
+```bash
+nimpress modules stories
+nimpress modules stories MarButton
+nimpress modules stories MarButton --system=nimtech --json
+```
+
+Lists the stories of the named component in every system that carries it, with the harness route that renders one story alone: `/_components/<system>/<Component>/?story=<file stem>`, behind the site base. With no component it prints every component and its story count per system. The route is served by `nimpress dev` and by `nimpress modules dev` on the harness port, and is what a browser driver such as nimon opens to review or test a single story.
+
 ## import
 
 ```bash

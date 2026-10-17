@@ -181,6 +181,7 @@ data:
 nimpress modules import --stories=../lib/src/scenarios --match='^Mar'
 nimpress modules import ../elsewhere/Special.vue --name=Special
 nimpress modules story MarButton
+nimpress modules stories MarButton
 nimpress modules update MarButton
 nimpress modules update
 nimpress modules lint
@@ -198,13 +199,15 @@ The system rides along as `--system=<name>` on every subcommand and is required 
 
 4. `create <Component>` scaffolds a new component's dedicated folder with the base setup: the Overview `index.md`, `default.story.tsx`, and the seeded `schema.json`.
 
-5. `update [component]` upserts the schema for one component page, or every page when no component is named. The ref is either the component name, unique across every system, or the path to the component file when the name is ambiguous. `create --component=<ref> --schema` runs the same upsert for one page.
+5. `stories [component]` lists the stories of one component in every system that carries it, matched without case, each with the harness route that renders that story alone, `/_components/<system>/<Component>/?story=<file stem>`. With no component it lists every component and its story count. `--system=` narrows it to one system and `--json` prints the routes as json. The story id is the file stem and the harness renders the default export of that file, so a story file holds one story.
 
-6. `lint [--system=]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, at least one story beside every page, exactly one schema file present and parseable beside every `index.md`, value story props all present in the schema, and the schema structurally against the component source: every source member exists in the schema, schema members without a source counterpart are flagged, an authored type conflicting with the source type fails, and an authored enum must fit the source type and stay inside a source union. Authored narrowing, an enum over a plain string, is legal. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree. Coaching warnings for undocumented props and opaque types print without failing the run.
+6. `update [component]` upserts the schema for one component page, or every page when no component is named. The ref is either the component name, unique across every system, or the path to the component file when the name is ambiguous. `create --component=<ref> --schema` runs the same upsert for one page.
 
-7. Every component folder gets its schema seeded on import and create, the props as a json schema generated from the parsed control tree, the same generator behind the workshop's json dialog. Prop types the parser cannot resolve log warnings with the component, the prop path, and the type; author the member in the schema or document the type where the parser sees it.
+7. `lint [--system=]` checks every component page of the named system, or all systems: story helpers and story imports matching the system framework, the component file extension matching the framework, at least one story beside every page, exactly one schema file present and parseable beside every `index.md`, value story props all present in the schema, and the schema structurally against the component source: every source member exists in the schema, schema members without a source counterpart are flagged, an authored type conflicting with the source type fails, and an authored enum must fit the source type and stay inside a source union. Authored narrowing, an enum over a plain string, is legal. Harness stories and render stories are exempt from the prop check because their props feed the harness or the render function, not the control tree. Coaching warnings for undocumented props and opaque types print without failing the run.
 
-8. `dev` and `build` run the harness servers and emit the static bundles. `nimpress dev` and `nimpress build` include them automatically.
+8. Every component folder gets its schema seeded on import and create, the props as a json schema generated from the parsed control tree, the same generator behind the workshop's json dialog. Prop types the parser cannot resolve log warnings with the component, the prop path, and the type; author the member in the schema or document the type where the parser sees it.
+
+9. `dev` and `build` run the harness servers and emit the static bundles. `nimpress dev` and `nimpress build` include them automatically.
 
 ## Hosting and guard
 

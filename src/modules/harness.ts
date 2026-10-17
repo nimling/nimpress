@@ -518,7 +518,7 @@ export function resolveHarnessTargets(
   return targets
 }
 
-function collectStoryFiles(pageFile: string): Array<{ base: string; path: string }> {
+export function collectStoryFiles(pageFile: string): Array<{ base: string; path: string }> {
   const dir = dirname(pageFile)
   let entries: string[]
   try {
