@@ -36,33 +36,35 @@
 </script>
 
 <header class="np-header">
-  <a class="np-brand" href={withBase('/')}>
-    {#if config.logo}
-      <img src={withBase(config.logo)} alt={config.title} />
+  <div class="np-header-lead">
+    <a class="np-brand" href={withBase('/')}>
+      {#if config.logo}
+        <img src={withBase(config.logo)} alt={config.title} />
+      {/if}
+      <span>{config.title}</span>
+    </a>
+    {#if navigation}
+      <button
+        class="np-menu-btn np-tip"
+        class:is-open={sidebarOpen}
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        aria-expanded={sidebarOpen}
+        onclick={() => onToggleDrawer?.()}
+      >
+        <svg class="np-menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path class="np-menu-fill" d="M9 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h3z" fill="currentColor" stroke="none" />
+          <path class="np-menu-pane" d="M9 3v18" />
+          <path class="np-menu-chevron" d="M16.5 9 13.5 12l3 3" />
+        </svg>
+      </button>
     {/if}
-    <span>{config.title}</span>
-  </a>
-  {#if navigation}
-    <button
-      class="np-menu-btn np-tip"
-      class:is-open={sidebarOpen}
-      aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-      aria-expanded={sidebarOpen}
-      onclick={() => onToggleDrawer?.()}
-    >
-      <svg class="np-menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <path class="np-menu-fill" d="M9 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h3z" fill="currentColor" stroke="none" />
-        <path class="np-menu-pane" d="M9 3v18" />
-        <path class="np-menu-chevron" d="M16.5 9 13.5 12l3 3" />
-      </svg>
-    </button>
-  {/if}
 
-  <div class="np-crumbs-slot">
-    {#if crumbPath}
-      <Breadcrumbs path={crumbPath} />
-    {/if}
+    <div class="np-crumbs-slot">
+      {#if crumbPath}
+        <Breadcrumbs path={crumbPath} />
+      {/if}
+    </div>
   </div>
 
   <div class="np-actions">
@@ -108,7 +110,7 @@
     top: 0;
     z-index: 50;
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     column-gap: 16px;
     height: var(--np-header-height);
@@ -116,6 +118,13 @@
     border-bottom: 1px solid var(--np-header-border, var(--np-border));
     background-color: var(--np-header-bg, var(--np-bg));
     color: var(--np-header-text, var(--np-text-primary));
+  }
+  .np-header-lead {
+    display: flex;
+    align-items: center;
+    column-gap: 16px;
+    min-width: 0;
+    height: 100%;
   }
   .np-brand {
     display: flex;
@@ -242,6 +251,9 @@
     .np-header {
       gap: 12px;
       padding: 0 12px;
+    }
+    .np-header-lead {
+      column-gap: 12px;
     }
     .np-menu-btn {
       order: -1;

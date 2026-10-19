@@ -23,7 +23,7 @@ The primary color is used for text links, buttons, the active sidebar row, and e
 
 ### Color scheme
 
-nimpress supports two color schemes: a light mode and a dark mode. The toggle in the header switches between them and remembers the choice, and the first visit follows the operating system preference. Nothing needs to be configured.
+nimpress supports two color schemes: a light mode and a dark mode. The site follows the operating system preference and changes with it live until the reader presses the toggle in the header; from then on the choice is remembered across visits. Nothing needs to be configured.
 
 ## Customization
 

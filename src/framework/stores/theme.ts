@@ -4,11 +4,22 @@ type Mode = 'light' | 'dark'
 
 const KEY = 'nimpress-theme'
 
+function chosen(): Mode | null {
+  try {
+    const stored = window.localStorage.getItem(KEY)
+    return stored === 'light' || stored === 'dark' ? stored : null
+  } catch {
+    return null
+  }
+}
+
+function system(): Mode {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 function initial(): Mode {
   if (typeof window === 'undefined') return 'light'
-  const stored = window.localStorage.getItem(KEY) as Mode | null
-  if (stored === 'light' || stored === 'dark') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return chosen() ?? system()
 }
 
 export const theme = writable<Mode>(initial())
@@ -16,13 +27,22 @@ export const theme = writable<Mode>(initial())
 theme.subscribe((mode) => {
   if (typeof document === 'undefined') return
   document.documentElement.classList.toggle('dark', mode === 'dark')
-  try {
-    window.localStorage.setItem(KEY, mode)
-  } catch {}
 })
 
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!chosen()) theme.set(system())
+  })
+}
+
 export function toggleTheme() {
-  theme.update((m) => (m === 'dark' ? 'light' : 'dark'))
+  theme.update((m) => {
+    const next = m === 'dark' ? 'light' : 'dark'
+    try {
+      window.localStorage.setItem(KEY, next)
+    } catch {}
+    return next
+  })
 }
 
 export function applyInitialTheme() {

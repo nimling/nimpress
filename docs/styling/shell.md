@@ -115,6 +115,7 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-brand` |
 | `np-crumbs-slot` |
 | `np-header` |
+| `np-header-lead` |
 | `np-icon-btn` |
 | `np-menu-btn` |
 | `np-menu-chevron` |
@@ -178,6 +179,7 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-hidden-dot` |
 | `np-items` |
 | `np-node-icon` |
+| `np-node-text` |
 | `np-sidebar-status` |
 | `np-sidebar-status-deprecated` |
 | `np-sidebar-status-new` |

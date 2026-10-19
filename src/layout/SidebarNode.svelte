@@ -48,6 +48,10 @@
   {#if node.icon}<span class="np-node-icon">{#if svgIcon}{@html node.icon}{:else}{node.icon}{/if}</span>{/if}
 {/snippet}
 
+{#snippet nodeText()}
+  <span class="np-node-text" title={node.text}>{node.text}</span>
+{/snippet}
+
 {#snippet outbound()}
   {#if external}<span class="np-external" aria-hidden="true">↗</span>{/if}
 {/snippet}
@@ -58,9 +62,9 @@
       <div class="np-group">
         <div class="np-group-header" class:active style={node.style}>
           {#if node.link}
-            <a class="np-group-label-link" {href} class:active target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} data-no-routing={external ? '' : undefined}>{@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+            <a class="np-group-label-link" {href} class:active target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined} data-no-routing={external ? '' : undefined}>{@render nodeIcon()}{@render nodeText()}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
           {:else}
-            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
+            <button class="np-group-label np-group-label-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{@render nodeText()}</button>
           {/if}
           <button
             class="np-group-toggle"
@@ -93,9 +97,9 @@
             onclick={() => {
               if (!open) toggleGroup(groupKey, open)
             }}
-          >{@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
+          >{@render nodeIcon()}{@render nodeText()}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}</a>
         {:else}
-          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{node.text}</button>
+          <button class="np-subgroup-static np-subgroup-button" onclick={() => toggleGroup(groupKey, open)}>{@render nodeIcon()}{@render nodeText()}</button>
         {/if}
         <button
           class="np-subgroup-toggle"
@@ -125,7 +129,7 @@
       rel={external ? 'noreferrer' : undefined}
       data-no-routing={external || node.link?.includes('#') ? '' : undefined}
     >
-      {@render nodeIcon()}{node.text}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
+      {@render nodeIcon()}{@render nodeText()}{@render outbound()}{@render statusMark()}{#if node.hidden}<span class="np-hidden-dot" title="Hidden, local dev only, excluded from the build"></span>{/if}
     </a>
   {/if}
 {/if}
@@ -133,8 +137,17 @@
 <style>
   .np-group { margin-bottom: 12px; }
 
+  .np-node-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .np-node-icon {
     display: inline-block;
+    flex: none;
     margin-right: 6px;
     font-family: var(--np-font-mono);
     white-space: pre;
@@ -148,6 +161,7 @@
   }
 
   .np-external {
+    flex: none;
     margin-left: 4px;
     font-size: 0.85em;
     opacity: 0.6;
@@ -155,6 +169,7 @@
 
   .np-hidden-dot {
     display: inline-block;
+    flex: none;
     width: 6px;
     height: 6px;
     margin-left: 6px;
@@ -207,6 +222,8 @@
   .np-group-label,
   .np-group-label-link,
   .np-group-label-button {
+    display: flex;
+    align-items: center;
     flex: 1;
     min-width: 0;
     padding: 6px 8px;
@@ -230,6 +247,8 @@
   .np-subgroup-link,
   .np-subgroup-static,
   .np-subgroup-button {
+    display: flex;
+    align-items: center;
     flex: 1;
     min-width: 0;
     padding: 4px 8px;

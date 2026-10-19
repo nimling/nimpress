@@ -18,21 +18,21 @@ colors:
   border: "#C8C8CC"
   border-strong: "#A1A1AA"
   divider: "#D4D4D8"
-  glass-field: "#F2EAE6"
-  glass-surface: "#EBE3DF"
-  glass-lamp: "rgb(168 90 63 / 0.62)"
-  glass-ink-brand: "#6E3A28"
-  glass-ground: "rgb(255 253 251 / 0.66)"
-  glass-cover: "rgb(255 255 255 / 0.8)"
-  glass-slip: "rgb(255 255 255 / 0.62)"
-  glass-edge: "rgb(255 255 255 / 0.85)"
-  glass-rim: "rgb(60 40 30 / 0.1)"
-  glass-code: "#1F1714"
-  glass-ink: "#1A1614"
-  glass-ink-secondary: "#3D3531"
-  glass-ink-muted: "#5A504B"
-  glass-ink-faint: "#6F6560"
-  glass-border: "rgb(60 40 30 / 0.14)"
+  glass-field: "#F2F0F2"
+  glass-surface: "#EAE8EB"
+  glass-lamp: "rgb(168 90 63 / 0.34)"
+  glass-ink-brand: "#7D4330"
+  glass-ground: "rgb(255 255 255 / 0.5)"
+  glass-cover: "rgb(255 255 255 / 0.78)"
+  glass-slip: "rgb(255 255 255 / 0.56)"
+  glass-edge: "rgb(255 255 255 / 0.9)"
+  glass-rim: "rgb(25 20 22 / 0.1)"
+  glass-code: "#1A1416"
+  glass-ink: "#191416"
+  glass-ink-secondary: "#3E3A3C"
+  glass-ink-muted: "#5C5859"
+  glass-ink-faint: "#6E6A6B"
+  glass-border: "rgb(25 20 22 / 0.12)"
 typography:
   display:
     fontFamily: "Inter var, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
@@ -135,9 +135,9 @@ components:
 
 nimpress ships two themes over one surface. `stock` is the default: tokens in `src/styles/tokens.css`, the reading styles in `src/styles/preflight.css`, and the component styles, all inside `@layer nimpress`. It is a quiet neutral paper with one warm brand color used as ink for the page title, the active row and links. `glass` is the variant: `src/styles/themes/glass.css`, loaded as `@nimtech/nimpress/themes/glass.css` when the config sets `theme: glass`, wrapped in `@layer nimpress-theme`, and written only against `--np-*` tokens and public `np-` classes. The theme owns no component.
 
-In glass the brand color becomes a lamp. One radial bloom lights the field from the top left corner behind the sidebar and header. The chrome, header, sidebar and rail, is heavy ground glass with grain. The reading content sits directly on the lit field with no sheet around it and scrolls under the header, which is clear at rest and frosts in as content passes behind it. Cards, feature cards and callouts are slips: lighter glass that lies on the field. Controls, tables, tabs, the search trigger and the pager keep their stock surfaces. State lives in the glass edge.
+In glass the brand color becomes light. Three radial blooms light the field: the brand from the top left corner behind the sidebar and header, its hue turned 48 degrees from the top right, and turned back 36 degrees from below. The chrome, header, sidebar and rail, is heavy ground glass with grain. The reading content sits directly on the lit field with no sheet around it and scrolls under the header, which is clear at rest and frosts in as content passes behind it. At rest the logo, title, sidebar toggle and breadcrumbs sit in one frosted pill that fades out as the header frosts. Cards, feature cards and callouts are slips: lighter glass that lies on the field. Controls, tables, tabs, the search trigger and the pager keep their stock surfaces. State lives in the glass edge.
 
-Both themes are warm neutrals tinted by the brand, dense enough for long reference sessions, and let the prose win over the chrome.
+Stock is warm neutrals tinted by the brand; glass is neutral ink tinted by the brand, so it holds any brand hue. Both are dense enough for long reference sessions, and let the prose win over the chrome.
 
 **Key Characteristics:**
 - One brand color, `--np-brand`, drives both themes; glass mixes every surface from it.
@@ -148,31 +148,31 @@ Both themes are warm neutrals tinted by the brand, dense enough for long referen
 
 ## Colors
 
-A warm neutral ramp carried by one terracotta brand; glass shifts the neutrals toward the brand and makes the surfaces translucent.
+A warm neutral ramp carried by one terracotta brand; glass replaces it with a neutral ink ramp mixed 14% toward the brand and makes the surfaces translucent.
 
 ### Primary
 - **Terracotta** (`brand`): page H1, the H2 lead segment, H5 labels, the hero title, the active sidebar row, the announce mark. Dark mode lifts it to `#CC785C`. A site overrides it through `brand.primary` in the config and every theme follows.
 - **Burnt Terracotta** (`brand-hover`, `link`): link text and brand hover.
 - **Terracotta Wash** (`brand-soft`): halos and tinted fills behind brand marks.
-- **Deep Glass Ink** (`glass-ink-brand`): glass only. The brand mixed 70% into black (72% into white in dark) so brand text stays AA over translucent glass: active rows, prose links, hero title, focus ring.
-- **The Lamp** (`glass-lamp`): glass only. The brand at 62% opacity (46% in dark) in one fixed radial gradient, `ellipse 85% 95% at 0% 0%`, fading out by 68%.
+- **Deep Glass Ink** (`glass-ink-brand`): glass only. The brand mixed 78% toward black (64% toward white in dark) so brand text stays AA over translucent glass: active rows, prose links, hero title, focus ring.
+- **The Lamps** (`glass-lamp`, `glass-lamp-far`, `glass-lamp-low`): glass only, three fixed radial gradients. The brand at 34% (42% in dark) in `ellipse 70% 80% at 0% 0%`; the brand hue turned +48 degrees in oklch at 22% in `ellipse 50% 55% at 100% 8%`; the hue turned -36 degrees at 18% (20% in dark) in `ellipse 60% 55% at 72% 100%`.
 
 ### Neutral
 - **Paper** (`paper`, `paper-surface`, `paper-sidebar`): stock page, raised surfaces and sidebar. Dark `#0F0F10`, `#18181B`, `#0F0F10`.
-- **Lit Field** (`glass-field`, `glass-surface`): glass page and raised surfaces, the brand mixed 7% and 5% into warm off whites. Dark mixes 6% into `#0D0B0A` and `#1A1715`.
+- **Lit Field** (`glass-field`, `glass-surface`): glass page and raised surfaces, the brand mixed 4% and 5% into the neutral whites `#F6F6F8` and `#EEEEF2`. Dark mixes 5% and 6% into `#0A0A0D` and `#16161B`.
 - **Zinc Ink** (`ink` to `ink-faint`): stock text ramp.
-- **Warm Ink** (`glass-ink` to `glass-ink-faint`): glass text ramp, brown blacks. Dark `#F6F1EE`, `#CFC5BF`, `#A89D97`, `#8A807A`.
-- **Hairlines** (`border`, `border-strong`, `divider`): stock solid greys. Glass replaces them with warm alpha lines (`glass-border`, 0.26 strong, 0.1 divider).
+- **Glass Ink** (`glass-ink` to `glass-ink-faint`): glass text ramp, `--np-glass-ink` (the brand mixed 14% into `#121117`) stepped 82%, 70% and 62% toward white. Dark starts from the brand mixed 6% into `#F5F5F8` and steps 82%, 68% and 58% toward black.
+- **Hairlines** (`border`, `border-strong`, `divider`): stock solid greys. Glass replaces them with ink alpha lines (`glass-border` 12%, 22% strong, 8% divider; white at 0.1, 0.2 and 0.07 in dark).
 - **Night Code** (`code-night`, `glass-code`): code blocks stay dark in both modes. Glass tints the block 7% toward the brand.
 - **Glass surfaces** (`glass-ground`, `glass-cover`, `glass-slip`): see Elevation & Depth.
-- **Edge and Rim** (`glass-edge`, `glass-rim`): the bright 1px top highlight and the dark 1px outline every glass surface carries. Dark flips them to `rgb(255 245 238 / 0.1)` and `rgb(0 0 0 / 0.5)`.
+- **Edge and Rim** (`glass-edge`, `glass-rim`): the bright 1px top highlight and the dark 1px outline every glass surface carries. Dark flips them to `rgb(255 255 255 / 0.14)` and `rgb(255 255 255 / 0.09)`. Ground, cover, slip, the active row and the header pill also carry `glass-sheen`, a 160 degree white gradient bright at the top left corner.
 
 Callout, method and status hues (`--np-tip`, `--np-note`, `--np-warning`, `--np-method-get` and the rest) are semantic and shared by both themes.
 
 ### Named Rules
 **The One Brand Rule.** Every theme colors itself from `--np-brand`. A theme adds mixes of it, never a second accent.
 
-**The Lamp Rule.** In glass the brand is light before it is ink: one bloom from the top left corner, fixed to the viewport. Never a second bloom, never a blob behind content.
+**The Lamp Rule.** In glass the brand is light before it is ink: three blooms from the edges, fixed to the viewport, every one derived from `--np-brand`. Never a literal hue, never a blob behind content.
 
 **The Ink Over Glass Rule.** Brand text on any glass surface uses `glass-ink-brand`, never raw `--np-brand`, so it holds AA over whatever the glass shows through.
 
@@ -209,29 +209,29 @@ The announcement is a notification card fixed 20px from the bottom right, at mos
 ### Named Rules
 **The No Sheet Rule.** In glass, prose sits on the lit field. Never wrap page content in a card, panel or backdrop.
 
-**The Clear At Rest Rule.** The glass header is transparent at scroll zero and frosts across the first 96px of the `--np-glass-scroll` timeline. Where scroll timelines are unsupported it is frosted from the start.
+**The Clear At Rest Rule.** The glass header is transparent at scroll zero and frosts across the first 96px of the `--np-glass-scroll` timeline. Its frost is a `::before` layer that fades in, so the header itself carries no filter and the header pill can frost the page beneath it. The pill is a `::before` layer on `np-header-lead` that fades out across the same 96px. Where scroll timelines are unsupported the header is frosted from the start and the pill is not drawn.
 
 ## Elevation & Depth
 
-Stock is flat: hairline borders carry structure and shadows are near invisible (`0 1px 2px rgba(0,0,0,0.04)` on cards), rising only for popovers, modals and dialogs. Glass is layered: depth is the amount of frost and opacity, and every glass surface carries a bright 1px top edge (`inset 0 1px 0 var(--np-glass-edge)`) plus a rim. Glass shadows are long, soft and warm (`rgb(60 30 15)` in light, black in dark).
+Stock is flat: hairline borders carry structure and shadows are near invisible (`0 1px 2px rgba(0,0,0,0.04)` on cards), rising only for popovers, modals and dialogs. Glass is layered: depth is the amount of frost and opacity, and every glass surface carries a bright 1px top edge (`inset 0 1px 0 var(--np-glass-edge)`) plus a rim. Glass shadows are long and soft, tinted by `--np-glass-shade` (the brand mixed 22% into `#0C0B10`) in light and black in dark.
 
 The three glasses:
-- **Ground** (`glass-ground`, `blur(22px) saturate(170%)`, grain): the chrome. Header, sidebar, rail, back to top.
-- **Cover** (`glass-cover`, same frost): the most opaque glass, for what must read over anything. Active row, search modal, tooltip, announcement, `kbd`, the mobile drawer.
-- **Slip** (`glass-slip`, `blur(12px) saturate(150%)`): lighter glass lying on the field. Cards, feature cards, callouts.
+- **Ground** (`glass-ground`, `blur(24px) saturate(180%)`, grain): the chrome. Header, sidebar, rail, back to top.
+- **Cover** (`glass-cover`, same frost): the most opaque glass, for what must read over anything. Active row, header pill, search modal, tooltip, announcement, `kbd`, the mobile drawer.
+- **Slip** (`glass-slip`, `blur(14px) saturate(160%)`): lighter glass lying on the field. Cards, feature cards, callouts.
 
-Grain is an SVG fractal noise tile, 160px, at 0.14 alpha in light and 0.2 in dark, on ground glass only.
+Grain is an SVG fractal noise tile, 160px, at 0.05 alpha in light and 0.04 in dark, on ground glass only.
 
 ### Shadow Vocabulary
-- **Card** (`--np-shadow-card`): stock `0 1px 2px rgba(0,0,0,0.04)`; glass `0 1px 1px rgb(60 30 15 / 0.04), 0 8px 24px -10px rgb(60 30 15 / 0.18)`. Slips and code.
-- **Popover** (`--np-shadow-popover`): stock `0 12px 32px rgb(0 0 0 / 0.18)`; glass `0 2px 4px rgb(60 30 15 / 0.05), 0 18px 40px -12px rgb(60 30 15 / 0.28)`. Tooltip, announcement, back to top, lifted card.
-- **Modal** (`--np-shadow-modal`): stock `0 10px 30px rgba(0,0,0,0.12)`; glass `0 2px 6px rgb(60 30 15 / 0.06), 0 30px 70px -20px rgb(60 30 15 / 0.35)`. Search.
-- **Dialog** (`--np-shadow-dialog`): stock `0 24px 60px rgb(0 0 0 / 0.4)`; glass `0 2px 6px rgb(60 30 15 / 0.08), 0 40px 90px -24px rgb(60 30 15 / 0.45)`.
+- **Card** (`--np-shadow-card`): stock `0 1px 2px rgba(0,0,0,0.04)`; glass `0 1px 2px` shade at 6%, `0 10px 28px -12px` shade at 22%. Slips and code.
+- **Popover** (`--np-shadow-popover`): stock `0 12px 32px rgb(0 0 0 / 0.18)`; glass `0 2px 4px` shade at 6%, `0 18px 40px -12px` shade at 30%. Tooltip, announcement, back to top, lifted card.
+- **Modal** (`--np-shadow-modal`): stock `0 10px 30px rgba(0,0,0,0.12)`; glass `0 2px 6px` shade at 8%, `0 30px 70px -20px` shade at 38%. Search.
+- **Dialog** (`--np-shadow-dialog`): stock `0 24px 60px rgb(0 0 0 / 0.4)`; glass `0 2px 6px` shade at 10%, `0 40px 90px -24px` shade at 46%.
 
 ### Named Rules
 **The Three Glasses Rule.** A glass surface is ground, cover or slip, set from its token. Never invent a fourth opacity or blur.
 
-**The Doubled Edge Rule.** Glass state lives in the edge. The active row takes an inner 1px `glass-edge` line and an outer 1px ring of the brand at 36%, over a `0 4px 12px -6px` brand shadow at 50%.
+**The Lit Edge Rule.** Glass state lives in the edge. The active row is cover glass mixed 10% toward the brand with the sheen, a 1px `glass-edge` top line and a 1px `glass-rim` ring, over a `0 6px 16px -10px` brand shadow at 45%. Never a brand coloured ring.
 
 **The Solid Fallback Rule.** Under `prefers-reduced-transparency: reduce` or `prefers-contrast: more`, every glass token turns solid, every frost turns `none`, and the header stops animating.
 
@@ -243,7 +243,7 @@ Softly rounded rectangles throughout. Stock uses `sm` 6px, `md` 8px, `lg` 12px a
 
 ### Sidebar navigation
 - **Stock:** rows in `ink-secondary`; the active row takes brand text at 500 and a 16% brand fill.
-- **Glass:** hover keeps the stock row hover; the active row, group header or subgroup row becomes cover glass with `glass-ink-brand` text and the doubled edge. A nested active link inside an active subgroup drops its own edge.
+- **Glass:** hover keeps the stock row hover; the active row, group header or subgroup row becomes cover glass with `glass-ink-brand` text and the lit edge. Every sidebar row is one line; a long title ends in an ellipsis inside `np-node-text` and shows whole in its title tooltip. A nested active link inside an active subgroup drops its own edge.
 
 ### Header
 - **Stock:** solid bar at `header-height` with a bottom border.
@@ -278,7 +278,7 @@ Glass: the backdrop blurs 6px, the modal is cover glass with the modal shadow an
 - **Do** write a theme only against `--np-*` tokens and public `np-` classes inside `@layer nimpress-theme`; a missing hook is added to the library.
 - **Do** give every token a light and a dark value, and every glass token a solid value under reduced transparency and more contrast.
 - **Do** set brand text over glass in `glass-ink-brand`.
-- **Do** mark glass state with the doubled edge, not with a fill alone.
+- **Do** mark glass state with the lit edge, not with a fill alone.
 - **Do** pick ground for chrome, cover for what must read over anything, slip for what lies on the field.
 
 ### Don't:
