@@ -2445,7 +2445,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     const out: ProcessedPage[] = []
     for (const p of pages.values()) {
       if (p.sidebarOnly) continue
-      if (pageHiddenEverywhere(p.frontmatter)) continue
+      if (pageExcludedFromBuild(p.frontmatter)) continue
       if (isGated(p)) continue
       out.push(p)
     }
