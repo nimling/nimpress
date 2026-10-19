@@ -3121,11 +3121,13 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           const entries = t.page.roadmapEntries.slice().sort(
             (a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? '')
           )
+          const roadmapDir = dirname(t.page.filePath)
           const byHref = new Map(entries.map((e) => [e.href, e]))
           const childrenOf = new Map<string, typeof entries>()
           const roots: typeof entries = []
           for (const e of entries) {
-            if (e.parent && byHref.has(e.parent)) {
+            const parentEntry = e.parent ? byHref.get(e.parent) : undefined
+            if (e.parent && parentEntry && dirname(parentEntry.filePath) === dirname(e.filePath)) {
               const list = childrenOf.get(e.parent) ?? []
               list.push(e)
               childrenOf.set(e.parent, list)
@@ -3146,8 +3148,40 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
             if (kids.length) node.items = kids.map((k, i) => buildEntryNode(k, i))
             return node
           }
-          const entryNodes = roots.map((e, idx) => buildEntryNode(e, idx))
-          const filteredItems = items.filter((it) => !it.slug || !entries.some((e) => e.slug === it.slug))
+          const entryNodes: SidebarNode[] = []
+          const folderNodes = new Map<string, SidebarNode>()
+          roots.forEach((e, idx) => {
+            const entryNode = buildEntryNode(e, idx)
+            const dir = dirname(e.filePath)
+            if (dir === roadmapDir) {
+              entryNodes.push(entryNode)
+              return
+            }
+            let folder = folderNodes.get(dir)
+            if (!folder) {
+              const folderIndex = [...pages.values()].find((p) => p.filePath === join(dir, 'index.md'))
+              folder = {
+                text: folderIndex ? pageLabel(folderIndex) : prettyDirName(basename(dir)),
+                link: folderIndex?.effectivePath,
+                slug: `${t.page!.slug}__${relative(roadmapDir, dir).split(sep).join('/')}`,
+                order: idx,
+                items: []
+              }
+              folderNodes.set(dir, folder)
+              entryNodes.push(folder)
+            }
+            entryNode.order = folder.items!.length
+            folder.items!.push(entryNode)
+          })
+          const entrySlugs = new Set(entries.map((e) => e.slug))
+          const withoutEntries = (list: SidebarNode[]): SidebarNode[] => list.flatMap((it) => {
+            if (it.slug && entrySlugs.has(it.slug)) return []
+            if (!it.items) return [it]
+            const kept = withoutEntries(it.items)
+            if (!kept.length && !it.link) return []
+            return [{ ...it, items: kept.length ? kept : undefined }]
+          })
+          const filteredItems = withoutEntries(items)
           node.items = filteredItems.length ? [...entryNodes, ...filteredItems] : entryNodes
         } else if (t.page.type === 'component') {
           const docNode: SidebarNode = {

@@ -44,7 +44,7 @@ data:
 ---
 ```
 
-`data.date` places the card on the spine and orders the sidebar. `data.parent` names another issue by filename, which pairs the child beside its parent on the timeline and nests it in the sidebar.
+`data.date` places the card on the spine and orders the sidebar. `data.parent` names another issue by filename, which pairs the child beside its parent on the timeline and nests it in the sidebar when both sit in the same folder. Issues in a subfolder of the roadmap, or in a folder pulled in through `data.issues`, group in the sidebar under that folder, labelled by its `index.md` title or the folder name; issues beside the roadmap file stay ungrouped.
 
 ## Releases drive the progress
 

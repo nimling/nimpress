@@ -13,8 +13,8 @@
       const pageSlug = config.manifest?.byPath?.[current]
       const meta = pageSlug === undefined ? undefined : config.manifest?.pages[pageSlug]
       result.push({
-        text: meta?.title ?? segments[i],
-        link: i === segments.length - 1 ? undefined : current
+        text: meta?.title ?? segments[i].replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        link: i === segments.length - 1 || !meta ? undefined : current
       })
     }
     return result

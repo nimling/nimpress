@@ -1067,12 +1067,15 @@
     const ch = box.h / rows
     const pt = (c: number, r: number) => ({ x: box.x + (c + 0.5) * cw, y: box.y + (r + 0.5) * ch })
     const inGrid = (c: number, r: number) => c >= 0 && c < cols && r >= 0 && r < rows
-    const blocked = (c: number, r: number) => {
-      const p = pt(c, r)
-      return blockedRects.some(
-        (R) => p.x >= R.x - cw * 0.5 && p.x <= R.x + R.w + cw * 0.5 && p.y >= R.y - ch * 0.5 && p.y <= R.y + R.h + ch * 0.5
-      )
+    const blockedCells = new Uint8Array(cols * rows)
+    for (const R of blockedRects) {
+      const c0 = Math.max(0, Math.ceil((R.x - cw * 0.5 - box.x) / cw - 0.5))
+      const c1 = Math.min(cols - 1, Math.floor((R.x + R.w + cw * 0.5 - box.x) / cw - 0.5))
+      const r0 = Math.max(0, Math.ceil((R.y - ch * 0.5 - box.y) / ch - 0.5))
+      const r1 = Math.min(rows - 1, Math.floor((R.y + R.h + ch * 0.5 - box.y) / ch - 0.5))
+      for (let c = c0; c <= c1; c++) for (let r = r0; r <= r1; r++) blockedCells[c * rows + r] = 1
     }
+    const blocked = (c: number, r: number) => blockedCells[c * rows + r] === 1
     const snap = (p: { x: number; y: number }) => {
       let bc = 0
       let br = 0
@@ -1106,7 +1109,7 @@
     ]
     const visited = new Set<number>()
     let iters = 0
-    const CAP = 6000
+    const CAP = 1500
     const dfs = (c: number, r: number, len: number): { c: number; r: number }[] | null => {
       if (iters++ > CAP) return null
       if (len === L) return c === E.c && r === E.r ? [{ c, r }] : null
@@ -1132,7 +1135,7 @@
     let route = dfs(S.c, S.r, 1)
     let tries = 0
     while (!route && L > 2 && tries < 5) {
-      L -= 2
+      L -= Math.max(2, 2 * Math.floor(L / 16))
       iters = 0
       visited.clear()
       route = dfs(S.c, S.r, 1)

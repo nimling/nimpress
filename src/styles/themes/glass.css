@@ -49,6 +49,11 @@
     --np-glass-frost: blur(24px) saturate(180%);
     --np-glass-frost-light: blur(14px) saturate(160%);
     --np-glass-frost-overlay: blur(8px) saturate(120%);
+    --np-glass-chip: rgb(255 255 255 / 0.55);
+    --np-glass-chip-ink: var(--np-glass-ink-brand);
+    --np-glass-chip-rim: color-mix(in oklab, var(--np-brand) 35%, transparent);
+    --np-glass-control: rgb(255 255 255 / 0.45);
+    --np-glass-control-hover: rgb(255 255 255 / 0.72);
     --np-glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .1 0 0 0 0 .12 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
@@ -92,6 +97,10 @@
     --np-glass-slip: rgb(255 255 255 / 0.06);
     --np-glass-edge: rgb(255 255 255 / 0.14);
     --np-glass-rim: rgb(255 255 255 / 0.09);
+    --np-glass-chip: color-mix(in oklab, var(--np-brand) 22%, rgb(255 255 255 / 0.06));
+    --np-glass-chip-rim: color-mix(in oklab, var(--np-brand) 50%, transparent);
+    --np-glass-control: rgb(255 255 255 / 0.05);
+    --np-glass-control-hover: rgb(255 255 255 / 0.1);
     --np-glass-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0) 40%, rgb(255 255 255 / 0) 72%, rgb(255 255 255 / 0.03) 100%);
     --np-glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
@@ -175,9 +184,7 @@
   html[data-np-theme="glass"] .np-subgroup-row.active {
     color: var(--np-glass-ink-brand);
     background-color: color-mix(in oklab, var(--np-brand) 10%, var(--np-glass-cover));
-    background-image: var(--np-glass-sheen);
     box-shadow:
-      inset 0 1px 0 var(--np-glass-edge),
       0 0 0 1px var(--np-glass-rim),
       0 6px 16px -10px color-mix(in oklab, var(--np-brand) 45%, transparent);
   }
@@ -192,6 +199,41 @@
   html[data-np-theme="glass"] .np-group-header.active .np-group-toggle,
   html[data-np-theme="glass"] .np-subgroup-row.active .np-subgroup-toggle {
     color: var(--np-glass-ink-brand);
+  }
+
+  html[data-np-theme="glass"] .np-search-trigger {
+    border-color: var(--np-glass-rim);
+    background-color: var(--np-glass-control);
+    backdrop-filter: var(--np-glass-frost-light);
+    -webkit-backdrop-filter: var(--np-glass-frost-light);
+  }
+
+  html[data-np-theme="glass"] .np-search-trigger:hover,
+  html[data-np-theme="glass"] .np-signin:hover,
+  html[data-np-theme="glass"] .np-icon-btn:hover {
+    background-color: var(--np-glass-control-hover);
+  }
+
+  html[data-np-theme="glass"] .np-search-trigger kbd {
+    border-color: var(--np-glass-rim);
+    background-color: var(--np-glass-control-hover);
+  }
+
+  html[data-np-theme="glass"] .np-signin {
+    border-color: var(--np-glass-rim);
+  }
+
+  html[data-np-theme="glass"] .np-issue-kind {
+    color: var(--np-glass-chip-ink);
+    border-color: var(--np-glass-chip-rim);
+    background-color: var(--np-glass-chip);
+    backdrop-filter: var(--np-glass-frost-light);
+    -webkit-backdrop-filter: var(--np-glass-frost-light);
+  }
+
+  html[data-np-theme="glass"] .np-issue-kind-bug {
+    color: color-mix(in oklab, var(--np-danger) 80%, var(--np-text-primary));
+    border-color: color-mix(in oklab, var(--np-danger) 45%, transparent);
   }
 
   html[data-np-theme="glass"] .np-page-backdrop {
@@ -335,11 +377,8 @@
       inset: 0;
       z-index: -1;
       border: 1px solid var(--np-glass-rim);
-      border-top-color: var(--np-glass-edge);
       border-radius: var(--np-radius-pill);
-      background-color: var(--np-glass-cover);
-      background-image: var(--np-glass-sheen);
-      box-shadow: var(--np-shadow-card);
+      background-color: var(--np-glass-ground);
       backdrop-filter: var(--np-glass-frost);
       -webkit-backdrop-filter: var(--np-glass-frost);
       pointer-events: none;
