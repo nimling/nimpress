@@ -89,6 +89,7 @@ func TestCollectExportFolder(t *testing.T) {
 	write(t, src, "components/Modals/harness.vue", "<template />\n")
 	write(t, src, "components/Modals/MarDialog/index.md", "---\ntitle: MarDialog\ntype: component\ndata:\n  package: \"@nimling/components-nimtech\"\n---\n")
 	write(t, src, "components/Modals/MarDialog/default.story.ts", "import Harness from '../harness.vue'\n")
+	write(t, src, "components/Modals/MarDialog/template/cv.html", "<p>cv</p>\n")
 	write(t, src, "components/Draft/index.md", "---\ntitle: Draft\nexport: false\n---\n")
 	write(t, src, "components/Draft/Inner/index.md", "---\ntitle: Inner\n---\n")
 	write(t, src, "components/Open/index.md", "---\ntitle: Open\ngate: internal\n---\n")
@@ -111,7 +112,7 @@ func TestCollectExportFolder(t *testing.T) {
 	if !strings.Contains(read(t, filepath.Join(out, "components", "Open", "index.md")), "gate: internal") {
 		t.Fatal("a page keeps its own gate")
 	}
-	for _, rel := range []string{"components/harness-setup.ts", "components/Modals/harness.vue", "components/Modals/MarDialog/default.story.ts"} {
+	for _, rel := range []string{"components/harness-setup.ts", "components/Modals/harness.vue", "components/Modals/MarDialog/default.story.ts", "components/Modals/MarDialog/template/cv.html"} {
 		if _, err := os.Stat(filepath.Join(out, filepath.FromSlash(rel))); err != nil {
 			t.Fatalf("%s must be carried", rel)
 		}

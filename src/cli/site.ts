@@ -5,6 +5,7 @@ import type { ResolvedNimpressConfig } from '../types'
 import { buildViteConfig } from '../config/viteConfig'
 import { indexHtml } from '../config/html'
 import { harnessViteConfig, harnessPort } from '../modules/harness'
+import { collectComponentPages } from '../modules/pages'
 
 export function deployableSystems(resolved: ResolvedNimpressConfig): string[] {
   return Object.entries(resolved.modules.systems)
@@ -33,7 +34,12 @@ export async function buildHarnesses(
   resolved: ResolvedNimpressConfig,
   systems: string[]
 ): Promise<void> {
+  const pages = await collectComponentPages(cwd, resolved.contentDir)
   for (const system of systems) {
+    if (!pages.some((page) => page.system === system)) {
+      console.log(`nimpress modules: ${system} has no component pages, no harness built`)
+      continue
+    }
     await build(await harnessViteConfig(cwd, resolved, system, 'build'))
     console.log(`nimpress modules: built ${system}`)
   }

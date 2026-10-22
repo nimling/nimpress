@@ -97,7 +97,13 @@ func readSpec(path string) (exportSpec, error) {
 }
 
 func FindExports(contentRoot, target string) ([]ExportPage, error) {
+	pages, _, err := walkExports(contentRoot, target)
+	return pages, err
+}
+
+func walkExports(contentRoot, target string) ([]ExportPage, []string, error) {
 	var out []ExportPage
+	var files []string
 	folders := map[string]exportSpec{}
 	err := filepath.Walk(contentRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -123,6 +129,13 @@ func FindExports(contentRoot, target string) ([]ExportPage, error) {
 			return nil
 		}
 		if !strings.HasSuffix(path, ".md") {
+			if folder := folders[filepath.Dir(path)]; folder.set && matchesTarget(folder.target, target) {
+				rel, err := filepath.Rel(contentRoot, path)
+				if err != nil {
+					return err
+				}
+				files = append(files, rel)
+			}
 			return nil
 		}
 		data, err := os.ReadFile(path)
@@ -150,7 +163,7 @@ func FindExports(contentRoot, target string) ([]ExportPage, error) {
 		return nil
 	})
 	sort.Slice(out, func(i, j int) bool { return out[i].Rel < out[j].Rel })
-	return out, err
+	return out, files, err
 }
 
 func rewriteExportedPage(text, version, gate string) string {
@@ -216,11 +229,17 @@ func copyExported(src, dest, version, gate string) error {
 }
 
 func CollectExport(contentRoot, outDir, target, version string) (int, error) {
-	pages, err := FindExports(contentRoot, target)
+	pages, files, err := walkExports(contentRoot, target)
 	if err != nil {
 		return 0, err
 	}
 	written := map[string]bool{}
+	for _, rel := range files {
+		if err := copyExported(filepath.Join(contentRoot, rel), filepath.Join(outDir, rel), version, ""); err != nil {
+			return 0, err
+		}
+		written[rel] = true
+	}
 	exported := map[string]ExportPage{}
 	for _, page := range pages {
 		exported[page.Rel] = page

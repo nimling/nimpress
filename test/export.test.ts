@@ -56,6 +56,7 @@ data:
     file(repo.cwd, 'docs/components/Modals/harness.vue', '<template />\n')
     file(repo.cwd, 'docs/components/Modals/MarDialog/index.md', '---\ntitle: MarDialog\ntype: component\ndata:\n  package: "@nimling/components-nimtech"\n---\n')
     file(repo.cwd, 'docs/components/Modals/MarDialog/default.story.ts', "import Harness from '../harness.vue'\n")
+    file(repo.cwd, 'docs/components/Modals/MarDialog/template/cv.html', '<p>cv</p>\n')
     file(repo.cwd, 'docs/components/Draft/index.md', '---\ntitle: Draft\nexport: false\n---\n')
     file(repo.cwd, 'docs/components/Draft/Inner/index.md', '---\ntitle: Inner\n---\n')
     file(repo.cwd, 'docs/components/Open/index.md', '---\ntitle: Open\ngate: internal\n---\n')
@@ -70,7 +71,7 @@ data:
     expect(page).toContain('gate: components')
     expect(page).toContain('version: "0.3.0"')
     expect(readFileSync(join(out, 'components/Open/index.md'), 'utf-8')).toContain('gate: internal')
-    for (const rel of ['components/harness-setup.ts', 'components/Modals/harness.vue', 'components/Modals/MarDialog/default.story.ts']) {
+    for (const rel of ['components/harness-setup.ts', 'components/Modals/harness.vue', 'components/Modals/MarDialog/default.story.ts', 'components/Modals/MarDialog/template/cv.html']) {
       expect(existsSync(join(out, rel))).toBe(true)
     }
     for (const rel of ['index.md', 'components/Draft']) {

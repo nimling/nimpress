@@ -88,8 +88,13 @@ export function runExport(cwd: string, resolved: ResolvedNimpressConfig, args: s
   }
   const folders = new Map<string, ExportSpec>()
   const pages = new Map<string, { spec: ExportSpec; folder: boolean }>()
+  const files: string[] = []
   for (const file of walkFiles(contentRoot)) {
-    if (!file.endsWith('.md')) continue
+    if (!file.endsWith('.md')) {
+      const folder = folderSpec(contentRoot, dirname(file), folders)
+      if (folder.set && (!target || folder.target === target || folder.target === 'true')) files.push(file)
+      continue
+    }
     const fm = exportFrontmatter(readFileSync(file, 'utf-8'))
     if (fm === null) continue
     const own = readExport(fm)
@@ -101,6 +106,12 @@ export function runExport(cwd: string, resolved: ResolvedNimpressConfig, args: s
     pages.set(file, { spec, folder: inFolder })
   }
   const written = new Set<string>()
+  for (const src of files) {
+    const dest = join(out, relative(contentRoot, src))
+    mkdirSync(dirname(dest), { recursive: true })
+    writeFileSync(dest, readFileSync(src))
+    written.add(src)
+  }
   for (const [file, page] of pages) {
     const srcDir = dirname(file)
     for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
