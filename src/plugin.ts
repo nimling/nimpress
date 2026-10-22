@@ -3225,6 +3225,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       if (meta?.icon) node.icon = meta.icon
       if (meta?.style) node.style = meta.style
+      const children = [...t.children.values()]
+      if (children.length && children.every((child) => child.page && Object.values(pageDropdownValues(child.page) ?? {}).some((values) => values.some((value) => value.toLowerCase() === child.segment.toLowerCase())))) {
+        node.variants = true
+        const rank = (it: SidebarNode) => Math.min(...Object.entries(it.dropdown ?? {}).map(([id, values]) => dropdownOrder.get(`${id}:${values[0]}`) ?? Number.MAX_SAFE_INTEGER))
+        items.sort((a, b) => rank(a) - rank(b))
+      }
       if (items.length) {
         node.items = items
         let minOrder = Number.MAX_SAFE_INTEGER
@@ -3245,46 +3251,6 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return roots
   }
 
-  function tagSlug(name: string): string {
-    return `tag-${slugify(name)}`
-  }
-
-  function tagIcon(name: string): string | undefined {
-    const icons = resolved.tags?.icons
-    if (!icons) return undefined
-    const icon = icons[resolved.tags?.map?.[name] ?? name] ?? icons.default
-    return icon ? resolveIconRef(icon, resolve(process.cwd(), 'nimpress.config.json')) : undefined
-  }
-
-  function buildTagIndex(): ManifestTag[] {
-    const index = new Map<string, ManifestTag>()
-    for (const p of pages.values()) {
-      const children = [...t.children.values()]
-      if (children.length && children.every((child) => child.page && Object.values(pageDropdownValues(child.page) ?? {}).some((values) => values.some((value) => value.toLowerCase() === child.segment.toLowerCase())))) {
-        node.variants = true
-        const rank = (it: SidebarNode) => Math.min(...Object.entries(it.dropdown ?? {}).map(([id, values]) => dropdownOrder.get(`${id}:${values[0]}`) ?? Number.MAX_SAFE_INTEGER))
-        items.sort((a, b) => rank(a) - rank(b))
-      }
-      if (p.sidebarOnly || p.type === '404' || p.type === 'tags') continue
-      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
-      for (const name of normalizeTags(p.frontmatter.tags)) {
-        const entry = index.get(name) ?? { name, slug: tagSlug(name), icon: tagIcon(name), pages: [] }
-        entry.pages.push({ slug: p.slug, title: p.frontmatter.title, path: p.effectivePath, description: p.frontmatter.description })
-        index.set(name, entry)
-      }
-    }
-    return Array.from(index.values())
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((tag) => ({ ...tag, pages: tag.pages.sort((a, b) => a.title.localeCompare(b.title)) }))
-  }
-
-  function siteComponentStyles(): string {
-    const dir = join(contentRoot, 'styles')
-    if (!existsSync(dir)) return ''
-    return readdirSync(dir)
-      .filter((name) => name.endsWith('.css'))
-      .sort()
-      .map((name) => scopeCss(name.replace(/\.css$/, ''), readFileSync(join(dir, name), 'utf-8')))
   function pageDropdownValues(p: ProcessedPage): Record<string, string[]> | undefined {
     const entries = Object.entries(p.frontmatter.dropdown ?? {}).filter(([, d]) => d.value?.length)
     return entries.length ? Object.fromEntries(entries.map(([id, d]) => [id, d.value!])) : undefined
@@ -3308,6 +3274,40 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return [...found.values()].filter((d) => d.values.length)
   }
 
+  function tagSlug(name: string): string {
+    return `tag-${slugify(name)}`
+  }
+
+  function tagIcon(name: string): string | undefined {
+    const icons = resolved.tags?.icons
+    if (!icons) return undefined
+    const icon = icons[resolved.tags?.map?.[name] ?? name] ?? icons.default
+    return icon ? resolveIconRef(icon, resolve(process.cwd(), 'nimpress.config.json')) : undefined
+  }
+
+  function buildTagIndex(): ManifestTag[] {
+    const index = new Map<string, ManifestTag>()
+    for (const p of pages.values()) {
+      if (p.sidebarOnly || p.type === '404' || p.type === 'tags') continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
+      for (const name of normalizeTags(p.frontmatter.tags)) {
+        const entry = index.get(name) ?? { name, slug: tagSlug(name), icon: tagIcon(name), pages: [] }
+        entry.pages.push({ slug: p.slug, title: p.frontmatter.title, path: p.effectivePath, description: p.frontmatter.description })
+        index.set(name, entry)
+      }
+    }
+    return Array.from(index.values())
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((tag) => ({ ...tag, pages: tag.pages.sort((a, b) => a.title.localeCompare(b.title)) }))
+  }
+
+  function siteComponentStyles(): string {
+    const dir = join(contentRoot, 'styles')
+    if (!existsSync(dir)) return ''
+    return readdirSync(dir)
+      .filter((name) => name.endsWith('.css'))
+      .sort()
+      .map((name) => scopeCss(name.replace(/\.css$/, ''), readFileSync(join(dir, name), 'utf-8')))
       .join('\n')
   }
 

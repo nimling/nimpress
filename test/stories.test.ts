@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { collectStoryRoutes, parseStorySource } from '../src/modules/stories'
+import { collectStoryRoutes, harnessStoryUrl, parseStorySource, resolveStoryRoute } from '../src/modules/stories'
 import { componentPage, file, makeRepo, resolvedConfig, type Repo } from './helpers'
 
 describe('parseStorySource', () => {
@@ -82,5 +82,22 @@ describe('collectStoryRoutes', () => {
     seed()
     const [first] = await collectStoryRoutes(repo.cwd, config('/docs/'), { component: 'Card' })
     expect(first.route).toBe('/docs/_components/vue/Card/?story=default')
+  })
+
+  it('resolves the story to open by id or name, the default story when none is named', async () => {
+    seed()
+    const routes = await collectStoryRoutes(repo.cwd, config(), { component: 'Button', system: 'vue' })
+    expect(resolveStoryRoute(routes)?.story).toBe('default')
+    expect(resolveStoryRoute(routes, 'WITH_ICON')?.story).toBe('with_icon')
+    expect(resolveStoryRoute(routes, 'with icon')?.story).toBe('with_icon')
+    expect(resolveStoryRoute(routes, 'missing')).toBeUndefined()
+    expect(resolveStoryRoute(routes.filter((r) => r.story !== 'default'))?.story).toBe('with_icon')
+  })
+
+  it('opens the story on the harness port without the site base', async () => {
+    seed()
+    const resolved = config('/docs/')
+    const [route] = await collectStoryRoutes(repo.cwd, resolved, { component: 'Card' })
+    expect(harnessStoryUrl(resolved, route)).toBe('http://127.0.0.1:6162/_components/vue/Card/?story=default')
   })
 })

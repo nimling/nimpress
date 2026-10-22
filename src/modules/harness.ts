@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { basename, dirname, join, resolve, isAbsolute } from 'node:path'
+import { basename, dirname, join, relative, resolve, isAbsolute } from 'node:path'
 import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { ModuleFramework, ModuleSystemConfig, ModulesConfig, ResolvedNimpressConfig } from '../types'
 import { mergeDeep } from '../config/viteConfig'
@@ -551,17 +551,18 @@ export function resolveHarnessOverride(cwd: string, systemConfig: ModuleSystemCo
 
 function harnessPlugin(
   cwd: string,
-  systemConfig: ModuleSystemConfig,
+  resolvedConfig: ResolvedNimpressConfig,
   system: string,
   targets: HarnessTarget[],
   base: string
 ): Plugin {
+  const systemConfig = resolvedConfig.modules.systems[system]
   const css = (systemConfig.css ?? []).map((c) =>
     c.startsWith('.') || isAbsolute(c) ? resolve(cwd, c) : c
   )
   const setup = resolveHarnessSetup(cwd, systemConfig)
   const harness = resolveHarnessOverride(cwd, systemConfig)
-  const byComponent = new Map(targets.map((t) => [t.component, t]))
+  let byComponent = new Map(targets.map((t) => [t.component, t]))
   const resolvedPrefix = '\0' + HARNESS_VIRTUAL_PREFIX
   const componentOf = (id: string): string | null => {
     if (!id.startsWith(resolvedPrefix)) return null
@@ -584,6 +585,22 @@ function harnessPlugin(
       return target ? entrySource(target) : null
     },
     configureServer(server) {
+      const contentDir = resolve(cwd, resolvedConfig.contentDir)
+      const refresh = async (file: string) => {
+        if (relative(contentDir, file).startsWith('..')) return
+        if (!/\.story\.tsx?$/.test(file) && !file.endsWith('.md')) return
+        const pages = await collectComponentPages(cwd, resolvedConfig.contentDir)
+        const previous = [...byComponent.keys()]
+        byComponent = new Map(resolveHarnessTargets(cwd, resolvedConfig.modules, system, pages).map((t) => [t.component, t]))
+        for (const component of new Set([...previous, ...byComponent.keys()])) {
+          const entry = server.moduleGraph.getModuleById('\0' + harnessEntryId(system, component))
+          if (entry) server.moduleGraph.invalidateModule(entry)
+        }
+        server.ws.send({ type: 'full-reload' })
+      }
+      server.watcher.add(contentDir)
+      server.watcher.on('add', refresh)
+      server.watcher.on('unlink', refresh)
       server.middlewares.use(async (req, res, next) => {
         const raw = req.url
         if (!raw) return next()
@@ -668,8 +685,7 @@ export async function harnessViteConfig(
     publicDir: false,
     appType: 'mpa',
     cacheDir: cacheDir(cwd, resolvedConfig, 'modules', system),
-    plugins: [harnessPlugin(cwd, systemConfig, system, targets, base), framework, chunkCycleGuard()],
-    resolve: systemConfig.framework === 'vue' ? { alias: { vue: 'vue/dist/vue.esm-bundler.js' } } : undefined,
+    plugins: [harnessPlugin(cwd, resolvedConfig, system, targets, base), framework, chunkCycleGuard()],
     optimizeDeps: {
       entries: scanEntries,
       include: systemConfig.framework === 'vue' ? ['vue'] : [],
@@ -695,5 +711,14 @@ export async function harnessViteConfig(
     },
     base
   }
-  return mergeDeep(config, resolvedConfig.vite as Partial<InlineConfig>)
+  const merged = mergeDeep(config, resolvedConfig.vite as Partial<InlineConfig>)
+  if (systemConfig.framework !== 'vue') return merged
+  const consumerAlias = merged.resolve?.alias ?? []
+  const alias = Array.isArray(consumerAlias)
+    ? consumerAlias
+    : Object.entries(consumerAlias).map(([find, replacement]) => ({ find, replacement }))
+  return {
+    ...merged,
+    resolve: { ...merged.resolve, alias: [{ find: /^vue$/, replacement: 'vue/dist/vue.esm-bundler.js' }, ...alias] }
+  }
 }

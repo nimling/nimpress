@@ -77,6 +77,12 @@ export const commands: CompletionCommand[] = [
         subs: []
       },
       {
+        name: 'open',
+        describe: 'Open one story of a component alone in the browser, the default story when none is named, starting nimpress dev in the background when no harness answers',
+        flags: [systemFlag, { name: '--browser', value: true, describe: 'the browser application to open the story in instead of the default browser' }],
+        subs: []
+      },
+      {
         name: 'import',
         describe: 'Import components and storybook stories into component pages',
         flags: [

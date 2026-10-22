@@ -145,7 +145,9 @@ Every modules subcommand takes `--system=<name>`; it is required only when sever
 
 8.1. `unknown` is never the fix for an opaque member. Neither the source type nor an authored `tsType` is widened to `unknown` to silence the warning; the member gets its real shape, an enum, properties, typed items, or a real interface in the source. A prop that only exists to hold untyped data is removed instead.
 
-9. `nimpress modules dev [--system=]` runs harness servers. `nimpress dev` starts them all beside the docs.
+9. `nimpress modules dev [--system=]` runs harness servers. `nimpress dev` starts them all beside the docs. A story file or a component page added while a harness runs registers without a restart and reloads its open tabs.
+
+9.1. `nimpress modules open <Component> [story] [--system=] [--browser=]` opens one story alone in the browser on its harness route and prints the url, the Default story when none is named. The component resolves as in `modules stories`. When no harness answers it starts `nimpress dev` in the background and waits for it. `--browser=` names the browser application, the default browser otherwise. The harness hot reloads, so the tab follows the work on the component live.
 
 10. `nimpress modules build [--system=]` emits static harness bundles into `dist/_components/<system>/`; `nimpress build` runs it for every system whose visibility is not `dev-only`.
 

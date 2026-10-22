@@ -391,11 +391,16 @@ function install(siteDir: string): void {
   writeFileSync(marker, `${hash}\n`)
 }
 
-function openBrowser(url: string): void {
+export function openBrowser(url: string, app?: string): void {
   const os = platform()
-  const command = os === 'darwin' ? ['open', url] : os === 'win32' ? ['cmd', '/c', 'start', '', url] : ['xdg-open', url]
+  const command =
+    os === 'darwin'
+      ? ['open', ...(app ? ['-a', app] : []), url]
+      : os === 'win32'
+        ? ['cmd', '/c', 'start', '', ...(app ? [app] : []), url]
+        : app ? [app, url] : ['xdg-open', url]
   const child = spawn(command[0], command.slice(1), { stdio: 'ignore', detached: true })
-  child.on('error', () => console.log(`nimpress view: open ${url} in a browser`))
+  child.on('error', () => console.log(`nimpress: open ${url} in ${app ?? 'a browser'}`))
   child.unref()
 }
 

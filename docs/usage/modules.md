@@ -21,7 +21,7 @@ Creates the modules folder and adds a `modules` block to `nimpress.config.json` 
 nimpress modules dev --system=nimtech
 ```
 
-Serves the harness of the named system and never returns. `nimpress dev` starts them all beside the docs.
+Serves the harness of the named system and never returns. `nimpress dev` starts them all beside the docs. A story file or a component page added while it runs registers without a restart and reloads the open harness tabs.
 
 ## build
 
@@ -58,6 +58,16 @@ nimpress modules stories MarButton --system=nimtech --json
 ```
 
 Lists the stories of the named component in every system that carries it, with the harness route that renders one story alone: `/_components/<system>/<Component>/?story=<file stem>`, behind the site base. With no component it prints every component and its story count per system. The route is served by `nimpress dev` and by `nimpress modules dev` on the harness port, and is what a browser driver such as nimon opens to review or test a single story.
+
+## open
+
+```bash
+nimpress modules open MarButton
+nimpress modules open MarButton with_icon
+nimpress modules open MarButton default --system=nimtech --browser=Safari
+```
+
+Opens one story of the named component alone in the browser, without the docs page around it, and prints the url. The component resolves the way `stories` resolves it, the story by file stem or name, and the Default story when none is named; a component carried by several systems needs `--system=`. The url is the story route on the harness port, `http://127.0.0.1:<port>/_components/<system>/<Component>/?story=<file stem>`. When no harness answers, it starts `nimpress dev` in the background, prints its pid and the log under `<cache>/modules/dev.log`, and waits for the harness. `--browser=<app>` names the browser application, `open -a <app>` on macOS; the default browser opens otherwise. The harness hot reloads, so the tab shows every change to the component and the story as it is saved.
 
 ## import
 

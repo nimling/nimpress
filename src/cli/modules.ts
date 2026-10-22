@@ -1,13 +1,18 @@
-import { join, relative } from 'node:path'
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
+import { spawn } from 'node:child_process'
+import { mkdirSync, existsSync, openSync, readFileSync, writeFileSync } from 'node:fs'
 import type { ModuleFramework, ResolvedNimpressConfig } from '../types'
+import { cacheDir } from '../config/paths'
 import { generateAutoStory, generateAutoStories, createComponentPage } from '../modules/autoStory'
 import { importStorybook } from '../modules/importStorybook'
-import { collectStoryRoutes } from '../modules/stories'
+import { collectStoryRoutes, harnessStoryUrl, resolveStoryRoute, type StoryRoute } from '../modules/stories'
 import { lintModules } from '../modules/lint'
 import { flushDiagnostics, updateComponentSchemas, upgradeComponentSchema } from '../modules/schema'
 import { flag, hasFlag, positional, finishLint } from './shared'
 import { startHarnessServers, buildHarnesses, deployableSystems } from './site'
+import { openBrowser } from './view'
+
+const harnessStartMs = 60000
 
 function systemFlag(resolved: ResolvedNimpressConfig, args: string[]): string | undefined {
   const named = flag(args, 'system')
@@ -76,17 +81,7 @@ export async function runModules(
   }
   if (sub === 'stories') {
     const component = positional(rest, 0)
-    const system = systemFlag(resolved, rest)
-    const routes = await collectStoryRoutes(cwd, resolved, { component, system })
-    if (component && !routes.length) {
-      const near = (await collectStoryRoutes(cwd, resolved, { system }))
-        .map((r) => `${r.system}/${r.component}`)
-        .filter((ref, i, all) => all.indexOf(ref) === i && ref.toLowerCase().includes(component.toLowerCase()))
-      throw new Error(
-        `[nimpress] modules stories: no stories for ${component}${system ? ` in ${system}` : ''}` +
-          (near.length ? `, did you mean ${near.slice(0, 8).join(', ')}` : '')
-      )
-    }
+    const routes = await componentRoutes(cwd, resolved, 'stories', component, systemFlag(resolved, rest))
     if (hasFlag(rest, 'json')) {
       console.log(JSON.stringify(routes, null, 2))
       return
@@ -98,6 +93,29 @@ export async function runModules(
       return
     }
     for (const r of routes) console.log(`${r.system}\t${r.component}\t${r.story}\t${r.route}`)
+    return
+  }
+  if (sub === 'open') {
+    const component = positional(rest, 0)
+    if (!component) {
+      throw new Error('[nimpress] modules open expects: nimpress modules open <Component> [story] [--system=<name>] [--browser=<app>]')
+    }
+    const routes = await componentRoutes(cwd, resolved, 'open', component, systemFlag(resolved, rest))
+    const systems = routes.map((r) => r.system).filter((name, i, all) => all.indexOf(name) === i)
+    if (systems.length > 1) {
+      throw new Error(`[nimpress] modules open: ${component} is in several systems (${systems.join(', ')}), pass --system=<name>`)
+    }
+    const story = positional(rest, 1)
+    const route = resolveStoryRoute(routes, story)
+    if (!route) {
+      throw new Error(
+        `[nimpress] modules open: no story ${story} for ${routes[0].system}/${routes[0].component}, stories: ${routes.map((r) => r.story).join(', ')}`
+      )
+    }
+    const url = harnessStoryUrl(resolved, route)
+    await ensureHarness(cwd, resolved, route, url)
+    openBrowser(url, flag(rest, 'browser'))
+    console.log(`nimpress modules open: ${route.system}/${route.component} ${route.story} at ${url}`)
     return
   }
   if (sub === 'import') {
@@ -142,7 +160,62 @@ export async function runModules(
     console.log(`nimpress modules: created ${component} at ${relative(cwd, dir)}`)
     return
   }
-  throw new Error('[nimpress] modules expects init, dev, build, lint, story, stories, import, create or update')
+  throw new Error('[nimpress] modules expects init, dev, build, lint, story, stories, open, import, create or update')
+}
+
+async function componentRoutes(
+  cwd: string,
+  resolved: ResolvedNimpressConfig,
+  sub: string,
+  component: string | undefined,
+  system: string | undefined
+): Promise<StoryRoute[]> {
+  const routes = await collectStoryRoutes(cwd, resolved, { component, system })
+  if (component && !routes.length) {
+    const near = (await collectStoryRoutes(cwd, resolved, { system }))
+      .map((r) => `${r.system}/${r.component}`)
+      .filter((ref, i, all) => all.indexOf(ref) === i && ref.toLowerCase().includes(component.toLowerCase()))
+    throw new Error(
+      `[nimpress] modules ${sub}: no stories for ${component}${system ? ` in ${system}` : ''}` +
+        (near.length ? `, did you mean ${near.slice(0, 8).join(', ')}` : '')
+    )
+  }
+  return routes
+}
+
+async function harnessStatus(url: string): Promise<number | undefined> {
+  try {
+    return (await fetch(url, { signal: AbortSignal.timeout(2000) })).status
+  } catch {
+    return undefined
+  }
+}
+
+async function ensureHarness(cwd: string, resolved: ResolvedNimpressConfig, route: StoryRoute, url: string): Promise<void> {
+  let status = await harnessStatus(url)
+  if (status === undefined) {
+    const log = cacheDir(cwd, resolved, 'modules', 'dev.log')
+    mkdirSync(dirname(log), { recursive: true })
+    const out = openSync(log, 'a')
+    const child = spawn(process.execPath, [process.argv[1], 'dev'], { cwd, detached: true, stdio: ['ignore', out, out] })
+    child.unref()
+    let exited = false
+    child.on('exit', () => (exited = true))
+    console.log(`nimpress modules open: started nimpress dev in the background, pid ${child.pid}, log ${relative(cwd, log)}`)
+    const deadline = Date.now() + harnessStartMs
+    while (status === undefined && !exited && Date.now() < deadline) {
+      await new Promise((done) => setTimeout(done, 500))
+      status = await harnessStatus(url)
+    }
+    if (status === undefined) {
+      throw new Error(`[nimpress] modules open: the ${route.system} harness did not answer on ${url}, see ${relative(cwd, log)}`)
+    }
+  }
+  if (status !== 200) {
+    throw new Error(
+      `[nimpress] modules open: the ${route.system} harness answers ${status} for ${route.component}, restart nimpress dev so it picks the component up`
+    )
+  }
 }
 
 function runModulesInit(cwd: string, resolved: ResolvedNimpressConfig): void {

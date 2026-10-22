@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, basename } from 'node:path'
 import type { ComponentStory, ResolvedNimpressConfig } from '../types'
-import { joinBase } from '../config/base'
-import { collectStoryFiles } from './harness'
+import { joinBase, stripBase } from '../config/base'
+import { collectStoryFiles, harnessPort } from './harness'
 import { collectComponentPages } from './pages'
 import { readBalanced } from './parse/typeMembers'
 
@@ -107,4 +107,14 @@ export async function collectStoryRoutes(
   }
   out.sort((a, b) => a.system.localeCompare(b.system) || a.component.localeCompare(b.component) || a.story.localeCompare(b.story))
   return out
+}
+
+export function resolveStoryRoute(routes: StoryRoute[], story?: string): StoryRoute | undefined {
+  if (!story) return routes.find((r) => r.story === 'default') ?? routes[0]
+  const wanted = story.toLowerCase()
+  return routes.find((r) => r.story.toLowerCase() === wanted) ?? routes.find((r) => r.name.toLowerCase() === wanted)
+}
+
+export function harnessStoryUrl(resolved: ResolvedNimpressConfig, route: StoryRoute): string {
+  return `http://127.0.0.1:${harnessPort(resolved.modules, route.system)}${stripBase(resolved.base, route.route)}`
 }

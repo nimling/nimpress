@@ -73,6 +73,7 @@ nimpress modules build --system=nimtech
 nimpress modules lint --system=nimtech
 nimpress modules story <Component> --system=nimtech --framework=vue
 nimpress modules stories <Component> --system=nimtech --json
+nimpress modules open <Component> [story] --system=nimtech --browser=Safari
 nimpress modules import <file> --system=nimtech --name=Button --source=./src/components --stories=./stories --match='^Btn' --from-stories --select
 nimpress modules create <Component> --system=nimtech --framework=svelte
 nimpress modules create --component=<ref> --schema
@@ -89,11 +90,13 @@ nimpress modules update <ref> --component=<ref> --system=nimtech
 
 5. `stories <Component>` lists that component's stories in every system that carries it, matched without case, one line per story: system, component, story id, and the harness route `/_components/<system>/<Component>/?story=<id>` that renders that story alone. The story id is the file stem; the harness renders the default export of that file, so one file is one story. With no component it prints every component and its story count per system. `--system=` narrows it, `--json` prints the routes as json. It is the only answer to which stories exist and where each one renders; never read the generated harness entry for it.
 
-6. `import` with a positional file imports that one component, and `--name=` sets the page name. With no file it walks `--source=` or the system source, picks up `.stories.ts` files there and under `--stories=`, filters names with the `--match=` regular expression, and asks which components to take with `--select`. `--from-stories` takes the component list from the csf files and requires `--stories=`.
+6. `open <Component> [story]` opens that one story alone in the user's browser, without the docs page around it, and prints the url. The component resolves as in `stories`, the story by id or name without case, and the Default story when none is named; a component carried by several systems needs `--system=`. The url is the story route on the harness port, `http://127.0.0.1:<port>/_components/<system>/<Component>/?story=<id>`. When no harness answers it starts `nimpress dev` in the background, prints its pid and the log `<cache>/modules/dev.log`, and waits for the harness; a harness that answers but does not know the component fails with a restart hint. `--browser=<app>` opens it in that application, `open -a <app>` on macOS, the default browser otherwise. Run it before working on a component so the user watches the work: the harness hot reloads, the tab follows every saved edit to the component and the story, and a story file or a component page added while it runs registers without a restart.
 
-7. `create <Component>` creates the component page folder. `create --component=<ref> --schema` upserts a single schema instead, and `--schema` is required in that form.
+7. `import` with a positional file imports that one component, and `--name=` sets the page name. With no file it walks `--source=` or the system source, picks up `.stories.ts` files there and under `--stories=`, filters names with the `--match=` regular expression, and asks which components to take with `--select`. `--from-stories` takes the component list from the csf files and requires `--stories=`.
 
-8. `update` upserts every component schema from the component types, adding new members without touching authored defaults, enums, or descriptions. A positional reference or `--component=<ref>` limits it to one component.
+8. `create <Component>` creates the component page folder. `create --component=<ref> --schema` upserts a single schema instead, and `--schema` is required in that form.
+
+9. `update` upserts every component schema from the component types, adding new members without touching authored defaults, enums, or descriptions. A positional reference or `--component=<ref>` limits it to one component.
 
 ### export
 
@@ -271,7 +274,16 @@ nimon click <ref>
 nimon shot
 ```
 
-Through the mcp servers of both plugins that is `service_up`, `modules_stories`, `open`, `look`, `click`, `shot`. A new story file is picked up only after the workshop restarts: `nimon service down workshop`, then up.
+Through the mcp servers of both plugins that is `service_up`, `modules_stories`, `open`, `look`, `click`, `shot`. A story file or a component page added while the workshop runs registers without a restart and reloads the open harness tabs.
+
+Let the user watch a component while an agent works on it. Open the story first, then edit the component or the story file; every save reloads the tab:
+
+```sh
+nimpress modules stories MarButton
+nimpress modules open MarButton with_icon
+```
+
+Through the mcp server that is `modules_stories`, then `modules_open` with `args: ["MarButton", "with_icon"]` and `flags: { "system": "nimtech", "browser": "Safari" }`. It returns once the tab is open; the dev server it may start keeps running outside the session, so `stop` does not end it and its printed pid does.
 
 Install the command, the skill and completion on a fresh machine:
 
