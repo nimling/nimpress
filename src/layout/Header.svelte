@@ -142,7 +142,14 @@
     font-weight: 600;
     text-decoration: none;
   }
+  .np-brand span {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .np-brand img {
+    flex: none;
     height: 70%;
     width: auto;
     object-fit: contain;
