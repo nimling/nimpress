@@ -46,6 +46,7 @@ import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
+import { commandRoute, getCommandHandler } from './commands/server'
 import { builtInThemes, defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig, siteThemes } from './config/load'
 import { joinBase, stripBase } from './config/base'
@@ -3819,6 +3820,8 @@ ${bodyBranches}
         createReadStream(file).pipe(res)
         return true
       }
+
+      devServer.middlewares.use(commandRoute, getCommandHandler(resolved.commands, process.cwd()))
 
       devServer.middlewares.use((req, res, next) => {
         const raw = (req.url ?? '').split('?')[0]

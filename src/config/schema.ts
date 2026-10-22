@@ -103,6 +103,9 @@ export const userConfigSchema = z.object({
     endpoint: z.string().optional(),
     appSlug: z.string().optional()
   }).passthrough().optional(),
+  commands: z.object({
+    allow: z.union([z.enum(['none', 'all']), z.array(z.string().regex(/\S/))])
+  }).optional(),
   seo: z.object({
     auto: z.boolean().optional(),
     ai: z.object({ index: z.boolean().optional() }).passthrough().optional()

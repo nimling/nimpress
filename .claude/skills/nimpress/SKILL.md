@@ -45,6 +45,8 @@ nimpress dev --view
 
 Serves the site and starts one harness server for every configured component system. It stays running and binds the vite cli shortcuts. `--view` serves the central docs site this repo publishes into instead, with the exported pages in place, the same run as `view` below.
 
+The dev server also runs cli commands for a page on localhost, never in a build. `commands.allow` in the config is `none` by default, `all`, or a list of entries such as `git log **`: the first word is the command, every further word matches one argument with `*` for any characters inside it, and a trailing `**` matches any remaining arguments. A page or component calls `postCommand(command, { args, stdin })` from `@nimtech/nimpress/commands` for `{ code, stdout, stderr }`, and passes `onLine(line, stream)` to listen to every line as it is written. A command outside the list is refused with `<command> is not in commands.allow`.
+
 ### build
 
 ```sh

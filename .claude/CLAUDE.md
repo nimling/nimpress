@@ -28,6 +28,8 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed through the 
 
 12. `src/auth/` — session login guard against `samna_auth`.
 
+12.1. `src/commands/` — the dev server command route, `server.ts`, and the `postCommand` client exported as `@nimtech/nimpress/commands`. `commands.allow` in the config gates it.
+
 13. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
 
 14. `docs/` — the nimpress documentation itself, every feature, guide, and release entry under `docs/changelog/`. It is built with nimpress and published to GitHub Pages on every version tag, and it never ships inside the library build. Authors read these before writing docs in consumer repos.

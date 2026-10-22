@@ -38,6 +38,10 @@
       "types": "./dist/story/index.d.ts",
       "import": "./dist/story.es.js"
     },
+    "./commands": {
+      "types": "./dist/commands/index.d.ts",
+      "import": "./dist/commands.es.js"
+    },
     "./tailwind": {
       "types": "./dist/tailwind.preset.d.ts",
       "import": "./dist/tailwind.preset.es.js"

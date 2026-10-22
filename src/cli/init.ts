@@ -105,6 +105,9 @@ export default defineConfig({
   /** Changelog subscription wiring. */
   // subscribe: { endpoint: 'https://auth.example.io/api/subscribe', appSlug: 'my-docs' },
 
+  /** Cli commands a page may call or listen to through the dev server on localhost, never in a build: none (default), all, or a list. In a list entry the first word is the command, every further word matches one argument, * matches any characters inside it, and a trailing ** any remaining arguments. */
+  // commands: { allow: ['git status', 'git log **', 'claude -p --model *'] },
+
   /** Slug prefixes excluded from the site. */
   // exclude: ['drafts'],
 
