@@ -5,11 +5,13 @@
   import StockAccountMenu from '../auth/AccountMenu.svelte'
   import StockBreadcrumbs from './Breadcrumbs.svelte'
   import StockThemeMenu from './ThemeMenu.svelte'
+  import StockDropdownMenu from './DropdownMenu.svelte'
   import { themed } from '../framework/components'
 
   const AccountMenu = themed('AccountMenu', StockAccountMenu)
   const Breadcrumbs = themed('Breadcrumbs', StockBreadcrumbs)
   const ThemeMenu = themed('ThemeMenu', StockThemeMenu)
+  const DropdownMenu = themed('DropdownMenu', StockDropdownMenu)
 
   let {
     onOpenSearch,
@@ -68,6 +70,10 @@
   </div>
 
   <div class="np-actions">
+    <div class="np-header-dropdowns">
+      <DropdownMenu />
+    </div>
+
     <button class="np-search-trigger" onclick={onOpenSearch}>
       <svg class="np-search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
@@ -153,6 +159,9 @@
     gap: 12px;
     align-items: center;
     justify-self: end;
+  }
+  .np-header-dropdowns {
+    display: contents;
   }
   .np-search-trigger {
     display: inline-flex;
@@ -266,5 +275,6 @@
     }
     .np-search-label,
     .np-search-trigger kbd { display: none; }
+    .np-header-dropdowns { display: none; }
   }
 </style>

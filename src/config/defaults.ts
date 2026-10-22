@@ -11,6 +11,7 @@ export const defaultPaths: ResolvedPaths = {
 export const defaultConfig: ResolvedNimpressConfig = {
   title: 'Nimpress',
   status: { new: 'Recently added', deprecated: 'Deprecated' },
+  dropdowns: {},
   tabs: { linked: false },
   images: { lightbox: false },
   math: true,
@@ -50,6 +51,7 @@ export const themeComponentNames = [
   'SearchModal',
   'AccountMenu',
   'ThemeMenu',
+  'DropdownMenu',
   'Feedback',
   'SubscribeDialog',
   'CodeBlock',

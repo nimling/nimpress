@@ -200,6 +200,7 @@ export interface Frontmatter {
   order?: number
   icon?: string
   sidebar?: { name: string; icon?: string; style?: string; path?: string }
+  dropdown?: Record<string, PageDropdown>
   visibility?: 'visible' | 'hidden' | 'dev-only'
   lastUpdated?: boolean
   redirect?: string
@@ -215,6 +216,12 @@ export interface Frontmatter {
   styles?: string[]
   meta?: PageMetaTags
   data?: Record<string, unknown>
+}
+
+export interface PageDropdown {
+  title?: string
+  description?: string
+  value?: string[]
 }
 
 export interface Heading {
@@ -272,6 +279,8 @@ export interface SidebarNode {
   collapsed?: boolean
   hidden?: boolean
   status?: string
+  dropdown?: Record<string, string[]>
+  variants?: boolean
   items?: SidebarNode[]
 }
 
@@ -302,10 +311,18 @@ export interface NimpressTagsConfig {
   map?: Record<string, string>
 }
 
+export interface ManifestDropdown {
+  id: string
+  title: string
+  description?: string
+  values: string[]
+}
+
 export interface Manifest {
   pages: Record<string, PageMeta>
   byPath: Record<string, string>
   sidebar: SidebarNode[]
+  dropdowns?: ManifestDropdown[]
   tags?: ManifestTag[]
   glossary?: GlossaryTerm[]
   site?: SiteMeta
@@ -643,6 +660,15 @@ export interface NimpressImagesConfig {
   lightbox?: boolean
 }
 
+export interface NimpressDropdownConfig {
+  /** Label on the trigger and above the choices. @example "Language" */
+  title?: string
+  /** Line under the title in the open panel. */
+  description?: string
+  /** Value order in the panel; values pages declare beyond it follow in the order they appear. @example ["Vue", "Svelte"] */
+  values?: string[]
+}
+
 export interface NimpressTabsConfig {
   /** Selects the same label in every tab group on the site when one is clicked, remembered across pages. */
   linked?: boolean
@@ -667,6 +693,8 @@ export interface NimpressUserConfig {
   feedback?: NimpressFeedbackConfig
   /** Page status identifiers mapped to the label the sidebar mark carries, new and deprecated are present without configuration. @example { "beta": "Beta" } */
   status?: Record<string, string>
+  /** Sidebar filters a reader picks from the header, a dropdown id to its title, description, and value order. Pages join one through the dropdown frontmatter block. @example { "language": { "title": "Language", "values": ["Vue", "Svelte"] } } */
+  dropdowns?: Record<string, NimpressDropdownConfig>
   /** Content tab groups. linked selects the same label in every tab group on the site when one is clicked, remembered across pages. @example { "linked": true } */
   tabs?: NimpressTabsConfig
   images?: NimpressImagesConfig
@@ -728,6 +756,7 @@ export interface ResolvedNimpressConfig {
   repo?: NimpressRepoConfig
   feedback?: NimpressFeedbackConfig
   status: Record<string, string>
+  dropdowns: Record<string, NimpressDropdownConfig>
   tabs: NimpressTabsConfig
   images: NimpressImagesConfig
   icons?: string

@@ -201,3 +201,22 @@ The header, the sidebar, the breadcrumbs, the right rail, and the frame everythi
 | `np-theme-menu-list` |
 | `np-theme-menu-swatch` |
 | `np-theme-menu-trigger` |
+
+## DropdownMenu
+
+`src/layout/DropdownMenu.svelte`, in the header and in the sidebar footer as `np-sidebar-foot`.
+
+| Class |
+|---|
+| `np-dropdown` |
+| `np-dropdown-chevron` |
+| `np-dropdown-description` |
+| `np-dropdown-head` |
+| `np-dropdown-head-title` |
+| `np-dropdown-item` |
+| `np-dropdown-menu` |
+| `np-dropdown-menu-up` |
+| `np-dropdown-panel` |
+| `np-dropdown-title` |
+| `np-dropdown-trigger` |
+| `np-dropdown-value` |

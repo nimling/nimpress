@@ -70,6 +70,11 @@ export const userConfigSchema = z.object({
     dismiss: z.boolean().optional()
   }).optional(),
   status: z.record(z.string()).optional(),
+  dropdowns: z.record(z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    values: z.array(z.string()).optional()
+  })).optional(),
   tabs: z.object({ linked: z.boolean().optional() }).optional(),
   images: z.object({ lightbox: z.boolean().optional() }).optional(),
   icons: z.string().optional(),

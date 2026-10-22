@@ -31,6 +31,7 @@ import type {
   PageMeta,
   PageType,
   PageElement,
+  ManifestDropdown,
   ManifestTag,
   GlossaryTerm,
   ResolvedNimpressConfig,
@@ -161,6 +162,11 @@ const frontmatterSchema = z.object({
     style: z.string().optional(),
     path: z.string().optional()
   }).optional(),
+  dropdown: z.record(z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    value: z.array(z.string()).optional()
+  })).optional(),
   visibility: z.enum(['visible', 'hidden', 'dev-only']).optional(),
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),
@@ -3032,6 +3038,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
+    const dropdownOrder = new Map(buildDropdowns().flatMap((d) => d.values.map((value, i) => [`${d.id}:${value}`, i] as const)))
     const dirMeta = new Map<string, { label?: string; icon?: string; style?: string }>()
 
     for (const p of pages.values()) {
@@ -3094,7 +3101,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           order: t.page.frontmatter.order,
           collapsed: t.page.frontmatter.collapsed,
           hidden: pageDevOnly(t.page.frontmatter),
-          status: t.page.frontmatter.status
+          status: t.page.frontmatter.status,
+          dropdown: pageDropdownValues(t.page)
         }
         const ownMeta = dirMeta.get(t.fullPath)
         if (ownMeta?.label) node.text = ownMeta.label
@@ -3217,6 +3225,12 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   function buildTagIndex(): ManifestTag[] {
     const index = new Map<string, ManifestTag>()
     for (const p of pages.values()) {
+      const children = [...t.children.values()]
+      if (children.length && children.every((child) => child.page && Object.values(pageDropdownValues(child.page) ?? {}).some((values) => values.some((value) => value.toLowerCase() === child.segment.toLowerCase())))) {
+        node.variants = true
+        const rank = (it: SidebarNode) => Math.min(...Object.entries(it.dropdown ?? {}).map(([id, values]) => dropdownOrder.get(`${id}:${values[0]}`) ?? Number.MAX_SAFE_INTEGER))
+        items.sort((a, b) => rank(a) - rank(b))
+      }
       if (p.sidebarOnly || p.type === '404' || p.type === 'tags') continue
       if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
       for (const name of normalizeTags(p.frontmatter.tags)) {
@@ -3237,6 +3251,29 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       .filter((name) => name.endsWith('.css'))
       .sort()
       .map((name) => scopeCss(name.replace(/\.css$/, ''), readFileSync(join(dir, name), 'utf-8')))
+  function pageDropdownValues(p: ProcessedPage): Record<string, string[]> | undefined {
+    const entries = Object.entries(p.frontmatter.dropdown ?? {}).filter(([, d]) => d.value?.length)
+    return entries.length ? Object.fromEntries(entries.map(([id, d]) => [id, d.value!])) : undefined
+  }
+
+  function buildDropdowns(): ManifestDropdown[] {
+    const found = new Map<string, ManifestDropdown>()
+    for (const [id, d] of Object.entries(resolved.dropdowns)) {
+      found.set(id, { id, title: d.title ?? prettyDirName(id), description: d.description, values: [...(d.values ?? [])] })
+    }
+    for (const p of pages.values()) {
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
+      for (const [id, d] of Object.entries(p.frontmatter.dropdown ?? {})) {
+        const entry = found.get(id) ?? { id, title: prettyDirName(id), values: [] }
+        if (d.title && !resolved.dropdowns[id]?.title) entry.title = d.title
+        if (d.description && !resolved.dropdowns[id]?.description) entry.description = d.description
+        for (const value of d.value ?? []) if (!entry.values.includes(value)) entry.values.push(value)
+        found.set(id, entry)
+      }
+    }
+    return [...found.values()].filter((d) => d.values.length)
+  }
+
       .join('\n')
   }
 
@@ -3281,7 +3318,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (p.pageCss) styles[p.effectivePath] = [styles[p.effectivePath], p.pageCss].filter(Boolean).join('\n')
     }
 
-    return { pages: pageMap, byPath, sidebar: buildSidebar(), styles, tags: buildTagIndex(), glossary: glossaryTerms }
+    return { pages: pageMap, byPath, sidebar: buildSidebar(), dropdowns: buildDropdowns(), styles, tags: buildTagIndex(), glossary: glossaryTerms }
   }
 
   function buildSearch(gatedOnly = false, only?: ProcessedPage[]): SearchEntry[] {

@@ -3,18 +3,22 @@
   import { configStore } from '../framework/configStore'
   import { resolvedRoute } from 'sly-svelte-location-router'
   import { sidebarState, setGroupOpen } from '../framework/stores/sidebar'
+  import { dropdownSelection, filterSidebar } from '../framework/stores/dropdown'
+  import StockDropdownMenu from './DropdownMenu.svelte'
   import { withoutBase } from '../framework/configStore'
   import StockSidebarNode from './SidebarNode.svelte'
   import type { SidebarNode as SidebarNodeType } from '../types'
   import { themed } from '../framework/components'
 
   const SidebarNode = themed('SidebarNode', StockSidebarNode)
+  const DropdownMenu = themed('DropdownMenu', StockDropdownMenu)
 
   let { collapsed = false }: { collapsed?: boolean } = $props()
 
   let nav: HTMLElement
 
-  const sidebar = $derived($configStore.manifest?.sidebar ?? [])
+  const sidebar = $derived(filterSidebar($configStore.manifest?.sidebar ?? [], $dropdownSelection))
+  const dropdowns = $derived($configStore.manifest?.dropdowns ?? [])
   const routePath = $derived(withoutBase($resolvedRoute?.path ?? '/'))
 
   function findChain(
@@ -63,11 +67,30 @@
   {#each sidebar as node, i (node.link ?? node.slug ?? `root-${i}`)}
     <SidebarNode {node} depth={0} groupKey={node.link ?? node.slug ?? `root-${i}`} />
   {/each}
+  {#if dropdowns.length}
+    <div class="np-sidebar-foot">
+      <DropdownMenu placement="up" />
+    </div>
+  {/if}
 </nav>
 
 <style>
   .np-sidebar {
     padding: 24px 16px;
     font-size: 14px;
+  }
+  .np-sidebar-foot {
+    display: none;
+  }
+  @media (max-width: 1024px) {
+    .np-sidebar-foot {
+      position: sticky;
+      bottom: -24px;
+      display: flex;
+      margin: 24px -16px -24px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--np-border);
+      background-color: var(--np-bg);
+    }
   }
 </style>

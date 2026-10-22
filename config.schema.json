@@ -628,6 +628,42 @@
           }
         }
       }
+    },
+    "dropdowns": {
+      "description": "Sidebar filters a reader picks from the header, a dropdown id to its title, description, and value order. Pages join one through the dropdown frontmatter block.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Label on the trigger and above the choices."
+          },
+          "description": {
+            "type": "string",
+            "description": "Line under the title in the open panel."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Value order in the panel; values pages declare beyond it follow in the order they appear."
+          }
+        },
+        "additionalProperties": false
+      },
+      "examples": [
+        {
+          "language": {
+            "title": "Language",
+            "values": [
+              "Vue",
+              "Svelte"
+            ]
+          }
+        }
+      ]
     }
   }
 }

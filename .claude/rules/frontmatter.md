@@ -18,6 +18,8 @@ Every markdown page declares YAML frontmatter at the top. Parsed with `gray-matt
 
 3.1.1. `link: <absolute url>` turns the file into a sidebar entry that opens that url in a new tab instead of routing to a page. The file carries frontmatter and no body, produces no route, no search entry, and nothing in the build, and takes its sidebar position from where the file sits. `title` or `slug` is the label, `order` places it, `sidebar.icon` and `sidebar.style` decorate it. A relative value, or a body, is a lint error. `redirect` remains the internal counterpart.
 
+3.1.2. `dropdown` puts the page in sidebar filters: a dropdown id to `value`, the list of choices the page shows under, plus optional `title` and `description` naming the dropdown, which the `dropdowns` config block overrides. A page without a value shows under every choice. A folder of pages each named after its single value, `Button/Vue/` and `Button/Svelte/`, folds into one row when the selection leaves one. The menu sits in the header and moves to the sidebar footer at 1024 pixels and below.
+
 3.2. `sidebar.icon` accepts literal text or ascii art rendered verbatim in the mono font, inline `<svg>` markup rendered as markup, or a path ending in `.svg` resolved against the declaring file, or against `contentDir` when it starts with `/`, read at build time and inlined. An unreadable path warns and drops the icon. The sidebar renders icons only from `sidebar` blocks and story definitions.
 
 4. `description` gets used as a meta description and a search excerpt. Add it for any page expected to land via search.

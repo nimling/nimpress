@@ -44,7 +44,7 @@ A stylesheet theme in the list scopes its rules to its own name, `html[data-np-t
 
 `components` maps a component name to a Svelte file that renders in its place everywhere nimpress would render the stock one. The replaceable components are:
 
-1. Shell: `Header`, `Announce`, `Footer`, `Sidebar`, `SidebarNode`, `Breadcrumbs`, `RightToc`, `BackToTop`, `SearchModal`, `AccountMenu`, `ThemeMenu`.
+1. Shell: `Header`, `Announce`, `Footer`, `Sidebar`, `SidebarNode`, `Breadcrumbs`, `RightToc`, `BackToTop`, `SearchModal`, `AccountMenu`, `ThemeMenu`, `DropdownMenu`.
 
 2. Markdown blocks: `CodeBlock`, `CodeGroup`, `Tabs`, `Actions`, `Feature`, `Card`, `CardGroup`, `Lightbox`, `MermaidBlock`, `MathBlock`, `DBMLBlock`, `ComponentEmbed`.
 

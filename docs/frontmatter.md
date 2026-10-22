@@ -25,6 +25,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `order` | number | Sort position inside the parent sidebar group |
 | `icon` | string | Icon field for custom renderers; the sidebar renders `sidebar.icon` |
 | `sidebar` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL. `icon` takes literal text or ascii art, inline `<svg>` markup, or a `.svg` path inlined at build time |
+| `dropdown` | object | Sidebar filters the page belongs to: a dropdown id to `value`, the list of choices the page shows under, plus optional `title` and `description` for the dropdown. A page without a value shows under every choice, see below |
 | `visibility` | `visible` \| `hidden` \| `dev-only` | `hidden` removes the page from sidebar, search, and the build entirely. `dev-only` shows it in `nimpress dev` but excludes it from the built bundle. Defaults to `visible` |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |
@@ -97,6 +98,18 @@ sidebar:
   name: Inputs
   icon: "▤"
   style: "color: var(--np-brand)"
+```
+
+## `dropdown`
+
+A `dropdown` block puts the page in one or more sidebar filters. Each key is a dropdown id. `value` lists the choices the page shows under. `title` and `description` name the dropdown, and the `dropdowns` config block can name it too, in which case the config wins. A page with no `value` for a dropdown shows under every choice. See [sidebar.md](/sidebar).
+
+```yaml
+dropdown:
+  language:
+    title: Language
+    description: The framework a component is written in
+    value: [Vue]
 ```
 
 ## `link`

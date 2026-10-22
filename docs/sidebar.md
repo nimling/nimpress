@@ -56,6 +56,18 @@ sidebar:
 
 The entry opens in a new tab with `rel="noreferrer"`, carries an outbound glyph, and never highlights as active. `title` or `slug` is the label, `order` places it among its siblings, and `sidebar.icon` and `sidebar.style` decorate it. Put the file at the content root for a top level entry, or inside a folder to place it in that group. On a folder `index.md` the whole group header becomes the outbound link while its children stay internal.
 
+## Dropdown filters
+
+A page joins a sidebar filter through the `dropdown` frontmatter block. Every dropdown id the site declares renders as a menu: in the header on wide screens, and in the sidebar footer, opening upward, at 1024 pixels and below. `All` is the default. Picking a value hides every page whose `value` list for that dropdown leaves it out. Pages that declare no value for the dropdown stay, groups left empty disappear, and the choice is remembered. The `dropdowns` config block sets a dropdown's `title`, `description` and value order. Values a page declares beyond that list follow in the order they first appear.
+
+```ts
+dropdowns: {
+  language: { title: 'Language', description: 'The framework a component is written in', values: ['Vue', 'Svelte'] }
+}
+```
+
+A folder holding one page per value, named after that value, is a variant folder: `Button/Vue/index.md` with `value: [Vue]` and `Button/Svelte/index.md` with `value: [Svelte]`. Under `All` the folder row lists both. When the selection leaves one, the folder folds into that page, which takes the folder's label. A component with a single variant sits directly in its group, with no variant folder.
+
 ## Icon formats
 
 The sidebar renders icons only from `sidebar` blocks and story definitions. `sidebar.icon` accepts three forms:
