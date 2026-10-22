@@ -3229,7 +3229,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       if (children.length && children.every((child) => child.page && Object.values(pageDropdownValues(child.page) ?? {}).some((values) => values.some((value) => value.toLowerCase() === child.segment.toLowerCase())))) {
         node.variants = true
         const rank = (it: SidebarNode) => Math.min(...Object.entries(it.dropdown ?? {}).map(([id, values]) => dropdownOrder.get(`${id}:${values[0]}`) ?? Number.MAX_SAFE_INTEGER))
-        items.sort((a, b) => rank(a) - rank(b))
+        for (const it of items) it.order ??= rank(it)
+        sortNodes(items)
       }
       if (items.length) {
         node.items = items
@@ -3237,7 +3238,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
         for (const it of items) {
           if (it.order !== undefined && it.order < minOrder) minOrder = it.order
         }
-        if (minOrder !== Number.MAX_SAFE_INTEGER) node.order = minOrder
+        if (minOrder !== Number.MAX_SAFE_INTEGER && !node.variants) node.order = minOrder
       }
       if (node.items?.some((it) => it.collapsed === false)) {
         node.collapsed = false
