@@ -30,7 +30,7 @@ The receiver is thin. The `docs-sync` action owns the mirror, the version bump, 
 
 4. When the dispatch mode is `export`, runs `docs-export@v2` against the checked out source first and hands its output to `docs-sync` as `source-path`.
 
-5. When the source mapping names a `package`, installs it at the version of the dispatched tag, the `ref` without its leading `v` or the `version` input of a manual run, and passes `include: package.json pnpm-lock.yaml` so the deploy builds against that release. The source then notifies from a workflow that runs after its publish workflow, never in parallel with it.
+5. When the source mapping names a `package`, installs it at the version of the dispatched tag, the `ref` without its leading `v` or the `version` input of a manual run, and passes `include: package.json pnpm-lock.yaml` so the deploy builds against that release. The receiver waits for the registry to serve that version before it installs it, so the source keeps the standard consumer workflow on its version tag.
 
 ## Configuration
 

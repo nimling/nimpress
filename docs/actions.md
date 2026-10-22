@@ -78,8 +78,6 @@ Exported paths keep their place under the source content root, so a folder expor
 | `event-type` | no | Dispatch type, defaults to `nimpress-docs-sync` |
 | `content-dir` | no | Content root scanned for export marked pages when the export folder is absent, defaults to `docs` |
 | `export-dir` | no | Folder holding the pages to publish, relative to the repo root, defaults to `.nimpress` |
-| `ref` | no | The tag the dispatch names, defaults to the ref that ran the workflow; set it from a workflow started by another one |
-| `sha` | no | The commit the docs site checks out, defaults to the commit that ran the workflow |
 
 `docs-export` runs in the docs site repo before `docs-sync` when the dispatch mode is `export`, against the checked out source repo.
 
@@ -127,13 +125,18 @@ The version comes from the `ref` of the dispatch, the source tag with its leadin
         shell: bash
         run: |
           pkg=$(jq -r --arg repo "${{ steps.vars.outputs.repo }}" '.sources[$repo].package // empty' nimpress.sources.json)
-          if [ -n "$pkg" ] && [ -n "${{ steps.vars.outputs.version }}" ]; then
-            pnpm add "$pkg@${{ steps.vars.outputs.version }}"
+          version="${{ steps.vars.outputs.version }}"
+          if [ -n "$pkg" ] && [ -n "$version" ]; then
+            for attempt in $(seq 1 30); do
+              [ "$(pnpm view "$pkg@$version" version 2>/dev/null)" = "$version" ] && break
+              sleep 20
+            done
+            pnpm add "$pkg@$version"
             echo "include=package.json pnpm-lock.yaml" >> "$GITHUB_OUTPUT"
           fi
 ```
 
-and hands `include: ${{ steps.pin.outputs.include }}` to `docs-sync`. The tag must name a version the registry already serves, so a source that publishes on the same tag notifies from a workflow that runs after its publish one, `on: workflow_run`, passing `ref: ${{ github.event.workflow_run.head_branch }}` and `sha: ${{ github.event.workflow_run.head_sha }}` to `docs-notify`.
+and hands `include: ${{ steps.pin.outputs.include }}` to `docs-sync`. The source keeps the standard consumer workflow on its version tag, so its notify runs beside its own publish: the receiver waits up to ten minutes for the registry to serve the tagged version before it installs it, and fails the sync when it never does.
 
 ## Configuration in two places
 
