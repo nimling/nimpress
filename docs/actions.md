@@ -78,6 +78,8 @@ Exported paths keep their place under the source content root, so a folder expor
 | `event-type` | no | Dispatch type, defaults to `nimpress-docs-sync` |
 | `content-dir` | no | Content root scanned for export marked pages when the export folder is absent, defaults to `docs` |
 | `export-dir` | no | Folder holding the pages to publish, relative to the repo root, defaults to `.nimpress` |
+| `ref` | no | The tag the dispatch names, defaults to the ref that ran the workflow; set it from a workflow started by another one |
+| `sha` | no | The commit the docs site checks out, defaults to the commit that ran the workflow |
 
 `docs-export` runs in the docs site repo before `docs-sync` when the dispatch mode is `export`, against the checked out source repo.
 
@@ -102,8 +104,36 @@ Its `count` output is the number of exported pages.
 | `content-root` | yes | Path to the docs content root the targets resolve under |
 | `mapping` | no | Path to `nimpress.sources.json` |
 | `defaults` | no | A json config object applied under each source |
+| `include` | no | Paths in the docs repo, space separated, that the receiver changed for this sync, committed with it and counted as a change, such as `package.json pnpm-lock.yaml` |
 
 Its `result` output is `pushed`, `pr`, or `none`.
+
+## Pinning the source package
+
+A source that publishes a package the docs site renders, a component library whose pages run in package mode, names it in its mapping with `package`. The receiver installs that package at the version of the source tag before it syncs, and `docs-sync` commits the manifest and the lockfile with the pages through `include`, so the deploy the sync tags builds against exactly the released version.
+
+```json
+"nimling/components-nimtech": {
+  "package": "@nimling/components-nimtech",
+  "targets": [{ "from": "components", "to": "components", "mode": "mirror" }]
+}
+```
+
+The version comes from the `ref` of the dispatch, the source tag with its leading `v` dropped, and a manual run of the receiver takes it as a `version` input:
+
+```yaml
+      - name: Pin the source package
+        id: pin
+        shell: bash
+        run: |
+          pkg=$(jq -r --arg repo "${{ steps.vars.outputs.repo }}" '.sources[$repo].package // empty' nimpress.sources.json)
+          if [ -n "$pkg" ] && [ -n "${{ steps.vars.outputs.version }}" ]; then
+            pnpm add "$pkg@${{ steps.vars.outputs.version }}"
+            echo "include=package.json pnpm-lock.yaml" >> "$GITHUB_OUTPUT"
+          fi
+```
+
+and hands `include: ${{ steps.pin.outputs.include }}` to `docs-sync`. The tag must name a version the registry already serves, so a source that publishes on the same tag notifies from a workflow that runs after its publish one, `on: workflow_run`, passing `ref: ${{ github.event.workflow_run.head_branch }}` and `sha: ${{ github.event.workflow_run.head_sha }}` to `docs-notify`.
 
 ## Configuration in two places
 

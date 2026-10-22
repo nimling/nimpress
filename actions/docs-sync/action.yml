@@ -27,6 +27,10 @@ inputs:
     description: A json config object applied under each source, optional
     required: false
     default: ""
+  include:
+    description: Paths in the docs repo, relative and space separated, that the receiver changed for this sync and that commit with it, such as package.json pnpm-lock.yaml
+    required: false
+    default: ""
 outputs:
   result:
     description: The outcome, one of pushed, pr, or none
@@ -49,4 +53,5 @@ runs:
         NIMPRESS_CONTENT_ROOT: ${{ inputs.content-root }}
         NIMPRESS_MAPPING: ${{ inputs.mapping }}
         NIMPRESS_DEFAULTS: ${{ inputs.defaults }}
+        NIMPRESS_INCLUDE: ${{ inputs.include }}
       run: go run .

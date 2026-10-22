@@ -26,7 +26,11 @@ The receiver is thin. The `docs-sync` action owns the mirror, the version bump, 
 
 2. Mints an organization App token before checkout, then checks out the docs with that token and `fetch-depth: 0`, and checks out the source at the dispatched sha with the same token.
 
-3. Runs `docs-sync@v2` with `token`, `docs-repo`, `docs-dir`, `source-repo`, `source-path`, `content-root`, and optionally `mapping` and `defaults`. Nothing else.
+3. Runs `docs-sync@v2` with `token`, `docs-repo`, `docs-dir`, `source-repo`, `source-path`, `content-root`, and optionally `mapping`, `defaults` and `include`. Nothing else.
+
+4. When the dispatch mode is `export`, runs `docs-export@v2` against the checked out source first and hands its output to `docs-sync` as `source-path`.
+
+5. When the source mapping names a `package`, installs it at the version of the dispatched tag, the `ref` without its leading `v` or the `version` input of a manual run, and passes `include: package.json pnpm-lock.yaml` so the deploy builds against that release. The source then notifies from a workflow that runs after its publish workflow, never in parallel with it.
 
 ## Configuration
 

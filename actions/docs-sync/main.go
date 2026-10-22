@@ -18,6 +18,7 @@ func main() {
 	contentRoot := os.Getenv("NIMPRESS_CONTENT_ROOT")
 	mappingPath := os.Getenv("NIMPRESS_MAPPING")
 	defaultsRaw := os.Getenv("NIMPRESS_DEFAULTS")
+	include := strings.Fields(os.Getenv("NIMPRESS_INCLUDE"))
 
 	for k, v := range map[string]string{
 		"NIMPRESS_TOKEN": token, "NIMPRESS_DOCS_REPO": docsRepo, "NIMPRESS_DOCS_DIR": docsDir,
@@ -66,6 +67,20 @@ func main() {
 		deleted = append(deleted, res.Deleted...)
 		tos = append(tos, t.To)
 		paths = append(paths, dest)
+	}
+	if len(include) > 0 {
+		var extra []string
+		for _, rel := range include {
+			extra = append(extra, filepath.Join(docsDir, filepath.FromSlash(rel)))
+		}
+		changed, err := (docssync.Git{Dir: docsDir}).Changed(extra)
+		if err != nil {
+			fail("include: " + err.Error())
+		}
+		if changed {
+			modified = append(modified, include...)
+			paths = append(paths, extra...)
+		}
 	}
 	if len(added)+len(modified)+len(deleted) == 0 {
 		fmt.Printf("no change for %s, nothing to publish\n", sourceRepo)

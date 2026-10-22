@@ -41,6 +41,11 @@ func (g Git) Commit(message string, paths []string) error {
 	return err
 }
 
+func (g Git) Changed(paths []string) (bool, error) {
+	out, err := g.run(append([]string{"status", "--porcelain", "--"}, paths...)...)
+	return strings.TrimSpace(out) != "", err
+}
+
 func (g Git) PushBranch(branch string) error {
 	_, err := g.run("push", g.remote(), "HEAD:refs/heads/"+branch)
 	return err

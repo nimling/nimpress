@@ -19,6 +19,14 @@ inputs:
     description: Folder holding the pages to publish, relative to the repo root
     required: false
     default: .nimpress
+  ref:
+    description: The tag or ref the dispatch names, defaults to the ref that ran the workflow, for a workflow started by another one
+    required: false
+    default: ""
+  sha:
+    description: The commit the docs site checks out, defaults to the commit that ran the workflow
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -34,7 +42,7 @@ runs:
         NIMPRESS_CONTENT_DIR: ${{ inputs.content-dir }}
         NIMPRESS_EXPORT_DIR: ${{ inputs.export-dir }}
         NIMPRESS_SOURCE_REPO: ${{ github.repository }}
-        NIMPRESS_SHA: ${{ github.sha }}
-        NIMPRESS_REF: ${{ github.ref_name }}
+        NIMPRESS_SHA: ${{ inputs.sha || github.sha }}
+        NIMPRESS_REF: ${{ inputs.ref || github.ref_name }}
         NIMPRESS_WORKSPACE: ${{ github.workspace }}
       run: go run .
