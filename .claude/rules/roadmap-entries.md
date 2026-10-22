@@ -71,7 +71,7 @@ data:
 
 4. `data.date` is required. An RFC 3339 date or full timestamp. Drives the chronological position on the spine and the sidebar order (oldest at top).
 
-5. `data.parent` is optional. The filename (with or without `.md`) of another issue in the same roadmap. The renderer pairs the child next to its parent on the timeline. The sidebar nests the child under the parent.
+5. `data.parent` is optional. The filename (with or without `.md`) of another issue in the same roadmap. The renderer pairs the child next to its parent on the timeline. The sidebar nests the child under the parent. Across folders the path is relative, `../platform/expanded-testing`, and the sidebar nests only when both sit in the same folder.
 
 ## Changelog linkage
 
@@ -135,9 +135,11 @@ data:
 
 3. Children with `data.parent` nest under the parent issue in the sidebar.
 
-4. Each issue page has its own URL and renders through the standard page chrome with a kind chip and date header.
+4. Issues in a subfolder of the roadmap, or in a folder pulled in through `data.issues`, group under that folder in the sidebar, labelled by its `index.md` title or the folder name in Title Case. The folder is not rendered a second time in the regular tree.
 
-5. Each row carries an icon for its kind: a flag for milestone, a box for epic, a sparkle for feature, an alert for bug. The icons live in `issueKindIcon` in `src/plugin.ts` and are not authored per page.
+5. Each issue page has its own URL and renders through the standard page chrome with a kind chip and date header.
+
+6. Each row carries an icon for its kind: a flag for milestone, a box for epic, a sparkle for feature, an alert for bug. The icons live in `issueKindIcon` in `src/plugin.ts` and are not authored per page.
 
 ## Right TOC
 

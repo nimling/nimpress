@@ -165,7 +165,7 @@ A warm neutral ramp carried by one terracotta brand; glass replaces it with a ne
 - **Hairlines** (`border`, `border-strong`, `divider`): stock solid greys. Glass replaces them with ink alpha lines (`glass-border` 12%, 22% strong, 8% divider; white at 0.1, 0.2 and 0.07 in dark).
 - **Night Code** (`code-night`, `glass-code`): code blocks stay dark in both modes. Glass tints the block 7% toward the brand.
 - **Glass surfaces** (`glass-ground`, `glass-cover`, `glass-slip`): see Elevation & Depth.
-- **Edge and Rim** (`glass-edge`, `glass-rim`): the bright 1px top highlight and the dark 1px outline every glass surface carries. Dark flips them to `rgb(255 255 255 / 0.14)` and `rgb(255 255 255 / 0.09)`. Ground, cover, slip, the active row and the header pill also carry `glass-sheen`, a 160 degree white gradient bright at the top left corner.
+- **Edge and Rim** (`glass-edge`, `glass-rim`): the bright 1px top highlight and the dark 1px outline every glass surface carries. Dark flips them to `rgb(255 255 255 / 0.14)` and `rgb(255 255 255 / 0.09)`. Ground, cover, slip, and the active row also carry `glass-sheen`, a 160 degree white gradient bright at the top left corner.
 
 Callout, method and status hues (`--np-tip`, `--np-note`, `--np-warning`, `--np-method-get` and the rest) are semantic and shared by both themes.
 
@@ -217,7 +217,9 @@ Stock is flat: hairline borders carry structure and shadows are near invisible (
 
 The three glasses:
 - **Ground** (`glass-ground`, `blur(24px) saturate(180%)`, grain): the chrome. Header, sidebar, rail, back to top.
-- **Cover** (`glass-cover`, same frost): the most opaque glass, for what must read over anything. Active row, header pill, search modal, tooltip, announcement, `kbd`, the mobile drawer.
+- **Cover** (`glass-cover`, same frost): the most opaque glass, for what must read over anything. Active row, search modal, tooltip, announcement, `kbd`, the mobile drawer.
+- **Pill**: the header lead at rest is plain ground glass, `glass-ground` with the full frost and a `glass-rim` hairline, no sheen, edge or shadow.
+- **Chip** (`--np-glass-chip`, `--np-glass-chip-ink`, `--np-glass-chip-rim`): issue kind chips, frosted with the light frost. Light is white at 0.55 with `glass-ink-brand` text and a 35% brand rim; dark mixes the brand 22% into white at 0.06 with a 50% brand rim. A site overrides the three tokens; a bug chip keeps the danger hue.
 - **Slip** (`glass-slip`, `blur(14px) saturate(160%)`): lighter glass lying on the field. Cards, feature cards, callouts.
 
 Grain is an SVG fractal noise tile, 160px, at 0.05 alpha in light and 0.04 in dark, on ground glass only.
@@ -231,7 +233,7 @@ Grain is an SVG fractal noise tile, 160px, at 0.05 alpha in light and 0.04 in da
 ### Named Rules
 **The Three Glasses Rule.** A glass surface is ground, cover or slip, set from its token. Never invent a fourth opacity or blur.
 
-**The Lit Edge Rule.** Glass state lives in the edge. The active row is cover glass mixed 10% toward the brand with the sheen, a 1px `glass-edge` top line and a 1px `glass-rim` ring, over a `0 6px 16px -10px` brand shadow at 45%. Never a brand coloured ring.
+**The Lit Edge Rule.** Glass state lives in the edge. The active row is cover glass mixed 10% toward the brand with a 1px `glass-rim` ring and no top line, over a `0 6px 16px -10px` brand shadow at 45%. Never a brand coloured ring.
 
 **The Solid Fallback Rule.** Under `prefers-reduced-transparency: reduce` or `prefers-contrast: more`, every glass token turns solid, every frost turns `none`, and the header stops animating.
 
