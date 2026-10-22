@@ -14,7 +14,7 @@ nimpress export --target=central
 nimpress export --target=central --out=.nimpress
 ```
 
-Every page carrying `export: <target>`, or `export: true` for every target, is copied together with the whole folder it sits in into `paths.export`, `.nimpress` by default. Component pages are rewritten to package mode: the `export:` header and the `file:` override drop, and the package version from the repo `package.json` stamps in. See [Publishing a repo's docs to the central site](/actions) for the pipeline around it.
+Every page carrying `export: <target>`, or `export: true` for every target, is copied together with the whole folder it sits in into `paths.export`, `.nimpress` by default. Component pages are rewritten to package mode: the `export:` header and the `file:` override drop, and the package version from the repo `package.json` stamps in. `export` on a folder `index.md` exports the whole folder, every page and file beneath it, and the object form `export: { target, gate }` writes `gate` into the exported copies only. See [Publishing a repo's docs to the central site](/actions) for the pipeline around it.
 
 ## Options
 

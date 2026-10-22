@@ -26,6 +26,7 @@ nimpress supports the inclusion of metadata in the frontmatter of a markdown fil
 | `icon` | string | Icon field for custom renderers; the sidebar renders `sidebar.icon` |
 | `sidebar` | object | Sidebar group definition: required `name`, optional `icon`, `style`, and `path`, groups the page without changing its URL. `icon` takes literal text or ascii art, inline `<svg>` markup, or a `.svg` path inlined at build time |
 | `dropdown` | object | Sidebar filters the page belongs to: a dropdown id to `value`, the list of choices the page shows under, plus optional `title` and `description` for the dropdown. A page without a value shows under every choice, see below |
+| `export` | string \| boolean \| object | Publishes the page to another site through the docs sync pipeline: a target name, `true` for every target, or `{ target, gate }` with a gate written into the exported copy only. On a folder `index.md` it publishes the whole folder, see [Publishing](/actions) |
 | `visibility` | `visible` \| `hidden` \| `dev-only` | `hidden` removes the page from sidebar, search, and the build entirely. `dev-only` shows it in `nimpress dev` but excludes it from the built bundle. Defaults to `visible` |
 | `collapsed` | boolean | Starts the sidebar group collapsed |
 | `lastUpdated` | boolean | Show the last updated stamp in the page footer area |

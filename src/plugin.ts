@@ -167,6 +167,7 @@ const frontmatterSchema = z.object({
     description: z.string().optional(),
     value: z.array(z.string()).optional()
   })).optional(),
+  export: z.union([z.string(), z.boolean(), z.object({ target: z.string().optional(), gate: z.string().optional() })]).optional(),
   visibility: z.enum(['visible', 'hidden', 'dev-only']).optional(),
   collapsed: z.boolean().optional(),
   lastUpdated: z.boolean().optional(),

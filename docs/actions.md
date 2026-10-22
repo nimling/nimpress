@@ -13,6 +13,48 @@ A repo keeps its documentation next to its code in an export folder, `.nimpress`
 
 A nimpress repo needs no export folder. Any page whose frontmatter carries `export: <target>` is published, `export: true` matches every target. The `docs-export` action, or `nimpress export` locally, collects each marked page's folder, the page, its stories, its `schema.json`, into an output tree, dropping the `export:` and `data.file` lines and stamping `data.version` from the source package version so component pages land in package mode. That output tree is what `docs-sync` mirrors, so the rest of the flow is identical to the export folder path.
 
+`export` on a folder's `index.md`, the page behind that folder's sidebar entry, exports the whole folder: every page beneath it, and every file beside those pages, such as a shared `harness.vue` or a harness setup module. A page beneath it that sets `export: false` stays home with its subfolders. `docs/index.md` with `export` publishes every page the repo has; settings such as `nimpress.config.ts` live outside the content root and never go.
+
+The header also takes an object, which names the target and the gate the pages carry on the receiving site:
+
+```yaml
+export:
+  target: samna
+  gate: components
+```
+
+The gate is written into the exported copy only. The repo's own site keeps building the page ungated, and the receiving site builds it into a guarded bundle like any page with a `gate`. A page that sets its own `gate` keeps it.
+
+### The consumer workflow of a nimpress repo
+
+A nimpress repo has no export folder, so the change guard reads the content root instead: `CONTENT_DIR: docs` beside the job, `git diff --name-only "$prev" "${GITHUB_REF_NAME}" -- "$CONTENT_DIR"` in the guard, and `content-dir: ${{ env.CONTENT_DIR }}` on `docs-notify` in place of `export-dir`. `docs-notify` finds no `.nimpress` folder, finds the marked pages, and dispatches `mode: export`.
+
+### The receiver for marked pages
+
+The receiver branches on the dispatched mode: for `export` it runs `docs-export` against the checked out source and hands its output to `docs-sync`, for `nimpress` it hands the source's export folder over as before.
+
+```yaml
+      - name: Export marked pages
+        if: github.event.client_payload.mode == 'export'
+        uses: nimling/nimpress/actions/docs-export@v2
+        with:
+          source-dir: ${{ github.workspace }}/.incoming
+          out: ${{ github.workspace }}/.exported
+
+      - name: Sync
+        uses: nimling/nimpress/actions/docs-sync@v2
+        with:
+          token: ${{ steps.app.outputs.token }}
+          docs-repo: ${{ github.repository }}
+          docs-dir: ${{ github.workspace }}
+          source-repo: ${{ steps.vars.outputs.repo }}
+          source-path: ${{ github.workspace }}/${{ github.event.client_payload.mode == 'export' && '.exported' || format('.incoming/{0}', github.event.client_payload.export_dir || '.nimpress') }}
+          content-root: ${{ github.workspace }}/docs
+          mapping: ${{ github.workspace }}/nimpress.sources.json
+```
+
+Exported paths keep their place under the source content root, so a folder exported from `docs/components/` arrives as `components/` in the tree `docs-sync` reads; map it with `targets: [{ "from": "components", "to": "components" }]`.
+
 ## How the flow runs
 
 1. A repo pushes a version tag such as `v1.4.0`.

@@ -201,6 +201,7 @@ export interface Frontmatter {
   icon?: string
   sidebar?: { name: string; icon?: string; style?: string; path?: string }
   dropdown?: Record<string, PageDropdown>
+  export?: string | boolean | { target?: string; gate?: string }
   visibility?: 'visible' | 'hidden' | 'dev-only'
   lastUpdated?: boolean
   redirect?: string

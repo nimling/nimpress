@@ -45,6 +45,39 @@ data:
     runExport(repo.cwd, resolvedConfig(), ['--target=central'])
     expect(existsSync(join(repo.cwd, '.nimpress', 'a'))).toBe(false)
   })
+
+  it('exports a whole folder from its index and stamps the gate on the copies only', () => {
+    repo = makeRepo()
+    file(repo.cwd, 'package.json', '{"version":"0.3.0"}\n')
+    file(repo.cwd, 'docs/index.md', '---\ntitle: Home\n---\n')
+    file(repo.cwd, 'docs/components/index.md', '---\ntitle: Components\nexport:\n  target: samna\n  gate: components\ncollapsed: true\n---\n')
+    file(repo.cwd, 'docs/components/harness-setup.ts', 'export default {}\n')
+    file(repo.cwd, 'docs/components/Modals/index.md', '---\nsidebar:\n  name: Modals\n---\n')
+    file(repo.cwd, 'docs/components/Modals/harness.vue', '<template />\n')
+    file(repo.cwd, 'docs/components/Modals/MarDialog/index.md', '---\ntitle: MarDialog\ntype: component\ndata:\n  package: "@nimling/components-nimtech"\n---\n')
+    file(repo.cwd, 'docs/components/Modals/MarDialog/default.story.ts', "import Harness from '../harness.vue'\n")
+    file(repo.cwd, 'docs/components/Draft/index.md', '---\ntitle: Draft\nexport: false\n---\n')
+    file(repo.cwd, 'docs/components/Draft/Inner/index.md', '---\ntitle: Inner\n---\n')
+    file(repo.cwd, 'docs/components/Open/index.md', '---\ntitle: Open\ngate: internal\n---\n')
+    runExport(repo.cwd, resolvedConfig(), ['--target=samna'])
+    const out = join(repo.cwd, '.nimpress')
+    const root = readFileSync(join(out, 'components/index.md'), 'utf-8')
+    expect(root).not.toContain('export')
+    expect(root).not.toContain('target:')
+    expect(root).toContain('gate: components')
+    expect(root).toContain('collapsed: true')
+    const page = readFileSync(join(out, 'components/Modals/MarDialog/index.md'), 'utf-8')
+    expect(page).toContain('gate: components')
+    expect(page).toContain('version: "0.3.0"')
+    expect(readFileSync(join(out, 'components/Open/index.md'), 'utf-8')).toContain('gate: internal')
+    for (const rel of ['components/harness-setup.ts', 'components/Modals/harness.vue', 'components/Modals/MarDialog/default.story.ts']) {
+      expect(existsSync(join(out, rel))).toBe(true)
+    }
+    for (const rel of ['index.md', 'components/Draft']) {
+      expect(existsSync(join(out, rel))).toBe(false)
+    }
+    expect(readFileSync(join(repo.cwd, 'docs/components/Modals/MarDialog/index.md'), 'utf-8')).not.toContain('gate:')
+  })
 })
 
 describe('rewriteExportedPage', () => {
