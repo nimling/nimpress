@@ -62,6 +62,8 @@ title: How sessions work
 
 10. ` ```dbml ` blocks render an interactive entity relationship diagram. Reach for it over a mermaid `erDiagram` whenever the subject is a real database schema. See `dbml-pages.md`.
 
+11. ` ```d2 ` blocks and a line holding only `![Title](./file.d2)` render a D2 diagram, laid out at build time. Reach for D2 over mermaid for architecture diagrams with nested containers. Keep a large diagram in its own `.d2` file beside the page.
+
 ## Linking
 
 1. Relative links within the same section, absolute links across sections.

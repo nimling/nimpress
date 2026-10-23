@@ -26,6 +26,17 @@ test('the mermaid example renders a diagram', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('the d2 example draws fenced and linked diagrams', async ({ page }) => {
+  const errors = await open(page, 'examples/d2')
+  const diagrams = page.locator('.np-d2-stage svg.np-d2-svg')
+  await expect(diagrams).toHaveCount(4)
+  await expect(diagrams.first().locator('.np-d2-shape')).toHaveCount(4)
+  await expect(diagrams.nth(2).locator('.np-d2-row-name', { hasText: 'user_id' })).toBeVisible()
+  await expect(page.locator('.np-d2-viewport[aria-label="Platform overview"]')).toBeVisible()
+  await expect(page.locator('.np-diagram-error')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
 test('the schema viewer mounts the diagram behind its shield', async ({ page }) => {
   const errors = await open(page, 'examples/schema-viewer')
   await expect(page.locator('.np-dbml-host').first()).toBeVisible({ timeout: 15_000 })

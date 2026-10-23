@@ -9,6 +9,7 @@
   import RoadmapNode from './RoadmapNode.svelte'
   import PlanetFooter from './PlanetFooter.svelte'
   import StockMermaidBlock from './MermaidBlock.svelte'
+  import StockD2Block from './D2Block.svelte'
   import StockMathBlock from './MathBlock.svelte'
   import StockDBMLBlock from './DBMLBlock.svelte'
   import StockCodeBlock from './CodeBlock.svelte'
@@ -17,6 +18,7 @@
   import { themed } from '../framework/components'
 
   const MermaidBlock = themed('MermaidBlock', StockMermaidBlock)
+  const D2Block = themed('D2Block', StockD2Block)
   const MathBlock = themed('MathBlock', StockMathBlock)
   const DBMLBlock = themed('DBMLBlock', StockDBMLBlock)
   const BackToTop = themed('BackToTop', StockBackToTop)
@@ -1613,6 +1615,18 @@
       const host = document.createElement('div')
       el.replaceWith(host)
       const instance = mount(MermaidBlock, { target: host, props: { source: graph } })
+      mounts.push({ destroy: () => unmount(instance) })
+    }
+
+    for (const el of Array.from(container.querySelectorAll<HTMLDivElement>('.np-d2'))) {
+      const host = document.createElement('div')
+      const props = {
+        diagram: decodeURIComponent(escape(atob(el.dataset.diagram ?? ''))),
+        error: el.dataset.error ?? '',
+        label: el.dataset.label ?? ''
+      }
+      el.replaceWith(host)
+      const instance = mount(D2Block, { target: host, props })
       mounts.push({ destroy: () => unmount(instance) })
     }
     for (const el of Array.from(container.querySelectorAll<HTMLDivElement>('.np-dbml[data-schema]'))) {

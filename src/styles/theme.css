@@ -55,6 +55,16 @@
  *   Mermaid host (rehydrated client-side)
  *     .np-mermaid
  *
+ *   D2 host (laid out at build time, drawn client-side)
+ *     .np-d2
+ *
+ *   Diagram frame shared by mermaid and d2
+ *     .np-diagram-wrapper
+ *     .np-diagram-viewport
+ *     .np-diagram-stage
+ *     .np-diagram-toolbar
+ *     .np-diagram-error
+ *
  *   DBML host (rehydrated client-side)
  *     .np-dbml
  *     .np-dbml-wrapper

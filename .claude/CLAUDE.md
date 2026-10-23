@@ -18,11 +18,13 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed through the 
 
 7. `src/layout/` — `AppShell`, `Header`, `Sidebar`, `Breadcrumbs`, `RightToc`. The shell chrome.
 
-8. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, `RoadmapPage`, `ComponentPage`, `DbmlPage`, callouts, code blocks, mermaid, dbml. Renderers.
+8. `src/markdown/` — `Page`, `ChangelogPage`, `HeroPage`, `RoadmapPage`, `ComponentPage`, `DbmlPage`, callouts, code blocks, mermaid, dbml, d2, and `DiagramViewport`, the pan and zoom frame mermaid and d2 share. Renderers.
 
 9. `src/api/` — OpenAPI renderer. `OpenApiRoot`, `Operation`, `Schema`, `TryPanel`, `CodeExamples`.
 
 10. `src/dbml/` — DBML to diagram model conversion, run at build time by the plugin. `erd.ts` is the only place the mapping lives.
+
+10.1. `src/d2/` — the D2 language, run at build time by the plugin. `parse.ts` reads the source and its imports into a graph, `diagram.ts` sizes, lays out and routes it into the model `D2Block` draws. No D2 library is involved.
 
 11. `src/search/` — MiniSearch wrapper and modal.
 

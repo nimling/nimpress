@@ -46,7 +46,7 @@ A stylesheet theme in the list scopes its rules to its own name, `html[data-np-t
 
 1. Shell: `Header`, `Announce`, `Footer`, `Sidebar`, `SidebarNode`, `Breadcrumbs`, `RightToc`, `BackToTop`, `SearchModal`, `AccountMenu`, `ThemeMenu`, `DropdownMenu`.
 
-2. Markdown blocks: `CodeBlock`, `CodeGroup`, `Tabs`, `Actions`, `Feature`, `Card`, `CardGroup`, `Lightbox`, `MermaidBlock`, `MathBlock`, `DBMLBlock`, `ComponentEmbed`.
+2. Markdown blocks: `CodeBlock`, `CodeGroup`, `Tabs`, `Actions`, `Feature`, `Card`, `CardGroup`, `Lightbox`, `MermaidBlock`, `D2Block`, `MathBlock`, `DBMLBlock`, `ComponentEmbed`.
 
 3. Page parts: `Feedback`, `SubscribeDialog`.
 

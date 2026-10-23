@@ -23,6 +23,7 @@ Markdown is a lightweight markup language for authoring text such as technical d
 | [Data tables](/authoring/data-tables) | Pipes with alignment colons |
 | [Tooltips](/authoring/tooltips) | A titled link, `*[TERM]: description`, the glossary |
 | [Diagrams](/authoring/mermaid) | A ` ```mermaid ` fence |
+| [D2](/authoring/d2) | A ` ```d2 ` fence or `![Title](./file.d2)` |
 | [DBML](/authoring/dbml) | A ` ```dbml ` fence or `type: dbml` |
 | [OpenAPI](/authoring/openapi) | `type: openapi` and a `spec` field |
 

@@ -291,6 +291,56 @@ The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 | `np-erd-note-body` |
 | `np-erd-note-title` |
 
+## DiagramViewport
+
+`src/markdown/DiagramViewport.svelte`
+
+The pan, zoom, and fullscreen frame around every mermaid and d2 diagram. Each class also carries a `mermaid` or `d2` twin, `np-mermaid-viewport` beside `np-diagram-viewport`.
+
+| Class |
+|---|
+| `np-diagram-dragging` |
+| `np-diagram-error` |
+| `np-diagram-fit` |
+| `np-diagram-fullscreen` |
+| `np-diagram-stage` |
+| `np-diagram-toolbar` |
+| `np-diagram-viewport` |
+| `np-diagram-wrapper` |
+
+## D2Block
+
+`src/markdown/D2Block.svelte`
+
+| Class |
+|---|
+| `np-d2-animated` |
+| `np-d2-container` |
+| `np-d2-edge` |
+| `np-d2-edge-label` |
+| `np-d2-edge-label-bg` |
+| `np-d2-edge-line` |
+| `np-d2-ghost` |
+| `np-d2-head` |
+| `np-d2-head-open` |
+| `np-d2-head-stroke` |
+| `np-d2-header` |
+| `np-d2-icon` |
+| `np-d2-inner` |
+| `np-d2-label` |
+| `np-d2-label-header` |
+| `np-d2-level-<n>` |
+| `np-d2-mono` |
+| `np-d2-outline` |
+| `np-d2-row-constraint` |
+| `np-d2-row-line` |
+| `np-d2-row-name` |
+| `np-d2-row-type` |
+| `np-d2-shadow` |
+| `np-d2-shape` |
+| `np-d2-shape-<shape>` |
+| `np-d2-svg` |
+
 ## ComponentEmbed
 
 `src/markdown/ComponentEmbed.svelte`

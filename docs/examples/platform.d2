@@ -1,0 +1,22 @@
+direction: right
+
+reader: Reader {shape: person}
+
+edge: Edge {
+  cdn: CDN {shape: cloud}
+  pages: GitHub Pages {shape: page}
+  cdn -> pages
+}
+
+build: Build {
+  plugin: nimpress plugin {shape: hexagon}
+  content: Markdown {shape: document}
+  content -> plugin: parse
+}
+
+store: Search index {shape: cylinder}
+
+reader -> edge.cdn: https
+build.plugin -> edge.pages: static site
+build.plugin -> store
+edge.pages -> store: query {style.stroke-dash: 3}

@@ -43,6 +43,7 @@ import type {
   SidebarNode
 } from './types'
 import { DbmlError, dbmlToErdJson } from './dbml/erd'
+import { D2Error, d2ToDiagram } from './d2/diagram'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
@@ -1457,11 +1458,45 @@ function dbmlPlaceholder(body: string, info: string, file: string): string {
   return `<div class="np-dbml" ${attrs}></div>`
 }
 
-function rewriteDiagramFences(source: string, file: string): string {
+function d2Placeholder(entry: string, body: string, label: string, files: string[]): string {
+  const attrs = label ? [`data-label="${encodeAttr(label)}"`] : []
+  try {
+    const { files: imported, ...diagram } = d2ToDiagram(body, entry)
+    files.push(...imported)
+    attrs.push(`data-diagram="${Buffer.from(JSON.stringify(diagram), 'utf-8').toString('base64')}"`)
+  } catch (err) {
+    const failure = err instanceof Error ? err.message : String(err)
+    if (err instanceof D2Error) files.push(...err.files)
+    console.warn(`[nimpress] invalid d2 in ${entry}:\n${failure}`)
+    attrs.push(`data-error="${encodeAttr(failure)}"`)
+  }
+  return `<div class="np-d2" ${attrs.join(' ')}></div>`
+}
+
+function d2LinkPlaceholder(target: string, label: string, file: string, files: string[]): string {
+  files.push(target)
+  if (!existsSync(target)) {
+    const failure = `${relative(dirname(file), target)} does not resolve`
+    console.warn(`[nimpress] ${file}: d2 link ${failure}`)
+    return `<div class="np-d2" data-error="${encodeAttr(failure)}"></div>`
+  }
+  return d2Placeholder(target, readFileSync(target, 'utf-8'), label, files)
+}
+
+function rewriteDiagramFences(source: string, file: string, contentRoot: string): { source: string; files: string[] } {
   const lines = source.split('\n')
   const out: string[] = []
+  const files: string[] = []
   let cursor = 0
   while (cursor < lines.length) {
+    const link = /^(\s*)!\[([^\]]*)\]\(\s*<?([^)\s>]+\.d2)>?(?:\s+"[^"]*")?\s*\)\s*$/.exec(lines[cursor])
+    if (link) {
+      const [, indent, label, ref] = link
+      const target = ref.startsWith('/') ? join(contentRoot, ref) : resolve(dirname(file), ref)
+      out.push(`${indent}${d2LinkPlaceholder(target, label, file, files)}`)
+      cursor += 1
+      continue
+    }
     const open = /^(\s*)(`{3,}|~{3,})(.*)$/.exec(lines[cursor])
     if (!open) {
       out.push(lines[cursor])
@@ -1479,12 +1514,14 @@ function rewriteDiagramFences(source: string, file: string): string {
       out.push(`${indent}${mermaidPlaceholder(body ? `${body}\n` : body)}`)
     } else if (lang === 'dbml') {
       out.push(`${indent}${dbmlPlaceholder(body, info.slice(lang.length).trim(), file)}`)
+    } else if (lang === 'd2') {
+      out.push(`${indent}${d2Placeholder(file, body, '', files)}`)
     } else {
       out.push(...lines.slice(cursor, Math.min(end + 1, lines.length)))
     }
     cursor = end + 1
   }
-  return out.join('\n')
+  return { source: out.join('\n'), files }
 }
 
 function extractInlineText(token: { content?: string; children?: unknown[] } | undefined): string {
@@ -1903,7 +1940,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
 
     const hl = await ensureHighlighter()
     const md = buildMarkdownIt(hl, embedContext(), resolved.base, { math: resolved.math, icons: resolved.icons, glossary: glossaryTerms })
-    const prepared = rewriteDiagramFences(content, file)
+    const { source: prepared, files: diagramFiles } = rewriteDiagramFences(content, file, contentRoot)
     const headings = collectHeadings(md, prepared)
     const html = md.render(prepared, { glossaryPage: type === 'glossary' })
     if (type === 'team' || type === 'pricing') {
@@ -1956,7 +1993,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
     }
 
-    rememberSpecBinding(file, specPath)
+    rememberSpecBinding(file, specPath ? [specPath, ...diagramFiles] : diagramFiles)
 
     let componentData: ComponentPageData | undefined
     let componentWatch: string[] = []
@@ -2014,11 +2051,11 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
   }
 
-  function rememberSpecBinding(mdFile: string, specPath: string | undefined): void {
+  function rememberSpecBinding(mdFile: string, specPaths: string[]): void {
     for (const [s, m] of specToMd) {
       if (m === mdFile) specToMd.delete(s)
     }
-    if (specPath) {
+    for (const specPath of specPaths) {
       specToMd.set(specPath, mdFile)
       if (server && !trackedSpecs.has(specPath)) {
         server.watcher.add(specPath)

@@ -51,7 +51,7 @@ The shell selects a renderer by `frontmatter.type`:
 
 ## Hydration
 
-The body returns HTML containing placeholder markers for components: `<div class="np-mermaid">`, `<div class="np-code-group">`, `<pre class="shiki" data-lang>`, `<div class="np-actions">`, `<div class="np-feature">`. `Page.svelte` walks the rendered DOM, replaces each marker with a mounted Svelte component, and tears them down when the page changes.
+The body returns HTML containing placeholder markers for components: `<div class="np-mermaid">`, `<div class="np-d2">`, `<div class="np-code-group">`, `<pre class="shiki" data-lang>`, `<div class="np-actions">`, `<div class="np-feature">`. `Page.svelte` walks the rendered DOM, replaces each marker with a mounted Svelte component, and tears them down when the page changes.
 
 ## Defensive checks
 

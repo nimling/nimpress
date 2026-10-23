@@ -49,6 +49,7 @@ The content column and every element the markdown pipeline produces, including c
 | `np-prose-lightbox` |
 | `np-component-embed` |
 | `np-component-embed-mounted` |
+| `np-d2` |
 | `np-dbml` |
 | `np-feature` |
 | `np-feature-body` |

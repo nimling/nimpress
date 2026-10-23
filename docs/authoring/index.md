@@ -12,6 +12,7 @@ Markdown carries the prose. These renderers carry everything that reads better a
 | [Markdown and code](/authoring/markdown) | Fenced blocks, callouts, code groups | [Hero page](/examples/hero) |
 | [Definition lists](/authoring/definition-lists) | `term` then `: description` | [Markdown](/authoring/markdown) |
 | [Mermaid](/authoring/mermaid) | A ` ```mermaid ` fence | [Mermaid diagrams](/examples/mermaid) |
+| [D2](/authoring/d2) | A ` ```d2 ` fence or a linked `.d2` file | [D2 diagrams](/examples/d2) |
 | [DBML](/authoring/dbml) | A ` ```dbml ` fence or `type: dbml` | [Schema viewer](/examples/schema-viewer) |
 | [OpenAPI](/authoring/openapi) | `type: openapi` and a `spec` field | [OpenAPI reference](/examples/openapi) |
 

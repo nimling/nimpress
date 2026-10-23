@@ -62,6 +62,7 @@ export const themeComponentNames = [
   'Feature',
   'Lightbox',
   'MermaidBlock',
+  'D2Block',
   'MathBlock',
   'DBMLBlock',
   'ComponentEmbed',
