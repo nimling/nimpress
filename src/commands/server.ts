@@ -8,11 +8,18 @@ export const commandsModule = '@nimtech/nimpress/commands'
 
 export const staticCommandsId = '\0virtual:nimpress/commands'
 
+const staticCommandsMarker = 'nimpress:unguarded-command'
+
 export const staticCommandsSource = `export const commandsEnabled = false
 export async function postCommand() {
-  throw new Error('commands run only under nimpress dev, a static build has no command server')
+  throw new Error('${staticCommandsMarker} commands run only under nimpress dev, a static build has no command server')
 }
 `
+
+export function getStaticCommandsLeak(code: string[], importers: readonly string[]): string | undefined {
+  if (!code.some((text) => text.includes(staticCommandsMarker))) return undefined
+  return `[nimpress] postCommand reaches the static build from ${importers.join(', ')}. Guard every command call and the ui that triggers it with commandsEnabled so the build drops them: v-if="commandsEnabled" in Vue, {#if commandsEnabled} in Svelte, or if (commandsEnabled) in JavaScript.`
+}
 
 const loopbackAddresses = ['127.0.0.1', '::1', '::ffff:127.0.0.1']
 

@@ -28,7 +28,7 @@ The port and every vite setting come from the `vite` block of the config, and ea
 
 ## Run cli commands from a page
 
-The dev server runs cli commands for a page or a component, so a local tool such as `git` or `claude` can answer from the site while you work. It answers only requests from localhost, and a static build carries neither the command server nor the client, see [Commands in a static build](#commands-in-a-static-build). Nothing runs until the config allows it:
+The dev server runs cli commands for a page or a component, the site and every component workshop harness alike, so a local tool such as `git` or `claude` can answer from the site while you work. It answers only requests from localhost, and a static build carries neither the command server nor the client, see [Commands in a static build](#commands-in-a-static-build). Nothing runs until the config allows it:
 
 ```json
 {
@@ -105,4 +105,4 @@ Put every command button, panel, and call behind `commandsEnabled`. It is a cons
 {/if}
 ```
 
-In Vue the same guard is `v-if="commandsEnabled"`, as in the example above, and in plain JavaScript `if (commandsEnabled) { ... }`. A call left unguarded still builds and rejects at runtime with the message above, and its button stays on the page.
+In Vue the same guard is `v-if="commandsEnabled"`, as in the example above, and in plain JavaScript `if (commandsEnabled) { ... }`. A call left unguarded fails the build: when `postCommand` survives into the output, `nimpress build` and the component build stop with `postCommand reaches the static build from <files>` naming the modules that import it, so nothing unguarded is ever published.

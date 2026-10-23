@@ -13,7 +13,7 @@ import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './par
 import { parseSchemaText, schemaFileIn } from './schema'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
-import { commandsModule, staticCommandsId, staticCommandsSource } from '../commands/server'
+import { commandRoute, commandsModule, getCommandHandler, getStaticCommandsLeak, staticCommandsId, staticCommandsSource } from '../commands/server'
 
 export const HARNESS_BASE_PORT = 6161
 
@@ -592,6 +592,7 @@ function harnessPlugin(
       return target ? entrySource(target) : null
     },
     configureServer(server) {
+      server.middlewares.use(commandRoute, getCommandHandler(resolvedConfig.commands, cwd))
       const contentDir = resolve(cwd, resolvedConfig.contentDir)
       const refresh = async (file: string) => {
         if (relative(contentDir, file).startsWith('..')) return
@@ -637,6 +638,9 @@ function harnessPlugin(
       })
     },
     generateBundle(_, bundle) {
+      const code = Object.values(bundle).flatMap((output) => (output.type === 'chunk' ? [output.code] : []))
+      const leak = getStaticCommandsLeak(code, this.getModuleInfo(staticCommandsId)?.importers ?? [])
+      if (leak) this.error(leak)
       const collectCss = (fileName: string, seen: Set<string>, css: Set<string>) => {
         if (seen.has(fileName)) return
         seen.add(fileName)

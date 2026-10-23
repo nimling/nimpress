@@ -46,7 +46,7 @@ import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
-import { commandRoute, commandsModule, getCommandHandler, staticCommandsId, staticCommandsSource } from './commands/server'
+import { commandRoute, commandsModule, getCommandHandler, getStaticCommandsLeak, staticCommandsId, staticCommandsSource } from './commands/server'
 import { builtInThemes, defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig, siteThemes } from './config/load'
 import { joinBase, stripBase } from './config/base'
@@ -1580,6 +1580,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
   let highlighter: Highlighter | null = null
   let resolvedOutDir = resolve(process.cwd(), 'dist')
   let isBuildCommand = false
+  let leaked = false
   let server: ViteDevServer | null = null
   const fileCache = new Map<string, { hash: string; processed: ProcessedPage }>()
   let glossaryTerms: GlossaryTerm[] = []
@@ -3694,7 +3695,7 @@ ${bodyBranches}
     },
 
     async closeBundle(error?: Error) {
-      if (!isBuildCommand || error) return
+      if (!isBuildCommand || error || leaked) return
       const src = join(resolvedOutDir, 'index.html')
       const dest = join(resolvedOutDir, '404.html')
       await copyFile(src, dest)
@@ -4014,6 +4015,15 @@ ${bodyBranches}
           return id
         }
         return null
+      }
+    },
+
+    generateBundle(_, bundle) {
+      const code = Object.values(bundle).flatMap((output) => (output.type === 'chunk' ? [output.code] : []))
+      const leak = getStaticCommandsLeak(code, this.getModuleInfo(staticCommandsId)?.importers ?? [])
+      if (leak) {
+        leaked = true
+        this.error(leak)
       }
     },
 

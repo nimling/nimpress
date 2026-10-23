@@ -16,16 +16,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-async function getBundle(plugins: PluginOption[], alias: Record<string, string> = {}): Promise<string> {
+async function getBundle(plugins: PluginOption[], alias: Record<string, string> = {}, root = fixture): Promise<string> {
   repo = makeRepo()
-  vi.spyOn(process, 'cwd').mockReturnValue(fixture)
+  vi.spyOn(process, 'cwd').mockReturnValue(root)
   await build({
-    root: fixture,
+    root,
     configFile: false,
     logLevel: 'silent',
     plugins: [svelte({ compilerOptions: { runes: true, dev: false } }), ...plugins],
     resolve: { alias },
-    build: { outDir: repo.cwd, emptyOutDir: true, rollupOptions: { input: join(fixture, 'index.html') } }
+    build: { outDir: repo.cwd, emptyOutDir: true, rollupOptions: { input: join(root, 'index.html') } }
   })
   const assets = join(repo.cwd, 'assets')
   return readdirSync(assets)
@@ -41,6 +41,11 @@ describe('commands in a static build', () => {
     expect(bundle).not.toContain('TextDecoderStream')
     expect(bundle).not.toContain('Run git status')
     expect(bundle).not.toContain('a static build has no command server')
+  }, 60_000)
+
+  it('fails the build when a command call is left unguarded', async () => {
+    const unguarded = resolve(__dirname, 'fixtures/commands-unguarded')
+    await expect(getBundle([nimpress({ contentDir: 'docs' })], {}, unguarded)).rejects.toThrow('postCommand reaches the static build from')
   }, 60_000)
 
   it('ships the client when the module is not swapped', async () => {
