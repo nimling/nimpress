@@ -28,7 +28,7 @@ Reusable Svelte 5 docs framework. Library mode Vite build. Consumed through the 
 
 12. `src/auth/` — session login guard against `samna_auth`.
 
-12.1. `src/commands/` — the dev server command route, `server.ts`, and the `postCommand` client exported as `@nimtech/nimpress/commands`. `commands.allow` in the config gates it. Commands exist only on the dev server: in a build the site plugin and the harness plugin resolve `@nimtech/nimpress/commands` to `staticCommandsSource`, where `commandsEnabled` is `false` and `postCommand` throws, so command ui guarded by `commandsEnabled` and the client both drop out of the static bundles. `test/commandsBuild.test.ts` builds `test/fixtures/commands` and asserts neither reaches the output.
+12.1. `src/commands/` — the dev server command route, `server.ts`, and the `postCommand` client exported as `@nimtech/nimpress/commands`. `commands.allow` in the config gates it. Commands exist only on the dev server: in a build the site plugin and the harness plugin resolve `@nimtech/nimpress/commands` to `staticCommandsSource`, where `commandsEnabled` is `false` and `postCommand` throws, so command ui guarded by `commandsEnabled` and the client both drop out of the static bundles. Its `postCommand` carries a marker, and `generateBundle` in both plugins fails the build through `getStaticCommandsLeak` when the marker survives, naming the importers. `test/commandsBuild.test.ts` builds `test/fixtures/commands` and asserts neither reaches the output. It also builds `test/fixtures/commands-unguarded` and asserts the build fails.
 
 13. `src/styles/` — `tokens.css` and `preflight.css`. Override the tokens, not the components.
 
