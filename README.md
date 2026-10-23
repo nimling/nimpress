@@ -137,6 +137,7 @@ nimpress/
 │   ├── dbml/               DBML to diagram model conversion, run at build time
 │   ├── search/             MiniSearch wrapper and modal
 │   ├── auth/               Session login guard
+│   ├── commands/           Dev server command route and the postCommand client
 │   └── styles/             Tokens and preflight
 ├── tailwind.preset.ts      Design tokens exported for consumers
 └── justfile                Task runner

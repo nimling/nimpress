@@ -13,6 +13,7 @@ import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './par
 import { parseSchemaText, schemaFileIn } from './schema'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
+import { commandsModule, staticCommandsId, staticCommandsSource } from '../commands/server'
 
 export const HARNESS_BASE_PORT = 6161
 
@@ -569,16 +570,22 @@ function harnessPlugin(
     const parts = id.slice(resolvedPrefix.length).split('/')
     return parts[0] === system && parts[1] ? parts[1] : null
   }
+  let isBuildCommand = false
   const entrySource = (target: HarnessTarget): string =>
     harnessEntrySource(systemConfig.framework, target, css, setup, harness)
   return {
     name: 'nimpress:harness',
+    configResolved(config) {
+      isBuildCommand = config.command === 'build'
+    },
     resolveId(id) {
       if (id.startsWith(resolvedPrefix)) return id
       if (id.startsWith(HARNESS_VIRTUAL_PREFIX)) return '\0' + id
+      if (isBuildCommand && id === commandsModule) return staticCommandsId
       return null
     },
     load(id) {
+      if (id === staticCommandsId) return staticCommandsSource
       const component = componentOf(id)
       if (!component) return null
       const target = byComponent.get(component)

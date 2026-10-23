@@ -661,6 +661,11 @@ export interface NimpressImagesConfig {
   lightbox?: boolean
 }
 
+export interface NimpressCommandsConfig {
+  /** Commands a page may run through the dev server: none, all, or a list where the first word is the command and every further word matches one argument, * any characters inside it and a trailing ** any remaining arguments. @example ["git status", "git log **", "claude -p --model *"] */
+  allow: 'none' | 'all' | string[]
+}
+
 export interface NimpressDropdownConfig {
   /** Label on the trigger and above the choices. @example "Language" */
   title?: string
@@ -707,6 +712,8 @@ export interface NimpressUserConfig {
   client?: string
   /** Changelog subscription wiring. */
   subscribe?: SubscribeConfig
+  /** Cli commands a page may call or listen to through the dev server on localhost, never in a build. allow is none by default. @example { "allow": ["git status", "claude -p **"] } */
+  commands?: NimpressCommandsConfig
   /** Generated metadata and ai crawler rules. @example { "auto": true, "ai": { "index": false } } */
   seo?: NimpressSeoConfig
   /** SEO, robots, llms.txt, webmanifest, and security.txt emission. */
@@ -767,6 +774,7 @@ export interface ResolvedNimpressConfig {
   auth?: AuthConfig
   client?: string
   subscribe?: SubscribeConfig
+  commands: NimpressCommandsConfig
   meta?: NimpressMetaConfig
   seo?: NimpressSeoConfig
   site?: SiteMeta

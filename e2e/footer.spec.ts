@@ -48,17 +48,17 @@ test('a doc page carries previous and next links in sidebar order', async ({ pag
   expect(nextTitle.length).toBeGreaterThan(0)
 })
 
-test('the footer carries the copyright, the social link, and the generator line', async ({ page }) => {
+test('the footer carries the copyright, the social link, and the branding', async ({ page }) => {
   await open(page, 'getting-started')
   await expect(page.locator('.np-footer-copyright')).toHaveText('© 2026 Nimling')
   const social = page.locator('.np-footer-social-link')
   await expect(social).toHaveCount(1)
   await expect(social).toHaveAttribute('href', 'https://github.com/nimling/nimpress')
   await expect(social.locator('svg')).toBeVisible()
-  await expect(page.locator('.np-footer-generator')).toContainText('Built with')
+  await expect(page.locator('.np-footer-brand')).toContainText('Built with')
 })
 
 test('the site wide footer line renders on a doc page', async ({ page }) => {
   await open(page, 'getting-started')
-  await expect(page.locator('.np-page-footer')).toContainText('Built from the docs folder')
+  await expect(page.locator('.np-footer-line')).toContainText('Built from the docs folder')
 })

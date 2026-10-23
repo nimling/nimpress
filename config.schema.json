@@ -175,6 +175,43 @@
         }
       }
     },
+    "commands": {
+      "type": "object",
+      "description": "Cli commands a page may call or listen to through the dev server on localhost, never in a build. allow is none by default.",
+      "required": [
+        "allow"
+      ],
+      "properties": {
+        "allow": {
+          "description": "none refuses every command, all runs any command, and a list allows the entries it names: the first word is the command, every further word matches one argument with * for any characters inside it, and a trailing ** matches any remaining arguments.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "all"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          ],
+          "examples": [
+            "none",
+            [
+              "git status",
+              "git log **",
+              "claude -p --model *"
+            ]
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "meta": {
       "type": "object",
       "description": "SEO, robots, llms.txt, webmanifest, and security.txt emission.",
