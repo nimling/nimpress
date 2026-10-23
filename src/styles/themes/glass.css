@@ -385,17 +385,34 @@
       animation: np-glass-lead-clear linear both;
       animation-timeline: --np-glass-scroll;
       animation-range: 0 96px;
-  html[data-np-theme="glass"] .np-dropdown-trigger {
+    }
+
+    html[data-np-theme="glass"] .np-header-lead .np-crumbs-slot {
+      width: auto;
+    }
+  }
+
+  html[data-np-theme="glass"] .np-dropdown-trigger,
+  html[data-np-theme="glass"] .np-api-collapse-all {
     background-color: var(--np-glass-control);
     border-color: var(--np-glass-rim);
     box-shadow: inset 0 1px 0 var(--np-glass-edge);
+    backdrop-filter: var(--np-glass-frost-light);
+    -webkit-backdrop-filter: var(--np-glass-frost-light);
   }
 
-  html[data-np-theme="glass"] .np-dropdown-trigger:hover {
+  html[data-np-theme="glass"] .np-dropdown-trigger:hover,
+  html[data-np-theme="glass"] .np-api-collapse-all:hover {
     background-color: var(--np-glass-control-hover);
   }
 
-  html[data-np-theme="glass"] .np-dropdown-panel {
+  html[data-np-theme="glass"] .np-tag-card,
+  html[data-np-theme="glass"] .np-schemas-card {
+    background-color: transparent;
+  }
+
+  html[data-np-theme="glass"] .np-dropdown-panel,
+  html[data-np-theme="glass"] .np-api-download-menu {
     background-color: var(--np-glass-cover);
     background-image: var(--np-glass-sheen);
     backdrop-filter: var(--np-glass-frost);
@@ -414,13 +431,6 @@
     border-top-color: var(--np-glass-rim);
     backdrop-filter: var(--np-glass-frost);
     -webkit-backdrop-filter: var(--np-glass-frost);
-  }
-
-    }
-
-    html[data-np-theme="glass"] .np-header-lead .np-crumbs-slot {
-      width: auto;
-    }
   }
 
   @keyframes np-glass-lead-clear {

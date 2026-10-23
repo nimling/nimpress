@@ -58,7 +58,7 @@ The entry opens in a new tab with `rel="noreferrer"`, carries an outbound glyph,
 
 ## Dropdown filters
 
-A page joins a sidebar filter through the `dropdown` frontmatter block. Every dropdown id the site declares renders as a menu: in the header on wide screens, and in the sidebar footer, opening upward, at 1024 pixels and below. `All` is the default. Picking a value hides every page whose `value` list for that dropdown leaves it out. Pages that declare no value for the dropdown stay, groups left empty disappear, and the choice is remembered. The `dropdowns` config block sets a dropdown's `title`, `description` and value order. Values a page declares beyond that list follow in the order they first appear.
+A page joins a sidebar filter through the `dropdown` frontmatter block. A dropdown renders as a menu only when pages give it values, and only with the values those pages give: in the header on wide screens, and in the sidebar footer, opening upward, at 1024 pixels and below. `All` is the default. Picking a value hides every page whose `value` list for that dropdown leaves it out. Pages that declare no value for the dropdown stay, groups left empty disappear, and the choice is remembered. The `dropdowns` config block sets a dropdown's `title`, `description` and value order, and a value it lists that no page declares is left out. Values a page declares beyond that list follow in the order they first appear. A value only gated pages declare ships in the gated bundle, so the menu shows it to a reader the gate admits and leaves it out for everyone else.
 
 ```ts
 dropdowns: {

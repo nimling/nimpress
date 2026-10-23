@@ -2828,7 +2828,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       }
       await writeFile(
         join(dir, 'manifest.json'),
-        JSON.stringify({ shells, styles, sidebar: buildSidebar(true) })
+        JSON.stringify({ shells, styles, sidebar: buildSidebar(true), dropdowns: buildDropdowns(true) })
       )
       await writeFile(join(dir, 'search.json'), JSON.stringify(buildSearch(true, list)))
       mapBundles[bundle] = {
@@ -3041,7 +3041,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     }
 
     const root: TreeNode = { segment: '', fullPath: '', children: new Map() }
-    const dropdownOrder = new Map(buildDropdowns().flatMap((d) => d.values.map((value, i) => [`${d.id}:${value}`, i] as const)))
+    const dropdownOrder = new Map(buildDropdowns(includeGated).flatMap((d) => d.values.map((value, i) => [`${d.id}:${value}`, i] as const)))
     const dirMeta = new Map<string, { label?: string; icon?: string; style?: string }>()
 
     for (const p of pages.values()) {
@@ -3260,22 +3260,26 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return entries.length ? Object.fromEntries(entries.map(([id, d]) => [id, d.value!])) : undefined
   }
 
-  function buildDropdowns(): ManifestDropdown[] {
+  function buildDropdowns(includeGated = false): ManifestDropdown[] {
     const found = new Map<string, ManifestDropdown>()
-    for (const [id, d] of Object.entries(resolved.dropdowns)) {
-      found.set(id, { id, title: d.title ?? prettyDirName(id), description: d.description, values: [...(d.values ?? [])] })
-    }
     for (const p of pages.values()) {
-      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || isGated(p))) continue
+      if (isBuildCommand && (pageExcludedFromBuild(p.frontmatter) || (!includeGated && isGated(p)))) continue
       for (const [id, d] of Object.entries(p.frontmatter.dropdown ?? {})) {
-        const entry = found.get(id) ?? { id, title: prettyDirName(id), values: [] }
-        if (d.title && !resolved.dropdowns[id]?.title) entry.title = d.title
-        if (d.description && !resolved.dropdowns[id]?.description) entry.description = d.description
+        const configured = resolved.dropdowns[id]
+        const entry = found.get(id) ?? { id, title: configured?.title ?? prettyDirName(id), description: configured?.description, values: [] }
+        if (d.title && !configured?.title) entry.title = d.title
+        if (d.description && !configured?.description) entry.description = d.description
         for (const value of d.value ?? []) if (!entry.values.includes(value)) entry.values.push(value)
         found.set(id, entry)
       }
     }
-    return [...found.values()].filter((d) => d.values.length)
+    return [...found.values()]
+      .filter((d) => d.values.length)
+      .map((d) => {
+        const order = resolved.dropdowns[d.id]?.values ?? []
+        const rank = (value: string) => (order.includes(value) ? order.indexOf(value) : order.length + d.values.indexOf(value))
+        return { ...d, values: [...d.values].sort((a, b) => rank(a) - rank(b)) }
+      })
   }
 
   function tagSlug(name: string): string {

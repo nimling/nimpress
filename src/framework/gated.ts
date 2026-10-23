@@ -1,12 +1,13 @@
 import { handleUnauthenticated } from '../auth/session'
 import { configStore, withBase } from './configStore'
 import GatedPage from '../layout/GatedPage.svelte'
-import type { PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
+import type { ManifestDropdown, PageMeta, PageShell, SearchEntry, SidebarNode } from '../types'
 
 interface GatedManifest {
   shells: PageShell[]
   styles: Record<string, string>
   sidebar: SidebarNode[]
+  dropdowns: ManifestDropdown[]
 }
 
 export interface GuardedRoute {
@@ -28,6 +29,7 @@ let gatedBase = '/_guarded'
 let published: PublishedAsset[] = []
 let gatedRoutes: Record<string, GuardedRoute> = {}
 let publicSidebar: SidebarNode[] | undefined
+let publicDropdowns: ManifestDropdown[] | undefined
 let gatedSearch: SearchEntry[] = []
 const gatedShells = new Map<string, PageShell>()
 
@@ -86,6 +88,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
   const shells: PageShell[] = []
   let styles: Record<string, string> = {}
   let sidebar: SidebarNode[] | null = null
+  let dropdowns: ManifestDropdown[] | null = null
   let search: SearchEntry[] = []
   for (const bundle of authenticated ? bundles : []) {
     let res: Response
@@ -99,6 +102,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
     shells.push(...gated.shells)
     styles = { ...styles, ...gated.styles }
     sidebar = gated.sidebar
+    dropdowns = gated.dropdowns
     try {
       const searchRes = await fetch(gatedFileUrl(bundle, 'search.json'), { credentials: 'include' })
       if (searchRes.ok) search = [...search, ...((await searchRes.json()) as SearchEntry[])]
@@ -111,6 +115,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
     const manifest = config.manifest
     if (!manifest) return config
     publicSidebar = manifest.sidebar
+    publicDropdowns = manifest.dropdowns
     gatedSearch = search
     const pages: Record<string, PageMeta> = { ...manifest.pages }
     const byPath: Record<string, string> = { ...manifest.byPath }
@@ -137,7 +142,7 @@ export async function loadGatedContent(authenticated: boolean): Promise<void> {
     }
     return {
       ...config,
-      manifest: { ...manifest, pages, byPath, styles: mergedStyles, sidebar: sidebar ?? manifest.sidebar },
+      manifest: { ...manifest, pages, byPath, styles: mergedStyles, sidebar: sidebar ?? manifest.sidebar, dropdowns: dropdowns ?? manifest.dropdowns },
       pageLoader,
       searchIndex: [...(config.searchIndex ?? []), ...search]
     }
@@ -162,7 +167,7 @@ export function deleteGatedContent(): void {
     }
     return {
       ...config,
-      manifest: { ...manifest, pages, byPath, sidebar: publicSidebar ?? manifest.sidebar },
+      manifest: { ...manifest, pages, byPath, sidebar: publicSidebar ?? manifest.sidebar, dropdowns: publicDropdowns ?? manifest.dropdowns },
       pageLoader,
       searchIndex: (config.searchIndex ?? []).filter((entry) => !gatedSearch.includes(entry))
     }
