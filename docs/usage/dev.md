@@ -28,7 +28,7 @@ The port and every vite setting come from the `vite` block of the config, and ea
 
 ## Run cli commands from a page
 
-The dev server runs cli commands for a page or a component, so a local tool such as `git` or `claude` can answer from the site while you work. It answers only requests from localhost, and a static build carries neither the command server nor the client, see [Commands in a static build](#commands-in-a-static-build). Nothing runs until the config allows it:
+The dev server runs cli commands for a page or a component, the site and every component workshop harness alike, so a local tool such as `git` or `claude` can answer from the site while you work. It answers only requests from localhost, and a static build carries neither the command server nor the client, see [Commands in a static build](#commands-in-a-static-build). Nothing runs until the config allows it:
 
 ```json
 {

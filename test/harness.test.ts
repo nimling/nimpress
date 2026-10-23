@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createServer } from 'vite'
+import type { AddressInfo } from 'node:net'
+import { commandRoute } from '../src/commands/server'
 import { harnessEntryId, harnessViteConfig } from '../src/modules/harness'
 import { componentPage, file, makeRepo, resolvedConfig, type Repo } from './helpers'
 
@@ -60,6 +62,28 @@ describe('harnessViteConfig', () => {
       file(repo.cwd, 'docs/Vue/Card/default.story.ts', 'export default {}\n')
       server.watcher.emit('add', file(repo.cwd, 'docs/Vue/Card/index.md', componentPage('vue', 'Card')))
       await vi.waitFor(async () => expect(await entry('Card')).toContain('"default"'))
+    } finally {
+      await server.close()
+    }
+  })
+
+  it('answers the command route on the harness server where stories run', async () => {
+    seed()
+    file(repo.cwd, 'src/Button/Button.vue', '<template><b /></template>\n')
+    file(repo.cwd, 'docs/Vue/Button/index.md', componentPage('vue', 'Button'))
+    const harness = await harnessViteConfig(repo.cwd, { ...config({}), commands: { allow: ['node --version'] } }, 'vue', 'serve')
+    const server = await createServer({ ...harness, server: { ...harness.server, port: 0, strictPort: false }, optimizeDeps: { noDiscovery: true, include: [] }, logLevel: 'silent' })
+    await server.listen()
+    try {
+      const { port } = server.httpServer?.address() as AddressInfo
+      const response = await fetch(`http://127.0.0.1:${port}${commandRoute}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'node', args: ['--version'] })
+      })
+      const { data } = await response.json()
+      expect(data.code).toBe(0)
+      expect(data.stdout).toMatch(/^v\d/)
     } finally {
       await server.close()
     }

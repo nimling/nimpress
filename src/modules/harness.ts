@@ -13,7 +13,7 @@ import { mockValue, schemaFromJsonSchema, type ComponentJsonSchema } from './par
 import { parseSchemaText, schemaFileIn } from './schema'
 import type { ComponentPageRef } from './pages'
 import { collectComponentPages } from './pages'
-import { commandsModule, staticCommandsId, staticCommandsSource } from '../commands/server'
+import { commandRoute, commandsModule, getCommandHandler, staticCommandsId, staticCommandsSource } from '../commands/server'
 
 export const HARNESS_BASE_PORT = 6161
 
@@ -592,6 +592,7 @@ function harnessPlugin(
       return target ? entrySource(target) : null
     },
     configureServer(server) {
+      server.middlewares.use(commandRoute, getCommandHandler(resolvedConfig.commands, cwd))
       const contentDir = resolve(cwd, resolvedConfig.contentDir)
       const refresh = async (file: string) => {
         if (relative(contentDir, file).startsWith('..')) return
