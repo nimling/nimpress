@@ -46,7 +46,7 @@ import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
-import { commandRoute, getCommandHandler } from './commands/server'
+import { commandRoute, commandsModule, getCommandHandler, staticCommandsId, staticCommandsSource } from './commands/server'
 import { builtInThemes, defaultConfig } from './config/defaults'
 import { loadNimpressConfig, runtimeConfig, siteThemes } from './config/load'
 import { joinBase, stripBase } from './config/base'
@@ -3997,23 +3997,28 @@ ${bodyBranches}
       return []
     },
 
-    resolveId(id) {
-      if (id === VIRTUAL_MANIFEST) return '\0' + VIRTUAL_MANIFEST
-      if (id === VIRTUAL_SEARCH) return '\0' + VIRTUAL_SEARCH
-      if (id === VIRTUAL_PAGES) return '\0' + VIRTUAL_PAGES
-      if (id === VIRTUAL_BODIES) return '\0' + VIRTUAL_BODIES
-      if (id === VIRTUAL_CONFIG) return '\0' + VIRTUAL_CONFIG
-      if (id === VIRTUAL_MAIN) return '\0' + VIRTUAL_MAIN
-      if (id.startsWith(PAGE_COMPONENT_PREFIX) && id.endsWith('.svelte')) {
-        return id
+    resolveId: {
+      order: 'pre',
+      handler(id) {
+        if (id === VIRTUAL_MANIFEST) return '\0' + VIRTUAL_MANIFEST
+        if (id === VIRTUAL_SEARCH) return '\0' + VIRTUAL_SEARCH
+        if (id === VIRTUAL_PAGES) return '\0' + VIRTUAL_PAGES
+        if (id === VIRTUAL_BODIES) return '\0' + VIRTUAL_BODIES
+        if (id === VIRTUAL_CONFIG) return '\0' + VIRTUAL_CONFIG
+        if (id === VIRTUAL_MAIN) return '\0' + VIRTUAL_MAIN
+        if (isBuildCommand && id === commandsModule) return staticCommandsId
+        if (id.startsWith(PAGE_COMPONENT_PREFIX) && id.endsWith('.svelte')) {
+          return id
+        }
+        if (id.startsWith(PAGE_BODY_PREFIX) && id.endsWith('.js')) {
+          return id
+        }
+        return null
       }
-      if (id.startsWith(PAGE_BODY_PREFIX) && id.endsWith('.js')) {
-        return id
-      }
-      return null
     },
 
     async load(id) {
+      if (id === staticCommandsId) return staticCommandsSource
       if (id === '\0' + VIRTUAL_MANIFEST) {
         return `export default ${JSON.stringify(buildManifest())}`
       }

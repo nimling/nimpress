@@ -22,6 +22,8 @@ interface CommandEvent {
 
 const commandRoute = '/__nimpress/command'
 
+export const commandsEnabled: boolean = true
+
 async function refusal(res: Response): Promise<Error> {
   if (res.status === 404) return new Error('commands run only under nimpress dev, a built site has no command server')
   const text = await res.text()

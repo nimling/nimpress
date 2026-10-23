@@ -4,6 +4,16 @@ import type { NimpressCommandsConfig } from '../types'
 
 export const commandRoute = '/__nimpress/command'
 
+export const commandsModule = '@nimtech/nimpress/commands'
+
+export const staticCommandsId = '\0virtual:nimpress/commands'
+
+export const staticCommandsSource = `export const commandsEnabled = false
+export async function postCommand() {
+  throw new Error('commands run only under nimpress dev, a static build has no command server')
+}
+`
+
 const loopbackAddresses = ['127.0.0.1', '::1', '::ffff:127.0.0.1']
 
 interface CommandRequest {
