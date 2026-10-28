@@ -368,6 +368,19 @@
     width: auto;
   }
 
+  html[data-np-theme="glass"] .np-header-lead::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border: 1px solid var(--np-glass-rim);
+    border-radius: var(--np-radius-pill);
+    background-color: var(--np-glass-ground);
+    backdrop-filter: var(--np-glass-frost);
+    -webkit-backdrop-filter: var(--np-glass-frost);
+    pointer-events: none;
+  }
+
   @supports (animation-timeline: scroll()) {
     html[data-np-theme="glass"] .np-header::before {
       animation: np-glass-header-frost linear both;
@@ -376,19 +389,28 @@
     }
 
     html[data-np-theme="glass"] .np-header-lead::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      border: 1px solid var(--np-glass-rim);
-      border-radius: var(--np-radius-pill);
-      background-color: var(--np-glass-ground);
-      backdrop-filter: var(--np-glass-frost);
-      -webkit-backdrop-filter: var(--np-glass-frost);
-      pointer-events: none;
       animation: np-glass-lead-clear linear both;
       animation-timeline: --np-glass-scroll;
       animation-range: 0 96px;
+    }
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    html[data-np-theme="glass"] .np-header::before {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    html[data-np-theme="glass"] .np-header-lead::before {
+      transition: opacity 0.2s ease;
+    }
+
+    html[data-np-theme="glass"] .np-scrolled .np-header::before {
+      opacity: 1;
+    }
+
+    html[data-np-theme="glass"] .np-scrolled .np-header-lead::before {
+      opacity: 0;
     }
   }
 
@@ -470,10 +492,12 @@
   @media (prefers-reduced-motion: reduce) {
     html[data-np-theme="glass"] .np-header::before {
       animation: none;
+      transition: none;
     }
 
     html[data-np-theme="glass"] .np-header-lead::before {
       animation: none;
+      transition: none;
     }
 
     html[data-np-theme="glass"] .np-card,

@@ -82,7 +82,15 @@
   let drawerOpen = $state(false)
   let collapsed = $state(loadCollapsed())
   let mobile = $state(false)
+  let scrolled = $state(false)
   const sidebarOpen = $derived(mobile ? drawerOpen : !collapsed)
+
+  function onScroll(event: Event) {
+    const target = event.target as Element
+    if (target.classList?.contains('np-main') || target.classList?.contains('np-body')) {
+      scrolled = target.scrollTop > 0
+    }
+  }
 
   onMount(() => {
     const query = window.matchMedia('(max-width: 1024px)')
@@ -135,7 +143,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed || !navigation} class:np-navigation-hidden={!navigation}>
+<div class="np-app" class:np-drawer-open={drawerOpen} class:np-collapsed={collapsed || !navigation} class:np-navigation-hidden={!navigation} class:np-scrolled={scrolled} onscrollcapture={onScroll}>
   <Announce />
   <Header
     onOpenSearch={() => (searchOpen = true)}
