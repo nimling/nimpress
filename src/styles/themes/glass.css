@@ -354,21 +354,25 @@
     box-shadow: inset 0 1px 0 var(--np-glass-edge), var(--np-shadow-popover);
   }
 
+  html[data-np-theme="glass"] .np-header-lead {
+    position: relative;
+    isolation: isolate;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    height: calc(var(--np-header-height) - 16px);
+    padding: 0 18px 0 12px;
+  }
+
+  html[data-np-theme="glass"] .np-header-lead .np-crumbs-slot {
+    width: auto;
+  }
+
   @supports (animation-timeline: scroll()) {
     html[data-np-theme="glass"] .np-header::before {
       animation: np-glass-header-frost linear both;
       animation-timeline: --np-glass-scroll;
       animation-range: 0 96px;
-    }
-
-    html[data-np-theme="glass"] .np-header-lead {
-      position: relative;
-      isolation: isolate;
-      justify-self: start;
-      width: fit-content;
-      max-width: 100%;
-      height: calc(var(--np-header-height) - 16px);
-      padding: 0 18px 0 12px;
     }
 
     html[data-np-theme="glass"] .np-header-lead::before {
@@ -385,10 +389,6 @@
       animation: np-glass-lead-clear linear both;
       animation-timeline: --np-glass-scroll;
       animation-range: 0 96px;
-    }
-
-    html[data-np-theme="glass"] .np-header-lead .np-crumbs-slot {
-      width: auto;
     }
   }
 

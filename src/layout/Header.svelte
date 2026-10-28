@@ -117,6 +117,7 @@
     z-index: 50;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
     align-items: center;
     column-gap: 16px;
     height: var(--np-header-height);
