@@ -179,6 +179,7 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 |---|
 | `np-rm-node` |
 | `np-roadmap-aside` |
+| `np-roadmap-aside-more` |
 | `np-roadmap-aside-body` |
 | `np-roadmap-aside-changelog` |
 | `np-roadmap-aside-date` |
@@ -225,7 +226,10 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 
 | Class |
 |---|
+| `np-rm-node-body` |
 | `np-rm-node-bug` |
+| `np-rm-node-card` |
+| `np-rm-node-compact` |
 | `np-rm-node-date` |
 | `np-rm-node-desc` |
 | `np-rm-node-epic` |
@@ -234,6 +238,9 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-rm-node-inner` |
 | `np-rm-node-kind` |
 | `np-rm-node-meta` |
+| `np-rm-node-pill` |
+| `np-rm-node-pill-title` |
+| `np-rm-node-small` |
 | `np-rm-node-title` |
 
 ## DbmlPage

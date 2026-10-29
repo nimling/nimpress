@@ -42,31 +42,35 @@
   let hoverRect = $state<{ left: number; top: number; right: number; bottom: number } | null>(null)
   let popupW = $state(0)
   let popupH = $state(0)
+  let asideEl: HTMLElement | null = $state(null)
+  let asideOverflow = $state(false)
   let mounts: Array<{ destroy: () => void }> = []
   let trackHeight = $state(0)
   let trackWidth = $state(1100)
   let narrow = $state(false)
   let totalLength = $state(0)
+  let anchorLens = $state<number[]>([])
   let rocketLen = $state(0)
   let flying = $state(false)
   let now = $state(new Date().toISOString())
-  let measuredSizes = $state<Record<string, [number, number]>>({})
+  const GRID_COLS = 96
+  const GRID_MARGIN = 2
+  const GRID_CORRIDOR = 16
+  const GRID_TOP = 8
+  const GRID_BOTTOM = 12
+  const GRID_CLUSTER_GAP = 12
+  const RING_GAPS = [6, 4, 2]
+  const RING_VERTICAL = 1.5
+  const GRID_SPINE_INSET = 2
+  const ANCHOR_GAP = 8
+  const FILL_PX = 46
+  const BLOB_TEXT_SHARE = 0.8
+  const NARROW_SPINE_COL = 8
+  const NARROW_CARD_COL = 20
 
-  function recordMeasure(href: string, visW: number, visH: number) {
-    const cur = measuredSizes[href]
-    if (cur && Math.abs(cur[0] - visW) < 1 && Math.abs(cur[1] - visH) < 1) return
-    measuredSizes = { ...measuredSizes, [href]: [visW, visH] }
-  }
+  type NodeVariant = 'card' | 'compact' | 'small' | 'pill'
 
-  const TRACK_PAD_TOP = 32
-  const NODE_W_BASE = 320
-  const NODE_H_BASE = 200
-  const DEPTH_SCALE = 0.55
-  const SUBTREE_GAP = 32
-  const SIBLING_GAP = 26
-  const CELL_PAD = 18
-  const CELL_MAX = 520
-  const SPINE_BOTTOM_BUFFER = 40
+  const TIERS: NodeVariant[] = ['compact', 'small', 'pill']
 
   interface TreeNode {
     entry: RoadmapEntry
@@ -77,6 +81,11 @@
   interface NodeBox {
     entry: RoadmapEntry
     depth: number
+    variant: NodeVariant
+    col: number
+    row: number
+    cols: number
+    rows: number
     x: number
     y: number
     w: number
@@ -85,12 +94,6 @@
     anchorY?: number
     anchorSide?: 'left' | 'right'
     date?: number
-  }
-
-  interface CellLayout {
-    boxes: NodeBox[]
-    w: number
-    h: number
   }
 
   interface RowLayout {
@@ -108,26 +111,26 @@
     spineAnchorY: number
   }
 
-  const TRACK_PAD_X = 24
-  const NARROW_SPINE_X = TRACK_PAD_X + 28
-  const NARROW_CONNECTOR = 44
-  const NARROW_GAP = 96
+  interface Rect {
+    x: number
+    y: number
+    w: number
+    h: number
+  }
 
-  interface ClusterEdge {
+  interface Link {
+    id: string
     d: string
-    kind: 'parent-child' | 'branch' | 'child-branch'
   }
 
-  function nodeScaleAt(depth: number): number {
-    return Math.pow(DEPTH_SCALE, depth)
-  }
-
-  function nodeWAt(depth: number): number {
-    return Math.round(NODE_W_BASE * nodeScaleAt(depth))
-  }
-
-  function nodeHAt(depth: number): number {
-    return Math.round(NODE_H_BASE * nodeScaleAt(depth))
+  interface TrackLayout {
+    rows: RowLayout[]
+    links: Link[]
+    blocked: Rect[]
+    budgets: number[]
+    cell: number
+    gridRows: number
+    totalH: number
   }
 
   function buildTree(list: RoadmapEntry[]): TreeNode[] {
@@ -159,123 +162,64 @@
     return roots
   }
 
-  function scaleBoxes(boxes: NodeBox[], s: number): NodeBox[] {
-    return boxes.map((b) => ({
-      entry: b.entry,
-      depth: b.depth,
-      x: b.x * s,
-      y: b.y * s,
-      w: b.w * s,
-      h: b.h * s
-    }))
+  function clampPx(min: number, share: number, max: number, width: number): number {
+    return Math.max(min, Math.min(max, share * width))
   }
 
-  function layoutSubtree(node: TreeNode): CellLayout {
-    const w = nodeWAt(node.depth)
-    const h = nodeHAt(node.depth)
-
-    if (node.children.length === 0) {
-      return { boxes: [{ entry: node.entry, depth: node.depth, x: 0, y: 0, w, h }], w, h }
-    }
-
-    const childLayouts = node.children.map((c) => layoutSubtree(c))
-    const childrenW = childLayouts.reduce((s, c) => s + c.w, 0) + SIBLING_GAP * (childLayouts.length - 1)
-    const childrenH = Math.max(...childLayouts.map((c) => c.h))
-
-    const naturalW = Math.max(w, childrenW)
-    const parentOffsetX = (naturalW - w) / 2
-    const childrenStartX = (naturalW - childrenW) / 2
-
-    const boxes: NodeBox[] = []
-    boxes.push({ entry: node.entry, depth: node.depth, x: parentOffsetX, y: 0, w, h })
-
-    let curX = childrenStartX
-    for (const cl of childLayouts) {
-      for (const b of cl.boxes) {
-        boxes.push({
-          entry: b.entry,
-          depth: b.depth,
-          x: b.x + curX,
-          y: b.y + h + SUBTREE_GAP,
-          w: b.w,
-          h: b.h
-        })
+  function contentRows(entry: RoadmapEntry, variant: NodeVariant, cols: number, cell: number): number {
+    const textW = cols * cell * BLOB_TEXT_SHARE
+    const lines = (text: string, font: number, max: number) => Math.max(1, Math.min(max, Math.ceil((text.length * font * 0.55) / textW)))
+    let h: number
+    if (variant === 'pill') {
+      h = 9 * 1.3 + 3 + 12.5 * 1.1
+    } else {
+      const head = variant === 'small' ? clampPx(6.5, 0.054, 9, textW) : clampPx(7, 0.042, 11, textW)
+      const title = variant === 'card' ? clampPx(11, 0.074, 19, textW) : variant === 'compact' ? clampPx(10.5, 0.086, 15, textW) : clampPx(10, 0.09, 13, textW)
+      h = head * 1.7 + 5.6 + lines(entry.title, title, variant === 'small' ? 1 : 2) * title * 1.25
+      if (variant === 'card' && entry.description) {
+        const desc = clampPx(9.5, 0.05, 13.5, textW)
+        h += 5.6 + lines(entry.description, desc, 3) * desc * 1.45
       }
-      curX += cl.w + SIBLING_GAP
     }
-
-    return { boxes, w: naturalW, h: h + SUBTREE_GAP + childrenH }
+    return Math.ceil(h / BLOB_TEXT_SHARE / cell) + 1
   }
 
-  function fitChildrenToBudget(layout: CellLayout, availW: number, availH: number): CellLayout {
-    if (layout.boxes.length < 2) return layout
-    const root = layout.boxes[0]
-    const descendants = layout.boxes.slice(1)
-    const minX = Math.min(...descendants.map((b) => b.x))
-    const maxX = Math.max(...descendants.map((b) => b.x + b.w))
-    const minY = Math.min(...descendants.map((b) => b.y))
-    const maxY = Math.max(...descendants.map((b) => b.y + b.h))
-    const descW = maxX - minX
-    const descH = maxY - minY
-    const descAvailH = Math.max(0, availH - root.h - SUBTREE_GAP)
-    const sW = descW > availW ? availW / descW : 1
-    const sH = descH > descAvailH ? descAvailH / descH : 1
-    const s = Math.min(sW, sH)
-
-    const newDescW = descW * s
-    const newDescH = descH * s
-    const newTotalW = Math.max(root.w, newDescW)
-    const newRootX = (newTotalW - root.w) / 2
-    const newDescStartX = (newTotalW - newDescW) / 2
-    const newDescStartY = root.h + SUBTREE_GAP
-
-    const newRoot: NodeBox = { ...root, x: newRootX, y: 0 }
-    const scaledDescendants = descendants.map((b) => ({
-      entry: b.entry,
-      depth: b.depth,
-      x: newDescStartX + (b.x - minX) * s,
-      y: newDescStartY + (b.y - minY) * s,
-      w: b.w * s,
-      h: b.h * s
-    }))
-
-    return {
-      boxes: [newRoot, ...scaledDescendants],
-      w: newTotalW,
-      h: root.h + SUBTREE_GAP + newDescH
-    }
+  function rootCellsFor(root: TreeNode, cell: number): [number, number][] {
+    const major = root.children.length || root.entry.kind === 'epic' || root.entry.kind === 'milestone'
+    return (major ? [32, 28, 24, 20] : [24, 20, 18]).map((cols) => [cols, contentRows(root.entry, 'card', cols, cell)])
   }
 
-  function cellSideFor(roots: TreeNode[], availW: number): number {
-    let maxSide = NODE_W_BASE
-    for (const r of roots) {
-      const f = layoutSubtree(r)
-      const target = Math.min(availW, Math.max(f.w, f.h))
-      maxSide = Math.max(maxSide, target)
+  function childCellsFor(node: TreeNode, variant: NodeVariant, cell: number): [number, number] {
+    const titleFont = variant === 'compact' ? 15 : variant === 'small' ? 13 : 12.5
+    const dateFont = variant === 'compact' ? 10 : 9
+    const textPx = Math.max(node.entry.title.length * titleFont * 0.55, 10 * dateFont * 0.62) + 10
+    const cols = Math.max(10, Math.min(variant === 'compact' ? 24 : 28, Math.ceil(textPx / BLOB_TEXT_SHARE / cell)))
+    return [cols, contentRows(node.entry, variant, cols, cell)]
+  }
+
+  function seeded(input: string): number {
+    let h = 2166136261
+    for (let i = 0; i < input.length; i++) {
+      h ^= input.charCodeAt(i)
+      h = Math.imul(h, 16777619)
     }
-    return Math.ceil(maxSide + CELL_PAD * 2)
+    return ((h >>> 0) % 10000) / 10000
+  }
+
+  function segmentBudget(hours: number, minHours: number): number {
+    return Math.round(9 * (1 + 1.5 * Math.sqrt(Math.max(1, hours / minHours) - 1)))
   }
 
   const tree = $derived(buildTree(entries))
   const effectiveTrackW = $derived(trackWidth || 1100)
-  const availSubtreeW = $derived(Math.max(360, effectiveTrackW * 0.62))
-  const cellSide = $derived(Math.min(effectiveTrackW * 0.66, cellSideFor(tree, availSubtreeW)))
-  const layout = $derived(layoutTrack(tree, effectiveTrackW, cellSide, availSubtreeW))
-  const edgeList = $derived(buildParentEdges(layout.rows, entries))
-  const spinePath = $derived(buildSpinePath(layout.rows, effectiveTrackW, Math.max(trackHeight, layout.totalH + 64), cellSide))
+  const layout = $derived(layoutTrack(tree, effectiveTrackW))
+  const spinePath = $derived(buildSpinePath(layout, effectiveTrackW, Math.max(trackHeight, layout.totalH)))
   const spineConnectors = $derived(buildSpineConnectors(layout.rows, effectiveTrackW))
-  const clusterEdges = $derived(
-    buildClusterEdges(layout.rows, effectiveTrackW, (date) => {
-      if (!date || totalLength === 0 || !spinePathEl) return null
-      const pt = pointAt(progressForDate(date))
-      return { x: pt.x, y: pt.y }
-    })
-  )
   const dateBounds = $derived(computeBounds(entries))
   const changelogMarkers = $derived(collectChangelogMarkers(tree))
   const activeHover = $derived(findActiveHover(tree, hoverHref))
   const rocketPoint = $derived(pointAtLen(rocketLen))
-  const todayPoint = $derived(pointAt(progressForDate(now)))
+  const todayPoint = $derived(pointAtLen(lenForDate(now)))
   const rocketShown = $derived(totalLength > 0 && !!spinePathEl && entries.length > 0)
   const trailDashoffset = $derived(Math.max(0, totalLength - rocketLen))
   const spineTopPoint = $derived.by(() => {
@@ -353,563 +297,362 @@
     return placeNearAnchor(hoverRect, popupW, popupH, true)
   })
 
-  const MIN_GAP = 20
-  const AVG_GAP = 56
-
-  interface ParentEdge {
-    id: string
-    d: string
+  interface Placed {
+    node: TreeNode
+    parent: Placed | null
+    variant: NodeVariant
+    col: number
+    row: number
+    cols: number
+    rows: number
   }
 
-  function buildParentEdges(rows: RowLayout[], allEntries: RoadmapEntry[]): ParentEdge[] {
-    if (narrow) return []
-    const byHref = new Map<string, NodeBox>()
-    for (const r of rows) for (const b of r.boxes) byHref.set(b.entry.href, b)
-    const result: ParentEdge[] = []
-    for (const e of allEntries) {
-      if (!e.parent) continue
-      const child = byHref.get(e.href)
-      const parent = byHref.get(e.parent)
-      if (!child || !parent) continue
-      const cx = child.x + child.w / 2
-      const cy = child.y + child.h / 2
-      const px = parent.x + parent.w / 2
-      const py = parent.y + parent.h / 2
-      const dx = cx - px
-      const dy = cy - py
-      const dist = Math.hypot(dx, dy) || 1
-      const nx = dx / dist
-      const ny = dy / dist
-      const ringP = Math.min(
-        Math.abs(nx) > 0.001 ? parent.w / 2 / Math.abs(nx) : Infinity,
-        Math.abs(ny) > 0.001 ? parent.h / 2 / Math.abs(ny) : Infinity
-      )
-      const ringC = Math.min(
-        Math.abs(nx) > 0.001 ? child.w / 2 / Math.abs(nx) : Infinity,
-        Math.abs(ny) > 0.001 ? child.h / 2 / Math.abs(ny) : Infinity
-      )
-      const sx = px + nx * ringP
-      const sy = py + ny * ringP
-      const ex = cx - nx * ringC
-      const ey = cy - ny * ringC
-      const mx = (sx + ex) / 2
-      const my = (sy + ey) / 2
-      const curve = dist * 0.18
-      const cpx = mx - ny * curve
-      const cpy = my + nx * curve
-      const d = `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${cpx.toFixed(1)} ${cpy.toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`
-      result.push({ id: `${e.parent}->${e.href}`, d })
-    }
-    return result
+  interface Packed {
+    placed: Placed[]
+    width: number
+    height: number
+    links: { id: string; points: { x: number; y: number }[] }[]
   }
 
-  function layoutTrackNarrow(roots: TreeNode[], w: number): { rows: RowLayout[]; totalH: number } {
-    const TOP_PAD = 80
-    const BOTTOM_PAD = 80
-    const sorted = flattenTree(roots).sort((a, b) =>
-      (a.entry.targetDate ?? '').localeCompare(b.entry.targetDate ?? '')
-    )
-    const sizeOf = (href: string) => {
-      const m = measuredSizes[href]
-      return { w: m ? m[0] : NODE_W_BASE, h: m ? m[1] : NODE_H_BASE }
-    }
-    const totalCards = sorted.reduce((s, n) => s + sizeOf(n.entry.href).h, 0)
-    const totalH = TOP_PAD + totalCards + Math.max(0, sorted.length - 1) * NARROW_GAP + BOTTOM_PAD
+  function toTime(e: RoadmapEntry): number {
+    return e.targetDate ? new Date(e.targetDate).getTime() : 0
+  }
 
+  function packCluster(root: TreeNode, rootSize: [number, number], tier: number, width: number, height: number, cell: number, gap: number): Packed | null {
+    const [rc, rr] = rootSize
+    if (rc > width || rr > height) return null
+    const occ = new Uint8Array(width * height)
+    const sum = new Int32Array((width + 1) * (height + 1))
+    const fill = (c: number, r: number, w: number, h: number) => {
+      for (let y = Math.max(0, r); y < Math.min(height, r + h); y++)
+        for (let x = Math.max(0, c); x < Math.min(width, c + w); x++) occ[y * width + x] = 1
+    }
+    const rebuild = () => {
+      for (let y = 0; y < height; y++) {
+        let line = 0
+        for (let x = 0; x < width; x++) {
+          line += occ[y * width + x]
+          sum[(y + 1) * (width + 1) + x + 1] = sum[y * (width + 1) + x + 1] + line
+        }
+      }
+    }
+    const used = (c: number, r: number, w: number, h: number) => {
+      const c0 = Math.max(0, c)
+      const r0 = Math.max(0, r)
+      const c1 = Math.min(width, c + w)
+      const r1 = Math.min(height, r + h)
+      if (c1 <= c0 || r1 <= r0) return 0
+      const W = width + 1
+      return sum[r1 * W + c1] - sum[r0 * W + c1] - sum[r1 * W + c0] + sum[r0 * W + c0]
+    }
+
+    const rootRow = Math.floor((height - rr) / 2)
+    const rootP: Placed = { node: root, parent: null, variant: 'card', col: 0, row: rootRow, cols: rc, rows: rr }
+    fill(0, rootRow, rc, rr)
+
+    const placed: Placed[] = [rootP]
+    const byNode = new Map<TreeNode, Placed>([[root, rootP]])
+    const parentOf = new Map<TreeNode, TreeNode>()
+    const walk = (n: TreeNode) => n.children.forEach((k) => { parentOf.set(k, n); walk(k) })
+    walk(root)
+    const byDate = flattenTree(root.children).sort((a, b) => toTime(a.entry) - toTime(b.entry))
+    const rank = new Map(byDate.map((n, i) => [n, byDate.length === 1 ? 0.5 : i / (byDate.length - 1)]))
+    const order = [...byDate].sort((a, b) => a.depth - b.depth || toTime(a.entry) - toTime(b.entry))
+    const SPAN = Math.PI * 1.15
+
+    for (const k of order) {
+      rebuild()
+      const parent = byNode.get(parentOf.get(k)!)!
+      const pcx = parent.col + parent.cols / 2
+      const pcy = parent.row + parent.rows / 2
+      const target = parent === rootP
+        ? (0.5 - rank.get(k)!) * SPAN
+        : Math.atan2(pcy - (rootRow + rr / 2), pcx - rc / 2)
+      const baseTier = k.depth > 1 ? TIERS.length - 1 : tier
+      let best: Placed | null = null
+      let bestCost = Infinity
+      for (let L = 1; L <= 10; L++) {
+        const v = TIERS[Math.min(TIERS.length - 1, baseTier + (L > 1 ? 1 : 0))]
+        const [kc, kr] = childCellsFor(k, v, cell)
+        const jitter = (seeded(k.entry.href + L) - 0.5) * 0.3
+        const stretch = 1 + (seeded(k.entry.href + 'r' + L) - 0.5) * 0.14
+        const rx = (parent.cols / 2 + gap + kc / 2 + (L - 1) * (kc * 0.8 + gap)) * stretch
+        const ry = (parent.rows / 2 + gap + kr / 2 + (L - 1) * (kr + gap)) * stretch * RING_VERTICAL
+        for (let a = -SPAN * 0.55; a <= SPAN * 0.55; a += 0.03) {
+          const col = Math.round(pcx + rx * Math.cos(a) - kc / 2)
+          const row = Math.round(pcy + ry * Math.sin(a) - kr / 2)
+          if (col < GRID_SPINE_INSET || row < 0 || col + kc > width || row + kr > height) continue
+          const cost = (L - 1) * 1.6 + Math.abs(a - target - jitter)
+          if (cost >= bestCost) continue
+          if (used(col - 1, row - 1, kc + 2, kr + 2)) continue
+          bestCost = cost
+          best = { node: k, parent, variant: v, col, row, cols: kc, rows: kr }
+        }
+        if (best && bestCost < L * 1.6) break
+      }
+      if (!best) return null
+      fill(best.col, best.row, best.cols, best.rows)
+      placed.push(best)
+      byNode.set(k, best)
+    }
+
+    let minRow = height
+    let maxRow = 0
+    let maxCol = 0
+    for (const p of placed) {
+      minRow = Math.min(minRow, p.row)
+      maxRow = Math.max(maxRow, p.row + p.rows)
+      maxCol = Math.max(maxCol, p.col + p.cols)
+    }
+    const links = placed.slice(1).map((p) => ({
+      id: `${p.parent!.node.entry.href}->${p.node.entry.href}`,
+      points: routeLink(occ, width, height, p.parent!, p)
+    }))
+    for (const p of placed) p.row -= minRow
+    for (const l of links) for (const pt of l.points) pt.y -= minRow
+    return { placed, width: maxCol, height: maxRow - minRow, links }
+  }
+
+  function routeLink(occ: Uint8Array, width: number, height: number, from: Placed, to: Placed): { x: number; y: number }[] {
+    const free = (c: number, r: number) => c >= 0 && r >= 0 && c < width && r < height && occ[r * width + c] === 0
+    const ring = (p: Placed) => {
+      const out: [number, number][] = []
+      for (let c = p.col; c < p.col + p.cols; c++) out.push([c, p.row - 1], [c, p.row + p.rows])
+      for (let r = p.row; r < p.row + p.rows; r++) out.push([p.col - 1, r], [p.col + p.cols, r])
+      return out.filter(([c, r]) => free(c, r))
+    }
+    const contact = (p: Placed, c: number, r: number) => {
+      const a = p.cols / 2
+      const b = p.rows / 2
+      const cx = p.col + a
+      const cy = p.row + b
+      const dx = c + 0.5 - cx
+      const dy = r + 0.5 - cy
+      const t = Math.pow(Math.pow(Math.abs(dx / a), 4) + Math.pow(Math.abs(dy / b), 4), -0.25)
+      return { x: cx + dx * t, y: cy + dy * t }
+    }
+    const goals = new Set(ring(to).map(([c, r]) => r * width + c))
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    const cost = new Int32Array(width * height * 4).fill(1 << 30)
+    const prev = new Int32Array(width * height * 4).fill(-1)
+    const buckets: number[][] = []
+    for (const [c, r] of ring(from)) {
+      for (let d = 0; d < 4; d++) {
+        const s = (r * width + c) * 4 + d
+        cost[s] = 0
+        ;(buckets[0] ??= []).push(s)
+      }
+    }
+    let found = -1
+    for (let b = 0; b < buckets.length && found < 0; b++) {
+      const list = buckets[b]
+      if (!list) continue
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i]
+        if (cost[s] !== b) continue
+        const cellIdx = s >> 2
+        if (goals.has(cellIdx)) { found = s; break }
+        const d = s & 3
+        const c = cellIdx % width
+        const r = Math.floor(cellIdx / width)
+        for (let nd = 0; nd < 4; nd++) {
+          const nc = c + dirs[nd][0]
+          const nr = r + dirs[nd][1]
+          if (!free(nc, nr)) continue
+          const ns = (nr * width + nc) * 4 + nd
+          const nb = b + 2 + (nd === d ? 0 : 5)
+          if (nb < cost[ns]) {
+            cost[ns] = nb
+            prev[ns] = s
+            ;(buckets[nb] ??= []).push(ns)
+          }
+        }
+      }
+    }
+    const fromCenter = { x: from.col + from.cols / 2, y: from.row + from.rows / 2 }
+    const toCenter = { x: to.col + to.cols / 2, y: to.row + to.rows / 2 }
+    if (found < 0) return [fromCenter, toCenter]
+    const cells: [number, number][] = []
+    for (let s = found; s >= 0; s = prev[s]) {
+      const idx = s >> 2
+      cells.unshift([idx % width, Math.floor(idx / width)])
+    }
+    const first = cells[0]
+    const last = cells[cells.length - 1]
+    const corners = cells.filter((cur, i) => {
+      if (i === 0 || i === cells.length - 1) return true
+      const a = cells[i - 1]
+      const b = cells[i + 1]
+      return (cur[0] - a[0]) * (b[1] - a[1]) - (cur[1] - a[1]) * (b[0] - a[0]) !== 0
+    })
+    return [
+      contact(from, first[0], first[1]),
+      ...corners.map(([c, r]) => ({ x: c + 0.5, y: r + 0.5 })),
+      contact(to, last[0], last[1])
+    ]
+  }
+
+  function clusterFor(root: TreeNode, cell: number): Packed {
+    const count = flattenTree(root.children).length
+    const rootOpts = rootCellsFor(root, cell)
+    const maxW = GRID_COLS - 2 * GRID_MARGIN - GRID_CORRIDOR
+    if (!root.children.length) {
+      const [rc, rr] = rootOpts[0]
+      return packCluster(root, rootOpts[0], 0, rc, rr, cell, RING_GAPS[0])!
+    }
+    const combos = TIERS
+      .flatMap((_, ti) => rootOpts.map((size, ri) => ({ ti, size, score: ti * 2 + ri })))
+      .sort((a, b) => a.score - b.score)
+    for (const { ti, size } of combos) {
+      const base = size[1] + Math.ceil(Math.sqrt(count)) * 14
+      for (const gap of RING_GAPS) {
+        for (const stretch of [1, 1.3, 1.6, 2]) {
+          const packed = packCluster(root, size, ti, maxW, Math.round(base * stretch), cell, gap)
+          if (packed) return packed
+        }
+      }
+    }
+    return packCluster(root, rootOpts[0], TIERS.length - 1, maxW, 600, cell, RING_GAPS[RING_GAPS.length - 1])!
+  }
+
+  function layoutTrackNarrow(roots: TreeNode[], w: number): TrackLayout {
+    const cell = w / GRID_COLS
+    const sorted = flattenTree(roots).sort((a, b) => toTime(a.entry) - toTime(b.entry))
+    const cardRows = Math.max(8, Math.round(170 / cell))
+    const gapRows = Math.round(96 / cell)
+    const cardCols = GRID_COLS - NARROW_CARD_COL - GRID_MARGIN
+    const gridRows = GRID_TOP * 2 + sorted.length * cardRows + Math.max(0, sorted.length - 1) * gapRows + GRID_BOTTOM * 2
     const rows: RowLayout[] = []
-    let yBottom = totalH - BOTTOM_PAD
-    for (let i = 0; i < sorted.length; i++) {
-      const n = sorted[i]
-      const sz = sizeOf(n.entry.href)
-      const cardW = Math.min(sz.w, w - (NARROW_SPINE_X + NARROW_CONNECTOR + TRACK_PAD_X))
-      const x = w - TRACK_PAD_X - cardW
-      const y = yBottom - sz.h
-      const cy = y + sz.h / 2
+    let bottom = gridRows - GRID_BOTTOM * 2
+    for (const n of sorted) {
+      const row = bottom - cardRows
+      const box: NodeBox = {
+        entry: n.entry,
+        depth: 0,
+        variant: 'card',
+        col: NARROW_CARD_COL,
+        row,
+        cols: cardCols,
+        rows: cardRows,
+        x: NARROW_CARD_COL * cell,
+        y: row * cell,
+        w: cardCols * cell,
+        h: cardRows * cell,
+        anchorSide: 'right',
+        anchorX: NARROW_SPINE_COL * cell,
+        anchorY: (row + cardRows / 2) * cell,
+        date: toTime(n.entry)
+      }
       rows.push({
         rootEntry: n.entry,
         side: 'right',
-        boxes: [
-          {
-            entry: n.entry,
-            depth: 0,
-            x,
-            y,
-            w: cardW,
-            h: sz.h,
-            anchorSide: 'right',
-            anchorX: NARROW_SPINE_X,
-            anchorY: cy,
-            date: n.entry.targetDate ? new Date(n.entry.targetDate).getTime() : 0
-          }
-        ],
-        top: y,
-        cellSide: sz.h,
-        issueCellX: x,
+        boxes: [box],
+        top: box.y,
+        cellSide: box.h,
+        issueCellX: box.x,
         pathCellX: 0,
-        pathCenterX: NARROW_SPINE_X,
-        rowMid: cy,
+        pathCenterX: box.anchorX!,
+        rowMid: box.anchorY!,
         gapAfter: 0,
-        spineAnchorX: NARROW_SPINE_X,
-        spineAnchorY: cy
+        spineAnchorX: box.anchorX!,
+        spineAnchorY: box.anchorY!
       })
-      yBottom = y - NARROW_GAP
+      bottom = row - gapRows
     }
-    return { rows, totalH }
+    return { rows, links: [], blocked: [], budgets: [], cell, gridRows, totalH: gridRows * cell }
   }
 
-  function layoutTrack(roots: TreeNode[], w: number, _side: number, _availW: number): { rows: RowLayout[]; totalH: number } {
-    const cx = w / 2
-    if (roots.length === 0) return { rows: [], totalH: 0 }
-
+  function layoutTrack(roots: TreeNode[], w: number): TrackLayout {
+    const cell = w / GRID_COLS
+    if (roots.length === 0) return { rows: [], links: [], blocked: [], budgets: [], cell, gridRows: 0, totalH: 0 }
     if (narrow) return layoutTrackNarrow(roots, w)
 
-    const sortedRoots = [...roots].sort((a, b) =>
-      (a.entry.targetDate ?? '').localeCompare(b.entry.targetDate ?? '')
-    )
+    const sortedRoots = [...roots].sort((a, b) => toTime(a.entry) - toTime(b.entry))
     const N = sortedRoots.length
-    const rootTimes = sortedRoots.map((r) =>
-      r.entry.targetDate ? new Date(r.entry.targetDate).getTime() : 0
-    )
+    const HOUR_MS = 3600000
+    const hours = sortedRoots.slice(1).map((r, i) => Math.abs(toTime(r.entry) - toTime(sortedRoots[i].entry)) / HOUR_MS)
+    const positive = hours.filter((h) => h > 0)
+    const minHours = positive.length ? Math.min(...positive) : 1
+    const budgets = hours.map((h) => segmentBudget(h, minHours))
+    const freeCols = GRID_COLS - 2 * GRID_MARGIN
+    const gaps = budgets.map((b) => Math.max(GRID_CLUSTER_GAP, Math.ceil((b * 2 * (FILL_PX / cell) ** 2) / freeCols)))
 
-    const FIRST_X = 100
-    const ROW_GAP = 220
-    const TOP_PAD = 80
-    const BOTTOM_PAD = 80
-    const PATH_CLEARANCE = 20
-    const COLUMN_GAP = 16
-    const PARENT_TO_CHILD_GAP = 18
-    const MIN_SIB_GAP = 16
-    const Y_PER_DAY_CHILD = 0.35
-    const CLUSTER_EDGE_GAP = 40
-
-    interface RelBox {
-      entry: RoadmapEntry
-      depth: number
-      x: number
-      y: number
-      w: number
-      h: number
-      date: number
-    }
-
-    function preplaceSubtree(root: TreeNode, rootDate: number, sideDir: 1 | -1): {
-      boxes: RelBox[]
-      aboveExtent: number
-      belowExtent: number
-    } {
-      const FAN_ARC = Math.PI / 2
-      const SUB_FAN_ARC = Math.PI / 3
-
-      interface Node {
-        entry: RoadmapEntry
-        depth: number
-        parent: Node | null
-        date: number
-        w: number
-        h: number
-        baseW: number
-        baseH: number
-        cx: number
-        cy: number
-        vx: number
-        vy: number
-        fixed: boolean
-      }
-
-      const nodes: Node[] = []
-      const byDepth = new Map<number, Node[]>()
-
-      function build(treeNode: TreeNode, parent: Node | null, depth: number) {
-        const scale = Math.pow(DEPTH_SCALE, depth)
-        const baseW = depth === 0 ? NODE_W_BASE : Math.round(NODE_W_BASE * scale)
-        const baseH = depth === 0 ? NODE_H_BASE : Math.round(NODE_H_BASE * scale)
-        const measured = measuredSizes[treeNode.entry.href]
-        const w = measured ? measured[0] : baseW
-        const h = measured ? measured[1] : baseH
-        const date = depth === 0
-          ? rootDate
-          : (treeNode.entry.targetDate ? new Date(treeNode.entry.targetDate).getTime() : 0)
-        const node: Node = {
-          entry: treeNode.entry,
-          depth,
-          parent,
-          date,
-          w,
-          h,
-          baseW,
-          baseH,
-          cx: 0,
-          cy: 0,
-          vx: 0,
-          vy: 0,
-          fixed: depth === 0
-        }
-        nodes.push(node)
-        if (!byDepth.has(depth)) byDepth.set(depth, [])
-        byDepth.get(depth)!.push(node)
-
-        const kids = treeNode.children.map((c) => ({
-          node: c,
-          date: c.entry.targetDate ? new Date(c.entry.targetDate).getTime() : 0
-        }))
-        const later = kids.filter((k) => k.date > date).sort((a, b) => a.date - b.date)
-        const earlier = kids.filter((k) => k.date <= date).sort((a, b) => b.date - a.date)
-
-        for (const k of earlier) build(k.node, node, depth + 1)
-        for (const k of later) build(k.node, node, depth + 1)
-      }
-      build(root, null, 0)
-
-      const rootNode = nodes[0]
-      rootNode.cx = 0
-      rootNode.cy = 0
-      rootNode.fixed = true
-
-      if (nodes.length === 1) {
-        return {
-          boxes: [{
-            entry: root.entry, depth: 0,
-            x: -NODE_W_BASE / 2, y: -NODE_H_BASE / 2,
-            w: NODE_W_BASE, h: NODE_H_BASE,
-            date: rootDate
-          }],
-          aboveExtent: NODE_H_BASE / 2,
-          belowExtent: NODE_H_BASE / 2
-        }
-      }
-
-      function ringRadius(pw: number, ph: number, angle: number): number {
-        const ca = Math.abs(Math.cos(angle))
-        const sa = Math.abs(Math.sin(angle))
-        if (sa < 0.001) return pw / 2
-        if (ca < 0.001) return ph / 2
-        return Math.min(pw / 2 / ca, ph / 2 / sa)
-      }
-
-      function idealRadiusAt(p: Node, c: Node, angle: number): number {
-        const ca = Math.abs(Math.cos(angle))
-        const sa = Math.abs(Math.sin(angle))
-        const parentReach = ringRadius(p.w * HALO_INFLATE, p.h * HALO_INFLATE, angle)
-        const childSupport = ca * c.w * HALO_INFLATE / 2 + sa * c.h * HALO_INFLATE / 2
-        return parentReach + childSupport + 14
-      }
-
-      function idealRadius(p: Node, c: Node): number {
-        return Math.hypot(p.w / 2 + c.w / 2 + 8, p.h / 2 + c.h / 2 + 8) * 0.85
-      }
-
-      function seedChildren(parent: Node, kids: Node[]) {
-        const earlier = kids.filter((k) => k.date <= parent.date).sort((a, b) => b.date - a.date)
-        const later = kids.filter((k) => k.date > parent.date).sort((a, b) => a.date - b.date)
-
-        let outX = 0
-        let outY = 1
-        if (parent.parent) {
-          const dx = parent.cx - parent.parent.cx
-          const dy = parent.cy - parent.parent.cy
-          const d = Math.hypot(dx, dy) || 1
-          outX = dx / d
-          outY = dy / d
-        } else {
-          outY = 1
-          outX = -sideDir * 0.5
-          const m = Math.hypot(outX, outY)
-          outX /= m
-          outY /= m
-        }
-        const outAngle = Math.atan2(outY, outX)
-
-        function placeFan(list: Node[], sign: 1 | -1, span: number, isRoot: boolean) {
-          let center: number
-          if (isRoot) {
-            center = sign === 1 ? Math.PI / 2 - sideDir * (Math.PI / 8) : -Math.PI / 2 - sideDir * (Math.PI / 8)
-          } else {
-            const perpA = outAngle + Math.PI / 2
-            const perpB = outAngle - Math.PI / 2
-            if (sign === 1) {
-              center = Math.sin(perpA) > Math.sin(perpB) ? perpA : perpB
-            } else {
-              center = Math.sin(perpA) < Math.sin(perpB) ? perpA : perpB
-            }
-          }
-          for (let i = 0; i < list.length; i++) {
-            const t = list.length === 1 ? 0 : i / (list.length - 1) - 0.5
-            const angle = center + t * span
-            const r = idealRadiusAt(parent, list[i], angle)
-            list[i].cx = parent.cx + r * Math.cos(angle)
-            list[i].cy = parent.cy + r * Math.sin(angle)
-          }
-        }
-
-        const isRoot = parent.depth === 0
-        const span = isRoot ? FAN_ARC : SUB_FAN_ARC
-        placeFan(earlier, 1, span, isRoot)
-        placeFan(later, -1, span, isRoot)
-      }
-
-      const PARENT_SPRING_K = 0.28
-      const REPULSE_PAD = 4
-      const REPULSE_K = 0.95
-      const DAMPING = 0.78
-      const ITER_PER_LAYER = 200
-      const HALO_INFLATE = 1.18
-
-      const maxDepth = Math.max(...nodes.map((n) => n.depth))
-
-      function settleLayer(layer: Node[], placedSoFar: Node[]) {
-        for (const n of layer) { n.vx = 0; n.vy = 0 }
-
-        for (let iter = 0; iter < ITER_PER_LAYER; iter++) {
-          const fx = new Map<Node, number>()
-          const fy = new Map<Node, number>()
-          for (const n of layer) { fx.set(n, 0); fy.set(n, 0) }
-
-          for (const n of layer) {
-            const p = n.parent!
-            const dx = n.cx - p.cx
-            const dy = n.cy - p.cy
-            const dist = Math.hypot(dx, dy) || 0.001
-            const angle = Math.atan2(dy, dx)
-            const ideal = idealRadiusAt(p, n, angle)
-            const delta = dist - ideal
-            fx.set(n, fx.get(n)! - (dx / dist) * delta * PARENT_SPRING_K)
-            fy.set(n, fy.get(n)! - (dy / dist) * delta * PARENT_SPRING_K)
-          }
-
-          for (const n of layer) {
-            for (const other of placedSoFar) {
-              if (other === n) continue
-              const dx = n.cx - other.cx
-              const dy = n.cy - other.cy
-              const ax = n.w * HALO_INFLATE / 2 + other.w * HALO_INFLATE / 2 + REPULSE_PAD
-              const ay = n.h * HALO_INFLATE / 2 + other.h * HALO_INFLATE / 2 + REPULSE_PAD
-              const ox = ax - Math.abs(dx)
-              const oy = ay - Math.abs(dy)
-              if (ox > 0 && oy > 0) {
-                if (ox < oy) {
-                  const push = ox * REPULSE_K
-                  const sgn = Math.abs(dx) < 0.5 ? (Math.random() > 0.5 ? -1 : 1) : (dx >= 0 ? 1 : -1)
-                  fx.set(n, fx.get(n)! + sgn * push)
-                } else {
-                  const push = oy * REPULSE_K
-                  const sgn = Math.abs(dy) < 0.5 ? (Math.random() > 0.5 ? -1 : 1) : (dy >= 0 ? 1 : -1)
-                  fy.set(n, fy.get(n)! + sgn * push)
-                }
-              }
-            }
-            for (const m of layer) {
-              if (m === n) continue
-              const dx = n.cx - m.cx
-              const dy = n.cy - m.cy
-              const ax = n.w * HALO_INFLATE / 2 + m.w * HALO_INFLATE / 2 + REPULSE_PAD
-              const ay = n.h * HALO_INFLATE / 2 + m.h * HALO_INFLATE / 2 + REPULSE_PAD
-              const ox = ax - Math.abs(dx)
-              const oy = ay - Math.abs(dy)
-              if (ox > 0 && oy > 0) {
-                if (ox < oy) {
-                  const push = ox * REPULSE_K * 0.5
-                  const sgn = dx >= 0 ? 1 : -1
-                  fx.set(n, fx.get(n)! + sgn * push)
-                } else {
-                  const push = oy * REPULSE_K * 0.5
-                  const sgn = dy >= 0 ? 1 : -1
-                  fy.set(n, fy.get(n)! + sgn * push)
-                }
-              }
-            }
-          }
-
-          for (const n of layer) {
-            n.vx = (n.vx + (fx.get(n) ?? 0)) * DAMPING
-            n.vy = (n.vy + (fy.get(n) ?? 0)) * DAMPING
-            const maxStep = 12
-            if (n.vx > maxStep) n.vx = maxStep
-            if (n.vx < -maxStep) n.vx = -maxStep
-            if (n.vy > maxStep) n.vy = maxStep
-            if (n.vy < -maxStep) n.vy = -maxStep
-            n.cx += n.vx
-            n.cy += n.vy
-          }
-        }
-      }
-
-      const placed: Node[] = [rootNode]
-      for (let d = 1; d <= maxDepth; d++) {
-        const layer = byDepth.get(d) ?? []
-        const byParent = new Map<Node, Node[]>()
-        for (const n of layer) {
-          const p = n.parent!
-          if (!byParent.has(p)) byParent.set(p, [])
-          byParent.get(p)!.push(n)
-        }
-        for (const [p, kids] of byParent) {
-          seedChildren(p, kids)
-        }
-        settleLayer(layer, placed)
-        for (const n of layer) {
-          n.fixed = true
-          placed.push(n)
-        }
-      }
-
-      for (let pass = 0; pass < 80; pass++) {
-        let moved = false
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const a = nodes[i]
-            const b = nodes[j]
-            const dx = a.cx - b.cx
-            const dy = a.cy - b.cy
-            const ax = a.w * HALO_INFLATE / 2 + b.w * HALO_INFLATE / 2 + REPULSE_PAD
-            const ay = a.h * HALO_INFLATE / 2 + b.h * HALO_INFLATE / 2 + REPULSE_PAD
-            const ox = ax - Math.abs(dx)
-            const oy = ay - Math.abs(dy)
-            if (ox > 0.5 && oy > 0.5) {
-              moved = true
-              const aRoot = a === rootNode
-              const bRoot = b === rootNode
-              const factor = aRoot || bRoot ? 1.0 : 0.5
-              if (ox < oy) {
-                const sgn = Math.abs(dx) < 0.5 ? (i < j ? -1 : 1) : (dx >= 0 ? 1 : -1)
-                if (!aRoot) a.cx += sgn * ox * factor
-                if (!bRoot) b.cx -= sgn * ox * factor
-              } else {
-                const sgn = Math.abs(dy) < 0.5 ? (i < j ? -1 : 1) : (dy >= 0 ? 1 : -1)
-                if (!aRoot) a.cy += sgn * oy * factor
-                if (!bRoot) b.cy -= sgn * oy * factor
-              }
-            }
-          }
-        }
-        if (!moved) break
-      }
-
-      const boxes: RelBox[] = nodes.map((n) => ({
-        entry: n.entry,
-        depth: n.depth,
-        x: n.cx - n.baseW / 2,
-        y: n.cy - n.baseH / 2,
-        w: n.baseW,
-        h: n.baseH,
-        date: n.date
-      }))
-
-      let aboveExtent = NODE_H_BASE / 2
-      let belowExtent = NODE_H_BASE / 2
-      for (const b of boxes) {
-        if (-b.y > aboveExtent) aboveExtent = -b.y
-        if (b.y + b.h > belowExtent) belowExtent = b.y + b.h
-      }
-      return { boxes, aboveExtent, belowExtent }
-    }
-
-    const sides: ('left' | 'right')[] = sortedRoots.map((_, i) => (i % 2 === 0 ? 'left' : 'right'))
-    const xs = sides.map((s) => (s === 'left' ? FIRST_X : w - FIRST_X - NODE_W_BASE))
-
-    const preplaced = sortedRoots.map((root, i) =>
-      preplaceSubtree(root, rootTimes[i], sides[i] === 'left' ? 1 : -1)
-    )
-
-    const gaps: number[] = []
-    for (let i = 1; i < N; i++) {
-      const aboveOfPrev = preplaced[i - 1].aboveExtent - NODE_H_BASE / 2
-      const belowOfThis = preplaced[i].belowExtent - NODE_H_BASE / 2
-      const clusterGap = aboveOfPrev + belowOfThis + CLUSTER_EDGE_GAP
-      gaps.push(Math.max(ROW_GAP, clusterGap))
-    }
-
-    const totalIssueHeight = N * NODE_H_BASE
-    const totalGapHeight = gaps.reduce((s, g) => s + g, 0)
-    const topAboveExtra = preplaced[N - 1].aboveExtent - NODE_H_BASE / 2
-    const bottomBelowExtra = preplaced[0].belowExtent - NODE_H_BASE / 2
-    const totalH = TOP_PAD + topAboveExtra + totalIssueHeight + totalGapHeight + bottomBelowExtra + BOTTOM_PAD
-
-    const rootMidY: number[] = []
-    rootMidY[0] = totalH - BOTTOM_PAD - bottomBelowExtra - NODE_H_BASE / 2
-    for (let i = 1; i < N; i++) {
-      rootMidY[i] = rootMidY[i - 1] - gaps[i - 1] - NODE_H_BASE
-    }
+    const packs = sortedRoots.map((r) => clusterFor(r, cell))
+    const gridRows = GRID_TOP + packs.reduce((s, p) => s + p.height, 0) + gaps.reduce((s, g) => s + g, 0) + GRID_BOTTOM
 
     const rows: RowLayout[] = []
+    const links: Link[] = []
+    const blocked: Rect[] = []
+    let bottom = gridRows - GRID_BOTTOM
     for (let i = 0; i < N; i++) {
-      const side = sides[i]
-      const x = xs[i]
-      const rootCenterX = x + NODE_W_BASE / 2
-      const cy = rootMidY[i]
-      const rootAnchorX = side === 'left' ? x + NODE_W_BASE + PATH_CLEARANCE : x - PATH_CLEARANCE
-
-      const boxes: NodeBox[] = []
-      for (const rb of preplaced[i].boxes) {
-        const absCenterX = rb.x + rb.w / 2 + rootCenterX
-        let absX = absCenterX - rb.w / 2
-        absX = Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X - rb.w, absX))
-        const absY = rb.y + cy
-        boxes.push({
-          entry: rb.entry,
-          depth: rb.depth,
-          x: absX,
-          y: absY,
-          w: rb.w,
-          h: rb.h,
-          anchorSide: side,
-          anchorX: side === 'left' ? absX + rb.w + PATH_CLEARANCE : absX - PATH_CLEARANCE,
-          anchorY: absY + rb.h / 2,
-          date: rb.date
-        })
+      const pack = packs[i]
+      const side: 'left' | 'right' = i % 2 === 0 ? 'left' : 'right'
+      const top = bottom - pack.height
+      const innerEdge = side === 'left' ? GRID_MARGIN + pack.width : GRID_COLS - GRID_MARGIN - pack.width
+      const colOf = (c: number, span: number) => (side === 'left' ? innerEdge - c - span : innerEdge + c)
+      const xOf = (x: number) => (side === 'left' ? innerEdge - x : innerEdge + x)
+      const anchorCol = side === 'left' ? innerEdge + ANCHOR_GAP : innerEdge - ANCHOR_GAP
+      const anchorX = anchorCol * cell
+      const rootPlaced = pack.placed[0]
+      const anchorY = (top + rootPlaced.row + rootPlaced.rows / 2) * cell
+      const boxes: NodeBox[] = pack.placed.map((p, k) => {
+        const col = colOf(p.col, p.cols)
+        const row = top + p.row
+        const box: NodeBox = {
+          entry: p.node.entry,
+          depth: p.node.depth,
+          variant: p.variant,
+          col,
+          row,
+          cols: p.cols,
+          rows: p.rows,
+          x: col * cell,
+          y: row * cell,
+          w: p.cols * cell,
+          h: p.rows * cell,
+          date: toTime(p.node.entry)
+        }
+        if (k === 0) {
+          box.anchorSide = side
+          box.anchorX = anchorX
+          box.anchorY = anchorY
+        }
+        blocked.push({ x: box.x - cell / 2, y: box.y - cell / 2, w: box.w + cell, h: box.h + cell })
+        return box
+      })
+      const root = boxes[0]
+      const laneX0 = side === 'left' ? root.x + root.w : anchorX + cell
+      const laneX1 = side === 'left' ? anchorX - cell : root.x
+      blocked.push({ x: laneX0, y: anchorY - cell, w: Math.max(0, laneX1 - laneX0), h: 2 * cell })
+      for (const l of pack.links) {
+        const pts = l.points.map((p) => ({ x: xOf(p.x) * cell, y: (top + p.y) * cell }))
+        const a = pts[0]
+        const b = pts[pts.length - 1]
+        const len = Math.hypot(b.x - a.x, b.y - a.y)
+        if (pts.length <= 4 && len < cell * 8) {
+          const bow = (seeded(l.id) > 0.5 ? 1 : -1) * len * 0.35
+          const mx = (a.x + b.x) / 2 - ((b.y - a.y) / (len || 1)) * bow
+          const my = (a.y + b.y) / 2 + ((b.x - a.x) / (len || 1)) * bow
+          links.push({ id: l.id, d: `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)}, ${b.x.toFixed(1)} ${b.y.toFixed(1)}` })
+        } else links.push({ id: l.id, d: buildSpineHermite(pts) })
       }
-
       rows.push({
         rootEntry: sortedRoots[i].entry,
         side,
         boxes,
-        top: cy - NODE_H_BASE / 2,
-        cellSide: NODE_H_BASE,
-        issueCellX: x,
+        top: root.y,
+        cellSide: root.h,
+        issueCellX: root.x,
         pathCellX: 0,
-        pathCenterX: cx,
-        rowMid: cy,
-        gapAfter: 0,
-        spineAnchorX: rootAnchorX,
-        spineAnchorY: cy
+        pathCenterX: w / 2,
+        rowMid: anchorY,
+        gapAfter: i < N - 1 ? gaps[i] * cell : 0,
+        spineAnchorX: anchorX,
+        spineAnchorY: anchorY
       })
+      bottom = top - (i < N - 1 ? gaps[i] : 0)
     }
-
-    return { rows, totalH }
-  }
-
-  function generateSwirlsBetween(
-    start: { x: number; y: number },
-    end: { x: number; y: number },
-    targetLength: number,
-    xMin: number,
-    xMax: number
-  ): { x: number; y: number }[] {
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const straightLen = Math.hypot(dx, dy)
-    const extra = targetLength - straightLen
-    if (extra <= 40 || straightLen < 1) return []
-
-    const clampX = (x: number) => Math.max(xMin, Math.min(xMax, x))
-
-    const swirlCount = Math.max(1, Math.min(10, Math.floor(extra / 90)))
-
-    const perpX = -dy / straightLen
-    const perpY = dx / straightLen
-    const alleyHalf = (xMax - xMin) / 2
-    const reach = Math.min(alleyHalf * 0.9, Math.max(80, extra * 0.16))
-
-    const waypoints: { x: number; y: number }[] = []
-    for (let i = 1; i <= swirlCount; i++) {
-      const t = i / (swirlCount + 1)
-      const baseX = start.x + dx * t
-      const baseY = start.y + dy * t
-      const sign = i % 2 === 1 ? 1 : -1
-      const wx = clampX(baseX + sign * reach * perpX)
-      const wy = baseY + sign * reach * perpY
-      waypoints.push({ x: wx, y: wy })
-    }
-    return waypoints
+    return { rows, links, blocked, budgets, cell, gridRows, totalH: gridRows * cell }
   }
 
   interface SpineAnchor {
@@ -920,133 +663,19 @@
     date: number
   }
 
-  function computeSpineAnchors(rows: RowLayout[], w: number): SpineAnchor[] {
+  function computeSpineAnchors(rows: RowLayout[], _w: number): SpineAnchor[] {
     const boxes: NodeBox[] = []
     for (const r of rows) for (const b of r.boxes) {
       if (b.depth === 0) boxes.push(b)
     }
     boxes.sort((a, b) => (a.date ?? 0) - (b.date ?? 0))
-    if (narrow) {
-      return boxes.map((b) => ({ box: b, x: NARROW_SPINE_X, y: b.y + b.h / 2, side: -1, date: b.date ?? 0 }))
-    }
-    const cx = w / 2
-    const BLOB_VISIBLE_FACTOR = 1.5
-    return boxes.map((b) => {
-      const center = b.x + b.w / 2
-      const side: 1 | -1 = center <= cx ? 1 : -1
-      const haloHalfW = b.w * (BLOB_VISIBLE_FACTOR - 1) / 2
-      const ax = side === 1 ? b.x + b.w + haloHalfW + 16 : b.x - haloHalfW - 16
-      const ay = b.y + b.h / 2
-      return { box: b, x: ax, y: ay, side, date: b.date ?? 0 }
-    })
-  }
-
-  function avoidCards(px: number, py: number, boxes: NodeBox[], w: number): number {
-    const pad = 12
-    let x = px
-    for (const r of boxes) {
-      const hx = r.w * 0.25
-      const hy = r.h * 0.25
-      const rx = r.x - hx
-      const rw = r.w + 2 * hx
-      const ry = r.y - hy
-      const rh = r.h + 2 * hy
-      if (py <= ry - pad || py >= ry + rh + pad) continue
-      if (x <= rx - pad || x >= rx + rw + pad) continue
-      const toLeft = rx - pad
-      const toRight = rx + rw + pad
-      x = Math.abs(x - toLeft) <= Math.abs(x - toRight) ? toLeft : toRight
-    }
-    return Math.max(TRACK_PAD_X, Math.min(w - TRACK_PAD_X, x))
-  }
-
-  function coilPoint(
-    sA: { x: number; y: number },
-    sB: { x: number; y: number },
-    dir: number,
-    rx: number,
-    ry: number,
-    loops: number,
-    t: number
-  ): { x: number; y: number } {
-    const e = t * t * t * (t * (t * 6 - 15) + 10)
-    const baseX = sA.x + (sB.x - sA.x) * e
-    const baseY = sA.y + (sB.y - sA.y) * e
-    const env = Math.sin(Math.PI * t) ** 2
-    const theta = 2 * Math.PI * loops * t
-    const x = baseX + dir * rx * env * (1 - Math.cos(theta)) / 2
-    const y = baseY + ry * env * Math.sin(theta)
-    return { x, y }
-  }
-
-  function coilArcLength(
-    sA: { x: number; y: number },
-    sB: { x: number; y: number },
-    dir: number,
-    rx: number,
-    ry: number,
-    loops: number
-  ): number {
-    const STEPS = 280
-    let px = sA.x
-    let py = sA.y
-    let len = 0
-    for (let k = 1; k <= STEPS; k++) {
-      const p = coilPoint(sA, sB, dir, rx, ry, loops, k / STEPS)
-      len += Math.hypot(p.x - px, p.y - py)
-      px = p.x
-      py = p.y
-    }
-    return len
-  }
-
-  function solveCoilSize(
-    sA: { x: number; y: number },
-    sB: { x: number; y: number },
-    dir: number,
-    ryRatio: number,
-    loops: number,
-    maxRx: number,
-    target: number
-  ): number {
-    let lo = 0
-    let hi = maxRx
-    for (let k = 0; k < 40; k++) {
-      const mid = (lo + hi) / 2
-      if (coilArcLength(sA, sB, dir, mid, mid * ryRatio, loops) < target) lo = mid
-      else hi = mid
-    }
-    return (lo + hi) / 2
-  }
-
-  function sampleCoil(
-    sA: { x: number; y: number },
-    sB: { x: number; y: number },
-    dir: number,
-    rx: number,
-    ry: number,
-    loops: number,
-    boxes: NodeBox[],
-    w: number
-  ): { x: number; y: number }[] {
-    const SAMPLES = Math.max(96, Math.round(loops * 110))
-    const pts: { x: number; y: number }[] = []
-    for (let i = 1; i <= SAMPLES; i++) {
-      const p = coilPoint(sA, sB, dir, rx, ry, loops, i / (SAMPLES + 1))
-      pts.push({ x: avoidCards(p.x, p.y, boxes, w), y: p.y })
-    }
-    return pts
-  }
-
-  function computeSpineX(boxes: NodeBox[]): number {
-    const BLOB_VISIBLE_FACTOR = 1.5
-    let maxRight = 0
-    for (const b of boxes) {
-      const haloRight = b.w * (BLOB_VISIBLE_FACTOR - 1) / 2
-      const right = b.x + b.w + haloRight
-      if (right > maxRight) maxRight = right
-    }
-    return maxRight + 30
+    return boxes.map((b) => ({
+      box: b,
+      x: b.anchorX ?? b.x,
+      y: b.anchorY ?? b.y + b.h / 2,
+      side: b.anchorSide === 'right' ? -1 : 1,
+      date: b.date ?? 0
+    }))
   }
 
   function fillingPath(
@@ -1062,7 +691,7 @@
       s = (Math.imul(s, 1664525) + 1013904223) >>> 0
       return s / 4294967296
     }
-    const cell = 46
+    const cell = FILL_PX
     const cols = Math.max(3, Math.round(box.w / cell))
     const rows = Math.max(3, Math.round(box.h / cell))
     const cw = box.w / cols
@@ -1078,6 +707,30 @@
       for (let c = c0; c <= c1; c++) for (let r = r0; r <= r1; r++) blockedCells[c * rows + r] = 1
     }
     const blocked = (c: number, r: number) => blockedCells[c * rows + r] === 1
+    const key2 = (c: number, r: number) => c * rows + r
+    const room = new Int32Array(cols * rows).fill(-1)
+    const roomQueue: number[] = []
+    for (let c = 0; c < cols; c++)
+      for (let r = 0; r < rows; r++) {
+        if (blocked(c, r) || c === 0 || r === 0 || c === cols - 1 || r === rows - 1) {
+          room[key2(c, r)] = blocked(c, r) ? 0 : 1
+          roomQueue.push(key2(c, r))
+        }
+      }
+    for (let qi = 0; qi < roomQueue.length; qi++) {
+      const cur = roomQueue[qi]
+      const c = Math.floor(cur / rows)
+      const r = cur % rows
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nc = c + dc
+        const nr = r + dr
+        if (!inGrid(nc, nr) || room[key2(nc, nr)] >= 0) continue
+        room[key2(nc, nr)] = room[cur] + 1
+        roomQueue.push(key2(nc, nr))
+      }
+    }
+    let maxRoom = 1
+    for (let k = 0; k < room.length; k++) if (room[k] > maxRoom) maxRoom = room[k]
     const snap = (p: { x: number; y: number }) => {
       let bc = 0
       let br = 0
@@ -1123,7 +776,9 @@
       const nbs = dirs
         .map(([dc, dr]) => [c + dc, r + dr])
         .filter(([nc, nr]) => inGrid(nc, nr) && !blocked(nc, nr) && !visited.has(key(nc, nr)))
-        .sort(() => rng() - 0.5)
+        .map(([nc, nr]) => ({ nc, nr, w: rng() - room[key2(nc, nr)] / maxRoom }))
+        .sort((p, q) => p.w - q.w)
+        .map(({ nc, nr }) => [nc, nr])
       for (const [nc, nr] of nbs) {
         const sub = dfs(nc, nr, len + 1)
         if (sub) {
@@ -1143,7 +798,33 @@
       route = dfs(S.c, S.r, 1)
       tries++
     }
-    if (!route) route = [{ c: S.c, r: S.r }, { c: E.c, r: E.r }]
+    if (!route) {
+      const from = new Int32Array(cols * rows).fill(-1)
+      const queue = [key2(S.c, S.r)]
+      from[queue[0]] = queue[0]
+      for (let qi = 0; qi < queue.length; qi++) {
+        const cur = queue[qi]
+        if (cur === key2(E.c, E.r)) break
+        const c = Math.floor(cur / rows)
+        const r = cur % rows
+        for (const [dc, dr] of dirs) {
+          const nc = c + dc
+          const nr = r + dr
+          if (!inGrid(nc, nr) || blocked(nc, nr)) continue
+          const nk = key2(nc, nr)
+          if (from[nk] >= 0) continue
+          from[nk] = cur
+          queue.push(nk)
+        }
+      }
+      route = []
+      if (from[key2(E.c, E.r)] >= 0) {
+        for (let k = key2(E.c, E.r); ; k = from[k]) {
+          route.unshift({ c: Math.floor(k / rows), r: k % rows })
+          if (k === from[k]) break
+        }
+      } else route = [{ c: S.c, r: S.r }, { c: E.c, r: E.r }]
+    }
     const grid = route.map((n) => pt(n.c, n.r))
     grid[0] = start
     grid[grid.length - 1] = end
@@ -1167,13 +848,14 @@
     return np
   }
 
-  function buildSpinePath(rows: RowLayout[], w: number, trackH: number, _side: number): string {
+  function buildSpinePath(track: TrackLayout, w: number, trackH: number): string {
+    const rows = track.rows
     if (!rows.length || w <= 0 || trackH <= 0) return ''
     const anchors = computeSpineAnchors(rows, w)
     if (anchors.length === 0) return ''
 
     if (narrow) {
-      const x = NARROW_SPINE_X
+      const x = anchors[0].x
       const top = anchors[anchors.length - 1]
       const topY = Math.max(40, top.y - 92) - 8
       const cx = w / 2
@@ -1186,9 +868,6 @@
       )
     }
 
-    const planetX = w / 2
-    const planetY = trackH
-
     const HOUR_MS = 3600000
     let minHours = Infinity
     for (let i = 0; i < anchors.length - 1; i++) {
@@ -1196,11 +875,6 @@
       if (h > 0 && h < minHours) minHours = h
     }
     if (!Number.isFinite(minHours)) minHours = 1
-    const blockedRects = anchors.map((a) => {
-      const haloX = a.box.w * 0.25
-      const haloY = a.box.h * 0.25
-      return { x: a.box.x - haloX, y: a.box.y - haloY, w: a.box.w + 2 * haloX, h: a.box.h + 2 * haloY }
-    })
     const BASELINE_CELLS = 9
     const LARGER = 1.5
 
@@ -1210,18 +884,14 @@
       const b = anchors[i + 1]
       const hours = Math.abs((b.date ?? 0) - (a.date ?? 0)) / HOUR_MS
       const top = Math.min(a.y, b.y)
-      const box = { x: TRACK_PAD_X, y: top, w: w - 2 * TRACK_PAD_X, h: Math.abs(a.y - b.y) }
+      const box = { x: 0, y: top, w, h: Math.abs(a.y - b.y) }
       const budget = Math.max(BASELINE_CELLS, Math.round(LARGER * BASELINE_CELLS * (hours / minHours)))
       const seed = (1013904223 + i * 2654435761) >>> 0
-      segs.push(fillingPath({ x: a.x, y: a.y }, { x: b.x, y: b.y }, box, blockedRects, budget, seed))
+      segs.push(fillingPath({ x: a.x, y: a.y }, { x: b.x, y: b.y }, box, track.blocked, budget, seed))
     }
 
     const dist = (p: { x: number; y: number }, q: { x: number; y: number }) => Math.hypot(p.x - q.x, p.y - q.y)
     const lerp = (p: { x: number; y: number }, q: { x: number; y: number }, t: number) => ({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t })
-    const norm = (v: { x: number; y: number }) => {
-      const m = Math.hypot(v.x, v.y) || 1
-      return { x: v.x / m, y: v.y / m }
-    }
     const segLen = (poly: { x: number; y: number }[]) => {
       let L = 0
       for (let k = 1; k < poly.length; k++) L += dist(poly[k], poly[k - 1])
@@ -1249,39 +919,41 @@
 
     const lens = segs.map(segLen)
     const GUIDE = 34
+    const MAX_TURN = Math.cos((75 * Math.PI) / 180)
     const dAt = (i: number) => Math.min(GUIDE, Math.max(6, lens[i] * 0.42))
+    const planet = { x: w / 2, y: trackH }
 
     const pts: { x: number; y: number }[] = []
-    pts.push({ x: planetX, y: planetY })
+    pts.push(planet)
 
     const N = anchors.length
     for (let i = 0; i < N; i++) {
       const A = { x: anchors[i].x, y: anchors[i].y }
-      const inDir =
-        i > 0
-          ? norm({ x: A.x - arcPoint(segs[i - 1], false, dAt(i - 1)).pt.x, y: A.y - arcPoint(segs[i - 1], false, dAt(i - 1)).pt.y })
-          : norm({ x: A.x - planetX, y: A.y - planetY })
-      const outDir =
-        i < N - 1
-          ? norm({ x: arcPoint(segs[i], true, dAt(i)).pt.x - A.x, y: arcPoint(segs[i], true, dAt(i)).pt.y - A.y })
-          : { x: 0, y: -1 }
-      let T = norm({ x: inDir.x + outDir.x, y: inDir.y + outDir.y })
-      if (!Number.isFinite(T.x) || !Number.isFinite(T.y) || (T.x === 0 && T.y === 0)) T = outDir
-      const dBefore = i > 0 ? dAt(i - 1) : Math.min(GUIDE, dist(A, { x: planetX, y: planetY }) * 0.4)
+      const dBefore = i > 0 ? dAt(i - 1) : Math.min(GUIDE, dist(A, planet) * 0.4)
       const dAfter = i < N - 1 ? dAt(i) : 40
-      pts.push({ x: A.x - T.x * dBefore, y: A.y - T.y * dBefore })
-      pts.push(A)
-      pts.push({ x: A.x + T.x * dAfter, y: A.y + T.y * dAfter })
+      const below = { x: A.x, y: A.y + dBefore }
+      const above = { x: A.x, y: A.y - dAfter }
+      pts.push(below, A, above)
       if (i < N - 1) {
-        const startIdx = arcPoint(segs[i], true, dAt(i)).idx
-        const endIdx = arcPoint(segs[i], false, dAt(i)).idx
+        const seg = segs[i]
+        const next = anchors[i + 1]
+        const nextBelow = { x: next.x, y: next.y + dAt(i) }
+        const sharp = (from: { x: number; y: number }, to: { x: number; y: number }, dirY: number) => {
+          const dx = to.x - from.x
+          const dy = to.y - from.y
+          const m = Math.hypot(dx, dy)
+          return m > 0 && (dy * dirY) / m < MAX_TURN
+        }
+        let startIdx = arcPoint(seg, true, dAt(i)).idx
+        let endIdx = arcPoint(seg, false, dAt(i)).idx
+        for (let k = 0; k < 6 && startIdx < endIdx && sharp(above, seg[startIdx], -1); k++) startIdx++
+        for (let k = 0; k < 6 && endIdx > startIdx && sharp(seg[endIdx], nextBelow, -1); k++) endIdx--
         for (let k = startIdx; k <= endIdx; k++) pts.push(segs[i][k])
       }
     }
 
     const last = anchors[N - 1]
     pts.push({ x: last.x, y: Math.max(40, last.y - 92) - 8 })
-
     return buildSpineHermite(pts)
   }
 
@@ -1292,7 +964,7 @@
     return anchors.map((a) => {
       const box = a.box
       const startX = a.side === 1 ? box.x + box.w : box.x
-      const startY = box.y + box.h / 2
+      const startY = a.y
       const d = `M ${startX.toFixed(1)} ${startY.toFixed(1)} L ${a.x.toFixed(1)} ${a.y.toFixed(1)}`
       return { id: box.entry.href + ':conn', d, cx: a.x, cy: a.y }
     })
@@ -1325,70 +997,18 @@
     return d
   }
 
-  function buildClusterEdges(
-    rows: RowLayout[],
-    w: number,
-    getSpinePoint: (date: string | undefined) => { x: number; y: number } | null
-  ): ClusterEdge[] {
-    if (!rows.length || w <= 0) return []
-    const edges: ClusterEdge[] = []
-
-    const globalBoxesByHref = new Map<string, NodeBox>()
-    for (const r of rows) for (const b of r.boxes) globalBoxesByHref.set(b.entry.href, b)
-
-    for (const r of rows) {
-      for (const box of r.boxes) {
-        if (box.entry.parent) {
-          const parent = globalBoxesByHref.get(box.entry.parent)
-          if (parent) {
-            const px = parent.x + parent.w / 2
-            const py = parent.y + parent.h
-            const cxx = box.x + box.w / 2
-            const cyy = box.y
-            const midY = (py + cyy) / 2
-            edges.push({
-              d: `M ${px.toFixed(2)} ${py.toFixed(2)} C ${px.toFixed(2)} ${midY.toFixed(2)}, ${cxx.toFixed(2)} ${midY.toFixed(2)}, ${cxx.toFixed(2)} ${cyy.toFixed(2)}`,
-              kind: 'parent-child'
-            })
-          }
-        }
-
-        if (typeof box.anchorX === 'number' && typeof box.anchorY === 'number' && box.anchorSide) {
-          const boxCy = box.y + box.h / 2
-          const edgeX = box.anchorSide === 'left' ? box.x + box.w : box.x
-          edges.push({
-            d: `M ${edgeX.toFixed(2)} ${boxCy.toFixed(2)} L ${box.anchorX.toFixed(2)} ${box.anchorY.toFixed(2)}`,
-            kind: box.depth === 0 ? 'branch' : 'child-branch'
-          })
-        }
-      }
-    }
-
-    return edges
-  }
-
-  function progressForDate(iso: string): number {
+  function lenForDate(iso: string): number {
+    if (!spinePathEl || totalLength === 0 || anchorLens.length === 0) return 0
     const t = new Date(iso).getTime()
-    if (!Number.isFinite(t) || entries.length === 0) return 0
-    const span = dateBounds.end - dateBounds.start
-    if (span <= 0) return 0.5
-    return Math.max(0, Math.min(1, (t - dateBounds.start) / span))
-  }
-
-  function lenForProgress(progress: number): number {
-    if (!spinePathEl || totalLength === 0) return 0
-    const rows = layout.rows
-    let tailLen = 0
-    let headLen = 0
-    if (rows.length > 0) {
-      const oldestMid = rows[0].rowMid
-      const planetApexY = Math.max(oldestMid + 80, trackHeight - SPINE_BOTTOM_BUFFER)
-      tailLen = planetApexY - oldestMid + 80
-      headLen = 120
+    if (!Number.isFinite(t)) return 0
+    const anchors = computeSpineAnchors(layout.rows, effectiveTrackW)
+    const lerp = (t0: number, t1: number, l0: number, l1: number) => (t1 <= t0 ? l1 : l0 + (l1 - l0) * Math.max(0, Math.min(1, (t - t0) / (t1 - t0))))
+    if (t <= anchors[0].date) return lerp(dateBounds.start, anchors[0].date, 0, anchorLens[0])
+    for (let i = 0; i < anchors.length - 1; i++) {
+      if (t <= anchors[i + 1].date) return lerp(anchors[i].date, anchors[i + 1].date, anchorLens[i], anchorLens[i + 1])
     }
-    const timelineLen = Math.max(1, totalLength - headLen - tailLen)
-    const clampedP = Math.max(0, Math.min(1, progress))
-    return tailLen + clampedP * timelineLen
+    const last = anchors.length - 1
+    return lerp(anchors[last].date, dateBounds.end, anchorLens[last], totalLength)
   }
 
   function pointAtLen(len: number): { x: number; y: number; angle: number } {
@@ -1397,10 +1017,6 @@
     const p = spinePathEl.getPointAtLength(L)
     const p2 = spinePathEl.getPointAtLength(Math.min(totalLength, L + 1))
     return { x: p.x, y: p.y, angle: Math.atan2(p2.y - p.y, p2.x - p.x) }
-  }
-
-  function pointAt(progress: number): { x: number; y: number; angle: number } {
-    return pointAtLen(lenForProgress(progress))
   }
 
   function computeBounds(list: RoadmapEntry[]): { start: number; end: number } {
@@ -1542,43 +1158,57 @@
   function measureLength() {
     if (!spinePathEl) return
     totalLength = spinePathEl.getTotalLength()
+    const anchors = computeSpineAnchors(layout.rows, effectiveTrackW)
+    const lens: number[] = []
+    let from = 0
+    for (const a of anchors) {
+      let best = from
+      let bestD = Infinity
+      for (let l = from; l <= totalLength; l += 4) {
+        const p = spinePathEl.getPointAtLength(l)
+        const d = (p.x - a.x) ** 2 + (p.y - a.y) ** 2
+        if (d < bestD) {
+          bestD = d
+          best = l
+        }
+        if (bestD < 4 && d > 400) break
+      }
+      lens.push(best)
+      from = best
+    }
+    anchorLens = lens
   }
 
   let travelFrame = 0
+  function scrollerOf(el: HTMLElement): HTMLElement {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const oy = getComputedStyle(p).overflowY
+      if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) return p
+    }
+    return (document.scrollingElement as HTMLElement) ?? document.documentElement
+  }
+
   function travel() {
     if (!entries.length || !track || !spinePathEl || totalLength === 0) return
     cancelAnimationFrame(travelFrame)
-    const target = lenForProgress(progressForDate(now))
-    const start = 0
-    const duration = 11000
-    const trackTop = track.offsetTop
-    rocketLen = start
+    const target = lenForDate(now)
+    const duration = 18000
+    const scroller = scrollerOf(track)
+    const viewH = scroller === document.scrollingElement ? window.innerHeight : scroller.clientHeight
+    const trackTopIn = () => track.getBoundingClientRect().top - (scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top) + scroller.scrollTop
+    const follow = (y: number, ease: number) => {
+      const desired = Math.max(0, trackTopIn() + y - viewH * 0.55)
+      scroller.scrollTop += (desired - scroller.scrollTop) * ease
+    }
+    rocketLen = 0
     flying = true
-    const startPoint = spinePathEl.getPointAtLength(0)
-    const initialScrollY = Math.max(0, trackTop + startPoint.y - window.innerHeight * 0.55)
-    window.scrollTo({ top: initialScrollY, behavior: 'smooth' })
-    const anchorYs = computeSpineAnchors(layout.rows, effectiveTrackW)
-      .map((a) => a.y)
-      .sort((m, n) => m - n)
+    scroller.scrollTo({ top: Math.max(0, trackTopIn() + spinePathEl.getPointAtLength(0).y - viewH * 0.55), behavior: 'smooth' })
     setTimeout(() => {
       const t0 = performance.now()
       const step = (t: number) => {
         const p = Math.min(1, (t - t0) / duration)
-        rocketLen = start + (target - start) * p
-        if (spinePathEl) {
-          const pos = spinePathEl.getPointAtLength(rocketLen)
-          let nextY = anchorYs.length ? anchorYs[0] : pos.y
-          for (let k = anchorYs.length - 1; k >= 0; k--) {
-            if (anchorYs[k] < pos.y - 2) {
-              nextY = anchorYs[k]
-              break
-            }
-          }
-          const focusPageY = trackTop + (pos.y * 0.35 + nextY * 0.65)
-          const desiredScroll = focusPageY - window.innerHeight * 0.5
-          const off = desiredScroll - window.scrollY
-          if (Math.abs(off) > 60) window.scrollTo(0, Math.max(0, window.scrollY + off * 0.12))
-        }
+        rocketLen = target * p
+        if (spinePathEl) follow(spinePathEl.getPointAtLength(rocketLen).y, 0.18)
         if (p < 1) {
           travelFrame = requestAnimationFrame(step)
         } else {
@@ -1587,7 +1217,7 @@
         }
       }
       travelFrame = requestAnimationFrame(step)
-    }, 600)
+    }, 700)
   }
 
   async function hydrate() {
@@ -1707,7 +1337,7 @@
       measure()
       requestAnimationFrame(() => {
         measureLength()
-        rocketLen = lenForProgress(progressForDate(now))
+        rocketLen = lenForDate(now)
       })
     })
     if (typeof ResizeObserver !== 'undefined' && track) {
@@ -1732,12 +1362,22 @@
   })
 
   $effect(() => {
+    modalView
+    popupH
+    if (!asideEl) {
+      asideOverflow = false
+      return
+    }
+    asideOverflow = asideEl.scrollHeight > asideEl.clientHeight + 1
+  })
+
+  $effect(() => {
     spinePath
     tick().then(measureLength)
   })
 
   $effect(() => {
-    if (!flying) rocketLen = lenForProgress(progressForDate(now))
+    if (!flying) rocketLen = lenForDate(now)
   })
 
   $effect(() => {
@@ -1768,14 +1408,19 @@
       {/if}
     </section>
 
-    <div class="np-roadmap-track" bind:this={track} style:height={`${layout.totalH + 64}px`}>
+    <div
+      class="np-roadmap-track"
+      bind:this={track}
+      style:--np-rm-cols={GRID_COLS}
+      style:--np-rm-rows={Math.max(1, layout.gridRows)}
+    >
       <svg
         class="np-roadmap-edges"
-        viewBox={`0 0 ${trackWidth || 1100} ${layout.totalH + 64}`}
+        viewBox={`0 0 ${trackWidth || 1100} ${layout.totalH}`}
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        {#each edgeList as e (e.id)}
+        {#each layout.links as e (e.id)}
           <path d={e.d} class="np-roadmap-edge" />
         {/each}
         {#each spineConnectors as c (c.id)}
@@ -1798,15 +1443,15 @@
         {#each r.boxes as b (b.entry.href)}
           <RoadmapNode
             entry={b.entry}
+            variant={b.variant}
             side={r.side}
-            x={b.x}
-            y={b.y}
-            w={b.w}
-            h={b.h}
+            col={b.col}
+            row={b.row}
+            cols={b.cols}
+            rows={b.rows}
             onClick={(e) => onNodeClick(b.entry, e)}
             onEnter={(e) => onNodeEnter(b.entry, r.side, e)}
             onLeave={onNodeLeave}
-            onMeasure={recordMeasure}
           />
         {/each}
       {/each}
@@ -1899,7 +1544,7 @@
       style:top={popupPos ? `${popupPos.top}px` : null}
       style:opacity={popupW === 0 ? '0' : null}
     >
-  <aside class="np-roadmap-aside" bind:clientWidth={popupW} bind:clientHeight={popupH}>
+  <aside class="np-roadmap-aside" bind:this={asideEl} bind:clientWidth={popupW} bind:clientHeight={popupH}>
     <header class="np-roadmap-aside-head">
       {#if modalView.kind}
         <span class="np-roadmap-card-kind">{kindLabel(modalView.kind)}</span>
@@ -1930,6 +1575,9 @@
         {/each}
       </ul>
     {/if}
+    {#if asideOverflow}
+      <footer class="np-roadmap-aside-more">Click to see more</footer>
+    {/if}
   </aside>
     </div>
   </div>
@@ -1944,8 +1592,13 @@
     justify-content: center;
     width: 100%;
   }
-  .np-roadmap-page {
+  .np-roadmap-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .np-page.np-roadmap-page {
     padding: 0;
+    max-width: max(var(--np-content-max), 150vh);
+    container-type: inline-size;
   }
   .np-page {
     width: 100%;
@@ -1959,6 +1612,8 @@
   .np-roadmap-hero {
     position: relative;
     width: 100%;
+    max-width: var(--np-content-max);
+    box-sizing: border-box;
     margin: 0 auto;
     padding: 56px 48px 40px;
     display: grid;
@@ -2046,11 +1701,13 @@
 
   .np-roadmap-track {
     position: relative;
-    padding: 32px 24px 0;
+    display: grid;
+    grid-template-columns: repeat(var(--np-rm-cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--np-rm-rows), calc(100cqi / var(--np-rm-cols)));
+    padding: 0;
     margin: 0;
     width: 100%;
     box-sizing: border-box;
-    min-height: 600px;
   }
   .np-roadmap-edges {
     position: absolute;
@@ -2063,9 +1720,10 @@
   }
   .np-roadmap-edge {
     fill: none;
-    stroke: var(--np-border, #444);
+    stroke: var(--np-brand);
     stroke-width: 1.5;
-    opacity: 0.55;
+    stroke-linecap: round;
+    opacity: 0.45;
   }
   .np-roadmap-spine-path {
     fill: none;
@@ -2232,15 +1890,32 @@
   }
   .np-roadmap-aside {
     position: relative;
-    width: min(420px, calc(100vw - 24px));
-    max-height: calc(100vh - 24px);
-    overflow-y: auto;
+    width: max-content;
+    min-width: min(320px, calc(100vw - 24px));
+    max-width: min(560px, calc(100vw - 24px));
+    max-height: min(440px, calc(100vh - 24px));
+    overflow: hidden;
+    box-sizing: border-box;
     background-color: var(--np-bg-card);
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-lg);
     box-shadow: var(--np-shadow-dialog);
     padding: 20px 22px;
     pointer-events: auto;
+  }
+  .np-roadmap-aside-more {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 64px 22px 16px;
+    background: linear-gradient(to bottom, transparent, var(--np-bg-card) 55%);
+    text-align: center;
+    color: var(--np-brand);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .np-roadmap-aside-head h2 {
     margin: 8px 0 4px;
@@ -2286,7 +1961,6 @@
     .np-roadmap-hero { padding: 32px 20px 24px; }
     .np-roadmap-hero-title { font-size: 38px; }
     .np-roadmap-hero-tagline { font-size: 18px; }
-    .np-roadmap-track { padding: 16px 0 60px; }
     .np-roadmap-aside { display: none; }
   }
 
