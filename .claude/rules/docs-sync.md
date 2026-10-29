@@ -50,6 +50,20 @@ The receiver is thin. The `docs-sync` action owns the mirror, the version bump, 
 
 3. Never commit a private key. Keep `*.pem` in `.gitignore`.
 
+## Wiring a repo onto the pipeline
+
+When the user asks to connect a repo to the docs site, or to set up docs sync, ask which repo is the docs site before writing anything, then run these in order and stop on the first failure.
+
+1. Create `<export-dir>/index.md` at the repo root if it does not exist, `.nimpress` unless the user names another folder, with `title` and `description` frontmatter and a short overview. More pages and a `changelog` folder follow the authoring rules.
+
+2. Write `.github/workflows/docs.yml`: trigger `on: push: tags: ['v*']` plus `workflow_dispatch`; `env: EXPORT_DIR: .nimpress`; one job that checks out with `fetch-depth: 0`, a `changed` step that is `true` on a dispatch and otherwise runs `git diff --name-only <previous version tag> <this tag> -- "$EXPORT_DIR"` against the newest `v[0-9]*.[0-9]*.[0-9]*` tag that is not this one, then, only when changed, `actions/create-github-app-token@v1` with `app-id: ${{ secrets.APP_ID }}`, `private-key: ${{ secrets.APP_PRIVATE_KEY }}`, `owner: nimling` and `repositories: <docs site repo name>`, and `nimling/nimpress/actions/docs-notify@v2` with `docs-repo: nimling/<docs site repo name>`, `token: ${{ steps.app.outputs.token }}` and `export-dir: ${{ env.EXPORT_DIR }}`.
+
+3. Ensure `.gitignore` contains `*.pem`.
+
+4. Print the manual steps for the org owner or an admin and do not attempt them: install the shared docs App on the repo; set `APP_ID` and `APP_PRIVATE_KEY` with `gh secret set APP_ID -R <owner>/<repo> -b "<id>"` and `gh secret set APP_PRIVATE_KEY -R <owner>/<repo> < github.pem`; add the source to `nimpress.sources.json` at the docs repo root, or pass the same object as the receiver's `defaults` input, in the shape of the Configuration section above with `target`, `mode`, `publish`, `branch`, `commit`, `pullRequest` and `version`.
+
+5. Trigger with `gh workflow run docs.yml -R <owner>/<repo>` or a version tag, watch the notify run, then the `docs-sync` run on the docs repo, then confirm the `docs-sync/<owner>/<repo>` pull request. The pull request step on the receiver must use the App token, since an org setting can block the default token from creating pull requests, and the docs version tracks the app version, so publishing happens on a tag, not on every commit.
+
 ## What is wrong if you see it
 
 1. A consumer workflow triggered on a branch push rather than a version tag.
