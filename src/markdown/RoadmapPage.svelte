@@ -385,6 +385,14 @@
     navigate(withBase(entry.href))
   }
 
+  const EXHAUST = [
+    { name: 'smoke', length: 240 },
+    { name: 'heat', length: 130 },
+    { name: 'core', length: 55 }
+  ]
+  const EXHAUST_TAIL = 18
+  let flameLag = $state(0)
+
   let flipFrom: Map<string, DOMRect> | null = null
 
   function playFlip(from: Map<string, DOMRect>) {
@@ -466,11 +474,17 @@
     return (document.scrollingElement as HTMLElement) ?? document.documentElement
   }
 
+  function wrapAngle(a: number): number {
+    return Math.atan2(Math.sin(a), Math.cos(a))
+  }
+
   function travel() {
     if (!entries.length || !track || !spinePathEl || totalLength === 0) return
     cancelAnimationFrame(travelFrame)
     const target = lenForDate(now)
     const duration = 18000
+    let heading: number | null = null
+    flameLag = 0
     const scroller = scrollerOf(track)
     const viewH = scroller === document.scrollingElement ? window.innerHeight : scroller.clientHeight
     const trackTopIn = () => track.getBoundingClientRect().top - (scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top) + scroller.scrollTop
@@ -486,7 +500,14 @@
       const step = (t: number) => {
         const p = Math.min(1, (t - t0) / duration)
         rocketLen = target * p
-        if (spinePathEl) follow(spinePathEl.getPointAtLength(rocketLen).y, 0.18)
+        if (spinePathEl) {
+          const at = spinePathEl.getPointAtLength(rocketLen)
+          const ahead = spinePathEl.getPointAtLength(Math.min(totalLength, rocketLen + 1))
+          const angle = Math.atan2(ahead.y - at.y, ahead.x - at.x)
+          heading = heading === null ? angle : heading + wrapAngle(angle - heading) * 0.08
+          flameLag = Math.max(-1.1, Math.min(1.1, wrapAngle(heading - angle)))
+          follow(at.y, 0.18)
+        }
         if (p < 1) {
           travelFrame = requestAnimationFrame(step)
         } else {
@@ -735,6 +756,22 @@
             style:stroke-dashoffset={`${trailDashoffset}`}
           />
         {/if}
+        {#if spinePath && rocketShown && flying}
+          <defs>
+            <filter id="np-roadmap-exhaust-blur" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" />
+            </filter>
+          </defs>
+          <g class="np-roadmap-exhaust" filter="url(#np-roadmap-exhaust-blur)">
+            {#each EXHAUST as e (e.name)}
+              <path
+                d={spinePath}
+                class={`np-roadmap-exhaust-${e.name}`}
+                style:stroke-dasharray={`0 ${Math.max(0, rocketLen - EXHAUST_TAIL - e.length)} ${Math.min(e.length, Math.max(0, rocketLen - EXHAUST_TAIL))} ${totalLength}`}
+              />
+            {/each}
+          </g>
+        {/if}
       </svg>
 
       {#each layout.rows as r, ri (r.rootEntry.href)}
@@ -808,10 +845,65 @@
           onclick={onRocketClick}
           onkeydown={(e) => e.key === 'Enter' && onRocketClick()}
         >
-          <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
-            <path d="M12 2 C 16 6, 17 12, 12 22 C 7 12, 8 6, 12 2 Z" fill="var(--np-brand)" />
-            <circle cx="12" cy="9" r="2.4" fill="var(--np-bg-card)" />
-            <path d="M8 15 L 5 20 L 9 18 Z M16 15 L 19 20 L 15 18 Z" fill="var(--np-brand)" opacity="0.7" />
+          {#if flying}
+            <svg
+              class="np-roadmap-flame"
+              viewBox="0 0 30 70"
+              width="30"
+              height="70"
+              aria-hidden="true"
+              style:rotate={`${flameLag}rad`}
+            >
+              <defs>
+                <filter id="np-roadmap-flame-lick" x="-60%" y="-20%" width="220%" height="140%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.08 0.22" numOctaves="2" seed="7" result="noise">
+                    <animate attributeName="baseFrequency" values="0.08 0.22;0.11 0.3;0.07 0.19;0.08 0.22" dur="0.7s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" result="licked" />
+                  <feGaussianBlur in="licked" stdDeviation="0.6" result="soft" />
+                  <feGaussianBlur in="licked" stdDeviation="4" result="glow" />
+                  <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="soft" />
+                  </feMerge>
+                </filter>
+                <linearGradient id="np-roadmap-flame-plume" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffb347" stop-opacity="0.95" />
+                  <stop offset="45%" stop-color="#ff6a1a" stop-opacity="0.75" />
+                  <stop offset="100%" stop-color="#c81e00" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="np-roadmap-flame-body" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fff1b8" />
+                  <stop offset="40%" stop-color="#ffc24a" />
+                  <stop offset="100%" stop-color="#ff7a1a" stop-opacity="0" />
+                </linearGradient>
+                <radialGradient id="np-roadmap-flame-nozzle" cx="50%" cy="20%" r="60%">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="45%" stop-color="#d6ecff" stop-opacity="0.9" />
+                  <stop offset="100%" stop-color="#8fc4ff" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <g filter="url(#np-roadmap-flame-lick)">
+                <path class="np-roadmap-flame-plume" d="M15 2 C 25 14, 24 34, 15 68 C 6 34, 5 14, 15 2 Z" fill="url(#np-roadmap-flame-plume)" />
+                <path class="np-roadmap-flame-body" d="M15 2 C 21 11, 20 25, 15 46 C 10 25, 9 11, 15 2 Z" fill="url(#np-roadmap-flame-body)" />
+                <ellipse class="np-roadmap-flame-core" cx="15" cy="9" rx="4.2" ry="9" fill="url(#np-roadmap-flame-nozzle)" />
+              </g>
+            </svg>
+          {/if}
+          <svg class="np-roadmap-rocket-body" viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
+            <defs>
+              <linearGradient id="np-roadmap-rocket-hull" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#c3c7cf" />
+                <stop offset="45%" stop-color="#f7f8fa" />
+                <stop offset="100%" stop-color="#9da2ad" />
+              </linearGradient>
+            </defs>
+            <path d="M8 15 L 4.5 20.5 L 9 18.6 Z M16 15 L 19.5 20.5 L 15 18.6 Z" fill="var(--np-brand)" />
+            <path d="M10 19.5 L 14 19.5 L 13.2 22 L 10.8 22 Z" fill="#4a4d55" />
+            <path d="M12 2 C 16 6, 17 12, 13.6 20 L 10.4 20 C 7 12, 8 6, 12 2 Z" fill="url(#np-roadmap-rocket-hull)" stroke="rgba(0, 0, 0, 0.28)" stroke-width="0.4" />
+            <path d="M12 2 C 13.4 3.3, 14.4 4.6, 15 6 L 9 6 C 9.6 4.6, 10.6 3.3, 12 2 Z" fill="var(--np-brand)" />
+            <circle cx="12" cy="10" r="2.3" fill="var(--np-info)" stroke="#6b707b" stroke-width="0.5" />
+            <circle cx="11.3" cy="9.3" r="0.7" fill="rgba(255, 255, 255, 0.75)" />
           </svg>
         </div>
       {/if}
@@ -1222,6 +1314,71 @@
   }
   .np-roadmap-rocket.flying {
     transition: none;
+    filter: drop-shadow(0 0 10px rgba(255, 140, 50, 0.55)) drop-shadow(0 6px 18px color-mix(in srgb, var(--np-brand) 35%, transparent));
+  }
+  .np-roadmap-rocket-body {
+    position: relative;
+    display: block;
+  }
+  .np-roadmap-rocket.flying .np-roadmap-rocket-body {
+    animation: np-roadmap-shake 0.09s linear infinite;
+  }
+  .np-roadmap-flame {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 12px);
+    transform-origin: 50% 0;
+    translate: -50% 0;
+    pointer-events: none;
+    overflow: visible;
+    filter: drop-shadow(0 0 6px rgba(255, 170, 70, 0.8)) drop-shadow(0 0 18px rgba(255, 80, 0, 0.55));
+  }
+  .np-roadmap-flame-plume,
+  .np-roadmap-flame-body,
+  .np-roadmap-flame-core {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+  .np-roadmap-flame-plume { animation: np-roadmap-flicker 0.19s ease-in-out infinite alternate; }
+  .np-roadmap-flame-body { animation: np-roadmap-flicker 0.11s ease-in-out infinite alternate-reverse; }
+  .np-roadmap-flame-core { animation: np-roadmap-core 0.07s ease-in-out infinite alternate; }
+  .np-roadmap-exhaust path {
+    fill: none;
+    stroke-linecap: round;
+    animation: np-roadmap-exhaust-flicker 0.16s ease-in-out infinite alternate;
+  }
+  .np-roadmap-exhaust-smoke { stroke: rgba(255, 96, 32, 0.32); stroke-width: 20; }
+  .np-roadmap-exhaust-heat { stroke: rgba(255, 150, 50, 0.7); stroke-width: 10; animation-duration: 0.12s; }
+  .np-roadmap-exhaust-core { stroke: rgba(255, 240, 190, 1); stroke-width: 4.5; animation-duration: 0.09s; }
+  @keyframes np-roadmap-flicker {
+    0% { transform: scale(1, 1); opacity: 0.9; }
+    18% { transform: scale(0.92, 1.18); opacity: 1; }
+    41% { transform: scale(1.05, 0.86); opacity: 0.82; }
+    63% { transform: scale(0.95, 1.1); opacity: 0.97; }
+    82% { transform: scale(1.03, 0.94); opacity: 0.88; }
+    100% { transform: scale(0.97, 1.05); opacity: 1; }
+  }
+  @keyframes np-roadmap-core {
+    from { transform: scale(0.94, 0.9); opacity: 0.85; }
+    to { transform: scale(1.06, 1.08); opacity: 1; }
+  }
+  @keyframes np-roadmap-shake {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(0.6px, -0.4px) rotate(1deg); }
+    50% { transform: translate(-0.5px, 0.5px) rotate(-1.2deg); }
+    75% { transform: translate(0.4px, 0.3px) rotate(0.6deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  @keyframes np-roadmap-exhaust-flicker {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .np-roadmap-rocket.flying .np-roadmap-rocket-body,
+    .np-roadmap-flame-plume,
+    .np-roadmap-flame-body,
+    .np-roadmap-flame-core,
+    .np-roadmap-exhaust path { animation: none; }
   }
   .np-roadmap-rocket-link {
     cursor: pointer;

@@ -192,7 +192,15 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-edge` |
 | `np-roadmap-edges` |
 | `np-roadmap-empty` |
+| `np-roadmap-exhaust` |
+| `np-roadmap-exhaust-core` |
+| `np-roadmap-exhaust-heat` |
+| `np-roadmap-exhaust-smoke` |
 | `np-roadmap-eyebrow` |
+| `np-roadmap-flame` |
+| `np-roadmap-flame-body` |
+| `np-roadmap-flame-core` |
+| `np-roadmap-flame-plume` |
 | `np-roadmap-footer-text` |
 | `np-roadmap-hero` |
 | `np-roadmap-hero-actions` |
@@ -213,6 +221,7 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-planet-globe` |
 | `np-roadmap-ready` |
 | `np-roadmap-rocket` |
+| `np-roadmap-rocket-body` |
 | `np-roadmap-rocket-link` |
 | `np-roadmap-shell` |
 | `np-roadmap-spine-connector` |
