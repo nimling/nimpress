@@ -1,11 +1,13 @@
 <script lang="ts">
   import { withBase } from '../framework/configStore'
   import RoadmapBlob from './RoadmapBlob.svelte'
-  import type { RoadmapEntry, RoadmapKind } from '../types'
+  import type { RoadmapCard, RoadmapKind } from '../types'
 
   let {
     entry,
     variant = 'card',
+    straight = false,
+    order = 0,
     side,
     col,
     row,
@@ -15,8 +17,10 @@
     onEnter,
     onLeave
   }: {
-    entry: RoadmapEntry
+    entry: RoadmapCard
     variant?: 'card' | 'compact' | 'small' | 'pill'
+    straight?: boolean
+    order?: number
     side: 'left' | 'right'
     col: number
     row: number
@@ -50,6 +54,7 @@
   id={entry.slug}
   style:grid-column={`${col + 1} / span ${cols}`}
   style:grid-row={`${row + 1} / span ${rows}`}
+  style:--np-rm-order={order}
   onclick={(e) => onClick(e)}
   onmouseenter={onEnter}
   onmouseleave={onLeave}
@@ -59,13 +64,14 @@
   {#if variant !== 'pill'}
     <span class="np-rm-node-kind">{kindLabel(entry.kind)}</span>
   {/if}
-  <span class="np-rm-node-body">
+  <span class="np-rm-node-body" style:inset={`${((1 - 1 / (Math.pow(2, 1 / (straight ? 8 : 4)) + 0.05)) / 2 * 100).toFixed(2)}%`}>
     <RoadmapBlob
       seed={entry.slug}
       {banner}
       stroke="var(--np-rm-kind)"
       strokeWidth={entry.status === 'planned' ? 1.5 : 2.4}
-      squareness={4}
+      squareness={straight ? 8 : 4}
+      wobble={straight ? 0 : 0.025}
       points={28}
     />
     {#if variant === 'pill'}
@@ -96,6 +102,7 @@
 <style>
   .np-rm-node {
     --np-rm-kind: var(--np-brand);
+    font-size: calc(100cqi / 96);
     position: relative;
     display: block;
     min-width: 0;
@@ -135,7 +142,7 @@
     align-items: center;
     justify-content: flex-start;
     gap: 0.6em;
-    font-size: clamp(7px, 4.2cqi, 11px);
+    font-size: 0.85em;
   }
   .np-rm-node-kind {
     position: absolute;
@@ -143,7 +150,7 @@
     left: 12%;
     z-index: 3;
     transform: translateY(-50%);
-    font-size: 10px;
+    font-size: 0.8em;
     display: inline-flex;
     align-items: center;
     font-weight: 800;
@@ -169,7 +176,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
-    font-size: clamp(11px, 7.4cqi, 19px);
+    font-size: 1.5em;
   }
   .np-rm-node-desc {
     line-height: 1.45;
@@ -178,13 +185,13 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
-    font-size: clamp(9.5px, 5cqi, 13.5px);
+    font-size: 1.1em;
   }
-  .np-rm-node-compact .np-rm-node-kind { font-size: 9px; }
-  .np-rm-node-small .np-rm-node-kind { font-size: 8px; }
-  .np-rm-node-compact .np-rm-node-title { font-size: clamp(10.5px, 8.6cqi, 15px); }
-  .np-rm-node-small .np-rm-node-title { font-size: clamp(10px, 9cqi, 13px); -webkit-line-clamp: 1; }
-  .np-rm-node-small .np-rm-node-head { font-size: clamp(6.5px, 5.4cqi, 9px); }
+  .np-rm-node-compact .np-rm-node-kind { font-size: 0.72em; }
+  .np-rm-node-small .np-rm-node-kind { font-size: 0.65em; }
+  .np-rm-node-compact .np-rm-node-title { font-size: 1.2em; }
+  .np-rm-node-small .np-rm-node-title { font-size: 1.05em; -webkit-line-clamp: 1; }
+  .np-rm-node-small .np-rm-node-head { font-size: 0.72em; }
   .np-rm-node-pill {
     position: relative;
     z-index: 1;
@@ -196,14 +203,17 @@
     width: 100%;
     text-align: left;
   }
-  .np-rm-node-pill .np-rm-node-date { font-size: 9px; }
+  .np-rm-node-pill .np-rm-node-date { font-size: 0.75em; }
   .np-rm-node-pill-title {
     max-width: 100%;
-    font-size: 12.5px;
+    font-size: 1.05em;
     font-weight: 600;
     line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  @media (max-width: 800px) {
+    .np-rm-node { font-size: 12px; }
   }
 </style>

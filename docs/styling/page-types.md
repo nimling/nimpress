@@ -195,10 +195,14 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-eyebrow` |
 | `np-roadmap-footer-text` |
 | `np-roadmap-hero` |
+| `np-roadmap-hero-actions` |
 | `np-roadmap-hero-body` |
 | `np-roadmap-hero-tagline` |
 | `np-roadmap-hero-title` |
 | `np-roadmap-issue-dot` |
+| `np-roadmap-loading` |
+| `np-roadmap-loading-ring` |
+| `np-roadmap-mode` |
 | `np-roadmap-modal-content` |
 | `np-roadmap-modal-placed` |
 | `np-roadmap-modal-root` |
@@ -207,6 +211,7 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-planet-box` |
 | `np-roadmap-planet-fade` |
 | `np-roadmap-planet-globe` |
+| `np-roadmap-ready` |
 | `np-roadmap-rocket` |
 | `np-roadmap-rocket-link` |
 | `np-roadmap-shell` |
