@@ -1,6 +1,6 @@
 # Nimpress
 
-A Svelte 5 documentation site framework and its cli, published public on npm as `@nimtech/nimpress` from a library mode Vite build: the site components and stores in `src/`, the Vite plugin in `src/plugin.ts`, the cli in `src/cli.ts` and `src/cli/`, the component workshop in `src/modules/`, the Go sync actions in `actions/`, and the Claude plugin with its mcp server in `.claude-plugin/` and `scripts/mcp.sh`. Its own documentation in `docs/` is built with nimpress and published to GitHub Pages on every version tag; `README.md` points there. `.claude/rules/` and `.claude/skills/nimpress/SKILL.md` ship inside the package, so consumers read the authoring rules from `node_modules/@nimtech/nimpress/.claude/rules/`.
+A Svelte 5 documentation site framework and its cli, published public on npm as `@nimtech/nimpress` from a library mode Vite build: the site components and stores in `src/`, the Vite plugin in `src/plugin.ts`, the cli in `src/cli.ts` and `src/cli/`, the component workshop in `src/modules/`, the Go sync actions in `actions/`, and the Claude plugin with its mcp server in `.claude-plugin/` and `scripts/mcp.sh`. Its own documentation in `docs/` is built with nimpress and published to GitHub Pages on every version tag by `pages.yml`. `.claude/rules/` and `.claude/skills/nimpress/SKILL.md` ship inside the package, so consumers read the authoring rules from `node_modules/@nimtech/nimpress/.claude/rules/`.
 
 ## Commands
 
