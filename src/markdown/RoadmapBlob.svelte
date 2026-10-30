@@ -7,6 +7,7 @@
     points = 18,
     wobble = 0.025,
     margin = 0.05,
+    squareness = 2,
     fill = 'var(--np-bg-card)',
     stroke = 'var(--np-border)',
     strokeWidth = 1.5
@@ -16,6 +17,7 @@
     points?: number
     wobble?: number
     margin?: number
+    squareness?: number
     fill?: string
     stroke?: string
     strokeWidth?: number
@@ -41,25 +43,30 @@
     }
   }
 
-  const path = $derived(buildPath(seed, points, wobble, margin, measuredW, measuredH))
+  const path = $derived(buildPath(seed, points, wobble, margin, squareness, measuredW, measuredH))
   const bounds = $derived.by(() => {
-    const rx = (measuredW / 2) * (Math.SQRT2 + margin)
-    const ry = (measuredH / 2) * (Math.SQRT2 + margin)
+    const rx = (measuredW / 2) * (Math.pow(2, 1 / squareness) + margin)
+    const ry = (measuredH / 2) * (Math.pow(2, 1 / squareness) + margin)
     return { x: measuredW / 2 - rx, y: measuredH / 2 - ry, w: 2 * rx, h: 2 * ry }
   })
 
-  function buildPath(s: string, n: number, w: number, m: number, W: number, H: number): string {
+  function buildPath(s: string, n: number, w: number, m: number, q: number, W: number, H: number): string {
     if (W <= 0 || H <= 0) return ''
     const rand = seededRandom(s)
     const cx = W / 2
     const cy = H / 2
-    const rx = (W / 2) * (Math.SQRT2 + m)
-    const ry = (H / 2) * (Math.SQRT2 + m)
+    const rx = (W / 2) * (Math.pow(2, 1 / q) + m)
+    const ry = (H / 2) * (Math.pow(2, 1 / q) + m)
     const pts: { x: number; y: number }[] = []
     for (let i = 0; i < n; i++) {
       const a = (Math.PI * 2 * i) / n
       const k = 1 + rand() * w
-      pts.push({ x: cx + Math.cos(a) * rx * k, y: cy + Math.sin(a) * ry * k })
+      const ca = Math.cos(a)
+      const sa = Math.sin(a)
+      pts.push({
+        x: cx + Math.sign(ca) * Math.pow(Math.abs(ca), 2 / q) * rx * k,
+        y: cy + Math.sign(sa) * Math.pow(Math.abs(sa), 2 / q) * ry * k
+      })
     }
     let d = ''
     for (let i = 0; i < n; i++) {
