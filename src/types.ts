@@ -1,5 +1,6 @@
 import type { Component } from 'svelte'
 import type { themeComponentNames } from './config/defaults'
+import type { RoadmapLayout } from './roadmap/layout'
 
 export type BuiltInPageType =
   | 'doc'
@@ -130,6 +131,8 @@ export interface RoadmapChangelogRef {
   entrySlug: string
 }
 
+export type RoadmapCard = Omit<RoadmapEntry, 'filePath' | 'headings'>
+
 export interface RoadmapEntry {
   kind: RoadmapKind
   slug: string
@@ -258,7 +261,8 @@ export interface PageBody {
   openApiFile?: string
   openApiUrl?: string
   changelogEntries?: ChangelogEntry[]
-  roadmapEntries?: RoadmapEntry[]
+  roadmapEntries?: RoadmapCard[]
+  roadmapLayout?: RoadmapLayout
   componentData?: ComponentPageData
   dbmlSchema?: string
   dbmlSource?: string

@@ -35,6 +35,7 @@ import type {
   ManifestTag,
   GlossaryTerm,
   ResolvedNimpressConfig,
+  RoadmapCard,
   RoadmapChangelogRef,
   RoadmapEntry,
   RoadmapKind,
@@ -44,6 +45,7 @@ import type {
 } from './types'
 import { DbmlError, dbmlToErdJson } from './dbml/erd'
 import { D2Error, d2ToDiagram } from './d2/diagram'
+import { buildRoadmapLayout, type RoadmapLayout } from './roadmap/layout'
 import { buildComponentPageData } from './modules/componentData'
 import { flushDiagnostics, parseSchemaText, renderSchemaText } from './modules/schema'
 import { harnessPort } from './modules/harness'
@@ -333,6 +335,7 @@ interface ProcessedPage {
   openApiUrl?: string
   changelogEntries?: ChangelogEntry[]
   roadmapEntries?: RoadmapEntry[]
+  roadmapLayout?: RoadmapLayout
   componentData?: ComponentPageData
   dbmlSchema?: string
   dbmlSource?: string
@@ -2851,7 +2854,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
           openApiFile: p.openApiFile,
           openApiUrl: p.openApiUrl,
           changelogEntries: p.changelogEntries,
-          roadmapEntries: p.roadmapEntries,
+          roadmapEntries: roadmapCards(p.roadmapEntries),
+          roadmapLayout: p.roadmapLayout,
           componentData: p.componentData,
           dbmlSchema: p.dbmlSchema,
           dbmlSource: p.dbmlSource,
@@ -3013,6 +3017,7 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       })
       built.sort((a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
       roadmapPage.roadmapEntries = built
+      roadmapPage.roadmapLayout = buildRoadmapLayout(built)
       roadmapPage.headings = built.map((e) => ({
         level: 2,
         text: e.title,
@@ -3602,6 +3607,10 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
     return p.headings
   }
 
+  function roadmapCards(entries: RoadmapEntry[] | undefined): RoadmapCard[] | undefined {
+    return entries?.map(({ filePath: _filePath, headings: _headings, ...card }) => card)
+  }
+
   function buildPageBody(slug: string): string | null {
     const p = pages.get(slug)
     if (!p) return null
@@ -3612,7 +3621,8 @@ export default function nimpress(inline?: Partial<NimpressUserConfig>): Plugin {
       openApiFile: p.openApiFile,
       openApiUrl: p.openApiUrl,
       changelogEntries: p.changelogEntries,
-      roadmapEntries: p.roadmapEntries,
+      roadmapEntries: roadmapCards(p.roadmapEntries),
+      roadmapLayout: p.roadmapLayout,
       componentData: p.componentData,
       dbmlSchema: p.dbmlSchema,
       dbmlSource: p.dbmlSource,

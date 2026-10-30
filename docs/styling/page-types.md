@@ -179,6 +179,7 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 |---|
 | `np-rm-node` |
 | `np-roadmap-aside` |
+| `np-roadmap-aside-more` |
 | `np-roadmap-aside-body` |
 | `np-roadmap-aside-changelog` |
 | `np-roadmap-aside-date` |
@@ -191,13 +192,25 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-edge` |
 | `np-roadmap-edges` |
 | `np-roadmap-empty` |
+| `np-roadmap-exhaust` |
+| `np-roadmap-exhaust-core` |
+| `np-roadmap-exhaust-heat` |
+| `np-roadmap-exhaust-smoke` |
 | `np-roadmap-eyebrow` |
+| `np-roadmap-flame` |
+| `np-roadmap-flame-body` |
+| `np-roadmap-flame-core` |
+| `np-roadmap-flame-plume` |
 | `np-roadmap-footer-text` |
 | `np-roadmap-hero` |
+| `np-roadmap-hero-actions` |
 | `np-roadmap-hero-body` |
 | `np-roadmap-hero-tagline` |
 | `np-roadmap-hero-title` |
 | `np-roadmap-issue-dot` |
+| `np-roadmap-loading` |
+| `np-roadmap-loading-ring` |
+| `np-roadmap-mode` |
 | `np-roadmap-modal-content` |
 | `np-roadmap-modal-placed` |
 | `np-roadmap-modal-root` |
@@ -206,7 +219,9 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-roadmap-planet-box` |
 | `np-roadmap-planet-fade` |
 | `np-roadmap-planet-globe` |
+| `np-roadmap-ready` |
 | `np-roadmap-rocket` |
+| `np-roadmap-rocket-body` |
 | `np-roadmap-rocket-link` |
 | `np-roadmap-shell` |
 | `np-roadmap-spine-connector` |
@@ -225,7 +240,10 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 
 | Class |
 |---|
+| `np-rm-node-body` |
 | `np-rm-node-bug` |
+| `np-rm-node-card` |
+| `np-rm-node-compact` |
 | `np-rm-node-date` |
 | `np-rm-node-desc` |
 | `np-rm-node-epic` |
@@ -234,6 +252,9 @@ Hero bands, changelog entries, roadmap timelines, database pages, and the compon
 | `np-rm-node-inner` |
 | `np-rm-node-kind` |
 | `np-rm-node-meta` |
+| `np-rm-node-pill` |
+| `np-rm-node-pill-title` |
+| `np-rm-node-small` |
 | `np-rm-node-title` |
 
 ## DbmlPage

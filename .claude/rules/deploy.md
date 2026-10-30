@@ -44,4 +44,14 @@ A release that changes a user visible surface carries its changelog entry in `do
 
 ## When the user says "deploy"
 
-The `deploy` skill in `.claude/skills/deploy.md` lays out the exact commands. Execute it end to end, stopping only if a step fails. Surface errors verbatim, do not paper over them.
+Run these in order from the repo root. Stop on the first failure and surface the error verbatim; a failing build or type check blocks the release and nothing is committed.
+
+1. The publish workflow needs the GitHub Actions secret `NPM_TOKEN` on this repo, an npm automation token that can publish under the `@nimtech` scope; it is consumed as `NODE_AUTH_TOKEN` for the registry step. Nothing else: `pnpm install` resolves every dependency from the public registry.
+
+2. `just build`, `pnpm run build:lib` under the hood. Emits `dist/nimpress.es.js`, `dist/plugin.es.js`, `dist/tailwind.preset.js`, `dist/style.css` and `dist/*.d.ts`.
+
+3. `just check`, `svelte-check` plus `tsc -p tsconfig.node.json`.
+
+4. Stage every changed file relevant to the release, commit with a single sentence describing the user visible change, and `git push`. With nothing to commit, still push so the bump pushes a clean ref. The message rules are `~/.claude/rules/git.md`.
+
+5. `just deploy`, which runs `sbump patch --json package.json@.version --push-version --auto --workflow`: patch bump, tag write, tag push, and the three workflows the tag starts. `just deploy-minor` or `just deploy-major` for a larger bump.
