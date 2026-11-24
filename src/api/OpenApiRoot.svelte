@@ -740,4 +740,16 @@
     font-size: 14px;
     margin-top: 8px;
   }
+
+  @media (max-width: 720px) {
+    .np-api-title-row {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .np-api-title {
+      order: 1;
+      flex: 1 0 100%;
+      margin: 0;
+    }
+  }
 </style>
