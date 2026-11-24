@@ -5,6 +5,7 @@ import '../styles/tokens.css'
 import '../styles/preflight.css'
 import './standalone.css'
 import OpenApiRoot from './OpenApiRoot.svelte'
+import StandaloneFooter from './StandaloneFooter.svelte'
 import { flattenSpecForEmbed } from './flatten'
 import { applyInitialTheme } from '../framework/stores/theme'
 import { setupTooltip } from '../framework/tooltip'
@@ -22,7 +23,7 @@ export default async function NimpressApi({ url, target }: { url: string; target
   const spec = flattenSpecForEmbed(parse(await res.text()), md)
   applyInitialTheme()
   setupTooltip()
-  return mount(OpenApiRoot, {
+  const root = mount(OpenApiRoot, {
     target: element,
     props: {
       spec,
@@ -30,4 +31,8 @@ export default async function NimpressApi({ url, target }: { url: string; target
       specUrl: url
     }
   })
+  mount(StandaloneFooter, {
+    target: element
+  })
+  return root
 }

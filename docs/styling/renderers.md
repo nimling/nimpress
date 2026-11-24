@@ -6,7 +6,7 @@ description: The OpenAPI reference surface, the DBML diagram, and the inline com
 
 The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 
-199 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
+205 classes, listed per component. Every one is an override point: write a rule for it in your own stylesheet and it wins, because everything nimpress ships sits in the `nimpress` cascade layer. See [Styling](/styling) for how that works and [Theming](/theming) for the tokens.
 
 ```css
 .np-prose {
@@ -162,6 +162,19 @@ The OpenAPI reference surface, the DBML diagram, and the inline component frame.
 | `np-schema-head` |
 | `np-schema-name` |
 | `np-schema-type` |
+
+## StandaloneFooter
+
+`src/api/StandaloneFooter.svelte`, rendered only in a plain HTML page that loads the browser bundle.
+
+| Class |
+|---|
+| `np-api-footer` |
+| `np-api-footer-brand` |
+| `np-api-footer-copyright` |
+| `np-api-footer-logo` |
+| `np-api-footer-love` |
+| `np-api-footer-version` |
 
 ## TryDialog
 
