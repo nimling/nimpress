@@ -70,3 +70,43 @@ Schemas render with a compact tree of property rows including type, format, requ
 ## Restyling the reference
 
 Every card, badge, table, and panel carries a documented class. See [Renderers styling](/styling/renderers).
+
+## In a plain HTML page
+
+The same reference renders outside a nimpress site from one HTML page, the way a service serves its own spec beside its API. The package ships a browser bundle, `dist/api.js` and `dist/api.css`, that defines the global `NimpressApi`. It fetches the spec, reads it as JSON or YAML, resolves every `$ref`, renders the descriptions as markdown and mounts the reference into the target element.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookable API</title>
+  <link rel="stylesheet" href="https://unpkg.com/@nimtech/nimpress@2/dist/api.css">
+</head>
+<body>
+  <div id="api"></div>
+  <script src="https://unpkg.com/@nimtech/nimpress@2/dist/api.js"></script>
+  <script>
+    NimpressApi({ url: 'spec/spec.json', target: '#api' })
+  </script>
+</body>
+</html>
+```
+
+1. `url` is the spec, fetched by the browser. A relative url resolves against the page, so the page keeps working behind a path prefix.
+
+2. `target` is a CSS selector or an element. `NimpressApi` returns a promise that rejects when the target is missing or the spec cannot be fetched.
+
+3. The theme follows the reader's system setting, and `html.dark` switches to the dark tokens.
+
+4. Code blocks in descriptions render without syntax highlighting.
+
+Everything in `api.css` sits in the `nimpress` cascade layer, so a plain `<style>` in the page wins over it. Set tokens on `:root` and `html.dark`, and write rules for the classes in [Renderers styling](/styling/renderers).
+
+```html
+<style>
+  :root { --np-brand: #0f766e; }
+  html.dark { --np-brand: #2dd4bf; }
+  .np-api-title { font-size: 28px; }
+</style>
+```

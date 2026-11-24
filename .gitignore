@@ -6,6 +6,7 @@ dist
 .vite
 .env
 .env.local
+.env.prd
 .env.*.local
 github.pem
 *.pem

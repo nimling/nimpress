@@ -23,6 +23,40 @@ function cascadeLayer(name: string) {
 
 export default defineConfig(({ mode }) => {
   const isLibrary = mode === 'library'
+  const isApi = mode === 'api'
+
+  if (isApi) {
+    return {
+      plugins: [
+        svelte({
+          compilerOptions: {
+            runes: true
+          }
+        }),
+        cascadeLayer('nimpress')
+      ],
+      resolve: {
+        alias: {
+          '@': path.resolve(dirname, 'src')
+        }
+      },
+      define: {
+        'process.env.NODE_ENV': JSON.stringify('production')
+      },
+      build: {
+        lib: {
+          entry: path.resolve(dirname, 'src/api/standalone.ts'),
+          name: 'NimpressApi',
+          formats: ['iife'],
+          fileName: () => 'api.js',
+          cssFileName: 'api'
+        },
+        emptyOutDir: false,
+        cssCodeSplit: false,
+        target: 'es2022'
+      }
+    }
+  }
 
   return {
     plugins: [
