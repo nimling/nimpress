@@ -264,23 +264,19 @@
     <header class="np-api-header np-prose">
       <div class="np-api-title-row">
         <h1 class="np-api-title">{title ?? flat.title}</h1>
-        {#if flat.version}<span class="np-api-version">v{flat.version}</span>{/if}
+        {#if flat.version}<span class="np-api-version">v{flat.version.replace(/^v/i, '')}</span>{/if}
         <div class="np-api-actions">
           {#if specUrl}
             <div class="np-api-download">
               <button
                 type="button"
-                class="np-api-collapse-all"
+                class="np-api-collapse-all np-tip"
                 aria-haspopup="menu"
                 aria-expanded={downloadOpen}
+                aria-label="Download the specification"
                 onclick={() => (downloadOpen = !downloadOpen)}
-                title="Download the specification"
               >
-                <IconDownload />
-                <span>Download</span>
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <IconDownload size={14} />
               </button>
               {#if downloadOpen}
                 <div class="np-api-download-menu" role="menu">
@@ -294,25 +290,33 @@
               {/if}
             </div>
           {/if}
-          <button type="button" class="np-api-collapse-all" onclick={toggleEndpoints} title={endpointsCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
+          <button type="button" class="np-api-collapse-all np-tip" onclick={toggleEndpoints} aria-label={endpointsCollapsed ? 'Expand every endpoint card' : 'Collapse every endpoint card'}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22v-6" />
+              <path d="M12 8V2" />
+              <path d="M4 12H2" />
+              <path d="M10 12H8" />
+              <path d="M16 12h-2" />
+              <path d="M22 12h-2" />
               {#if endpointsCollapsed}
-                <polyline points="6 9 12 15 18 9" />
+                <path d="m15 19-3 3-3-3" />
+                <path d="m15 5-3-3-3 3" />
               {:else}
-                <polyline points="18 15 12 9 6 15" />
+                <path d="m15 19-3-3-3 3" />
+                <path d="m15 5-3 3-3-3" />
               {/if}
             </svg>
-            <span>{endpointsCollapsed ? 'Expand endpoints' : 'Collapse endpoints'}</span>
           </button>
-          <button type="button" class="np-api-collapse-all" onclick={toggleAll} title={allCollapsed ? 'Expand every group' : 'Collapse every group'}>
+          <button type="button" class="np-api-collapse-all np-tip" onclick={toggleAll} aria-label={allCollapsed ? 'Expand every group' : 'Collapse every group'}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               {#if allCollapsed}
-                <polyline points="6 9 12 15 18 9" />
+                <path d="m7 15 5 5 5-5" />
+                <path d="m7 9 5-5 5 5" />
               {:else}
-                <polyline points="18 15 12 9 6 15" />
+                <path d="m7 20 5-5 5 5" />
+                <path d="m7 4 5 5 5-5" />
               {/if}
             </svg>
-            <span>{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
           </button>
         </div>
       </div>
@@ -434,29 +438,28 @@
   }
   .np-api-title-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
     margin-bottom: 12px;
   }
   .np-api-actions {
     margin-left: auto;
+    flex: 0 0 auto;
     display: inline-flex;
-    gap: 8px;
+    align-items: center;
+    gap: 4px;
   }
   .np-api-collapse-all {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     color: var(--np-text-secondary);
     background-color: var(--np-bg-surface);
     border: 1px solid var(--np-border);
-    border-radius: var(--np-radius-pill);
-    padding: 6px 14px;
+    border-radius: var(--np-radius-sm);
     cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   }
@@ -523,6 +526,8 @@
     color: var(--np-brand);
   }
   .np-api-version {
+    flex: 0 0 auto;
+    white-space: nowrap;
     font-family: var(--np-font-mono);
     font-size: 12px;
     color: var(--np-text-muted);

@@ -6,6 +6,7 @@ import '../styles/preflight.css'
 import OpenApiRoot from './OpenApiRoot.svelte'
 import { flattenSpecForEmbed } from './flatten'
 import { applyInitialTheme } from '../framework/stores/theme'
+import { setupTooltip } from '../framework/tooltip'
 
 export default async function NimpressApi({ url, target }: { url: string; target: string | HTMLElement }) {
   const element = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target
@@ -19,6 +20,7 @@ export default async function NimpressApi({ url, target }: { url: string; target
   })
   const spec = flattenSpecForEmbed(parse(await res.text()), md)
   applyInitialTheme()
+  setupTooltip()
   return mount(OpenApiRoot, {
     target: element,
     props: {
