@@ -443,7 +443,6 @@
     margin-bottom: 12px;
   }
   .np-api-actions {
-    margin-left: auto;
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -521,7 +520,7 @@
     font-size: 34px;
     line-height: 1.2;
     font-weight: 700;
-    margin: 0;
+    margin: 0 auto 0 0;
     letter-spacing: -0.015em;
     color: var(--np-brand);
   }
@@ -546,7 +545,8 @@
   .np-api-desc :global(p:last-child) { margin-bottom: 0; }
   .np-api-servers-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 16px 0 8px;
     border: 1px solid var(--np-border);
     border-radius: var(--np-radius-md);

@@ -40,7 +40,7 @@
     onShare?: (opId: string) => Promise<'ok' | 'fail'> | 'ok' | 'fail'
   } = $props()
 
-  let shareLabel = $state('Share')
+  let shareLabel = $state('Copy a shareable link to this state')
   async function localShare() {
     if (onShare) {
       const r = await onShare(op.id)
@@ -53,7 +53,7 @@
         shareLabel = 'Copy failed'
       }
     }
-    setTimeout(() => (shareLabel = 'Share'), 1600)
+    setTimeout(() => (shareLabel = 'Copy a shareable link to this state'), 1600)
   }
   function localClear() {
     if (onClear) onClear(op.id)
@@ -225,13 +225,19 @@
     <header class="np-try-head">
       <span class="np-try-title">Try it</span>
       <div class="np-try-actions">
-        <button class="np-try-meta" type="button" onclick={localShare} disabled={disabled} title="Copy a shareable link to this state">
-          {shareLabel}
+        <button class="np-try-meta np-try-meta-icon np-tip" type="button" onclick={localShare} disabled={disabled} aria-label={shareLabel}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
         </button>
-        <button class="np-try-meta" type="button" onclick={localClear} disabled={disabled} title="Reset all inputs for this endpoint">
-          Clear
+        <button class="np-try-meta np-try-meta-icon np-tip" type="button" onclick={localClear} disabled={disabled} aria-label="Reset all inputs for this endpoint">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
         </button>
-        <button class="np-try-meta np-try-meta-icon" type="button" onclick={openDialog} title="Open Try out as dialog" aria-label="Open Try out as dialog">
+        <button class="np-try-meta np-try-meta-icon np-tip" type="button" onclick={openDialog} aria-label="Open Try out as dialog">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 3h6v6" />
             <path d="M9 21H3v-6" />

@@ -25,11 +25,10 @@
 
 <button
   type="button"
-  class="np-back-to-top"
+  class="np-back-to-top np-tip"
   class:show={visible}
   onclick={scrollToTop}
   aria-label="Back to top"
-  title="Back to top"
 >
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <polyline points="6 14 12 8 18 14" />

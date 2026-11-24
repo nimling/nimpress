@@ -285,7 +285,7 @@
           {/if}
         </div>
         <button
-          class="np-op-toggle"
+          class="np-op-toggle np-tip"
           aria-label={expanded ? 'Collapse' : 'Expand'}
           aria-expanded={expanded}
           onclick={() => (expanded = !expanded)}
@@ -297,10 +297,10 @@
       </header>
 
       <button
-        class="np-op-try-side"
+        class="np-op-try-side np-tip"
         type="button"
         onclick={openTryDialog}
-        title="Open the Try out dialog for this endpoint"
+        aria-label="Open the Try out dialog for this endpoint"
       >
         <span>Try out</span>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
@@ -724,7 +724,8 @@
     min-width: 0;
     margin-top: 16px;
   }
-  .np-op-body:empty {
+  .np-op-body:empty,
+  .np-op-collapsed .np-op-body {
     display: none;
   }
 
@@ -750,6 +751,8 @@
   .np-section-body-responses .np-resp { width: 100%; }
   .np-section-body-responses .np-resp-row { padding: 0 16px; }
   .np-section-body-responses .np-resp-tabs { margin: 12px 0 0; padding: 0 16px; }
+  .np-section-body-responses .np-resp:first-child,
+  .np-section-body-responses .np-resp-tabs:first-child { margin-top: 0; }
   .np-section-body-responses .np-resp-view { padding: 0; }
   .np-section-body-responses .np-resp-view-schema { padding: 12px 16px; }
   .np-section-body-responses .np-resp-view-example { padding: 0; }

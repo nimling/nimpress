@@ -19,8 +19,8 @@ export function setupTooltip(): () => void {
     let y = r.bottom + 6
     if (y + tr.height > window.innerHeight - 4) y = r.top - tr.height - 6
     y = Math.min(Math.max(4, y), window.innerHeight - tr.height - 4)
-    tip.style.left = `${x}px`
-    tip.style.top = `${y}px`
+    tip.style.left = `${Math.round(x)}px`
+    tip.style.top = `${Math.round(y)}px`
   }
 
   function over(e: PointerEvent) {

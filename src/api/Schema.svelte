@@ -124,7 +124,7 @@
   }
   .np-schema-enum-val {
     font-family: var(--np-font-mono);
-    font-size: 11.5px;
+    font-size: 12px;
     color: var(--np-text-secondary);
     background-color: var(--np-bg-surface);
     border: 1px solid var(--np-border);

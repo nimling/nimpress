@@ -173,7 +173,7 @@
     updateUrl(opId, tryStates[opId] ?? null)
   }
 
-  let shareLabel = $state('Share')
+  let shareLabel = $state('Copy a shareable link to this state')
   async function share() {
     if (typeof window === 'undefined' || !selectedOpId) return
     const s = tryStates[selectedOpId]
@@ -189,7 +189,7 @@
     } catch {
       shareLabel = 'Copy failed'
     }
-    setTimeout(() => (shareLabel = 'Share'), 1600)
+    setTimeout(() => (shareLabel = 'Copy a shareable link to this state'), 1600)
   }
 
   function clearCurrent() {
@@ -303,9 +303,19 @@
       <header class="np-try-dialog-head np-try-dialog-head-actions">
         <span class="np-try-dialog-title">Try it</span>
         <div class="np-try-dialog-actions">
-          <button class="np-try-meta" type="button" onclick={share}>{shareLabel}</button>
-          <button class="np-try-meta" type="button" onclick={clearCurrent}>Clear</button>
-          <button class="np-try-close" type="button" onclick={close} aria-label="Close">
+          <button class="np-try-meta np-try-meta-icon np-tip" type="button" onclick={share} aria-label={shareLabel}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+          <button class="np-try-meta np-try-meta-icon np-tip" type="button" onclick={clearCurrent} aria-label="Reset all inputs for this endpoint">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
+          <button class="np-try-close np-tip" type="button" onclick={close} aria-label="Close">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="6" y1="6" x2="18" y2="18" />
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -352,7 +362,7 @@
             </ul>
           {/if}
         </div>
-        <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()}`} type="button" onclick={send} title="Send via Cmd or Ctrl plus Enter">
+        <button class={`np-try-send np-try-send-${selectedOp.method.toLowerCase()} np-tip`} type="button" onclick={send} aria-label="Send via Cmd or Ctrl plus Enter">
           <span class="np-try-send-label">{selectedOp.method.toUpperCase()}</span>
           <span class="np-try-send-shortcut" aria-hidden="true">⌘⏎</span>
         </button>
@@ -490,6 +500,12 @@
     background-color: var(--np-bg);
     color: var(--np-text-primary);
     border-color: var(--np-text-muted);
+  }
+  .np-try-meta-icon {
+    padding: 6px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .np-try-shortcut {
     font-family: var(--np-font-mono);
