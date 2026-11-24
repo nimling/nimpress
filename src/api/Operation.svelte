@@ -884,6 +884,7 @@
     .np-op-collapsed .np-op-inline-sticky,
     .np-op-collapsed .np-op-inline-card {
       height: 100%;
+      box-sizing: border-box;
     }
   }
 </style>
