@@ -11,7 +11,6 @@ dist
 github.pem
 *.pem
 pnpm-workspace.yaml
-.claude/memory/
 test-results/
 playwright-report/
 .nimon/*/recordings/
