@@ -103,6 +103,8 @@ The same reference renders outside a nimpress site from one HTML page, the way a
 
 5. A footer at the very bottom carries the nimpress logo, the nimpress version, the copyright and a made with love line.
 
+6. `postmanUrl` and `hurlUrl` are optional links to a Postman collection and a hurl archive of the same API. Each one that is set adds an entry to the download menu beside the specification; left out, `null` or `undefined` adds nothing.
+
 Everything in `api.css` sits in the `nimpress` cascade layer, so a plain `<style>` in the page wins over it. Set tokens on `:root` and `html.dark`, and write rules for the classes in [Renderers styling](/styling/renderers).
 
 ```html

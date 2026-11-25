@@ -23,12 +23,16 @@
     spec,
     specFile,
     specUrl,
+    hurlUrl,
+    postmanUrl,
     title,
     frontmatter
   }: {
     spec: unknown
     specFile?: string
     specUrl?: string
+    hurlUrl?: string | null
+    postmanUrl?: string | null
     title?: string
     frontmatter?: Frontmatter
   } = $props()
@@ -72,6 +76,24 @@
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = `${specBase}.${format}`
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      downloadError = err instanceof Error ? err.message : String(err)
+    }
+  }
+
+  async function downloadFile(fileUrl: string | null | undefined, name: string) {
+    downloadOpen = false
+    downloadError = ''
+    if (!fileUrl) return
+    try {
+      const res = await fetch(withBase(fileUrl))
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const url = URL.createObjectURL(await res.blob())
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = name
       anchor.click()
       URL.revokeObjectURL(url)
     } catch (err) {
@@ -286,6 +308,16 @@
                   <button type="button" role="menuitem" onclick={() => downloadSpec('json')}>
                     {specBase}.json
                   </button>
+                  {#if postmanUrl}
+                    <button type="button" role="menuitem" onclick={() => downloadFile(postmanUrl, `${specBase}.postman_collection.json`)}>
+                      {specBase}.postman_collection.json
+                    </button>
+                  {/if}
+                  {#if hurlUrl}
+                    <button type="button" role="menuitem" onclick={() => downloadFile(hurlUrl, `${specBase}.hurl.zip`)}>
+                      {specBase}.hurl.zip
+                    </button>
+                  {/if}
                 </div>
               {/if}
             </div>

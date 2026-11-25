@@ -10,7 +10,7 @@ import { flattenSpecForEmbed } from './flatten'
 import { applyInitialTheme } from '../framework/stores/theme'
 import { setupTooltip } from '../framework/tooltip'
 
-export default async function NimpressApi({ url, target }: { url: string; target: string | HTMLElement }) {
+export default async function NimpressApi({ url, target, hurlUrl, postmanUrl }: { url: string; target: string | HTMLElement; hurlUrl?: string | null; postmanUrl?: string | null }) {
   const element = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target
   if (!element) throw new Error(`NimpressApi: no element matches ${String(target)}`)
   const res = await fetch(url)
@@ -28,7 +28,9 @@ export default async function NimpressApi({ url, target }: { url: string; target
     props: {
       spec,
       specFile: new URL(url, window.location.href).pathname.split('/').pop(),
-      specUrl: url
+      specUrl: url,
+      hurlUrl,
+      postmanUrl
     }
   })
   mount(StandaloneFooter, {
