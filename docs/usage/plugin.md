@@ -2,7 +2,7 @@
 title: plugin
 order: 13
 tags: cli
-description: Install the Claude Code plugin that carries the nimpress skill and the nimpress mcp server, or the plugin a package ships.
+description: Install the Claude Code plugin that carries the nimpress skill and the nimpress mcp server.
 ---
 
 `nimpress plugin` installs the nimpress plugin for Claude Code. The plugin carries the skill that teaches the cli and an mcp server that exposes every command as a tool, so an agent in any repo drives nimpress without a skill copied into place.
@@ -23,18 +23,6 @@ claude plugin marketplace add nimling/nimpress
 claude plugin install nimpress@nimpress
 ```
 
-## A plugin a package ships
-
-```bash
-nimpress plugin put @nimling/components-nimtech
-nimpress plugin put @nimling/components-nimtech --project
-nimpress plugin put @nimling/components-nimtech --check
-```
-
-With a package name `put` installs the Claude plugin that package ships. The package is read from `node_modules` at or above the current directory and carries its plugin in a `plugin` folder with `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. The folder is copied to `~/.<plugin name>/plugin`, stamped with the package version and a hash of its files, added as a marketplace and installed, or updated when it is already installed.
-
-`--check` writes nothing. It prints the installed version when it is the one the package carries, and exits non zero when the plugin is missing or behind, so it tells when a new package version needs `put` again.
-
 ## The mcp server
 
 The plugin starts `nimpress mcp` in the project. It runs the `nimpress` the repo installs in `node_modules`, so the tools match the pinned version. A repo without the package runs the published one through `pnpm dlx`.
@@ -46,4 +34,3 @@ Every command becomes a tool named after it, `lint`, `build`, `modules_update`, 
 | Option | Description |
 |---|---|
 | `--project` | Install into the project settings of the current directory instead of the user settings. |
-| `--check` | With a package, say whether the installed plugin is the one the package carries, and install nothing. |

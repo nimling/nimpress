@@ -199,11 +199,8 @@ export const commands: CompletionCommand[] = [
     subs: [
       {
         name: 'put',
-        describe: 'Add the nimpress marketplace and install the plugin for the user, or for the current project with --project; with a package name, install the claude plugin that package ships from node_modules',
-        flags: [
-          { name: '--project', value: false, describe: 'install into the project settings of the current directory instead of the user settings' },
-          { name: '--check', value: false, describe: 'with a package, say whether the installed plugin is the one the package carries and install nothing' }
-        ],
+        describe: 'Add the nimpress marketplace and install the plugin for the user, or for the current project with --project',
+        flags: [{ name: '--project', value: false, describe: 'install into the project settings of the current directory instead of the user settings' }],
         subs: []
       }
     ]

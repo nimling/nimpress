@@ -13,7 +13,7 @@ description: Drive the nimpress documentation site cli from the terminal. Use wh
 
 2. Every command except `init`, `skill`, `plugin`, `mcp`, `completion`, `view`, and `cache clear` loads the site config first. A missing or broken `nimpress.config.ts` or `nimpress.config.json` fails the command before it starts, so `nimpress init` is what a bare folder runs first. `view` and `cache clear` run from any repo the docs sync pipeline publishes, config or not.
 
-3. `nimpress` writes only into the folders the `paths` config block declares. It never writes into the repo root beyond the config, the content folder, `CLAUDE.md`, `AGENTS.md`, and a temporary `index.html` that the build removes. Outside the repo it writes `~/.nimpress` for the links `view` resolves and `~/.tide/nimpress/sites/` for the docs site clones, `~/.<plugin name>/plugin` for the plugin of a package that `plugin put <package>` installs, and nothing else.
+3. `nimpress` writes only into the folders the `paths` config block declares. It never writes into the repo root beyond the config, the content folder, `CLAUDE.md`, `AGENTS.md`, and a temporary `index.html` that the build removes. Outside the repo it writes `~/.nimpress` for the links `view` resolves and `~/.tide/nimpress/sites/` for the docs site clones, and nothing else.
 
 4. The authoritative authoring rules ship inside the package at `node_modules/@nimtech/nimpress/.claude/rules/`. Read the rule before writing content, never guess the frontmatter contract from a rendered page.
 
@@ -171,14 +171,9 @@ nimpress skill put --project
 ```sh
 nimpress plugin put
 nimpress plugin put --project
-nimpress plugin put <package>
-nimpress plugin put <package> --project
-nimpress plugin put <package> --check
 ```
 
 `put` runs `claude plugin marketplace add nimling/nimpress` and `claude plugin install nimpress@nimpress`, at user scope, or at project scope with `--project`. The plugin carries this skill and the nimpress mcp server. It fails when the `claude` cli is missing or either step exits non zero.
-
-`put <package>` installs the Claude plugin a package ships instead, `@nimling/components-nimtech` for one. The package is read from `node_modules` at or above the current directory and must carry `plugin/.claude-plugin/plugin.json` and `marketplace.json`. The plugin folder is copied to `~/.<plugin name>/plugin` and stamped with the package version and a hash of its files, then added as a marketplace and installed, or updated when it is already there. `--check` writes nothing: it prints the installed version, or exits non zero when the installed plugin is missing or is not the one the package carries.
 
 ### mcp
 
