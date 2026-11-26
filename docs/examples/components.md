@@ -118,7 +118,7 @@ import { Button } from '@my-org/forms'
 A button. Use it for the primary action in a form. The `label` slot overrides the text, and `click` fires with the native event.
 ```
 
-The live frame and the source CLAUDE.md render below the body automatically. Neither is written in the markdown.
+The live frame and the source AGENTS.md render below the body automatically. Neither is written in the markdown.
 
 ## 5. Author the schema
 

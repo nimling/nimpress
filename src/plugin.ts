@@ -3711,7 +3711,7 @@ ${bodyBranches}
         const raw = (req.url ?? '').split('?')[0]
         const url = stripBase(resolved.base, raw)
         if (url.startsWith('/@') || url.startsWith('/node_modules/')) return next()
-        if (url === '/__nimpress/claude-md' && req.method === 'PUT') {
+        if (url === '/__nimpress/agents-md' && req.method === 'PUT') {
           const chunks: Buffer[] = []
           req.on('data', (chunk) => chunks.push(chunk))
           req.on('end', async () => {
@@ -3724,9 +3724,9 @@ ${bodyBranches}
                 .filter((s) => s.source)
                 .map((s) => resolve(process.cwd(), s.source!))
               const inRoot = roots.some((r) => target.startsWith(r + sep))
-              if (!inRoot || !target.endsWith(`${sep}CLAUDE.md`) || !existsSync(dirname(target))) {
+              if (!inRoot || !target.endsWith(`${sep}AGENTS.md`) || !existsSync(dirname(target))) {
                 res.statusCode = 403
-                res.end('invalid claude-md target')
+                res.end('invalid agents-md target')
                 return
               }
               await writeFile(target, content)

@@ -49,9 +49,9 @@
   let consoleHistory: string[] = []
   let consoleHistoryIndex = -1
   let ready = $state(false)
-  let claudeDraft = $state('')
-  let claudeSaved = $state(true)
-  let claudeSaving = $state(false)
+  let agentsDraft = $state('')
+  let agentsSaved = $state(true)
+  let agentsSaving = $state(false)
   let iframeEl: HTMLIFrameElement | undefined = $state()
   let wsEl: HTMLDivElement | undefined = $state()
 
@@ -567,20 +567,20 @@
     }
   }
 
-  async function saveClaude() {
-    if (!data?.claudeMdPath) return
-    claudeSaving = true
+  async function saveAgents() {
+    if (!data?.agentsMdPath) return
+    agentsSaving = true
     try {
-      const res = await fetch('/__nimpress/claude-md', {
+      const res = await fetch('/__nimpress/agents-md', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: data.claudeMdPath, content: claudeDraft })
+        body: JSON.stringify({ path: data.agentsMdPath, content: agentsDraft })
       })
-      claudeSaved = res.ok
+      agentsSaved = res.ok
     } catch {
-      claudeSaved = false
+      agentsSaved = false
     } finally {
-      claudeSaving = false
+      agentsSaving = false
     }
   }
 
@@ -619,7 +619,7 @@
   })
 
   onMount(() => {
-    claudeDraft = data?.claudeMd ?? ''
+    agentsDraft = data?.agentsMd ?? ''
     frameTheme = $theme === 'dark' ? 'dark' : 'light'
     const onMessage = (event: MessageEvent) => {
       const d = event.data
@@ -724,24 +724,24 @@
         </section>
       {/if}
 
-      {#if data?.claudeMdPath !== undefined || data?.claudeMd !== undefined}
+      {#if data?.agentsMdPath !== undefined || data?.agentsMd !== undefined}
         <section class="np-component-claude">
           <div class="np-component-claude-head">
             <h2>
-              CLAUDE.md
-              {#if data.claudeMdPath}<code class="np-component-claude-path">{data.claudeMdPath}</code>{/if}
-              {#if data.claudeMd === undefined}<span class="np-component-claude-missing">missing</span>{/if}
+              AGENTS.md
+              {#if data.agentsMdPath}<code class="np-component-claude-path">{data.agentsMdPath}</code>{/if}
+              {#if data.agentsMd === undefined}<span class="np-component-claude-missing">missing</span>{/if}
             </h2>
             {#if data.editable}
               <button
                 type="button"
                 class="np-component-claude-save"
-                disabled={claudeSaving}
-                onclick={saveClaude}
-              >{claudeSaving ? 'saving' : claudeSaved ? 'save' : 'retry save'}</button>
+                disabled={agentsSaving}
+                onclick={saveAgents}
+              >{agentsSaving ? 'saving' : agentsSaved ? 'save' : 'retry save'}</button>
             {/if}
           </div>
-          <CodeEditor bind:value={claudeDraft} language="markdown" readonly={!data.editable} fitContent maxHeight={480} />
+          <CodeEditor bind:value={agentsDraft} language="markdown" readonly={!data.editable} fitContent maxHeight={480} />
         </section>
       {/if}
 

@@ -6,7 +6,7 @@ export interface ResolvedComponentSource {
   systemConfig: ModuleSystemConfig
   componentFile: string
   componentDir: string
-  claudeMdPath: string
+  agentsMdPath: string
 }
 
 export function resolveComponentSource(
@@ -31,7 +31,7 @@ export function resolveComponentSource(
       systemConfig,
       componentFile: file,
       componentDir,
-      claudeMdPath: join(componentDir, 'CLAUDE.md')
+      agentsMdPath: join(componentDir, 'AGENTS.md')
     }
   }
   return null

@@ -141,23 +141,23 @@ export async function buildComponentPageData(opts: {
     )
   }
 
-  let claudeMd: string | undefined
-  let claudeMdPath: string | undefined
+  let agentsMd: string | undefined
+  let agentsMdPath: string | undefined
   if (source) {
     watchFiles.push(source.componentFile)
-    claudeMdPath = relative(cwd, source.claudeMdPath)
-    if (existsSync(source.claudeMdPath)) {
-      claudeMd = await readFile(source.claudeMdPath, 'utf-8')
-      watchFiles.push(source.claudeMdPath)
+    agentsMdPath = relative(cwd, source.agentsMdPath)
+    if (existsSync(source.agentsMdPath)) {
+      agentsMd = await readFile(source.agentsMdPath, 'utf-8')
+      watchFiles.push(source.agentsMdPath)
     }
   } else {
     const pkg = typeof data.package === 'string' ? data.package : modules.systems[system]?.package
     if (pkg) {
       const dtsPath = findComponentDts(cwd, pkg, component)
       if (dtsPath) {
-        const packagedClaude = dtsPath.replace(/[^/]+$/, 'CLAUDE.md')
-        if (existsSync(packagedClaude)) {
-          claudeMd = await readFile(packagedClaude, 'utf-8')
+        const packagedAgents = dtsPath.replace(/[^/]+$/, 'AGENTS.md')
+        if (existsSync(packagedAgents)) {
+          agentsMd = await readFile(packagedAgents, 'utf-8')
         }
       }
     }
@@ -181,8 +181,8 @@ export async function buildComponentPageData(opts: {
       component,
       package: typeof data.package === 'string' ? data.package : undefined,
       version: typeof data.version === 'string' ? data.version : undefined,
-      claudeMd,
-      claudeMdPath,
+      agentsMd,
+      agentsMdPath,
       editable: editable && !!source,
       harnessPath: `${route}/${encodeURIComponent(system)}/${encodeURIComponent(component)}/`,
       schema,

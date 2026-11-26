@@ -106,8 +106,8 @@ export interface ComponentPageData {
   component: string
   package?: string
   version?: string
-  claudeMd?: string
-  claudeMdPath?: string
+  agentsMd?: string
+  agentsMdPath?: string
   editable?: boolean
   harnessPath: string
   schema?: ControlSchema

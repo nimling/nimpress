@@ -76,7 +76,7 @@ import { Button } from '@my-org/forms'
 A button. Use it for the primary action in a form.
 ````
 
-The live preview frame renders below the body automatically with a link into the workshop, followed by the source `CLAUDE.md` section. Neither is written in the markdown. A `CLAUDE.md` in the component source folder renders on the page and is editable in place during local dev, read only everywhere else.
+The live preview frame renders below the body automatically with a link into the workshop, followed by the source `AGENTS.md` section. Neither is written in the markdown. A `CLAUDE.md` in the component source folder renders on the page and is editable in place during local dev, read only everywhere else.
 
 ## Layout
 
